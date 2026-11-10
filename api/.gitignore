@@ -1,0 +1,5 @@
+/vendor
+/.htaccess
+/.env
+/writable/logs
+.htaccess
