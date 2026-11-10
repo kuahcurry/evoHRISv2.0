@@ -79,7 +79,6 @@
     search: '',
     kd_bagian: '',
     kd_jabatan: '',
-    kd_status_pegawai: '',
     status_aktif: '',
     totalPages: 1,
     totalRecords: 0,
@@ -88,8 +87,7 @@
 
   let masterData = {
     bagian: [],
-    jabatan: [],
-    status_pegawai: []
+    jabatan: []
   };
 
   let popupTambah = null;
@@ -100,11 +98,9 @@
       if (res && res.code === 200 && res.data) {
         masterData.bagian = res.data.bagian || [];
         masterData.jabatan = res.data.jabatan || [];
-        masterData.status_pegawai = res.data.status_pegawai || [];
 
         populateSelect('filter-bagian', masterData.bagian, 'KD_BAGIAN', 'BAGIAN', 'Semua Unit / Bagian');
         populateSelect('filter-jabatan', masterData.jabatan, 'KD_JABATAN', 'JABATAN', 'Semua Jabatan');
-        populateSelect('filter-status', masterData.status_pegawai, 'KD_STATUS_PEGAWAI', 'STATUS_PEGAWAI', 'Semua Status Pegawai');
       }
     } catch (err) {
       console.warn('Gagal memuat master filter pegawai:', err);
@@ -144,7 +140,6 @@
         search: state.search,
         kd_bagian: state.kd_bagian,
         kd_jabatan: state.kd_jabatan,
-        kd_status_pegawai: state.kd_status_pegawai,
         status_aktif: state.status_aktif
       };
 
@@ -183,6 +178,21 @@
     }
   }
 
+  function formatTgl(dateStr) {
+    if (!dateStr || dateStr === '0000-00-00') return '-';
+    try {
+      const parts = String(dateStr).split(' ')[0].split('-');
+      if (parts.length === 3 && parts[0].length === 4) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
   function renderTableRows(rows) {
     const tbody = document.getElementById('table-pegawai-body');
     if (!tbody) return;
@@ -192,58 +202,32 @@
 
     rows.forEach((row, idx) => {
       const no = startNo + idx + 1;
-      const idPeg = row.ID_PEGAWAI || row.id_pegawai || row.NO_AUTO || row.no_auto || '';
+      const idPeg = row.ID_PEGAWAI || row.id_pegawai || row.NO_AUTO || row.no_auto || '-';
       const nip = row.NIP || row.nip || '-';
-      const nik = row.NO_IDENTITAS || row.no_identitas || '-';
       const nama = row.NAMA || row.nama || 'Tanpa Nama';
       const gelarDepan = row.GELAR_DEPAN || row.gelar_depan || '';
       const gelarBelakang = row.GELAR_BELAKANG || row.gelar_belakang || '';
       const namaLengkap = `${gelarDepan ? gelarDepan + ' ' : ''}${nama}${gelarBelakang ? ', ' + gelarBelakang : ''}`;
-
-      const bagian = row.BAGIAN || row.bagian || row.nama_bagian || '-';
-      const jabatan = row.JABATAN || row.jabatan || row.nama_jabatan || '-';
-      const statusPeg = row.STATUS_PEGAWAI || row.status_pegawai || row.nama_status || 'Tetap';
-      const isAktif = (row.status_aktif == 1 || row.STATUS_AKTIF == 1 || row.status_aktif === '1' || row.status_aktif === null);
-      const foto = row.FOTO || row.foto || '';
-
-      const avatarHtml = foto 
-        ? `<img src="${foto}" class="pegawai-avatar-thumb me-2" alt="${nama}">`
-        : `<div class="pegawai-avatar-placeholder me-2">${nama.charAt(0).toUpperCase()}</div>`;
+      const tempatLahir = row.TEMPAT_LAHIR || row.tempat_lahir || '-';
+      const tglLahirRaw = row.TANGGAL_LAHIR || row.TGL_LAHIR || row.tanggal_lahir || row.tgl_lahir || '';
+      const tglLahir = formatTgl(tglLahirRaw);
+      const alamat = row.ALAMAT || row.alamat || '-';
 
       html += `
         <tr>
           <td class="text-center align-middle">${no}</td>
-          <td class="align-middle">
-            <div class="d-flex align-items-center">
-              ${avatarHtml}
-              <div>
-                <a href="javascript:void(0)" class="fw-bold text-decoration-none text-primary link-nama-pegawai" data-id="${idPeg}" data-nama="${namaLengkap}">
-                  ${namaLengkap}
-                </a>
-                <div class="text-muted small">
-                  <i class="far fa-id-card me-1"></i>NIK: ${nik}
-                </div>
-              </div>
-            </div>
-          </td>
+          <td class="align-middle fw-semibold font-monospace">${idPeg}</td>
           <td class="align-middle">
             <span class="badge bg-light text-dark border font-monospace px-2 py-1">${nip}</span>
           </td>
           <td class="align-middle">
-            <div class="fw-semibold text-dark">${bagian}</div>
-            <div class="text-muted small">${jabatan}</div>
+            <a href="javascript:void(0)" class="fw-bold text-decoration-none text-primary link-nama-pegawai" data-id="${idPeg}" data-nama="${namaLengkap}">
+              ${namaLengkap}
+            </a>
           </td>
-          <td class="align-middle">
-            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-2 py-1">
-              ${statusPeg}
-            </span>
-          </td>
-          <td class="text-center align-middle">
-            ${isAktif 
-              ? '<span class="badge badge-status-aktif px-2 py-1"><i class="fas fa-check-circle me-1"></i>Aktif</span>'
-              : '<span class="badge badge-status-nonaktif px-2 py-1"><i class="fas fa-times-circle me-1"></i>Nonaktif</span>'
-            }
-          </td>
+          <td class="align-middle">${tempatLahir}</td>
+          <td class="align-middle">${tglLahir}</td>
+          <td class="align-middle text-break">${alamat}</td>
           <td class="text-end align-middle">
             <div class="btn-group btn-action-group" role="group">
               <button type="button" class="btn btn-outline-primary btn-edit-pegawai" data-id="${idPeg}" data-nama="${namaLengkap}" title="Edit Data & Rekam Jejak Pegawai">
@@ -540,14 +524,6 @@
       });
     }
 
-    const selStatus = document.getElementById('filter-status');
-    if (selStatus) {
-      selStatus.addEventListener('change', (e) => {
-        state.kd_status_pegawai = e.target.value;
-        loadData(1);
-      });
-    }
-
     const selAktif = document.getElementById('filter-aktif');
     if (selAktif) {
       selAktif.addEventListener('change', (e) => {
@@ -570,12 +546,10 @@
         if (inputSearch) inputSearch.value = '';
         if (selBagian) selBagian.value = '';
         if (selJabatan) selJabatan.value = '';
-        if (selStatus) selStatus.value = '';
         if (selAktif) selAktif.value = '';
         state.search = '';
         state.kd_bagian = '';
         state.kd_jabatan = '';
-        state.kd_status_pegawai = '';
         state.status_aktif = '';
         loadData(1);
       });
@@ -636,14 +610,14 @@
               </div>
             </div>
 
-            <div class="col-lg-2 col-md-3 col-6">
+            <div class="col-lg-3 col-md-3 col-6">
               <label class="form-label small fw-semibold text-muted mb-1">Unit / Bagian</label>
               <select class="form-select form-select-sm" id="filter-bagian">
                 <option value="">Semua Bagian</option>
               </select>
             </div>
 
-            <div class="col-lg-2 col-md-3 col-6">
+            <div class="col-lg-3 col-md-3 col-6">
               <label class="form-label small fw-semibold text-muted mb-1">Jabatan</label>
               <select class="form-select form-select-sm" id="filter-jabatan">
                 <option value="">Semua Jabatan</option>
@@ -651,13 +625,6 @@
             </div>
 
             <div class="col-lg-2 col-md-3 col-6">
-              <label class="form-label small fw-semibold text-muted mb-1">Status Pegawai</label>
-              <select class="form-select form-select-sm" id="filter-status">
-                <option value="">Semua Status</option>
-              </select>
-            </div>
-
-            <div class="col-lg-1 col-md-3 col-6">
               <label class="form-label small fw-semibold text-muted mb-1">Status Kerja</label>
               <select class="form-select form-select-sm" id="filter-aktif">
                 <option value="">Semua</option>
@@ -666,7 +633,7 @@
               </select>
             </div>
 
-            <div class="col-lg-2 col-md-12 d-flex align-items-end gap-1 mt-auto">
+            <div class="col-lg-1 col-md-3 col-6 d-flex align-items-end gap-1 mt-auto">
               <button type="button" class="btn btn-outline-secondary btn-sm w-100" id="btn-reset-filter" title="Reset Filter">
                 <i class="fas fa-undo me-1"></i> Reset
               </button>
@@ -680,11 +647,12 @@
             <thead>
               <tr>
                 <th class="text-center" style="width: 50px;">No</th>
-                <th>Nama Pegawai & Identitas</th>
-                <th style="width: 140px;">NIP / NRP</th>
-                <th>Bagian & Jabatan</th>
-                <th style="width: 140px;">Status Pegawai</th>
-                <th class="text-center" style="width: 100px;">Status</th>
+                <th style="width: 110px;">ID Pegawai</th>
+                <th style="width: 140px;">NIP</th>
+                <th>Nama</th>
+                <th style="width: 140px;">Tempat Lahir</th>
+                <th style="width: 120px;">Tgl. Lahir</th>
+                <th>Alamat</th>
                 <th class="text-end" style="width: 190px;">Aksi</th>
               </tr>
             </thead>

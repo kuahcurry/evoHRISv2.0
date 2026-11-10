@@ -197,7 +197,17 @@
     document.getElementById('header-nik').innerText = nik;
     document.getElementById('header-bagian').innerText = bagian;
     document.getElementById('header-jabatan').innerText = jabatan;
-    document.getElementById('header-status').innerText = statusPeg;
+    const isAktif = (p.STATUS_AKTIF == 1 || p.STATUS_AKTIF === '1' || p.STATUS_AKTIF === 'Aktif' || p.STATUS_AKTIF === true);
+    const headerStatus = document.getElementById('header-status');
+    if (headerStatus) {
+      headerStatus.innerText = isAktif ? 'Aktif' : 'Non-Aktif';
+      const badgeParent = headerStatus.closest('.badge');
+      if (badgeParent) {
+        badgeParent.className = isAktif 
+          ? 'badge bg-success-subtle text-success border border-success-subtle' 
+          : 'badge bg-danger-subtle text-danger border border-danger-subtle';
+      }
+    }
     document.getElementById('header-pangkat').innerText = pangkat;
     document.getElementById('header-tgl-masuk').innerText = tglMasuk;
 
@@ -336,7 +346,7 @@
       KD_BAGIAN: document.getElementById('edit-bagian')?.value || '',
       KD_JABATAN: document.getElementById('edit-jabatan')?.value || '',
       KD_PANGKAT: document.getElementById('edit-pangkat')?.value || '',
-      KD_STATUS_PEGAWAI: document.getElementById('edit-status-pegawai')?.value || '',
+      KD_STATUS_PEGAWAI: document.getElementById('edit-status-pegawai')?.value || (currentPegawai?.KD_STATUS_PEGAWAI || ''),
       KD_JENIS_PEGAWAI: document.getElementById('edit-jenis-pegawai')?.value || '',
       TGL_MASUK: document.getElementById('edit-tgl-masuk')?.value || '',
       STATUS_AKTIF: document.getElementById('edit-status-aktif')?.value || '1',
@@ -1191,19 +1201,15 @@
                     <select class="form-select form-select-sm" id="edit-pangkat"></select>
                   </div>
 
-                  <div class="col-md-3">
-                    <label class="form-label small fw-semibold text-muted mb-1">Status Kepegawaian</label>
-                    <select class="form-select form-select-sm" id="edit-status-pegawai"></select>
-                  </div>
-                  <div class="col-md-3">
+                  <div class="col-md-4">
                     <label class="form-label small fw-semibold text-muted mb-1">Jenis Pegawai</label>
                     <select class="form-select form-select-sm" id="edit-jenis-pegawai"></select>
                   </div>
-                  <div class="col-md-3">
+                  <div class="col-md-4">
                     <label class="form-label small fw-semibold text-muted mb-1">TMT Mulai Bekerja</label>
                     <input type="date" class="form-control form-control-sm" id="edit-tgl-masuk">
                   </div>
-                  <div class="col-md-3">
+                  <div class="col-md-4">
                     <label class="form-label small fw-semibold text-muted mb-1">Status Kerja</label>
                     <select class="form-select form-select-sm" id="edit-status-aktif">
                       <option value="1">Aktif</option>

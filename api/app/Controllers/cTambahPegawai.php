@@ -46,6 +46,7 @@ class cTambahPegawai extends BaseController
             p.NAMA,
             p.TEMPAT_LAHIR,
             p.TANGGAL_LAHIR,
+            p.ALAMAT,
             p.JENIS_KELAMIN,
             p.HANDPHONE,
             p.EMAIL,
@@ -78,7 +79,10 @@ class cTambahPegawai extends BaseController
         if (!empty($search)) {
             $builder->groupStart()
                 ->like('p.NIP', $search)
+                ->orLike('p.ID_PEGAWAI', $search)
                 ->orLike('p.NAMA', $search)
+                ->orLike('p.TEMPAT_LAHIR', $search)
+                ->orLike('p.ALAMAT', $search)
                 ->orLike('b.BAGIAN', $search)
                 ->orLike('j.JABATAN', $search)
                 ->groupEnd();
