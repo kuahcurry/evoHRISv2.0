@@ -1,0 +1,82 @@
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+  import { getCurrentUser, getSelectedPasien, getFormEntries, setFormEntries, subscribe } from './assets/js/core/helpers.js';   
+
+  const id = 'history_rawat_bersama';
+  function convertDate(dateString)    {
+		var p = dateString.split(/\D/g)
+		return [p[2],p[1],p[0] ].join("-")
+	}
+  const loadData = async() => {
+    const tbl_history  = document.getElementById('tbl_history_rawat_bersama');
+    const listpasien = document.getElementById('daftarpasien-title');
+    const currentuser = getCurrentUser('kd_user'); 
+    const selectedpasien = getSelectedPasien(`pasien-${listpasien.dataset.tagger}`);
+    const frm_entries = document.getElementById('perencanaan_konsul_inap-entries');
+    const status_pasien = selectedpasien.status_pasien;
+    const frm_data = {
+      no_registrasikunjungan: selectedpasien.no_kunjungan,
+      kd_kebutuhan: 2
+    };
+    let rs = await httpGet(`${config.api_url}/perencanaan_konsul_inap/loadhistory_inap`, frm_data);
+    const table_history = document.getElementById('tbl_history_rawat_bersama').getElementsByTagName('tbody')[0];
+    let dataset = [];
+    let no = 1;
+    table_history.innerHTML = `
+      <tr>
+        <td colspan="5">
+          <label class="form-label text-capitalize fs-0 fw-bold text-dark">tidak ada data</label>
+        </td>
+      </tr>
+    `;
+    if (rs.code == 200) {
+      table_history.innerHTML = '';
+      dataset = rs.data;
+      dataset.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td class="align-middle py-2">${no++}</td>
+          <td class="align-middle py-2">${convertDate(item.tgl_input)}</td>
+          <td class="align-middle py-2">${item.pengirim}</td>
+          <td class="align-middle py-2">${item.penerima}</td>
+          <td class="align-middle py-2">${item.status}</td>`
+        ;
+        table_history.appendChild(row);
+      });
+
+      await listInit();
+    }
+  }
+ document.history_rawat_bersama = { id, loadData };
+</script>
+<template>
+  <div class="card">
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md">
+          <div id="tbl_history_rawat_bersama"  data-list='{"valueNames":["no","tanggal","pengirim","penerima","status"],"page":5,"pagination":true}' class="mb-3">
+            <div class="table-responsive">
+              <table class="table table-sm table-striped fs--1 mb-0 overflow-hidden text-center">
+                <thead class="bg-200">
+                  <tr>
+                    <th class="text-900 sort pe-1 align-middle white-space-nowrap text-capitalize" data-sort="no">No</th>
+                    <th class="text-900 sort pe-1 align-middle white-space-nowrap text-capitalize" data-sort="tanggal">tanggal</th>
+                    <th class="text-900 sort pe-1 align-middle white-space-nowrap text-capitalize" data-sort="pengirim">Dr. Pengirim</th>
+                    <th class="text-900 sort pe-1 align-middle white-space-nowrap text-capitalize" data-sort="penerima">Dr. Penerima</th>
+                    <th class="text-900 sort pe-1 align-middle white-space-nowrap text-capitalize" data-sort="status">Status</th>
+                  </tr>
+                </thead>
+                <tbody class="list"></tbody>
+              </table>
+            </div>
+            <div class="d-flex justify-content-center mt-3">
+              <button class="btn btn-sm btn-falcon-default me-1" type="button" title="Previous" data-list-pagination="prev"><span class="fas fa-chevron-left"></span> </button>
+              <ul class="pagination mb-0"></ul>
+              <button class="btn btn-sm btn-falcon-default ms-1" type="button" title="Next" data-list-pagination="next"><span class="fas fa-chevron-right"></span> </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

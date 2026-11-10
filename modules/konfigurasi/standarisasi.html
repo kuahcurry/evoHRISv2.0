@@ -1,0 +1,712 @@
+<template id="template-konfig-standarisasi">
+  <div class="row mb-3">
+    <div class="col">
+      <div class="card bg-100 shadow-none border">
+        <div class="card-body py-3">
+          <div class="row justify-content-between align-items-center">
+            <div class="col-auto">
+              <h5 class="mb-1 text-primary fw-bold"><i class="fas fa-business-time me-2"></i>Standarisasi Jam & Jadwal Kerja</h5>
+              <div class="text-secondary small">Konfigurasi standar operasional jadwal shift pelayanan medis dan jam kerja kantor/administrasi RS.</div>
+            </div>
+            <div class="col-auto">
+              <button class="btn btn-sm btn-falcon-default me-1" id="btn-refresh-standar">
+                <i class="fas fa-sync-alt me-1"></i>Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <ul class="nav nav-tabs mb-3" id="standarTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active fw-bold" id="tab-pelayanan-link" data-bs-toggle="tab" data-bs-target="#tab-pelayanan" type="button" role="tab">
+        <i class="fas fa-clock me-2"></i>Jadwal Shift Pelayanan Medis (<span id="badge-total-pelayanan">0</span>)
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link fw-bold" id="tab-administrasi-link" data-bs-toggle="tab" data-bs-target="#tab-administrasi" type="button" role="tab">
+        <i class="fas fa-calendar-day me-2"></i>Jadwal Jam Kerja Administrasi (<span id="badge-total-admin">0</span>)
+      </button>
+    </li>
+  </ul>
+
+  <!-- Tab Contents -->
+  <div class="tab-content" id="standarTabsContent">
+    <!-- TAB 1: SHIFT PELAYANAN -->
+    <div class="tab-pane fade show active" id="tab-pelayanan" role="tabpanel">
+      <div class="card mb-3">
+        <div class="card-header bg-light">
+          <div class="row g-2 align-items-center justify-content-between">
+            <div class="col-md-4 col-sm-12">
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white"><i class="fas fa-search text-secondary"></i></span>
+                <input type="text" class="form-control" id="search-shift" placeholder="Cari nama shift pelayanan...">
+              </div>
+            </div>
+            <div class="col-md-4 col-sm-6">
+              <select class="form-select form-select-sm" id="filter-shift-kelompok">
+                <option value="">-- Semua Kelompok Unit --</option>
+              </select>
+            </div>
+            <div class="col-md-4 col-sm-6 text-end">
+              <button class="btn btn-sm btn-primary" id="btn-add-shift">
+                <i class="fas fa-plus me-1"></i>Tambah Shift Pelayanan
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-striped table-hover mb-0 fs--1">
+              <thead class="bg-200 text-900">
+                <tr>
+                  <th class="text-center py-2" style="width: 50px;">#</th>
+                  <th class="py-2">Unit / Kelompok Kerja</th>
+                  <th class="py-2">Nama Shift / Jadwal</th>
+                  <th class="text-center py-2" style="width: 120px;">Jam Mulai</th>
+                  <th class="text-center py-2" style="width: 120px;">Jam Selesai</th>
+                  <th class="text-center py-2" style="width: 120px;">Durasi Kerja</th>
+                  <th class="text-center py-2" style="width: 100px;">Status</th>
+                  <th class="text-end py-2 pe-3" style="width: 110px;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="shift-table-body">
+                <tr>
+                  <td colspan="8" class="text-center py-4 text-muted">
+                    <div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat standar shift...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Pagination -->
+        <div class="card-footer bg-light py-2">
+          <div class="row align-items-center justify-content-between">
+            <div class="col-auto text-secondary small" id="shift-page-info">Menampilkan 0 data</div>
+            <div class="col-auto">
+              <ul class="pagination pagination-sm mb-0" id="shift-pagination"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: JADWAL ADMINISTRASI -->
+    <div class="tab-pane fade" id="tab-administrasi" role="tabpanel">
+      <div class="card mb-3">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+          <h6 class="mb-0 text-dark fw-bold"><i class="fas fa-calendar-alt me-2 text-primary"></i>Ketentuan Jam Kerja Non-Shift / Administrasi</h6>
+          <button class="btn btn-sm btn-primary" id="btn-add-admin-schedule">
+            <i class="fas fa-plus me-1"></i>Tambah Jadwal Kantor
+          </button>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-striped table-hover mb-0 fs--1">
+              <thead class="bg-200 text-900">
+                <tr>
+                  <th class="text-center py-2" style="width: 50px;">#</th>
+                  <th class="py-2" style="width: 140px;">Hari Kerja</th>
+                  <th class="text-center py-2" style="width: 130px;">Jam Masuk</th>
+                  <th class="text-center py-2" style="width: 130px;">Jam Pulang</th>
+                  <th class="text-center py-2" style="width: 150px;">Toleransi Terlambat</th>
+                  <th class="py-2">Keterangan / Aturan</th>
+                  <th class="text-end py-2 pe-3" style="width: 110px;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="admin-table-body">
+                <tr>
+                  <td colspan="7" class="text-center py-4 text-muted">
+                    <div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat jadwal administrasi...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Tambah / Edit Shift Pelayanan -->
+  <div class="modal fade" id="modal-shift-form" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-light">
+          <h5 class="modal-title" id="modal-shift-title"><i class="fas fa-clock me-2 text-primary"></i>Tambah Shift Pelayanan</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="form-shift">
+          <input type="hidden" id="form-shift-id" name="id">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Kelompok Kerja / Unit <span class="text-danger">*</span></label>
+              <select class="form-select" id="form-shift-kelompok" name="kd_kelompok" required>
+                <option value="">-- Pilih Kelompok Unit --</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Nama Shift Pelayanan <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="form-shift-nama" name="nama_standarisasi" required placeholder="Contoh: Shift Pagi, Shift Siang, Shift Malam">
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-bold">Jam Mulai <span class="text-danger">*</span></label>
+                <input type="time" class="form-control" id="form-shift-mulai" name="jam_mulai" required value="07:00">
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-bold">Jam Selesai <span class="text-danger">*</span></label>
+                <input type="time" class="form-control" id="form-shift-selesai" name="jam_selesai" required value="14:00">
+              </div>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-bold">Durasi Jam Efektif</label>
+                <input type="number" step="0.5" class="form-control" id="form-shift-durasi" name="durasi_jam" value="7.0">
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-bold">Status Keaktifan</label>
+                <select class="form-select" id="form-shift-status" name="is_active">
+                  <option value="1">Aktif Digunakan</option>
+                  <option value="0">Non-Aktif</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary" id="btn-save-shift">
+              <i class="fas fa-save me-1"></i>Simpan Shift
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Tambah / Edit Administrasi -->
+  <div class="modal fade" id="modal-admin-form" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-light">
+          <h5 class="modal-title" id="modal-admin-title"><i class="fas fa-calendar-day me-2 text-primary"></i>Tambah Jadwal Kantor</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="form-admin">
+          <input type="hidden" id="form-admin-id" name="id">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Hari Kerja <span class="text-danger">*</span></label>
+              <select class="form-select" id="form-admin-hari" name="hari" required>
+                <option value="Senin">Senin</option>
+                <option value="Selasa">Selasa</option>
+                <option value="Rabu">Rabu</option>
+                <option value="Kamis">Kamis</option>
+                <option value="Jumat">Jumat</option>
+                <option value="Sabtu">Sabtu</option>
+                <option value="Minggu">Minggu</option>
+              </select>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-bold">Jam Masuk Standar <span class="text-danger">*</span></label>
+                <input type="time" class="form-control" id="form-admin-masuk" name="jam_masuk" required value="07:30">
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-bold">Jam Pulang Standar <span class="text-danger">*</span></label>
+                <input type="time" class="form-control" id="form-admin-pulang" name="jam_pulang" required value="16:00">
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Toleransi Terlambat (Menit)</label>
+              <input type="number" class="form-control" id="form-admin-toleransi" name="toleransi_menit" value="15" min="0">
+              <div class="form-text">Batas toleransi kehadiran sebelum dikenakan potongan disiplin.</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Keterangan Aturan</label>
+              <input type="text" class="form-control" id="form-admin-keterangan" name="keterangan" placeholder="Contoh: Jam kerja reguler staf manajemen non-shift">
+            </div>
+          </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary" id="btn-save-admin">
+              <i class="fas fa-save me-1"></i>Simpan Jadwal
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+
+  let kelompokList = [];
+  let shiftState = {
+    data: [],
+    search: '',
+    kdKelompok: '',
+    page: 1,
+    perPage: 10,
+    total: 0
+  };
+  let adminData = [];
+
+  const loadKelompok = async () => {
+    try {
+      const resp = await httpGet(`${config.api_url}/konfigurasi/kelompok/list`);
+      if (resp && resp.data) {
+        kelompokList = resp.data || [];
+        
+        const filterEl = document.getElementById('filter-shift-kelompok');
+        const formEl = document.getElementById('form-shift-kelompok');
+
+        const opts = kelompokList.map(k => `<option value="${k.KD_KELOMPOK}">${k.KELOMPOK}</option>`).join('');
+
+        if (filterEl) {
+          filterEl.innerHTML = '<option value="">-- Semua Kelompok Unit --</option>' + opts;
+        }
+        if (formEl) {
+          formEl.innerHTML = '<option value="">-- Pilih Kelompok Unit --</option>' + opts;
+        }
+      }
+    } catch (err) {
+      console.error('Error loading kelompok for standarisasi:', err);
+    }
+  };
+
+  const loadShifts = async () => {
+    const tbody = document.getElementById('shift-table-body');
+    if (!tbody) return;
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="text-center py-4 text-muted">
+          <div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat standar shift...
+        </td>
+      </tr>
+    `;
+
+    try {
+      const params = new URLSearchParams({
+        search: shiftState.search,
+        kd_kelompok: shiftState.kdKelompok,
+        page: shiftState.page,
+        per_page: shiftState.perPage
+      });
+
+      const resp = await httpGet(`${config.api_url}/konfigurasi/standarisasi/list?${params.toString()}`);
+      if (resp && resp.data) {
+        shiftState.data = resp.data || [];
+        shiftState.total = resp.rows || 0;
+
+        const badgeEl = document.getElementById('badge-total-pelayanan');
+        if (badgeEl) badgeEl.textContent = shiftState.total;
+
+        renderShifts();
+        renderShiftPagination();
+      }
+    } catch (err) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" class="text-center py-4 text-danger">
+            <i class="fas fa-exclamation-triangle me-2"></i>Gagal memuat shift: ${err.message}
+          </td>
+        </tr>
+      `;
+    }
+  };
+
+  const renderShifts = () => {
+    const tbody = document.getElementById('shift-table-body');
+    if (!tbody) return;
+
+    if (shiftState.data.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" class="text-center py-4 text-muted">
+            <i class="fas fa-info-circle me-2"></i>Tidak ada data shift pelayanan yang sesuai filter.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    const startIdx = (shiftState.page - 1) * shiftState.perPage;
+    let html = '';
+
+    shiftState.data.forEach((s, idx) => {
+      const isActive = parseInt(s.is_active) === 1;
+      const statusBadge = isActive 
+        ? `<span class="badge bg-success-subtle text-success border border-success"><i class="fas fa-check-circle me-1"></i>Aktif</span>`
+        : `<span class="badge bg-secondary-subtle text-secondary border"><i class="fas fa-times-circle me-1"></i>Non-Aktif</span>`;
+
+      html += `
+        <tr>
+          <td class="text-center align-middle">${startIdx + idx + 1}</td>
+          <td class="align-middle fw-bold text-dark">${s.nama_kelompok || 'Semua Unit'}</td>
+          <td class="align-middle">
+            <i class="fas fa-clock text-primary me-2"></i>${s.nama_standarisasi}
+          </td>
+          <td class="text-center align-middle font-monospace">${s.jam_mulai || '-'}</td>
+          <td class="text-center align-middle font-monospace">${s.jam_selesai || '-'}</td>
+          <td class="text-center align-middle fw-bold text-primary">${s.durasi_jam || '-'} Jam</td>
+          <td class="text-center align-middle">${statusBadge}</td>
+          <td class="text-end align-middle pe-3">
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-falcon-default btn-edit-shift" data-idx="${idx}" title="Edit Shift">
+                <i class="fas fa-edit text-primary"></i>
+              </button>
+              <button class="btn btn-falcon-default btn-delete-shift" data-id="${s.id_standarisasi}" data-name="${s.nama_standarisasi}" title="Hapus Shift">
+                <i class="fas fa-trash-alt text-danger"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    bindShiftActions();
+  };
+
+  const renderShiftPagination = () => {
+    const pageInfo = document.getElementById('shift-page-info');
+    const pagination = document.getElementById('shift-pagination');
+    if (!pagination) return;
+
+    const totalPages = Math.ceil(shiftState.total / shiftState.perPage) || 1;
+    const from = shiftState.total === 0 ? 0 : (shiftState.page - 1) * shiftState.perPage + 1;
+    const to = Math.min(shiftState.page * shiftState.perPage, shiftState.total);
+
+    if (pageInfo) {
+      pageInfo.textContent = `Menampilkan ${from} - ${to} dari ${shiftState.total} shift`;
+    }
+
+    let html = '';
+    html += `
+      <li class="page-item ${shiftState.page <= 1 ? 'disabled' : ''}">
+        <a class="page-link" href="#" data-page="${shiftState.page - 1}"><i class="fas fa-chevron-left"></i></a>
+      </li>
+    `;
+
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || (p >= shiftState.page - 2 && p <= shiftState.page + 2)) {
+        html += `
+          <li class="page-item ${p === shiftState.page ? 'active' : ''}">
+            <a class="page-link" href="#" data-page="${p}">${p}</a>
+          </li>
+        `;
+      } else if (p === shiftState.page - 3 || p === shiftState.page + 3) {
+        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      }
+    }
+
+    html += `
+      <li class="page-item ${shiftState.page >= totalPages ? 'disabled' : ''}">
+        <a class="page-link" href="#" data-page="${shiftState.page + 1}"><i class="fas fa-chevron-right"></i></a>
+      </li>
+    `;
+
+    pagination.innerHTML = html;
+    pagination.querySelectorAll('.page-link').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const p = parseInt(link.getAttribute('data-page'));
+        if (p && p >= 1 && p <= totalPages && p !== shiftState.page) {
+          shiftState.page = p;
+          loadShifts();
+        }
+      });
+    });
+  };
+
+  const bindShiftActions = () => {
+    document.querySelectorAll('.btn-edit-shift').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = btn.getAttribute('data-idx');
+        const s = shiftState.data[idx];
+        if (!s) return;
+
+        document.getElementById('modal-shift-title').innerHTML = '<i class="fas fa-edit me-2 text-primary"></i>Edit Shift Pelayanan';
+        document.getElementById('form-shift-id').value = s.id_standarisasi;
+        document.getElementById('form-shift-kelompok').value = s.kd_kelompok || '';
+        document.getElementById('form-shift-nama').value = s.nama_standarisasi;
+        document.getElementById('form-shift-mulai').value = s.jam_mulai || '07:00';
+        document.getElementById('form-shift-selesai').value = s.jam_selesai || '14:00';
+        document.getElementById('form-shift-durasi').value = s.durasi_jam || 7.0;
+        document.getElementById('form-shift-status').value = s.is_active || '1';
+
+        const modalEl = document.getElementById('modal-shift-form');
+        if (modalEl && window.bootstrap) {
+          bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+      });
+    });
+
+    document.querySelectorAll('.btn-delete-shift').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const name = btn.getAttribute('data-name');
+        if (confirm(`Apakah Anda yakin ingin menghapus shift "${name}"?`)) {
+          try {
+            await httpPost(`${config.api_url}/konfigurasi/standarisasi/delete/${id}`, {});
+            loadShifts();
+          } catch (err) {
+            alert('Gagal menghapus shift: ' + err.message);
+          }
+        }
+      });
+    });
+  };
+
+  const loadAdmin = async () => {
+    const tbody = document.getElementById('admin-table-body');
+    if (!tbody) return;
+
+    try {
+      const resp = await httpGet(`${config.api_url}/konfigurasi/administrasi/list`);
+      if (resp && resp.data) {
+        adminData = resp.data || [];
+        const badgeEl = document.getElementById('badge-total-admin');
+        if (badgeEl) badgeEl.textContent = adminData.length;
+
+        renderAdmin();
+      }
+    } catch (err) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="text-center py-4 text-danger">
+            <i class="fas fa-exclamation-triangle me-2"></i>Gagal memuat jadwal administrasi: ${err.message}
+          </td>
+        </tr>
+      `;
+    }
+  };
+
+  const renderAdmin = () => {
+    const tbody = document.getElementById('admin-table-body');
+    if (!tbody) return;
+
+    if (adminData.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="text-center py-4 text-muted">Belum ada jadwal kantor administrasi terdaftar.</td>
+        </tr>
+      `;
+      return;
+    }
+
+    let html = '';
+    adminData.forEach((a, idx) => {
+      html += `
+        <tr>
+          <td class="text-center align-middle">${idx + 1}</td>
+          <td class="align-middle fw-bold text-primary">
+            <i class="fas fa-calendar-day me-2 text-secondary"></i>${a.hari}
+          </td>
+          <td class="text-center align-middle font-monospace text-success fw-bold">${a.jam_masuk || '-'}</td>
+          <td class="text-center align-middle font-monospace text-danger fw-bold">${a.jam_pulang || '-'}</td>
+          <td class="text-center align-middle">
+            <span class="badge bg-100 text-dark border">${a.toleransi_menit || 0} Menit</span>
+          </td>
+          <td class="align-middle text-muted small">${a.keterangan || '-'}</td>
+          <td class="text-end align-middle pe-3">
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-falcon-default btn-edit-admin" data-idx="${idx}" title="Edit Jadwal">
+                <i class="fas fa-edit text-primary"></i>
+              </button>
+              <button class="btn btn-falcon-default btn-delete-admin" data-id="${a.id}" data-hari="${a.hari}" title="Hapus Jadwal">
+                <i class="fas fa-trash-alt text-danger"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    bindAdminActions();
+  };
+
+  const bindAdminActions = () => {
+    document.querySelectorAll('.btn-edit-admin').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = btn.getAttribute('data-idx');
+        const a = adminData[idx];
+        if (!a) return;
+
+        document.getElementById('modal-admin-title').innerHTML = '<i class="fas fa-edit me-2 text-primary"></i>Edit Jadwal Kantor';
+        document.getElementById('form-admin-id').value = a.id;
+        document.getElementById('form-admin-hari').value = a.hari;
+        document.getElementById('form-admin-masuk').value = a.jam_masuk || '07:30';
+        document.getElementById('form-admin-pulang').value = a.jam_pulang || '16:00';
+        document.getElementById('form-admin-toleransi').value = a.toleransi_menit || 15;
+        document.getElementById('form-admin-keterangan').value = a.keterangan || '';
+
+        const modalEl = document.getElementById('modal-admin-form');
+        if (modalEl && window.bootstrap) {
+          bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+      });
+    });
+
+    document.querySelectorAll('.btn-delete-admin').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const hari = btn.getAttribute('data-hari');
+        if (confirm(`Apakah Anda yakin ingin menghapus jadwal untuk hari "${hari}"?`)) {
+          try {
+            await httpPost(`${config.api_url}/konfigurasi/administrasi/delete/${id}`, {});
+            loadAdmin();
+          } catch (err) {
+            alert('Gagal menghapus jadwal: ' + err.message);
+          }
+        }
+      });
+    });
+  };
+
+  const bindEvents = () => {
+    // Search shift
+    let searchTimer = null;
+    const searchShiftInput = document.getElementById('search-shift');
+    if (searchShiftInput) {
+      searchShiftInput.addEventListener('input', (e) => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+          shiftState.search = e.target.value.trim();
+          shiftState.page = 1;
+          loadShifts();
+        }, 300);
+      });
+    }
+
+    // Filter shift kelompok
+    const filterKelompok = document.getElementById('filter-shift-kelompok');
+    if (filterKelompok) {
+      filterKelompok.addEventListener('change', (e) => {
+        shiftState.kdKelompok = e.target.value;
+        shiftState.page = 1;
+        loadShifts();
+      });
+    }
+
+    // Refresh
+    const refreshBtn = document.getElementById('btn-refresh-standar');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => {
+        loadShifts();
+        loadAdmin();
+      });
+    }
+
+    // Add shift modal
+    const addShiftBtn = document.getElementById('btn-add-shift');
+    if (addShiftBtn) {
+      addShiftBtn.addEventListener('click', () => {
+        document.getElementById('modal-shift-title').innerHTML = '<i class="fas fa-plus me-2 text-primary"></i>Tambah Shift Pelayanan';
+        document.getElementById('form-shift-id').value = '';
+        document.getElementById('form-shift-kelompok').value = '';
+        document.getElementById('form-shift-nama').value = '';
+        document.getElementById('form-shift-mulai').value = '07:00';
+        document.getElementById('form-shift-selesai').value = '14:00';
+        document.getElementById('form-shift-durasi').value = '7.0';
+        document.getElementById('form-shift-status').value = '1';
+
+        const modalEl = document.getElementById('modal-shift-form');
+        if (modalEl && window.bootstrap) {
+          bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+      });
+    }
+
+    // Submit shift
+    const formShift = document.getElementById('form-shift');
+    if (formShift) {
+      formShift.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('form-shift-id').value;
+        const kd_kelompok = document.getElementById('form-shift-kelompok').value;
+        const nama_standarisasi = document.getElementById('form-shift-nama').value;
+        const jam_mulai = document.getElementById('form-shift-mulai').value;
+        const jam_selesai = document.getElementById('form-shift-selesai').value;
+        const durasi_jam = document.getElementById('form-shift-durasi').value;
+        const is_active = document.getElementById('form-shift-status').value;
+
+        try {
+          await httpPost(`${config.api_url}/konfigurasi/standarisasi/save`, {
+            id, kd_kelompok, nama_standarisasi, jam_mulai, jam_selesai, durasi_jam, is_active
+          });
+          const modalEl = document.getElementById('modal-shift-form');
+          if (modalEl && window.bootstrap) {
+            bootstrap.Modal.getInstance(modalEl).hide();
+          }
+          loadShifts();
+        } catch (err) {
+          alert('Gagal menyimpan shift: ' + err.message);
+        }
+      });
+    }
+
+    // Add admin modal
+    const addAdminBtn = document.getElementById('btn-add-admin-schedule');
+    if (addAdminBtn) {
+      addAdminBtn.addEventListener('click', () => {
+        document.getElementById('modal-admin-title').innerHTML = '<i class="fas fa-plus me-2 text-primary"></i>Tambah Jadwal Kantor';
+        document.getElementById('form-admin-id').value = '';
+        document.getElementById('form-admin-hari').value = 'Senin';
+        document.getElementById('form-admin-masuk').value = '07:30';
+        document.getElementById('form-admin-pulang').value = '16:00';
+        document.getElementById('form-admin-toleransi').value = '15';
+        document.getElementById('form-admin-keterangan').value = '';
+
+        const modalEl = document.getElementById('modal-admin-form');
+        if (modalEl && window.bootstrap) {
+          bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+      });
+    }
+
+    // Submit admin
+    const formAdmin = document.getElementById('form-admin');
+    if (formAdmin) {
+      formAdmin.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('form-admin-id').value;
+        const hari = document.getElementById('form-admin-hari').value;
+        const jam_masuk = document.getElementById('form-admin-masuk').value;
+        const jam_pulang = document.getElementById('form-admin-pulang').value;
+        const toleransi_menit = document.getElementById('form-admin-toleransi').value;
+        const keterangan = document.getElementById('form-admin-keterangan').value;
+
+        try {
+          await httpPost(`${config.api_url}/konfigurasi/administrasi/save`, {
+            id, hari, jam_masuk, jam_pulang, toleransi_menit, keterangan
+          });
+          const modalEl = document.getElementById('modal-admin-form');
+          if (modalEl && window.bootstrap) {
+            bootstrap.Modal.getInstance(modalEl).hide();
+          }
+          loadAdmin();
+        } catch (err) {
+          alert('Gagal menyimpan jadwal kantor: ' + err.message);
+        }
+      });
+    }
+  };
+
+  const initModule = async () => {
+    bindEvents();
+    await loadKelompok();
+    loadShifts();
+    loadAdmin();
+  };
+
+  initModule();
+</script>

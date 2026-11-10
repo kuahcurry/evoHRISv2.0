@@ -1,0 +1,1418 @@
+<style>
+  :root {
+    --dash-primary: #2c7be5;
+    --dash-success: #00d27a;
+    --dash-warning: #f58029;
+    --dash-danger: #e63757;
+    --dash-info: #27bcfd;
+    --dash-purple: #7c3aed;
+  }
+
+  .dash-container {
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-top: 0.5rem;
+    width: 100%;
+  }
+
+  /* Executive Hero Header */
+  .dash-hero-card {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    border-radius: 0.85rem;
+    color: #ffffff;
+    padding: 1.5rem;
+    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.25);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .dash-hero-card::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(44, 123, 229, 0.25) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  /* Live pulse indicator */
+  .live-pulse-dot {
+    width: 9px;
+    height: 9px;
+    background-color: #00d27a;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 0 0 rgba(0, 210, 122, 0.7);
+    animation: pulse-ring 1.8s infinite;
+  }
+  @keyframes pulse-ring {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 210, 122, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(0, 210, 122, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 210, 122, 0); }
+  }
+
+  /* Stat Cards */
+  .dash-stat-card {
+    border-radius: 0.75rem;
+    border: 1px solid rgba(226, 232, 240, 0.85);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    background: #ffffff;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+  .dash-stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  }
+  .dash-stat-card:focus-within {
+    outline: 2px solid #2c7be5;
+    outline-offset: 2px;
+  }
+
+  /* Top accent indicator */
+  .dash-stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+  }
+  .dash-stat-primary::before { background: linear-gradient(90deg, #2c7be5, #6fa5f0); }
+  .dash-stat-warning::before { background: linear-gradient(90deg, #f58029, #f9b17a); }
+  .dash-stat-danger::before  { background: linear-gradient(90deg, #e63757, #f27289); }
+  .dash-stat-info::before    { background: linear-gradient(90deg, #27bcfd, #72d6fe); }
+
+  .stat-icon-bubble {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    flex-shrink: 0;
+  }
+  .stat-number {
+    font-size: 2.1rem;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  /* Quick action button */
+  .quick-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.85rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.65rem;
+    color: #334155;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+  }
+  .quick-action-btn:hover, .quick-action-btn:focus-visible {
+    background: #ffffff;
+    border-color: #2c7be5;
+    box-shadow: 0 4px 12px rgba(44, 123, 229, 0.12);
+    color: #2c7be5;
+    outline: none;
+  }
+  .quick-action-btn .qa-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  /* Analytical Chart Card */
+  .dash-chart-card {
+    border-radius: 0.75rem;
+    border: 1px solid rgba(226, 232, 240, 0.85);
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+  .dash-chart-container {
+    width: 100%;
+    position: relative;
+  }
+
+  /* Gender Progress */
+  .gender-bar {
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #e2e8f0;
+  }
+  .gender-pria {
+    background: #2c7be5;
+    transition: width 0.5s ease;
+  }
+  .gender-wanita {
+    background: #e63757;
+    transition: width 0.5s ease;
+  }
+
+  /* High contrast badge overrides */
+  .badge-contrast-warning {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+  }
+  .badge-contrast-danger {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+  }
+  .badge-contrast-info {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+  }
+  .badge-contrast-success {
+    background-color: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+  }
+  .badge-contrast-primary {
+    background-color: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+  }
+</style>
+
+<script type="module">
+  import { httpGet } from './assets/js/core/http.js';
+
+  let clockInterval = null;
+  const chartInstances = {};
+  const apiUrl = (typeof config !== 'undefined' && config.api_url) 
+    ? config.api_url 
+    : ((typeof window !== 'undefined' && window.location.pathname.startsWith('/evoHRIS_v2.1')) ? `${window.location.origin}/evoHRIS_v2.1/api` : `${window.location.origin}/api`);
+
+  // --- Real-time Indonesian Clock & Shift Logic ---
+  function updateLiveClockAndShift() {
+    const now = new Date();
+    
+    // Live Clock Text (WIB: UTC+7)
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const timeStr = `${hours}.${minutes}.${seconds} WIB`;
+    const elClock = document.getElementById('dash-live-clock');
+    if (elClock) elClock.innerText = timeStr;
+
+    // Date Text in Indonesian
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    const dateStr = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+    const elDate = document.getElementById('dash-live-date');
+    if (elDate) elDate.innerText = dateStr;
+
+    // Hospital Shift Logic:
+    // Shift Pagi: 07:00 - 14:00
+    // Shift Siang: 14:00 - 21:00
+    // Shift Malam: 21:00 - 07:00
+    const h = now.getHours();
+    let shiftName = '';
+    let shiftHours = '';
+    let shiftBadgeClass = 'bg-primary';
+
+    if (h >= 7 && h < 14) {
+      shiftName = 'Shift Pagi';
+      shiftHours = '07:00 - 14:00';
+      shiftBadgeClass = 'bg-primary';
+    } else if (h >= 14 && h < 21) {
+      shiftName = 'Shift Siang';
+      shiftHours = '14:00 - 21:00';
+      shiftBadgeClass = 'bg-warning text-dark';
+    } else {
+      shiftName = 'Shift Malam';
+      shiftHours = '21:00 - 07:00';
+      shiftBadgeClass = 'bg-info text-white';
+    }
+
+    const elShiftName = document.getElementById('dash-shift-name');
+    const elShiftHours = document.getElementById('dash-shift-hours');
+    const elShiftBadge = document.getElementById('dash-shift-badge');
+    if (elShiftName) elShiftName.innerText = shiftName;
+    if (elShiftHours) elShiftHours.innerText = shiftHours;
+    if (elShiftBadge) {
+      elShiftBadge.className = `badge ${shiftBadgeClass} rounded-pill px-3 py-1 fw-bold me-2`;
+    }
+  }
+
+  // Helper for Title Case with medical acronyms preserved
+  function formatUnitName(str) {
+    if (!str) return '';
+    const acronyms = {
+      'igd': 'IGD',
+      'icu': 'ICU',
+      'picu': 'PICU',
+      'nicu': 'NICU',
+      'hcu': 'HCU',
+      'sdm': 'SDM',
+      'ok': 'Kamar Operasi (OK)',
+      'vk': 'VK (Kamar Bersalin)',
+      'ponek': 'PONEK',
+      'rs': 'RS',
+      'cs': 'CS',
+      'iprs': 'IPRS'
+    };
+    return str.split(/[\s_]+/).map(word => {
+      const lower = word.toLowerCase();
+      if (acronyms[lower]) return acronyms[lower];
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    }).join(' ');
+  }
+
+  // --- Chart Lifecycle Helper ---
+  function initChart(domId) {
+    const el = document.getElementById(domId);
+    if (!el || typeof echarts === 'undefined') return null;
+    if (chartInstances[domId]) {
+      try { chartInstances[domId].dispose(); } catch (e) {}
+    }
+    const chart = echarts.init(el);
+    chartInstances[domId] = chart;
+    window.addEventListener('resize', () => {
+      try { chart.resize(); } catch (e) {}
+    });
+    return chart;
+  }
+
+  // --- Fetch & Render Main Dashboard Data ---
+  async function loadDashboard() {
+    try {
+      const res = await httpGet(`${apiUrl}/dashboard/all`);
+      if (res && res.code === 200 && res.data) {
+        const d = res.data;
+        if (d.summary) renderStatistik(d.summary);
+        if (d.bagian) renderChartBagian(d.bagian);
+        if (d.status_pegawai) renderChartStatus(d.status_pegawai);
+        if (d.pertumbuhan) renderChartPertumbuhan(d.pertumbuhan);
+        if (d.pendidikan) renderChartPendidikan(d.pendidikan);
+        if (d.kehadiran) renderKehadiran(d.kehadiran);
+
+        setTimeout(() => {
+          Object.values(chartInstances).forEach(c => {
+            try { c && c.resize && c.resize(); } catch (e) {}
+          });
+        }, 150);
+      }
+    } catch (err) {
+      console.error('Error loading dashboard data:', err);
+    }
+  }
+
+  function renderStatistik(data) {
+    const total = parseInt(data.total_pegawai || 0, 10);
+    const pria = parseInt(data.pria || 0, 10);
+    const wanita = parseInt(data.wanita || 0, 10);
+    const ultahHari = parseInt(data.ultah_hari_ini || 0, 10);
+    const ultahBulan = parseInt(data.ultah_bulan_ini || 0, 10);
+    const strExp = parseInt(data.str_expiring || 0, 10);
+    const sipExp = parseInt(data.sip_expiring || 0, 10);
+    const pensiun = parseInt(data.akan_pensiun || 0, 10);
+
+    // Update numbers
+    const elTotal = document.getElementById('dash-total-pegawai');
+    if (elTotal) elTotal.innerText = total.toLocaleString();
+
+    const elPria = document.getElementById('dash-badge-pria');
+    if (elPria) elPria.innerText = `${pria.toLocaleString()} (${total ? Math.round((pria/total)*100) : 0}%)`;
+
+    const elWanita = document.getElementById('dash-badge-wanita');
+    if (elWanita) elWanita.innerText = `${wanita.toLocaleString()} (${total ? Math.round((wanita/total)*100) : 0}%)`;
+    
+    // Gender bar ratio
+    const priaPct = total > 0 ? (pria / total) * 100 : 50;
+    const wanitaPct = total > 0 ? (wanita / total) * 100 : 50;
+    const elBarPria = document.getElementById('dash-bar-pria');
+    const elBarWanita = document.getElementById('dash-bar-wanita');
+    if (elBarPria) elBarPria.style.width = `${priaPct}%`;
+    if (elBarWanita) elBarWanita.style.width = `${wanitaPct}%`;
+
+    // Birthdays
+    const elUltahHari = document.getElementById('dash-ultah-hari');
+    if (elUltahHari) elUltahHari.innerText = ultahHari.toLocaleString();
+    const elUltahBulan = document.getElementById('dash-ultah-bulan');
+    if (elUltahBulan) elUltahBulan.innerText = ultahBulan.toLocaleString();
+
+    // Expiring Docs
+    const totalExpiring = strExp + sipExp;
+    const elAlertExp = document.getElementById('dash-alert-expiring');
+    if (elAlertExp) elAlertExp.innerText = totalExpiring.toLocaleString();
+    const elSubExp = document.getElementById('dash-sub-expiring');
+    if (elSubExp) elSubExp.innerText = `STR: ${strExp} | SIP: ${sipExp}`;
+
+    // Critical Banner trigger
+    const banner = document.getElementById('dash-alert-banner');
+    const bannerMsg = document.getElementById('dash-alert-banner-msg');
+    if (totalExpiring > 0 && banner) {
+      banner.classList.remove('d-none');
+      if (bannerMsg) {
+        bannerMsg.innerText = `Perhatian: Terdapat ${strExp} STR dan ${sipExp} SIP tenaga medis yang akan berakhir masa berlakunya dalam ≤ 180 hari.`;
+      }
+    } else if (banner) {
+      banner.classList.add('d-none');
+    }
+
+    // Retirement
+    const elPensiun = document.getElementById('dash-pensiun');
+    if (elPensiun) elPensiun.innerText = pensiun.toLocaleString();
+  }
+
+  function renderChartBagian(dataUnit) {
+    const chart = initChart('chart-bagian');
+    if (!chart || !Array.isArray(dataUnit)) return;
+
+    // Sort descending and take top 10
+    const topData = dataUnit.slice(0, 10).reverse();
+    const names = topData.map(d => formatUnitName(d.unit_nama));
+    const values = topData.map(d => parseInt(d.total, 10));
+
+    const option = {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' },
+        formatter: '<div class="p-1"><strong>{b}</strong><br/>Jumlah: <strong>{c}</strong> Pegawai</div>'
+      },
+      grid: {
+        left: '2%',
+        right: '12%',
+        bottom: '3%',
+        top: '3%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'value',
+        minInterval: 1,
+        splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } },
+        axisLabel: { color: '#64748b', formatter: (val) => Math.floor(val) }
+      },
+      yAxis: {
+        type: 'category',
+        data: names,
+        axisLine: { lineStyle: { color: '#cbd5e1' } },
+        axisLabel: {
+          color: '#334155',
+          fontSize: 11,
+          fontWeight: 500,
+          formatter: (value) => value.length > 22 ? value.substring(0, 22) + '...' : value
+        }
+      },
+      series: [
+        {
+          name: 'Jumlah Pegawai',
+          type: 'bar',
+          data: values,
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [
+              { offset: 0, color: '#2c7be5' },
+              { offset: 1, color: '#6fa5f0' }
+            ]),
+            borderRadius: [0, 5, 5, 0]
+          },
+          label: {
+            show: true,
+            position: 'right',
+            color: '#1e293b',
+            fontSize: 11,
+            fontWeight: 'bold'
+          }
+        }
+      ]
+    };
+    chart.setOption(option);
+  }
+
+  function renderChartStatus(dataStatus) {
+    const chart = initChart('chart-status-pegawai');
+    if (!chart || !Array.isArray(dataStatus)) return;
+
+    let totalStaff = 0;
+    const valueMap = {};
+    const pieData = dataStatus.map(d => {
+      const val = parseInt(d.total, 10) || 0;
+      totalStaff += val;
+      let label = d.status_nama;
+      if (!label || label.trim() === '' || label.trim() === '-') {
+        label = 'Umum / Lainnya';
+      }
+      valueMap[label] = val;
+      return {
+        name: label,
+        value: val
+      };
+    });
+
+    const colors = ['#2c7be5', '#00d27a', '#f58029', '#e63757', '#7c3aed', '#27bcfd', '#64748b'];
+
+    const option = {
+      tooltip: {
+        trigger: 'item',
+        formatter: '<div class="p-1"><strong>{b}</strong><br/>Jumlah: <b>{c}</b> ({d}%)</div>'
+      },
+      legend: {
+        bottom: '5px',
+        left: 'center',
+        orient: 'vertical',
+        itemWidth: 10,
+        itemHeight: 10,
+        itemGap: 6,
+        textStyle: { fontSize: 11, color: '#475569' },
+        formatter: (name) => {
+          const val = valueMap[name] || 0;
+          const pct = totalStaff > 0 ? Math.round((val / totalStaff) * 100) : 0;
+          return `${name}: ${val} (${pct}%)`;
+        }
+      },
+      title: {
+        text: totalStaff.toString(),
+        subtext: 'Pegawai',
+        left: 'center',
+        top: '29%',
+        textStyle: {
+          fontSize: 22,
+          fontWeight: 'bold',
+          color: '#1e293b'
+        },
+        subtextStyle: {
+          fontSize: 11,
+          color: '#64748b',
+          fontWeight: 600
+        }
+      },
+      series: [
+        {
+          name: 'Status Pegawai',
+          type: 'pie',
+          radius: ['44%', '64%'],
+          center: ['50%', '36%'],
+          avoidLabelOverlap: false,
+          itemStyle: {
+            borderRadius: 6,
+            borderColor: '#ffffff',
+            borderWidth: 2
+          },
+          label: { show: false },
+          emphasis: {
+            itemStyle: {
+              shadowBlur: 10,
+              shadowOffsetX: 0,
+              shadowColor: 'rgba(0, 0, 0, 0.2)'
+            }
+          },
+          labelLine: { show: false },
+          data: pieData,
+          color: colors
+        }
+      ]
+    };
+    chart.setOption(option);
+  }
+
+  function renderChartPertumbuhan(dataPertumbuhan) {
+    const chart = initChart('chart-pertumbuhan');
+    if (!chart || !dataPertumbuhan) return;
+
+    const tahunan = dataPertumbuhan.tahunan || [];
+    
+    // Sort chronologically and build continuous years if range is small
+    const rawMap = {};
+    let minYear = 9999;
+    let maxYear = 0;
+    tahunan.forEach(t => {
+      const yr = parseInt(t.thn, 10);
+      if (yr > 1990 && yr < 2100) {
+        rawMap[yr] = parseInt(t.total, 10);
+        if (yr < minYear) minYear = yr;
+        if (yr > maxYear) maxYear = yr;
+      }
+    });
+
+    const years = [];
+    const counts = [];
+    if (minYear <= maxYear && maxYear - minYear <= 10) {
+      for (let y = minYear; y <= maxYear; y++) {
+        years.push(String(y));
+        counts.push(rawMap[y] || 0);
+      }
+    } else {
+      tahunan.forEach(t => {
+        years.push(String(t.thn));
+        counts.push(parseInt(t.total, 10));
+      });
+    }
+
+    const option = {
+      tooltip: {
+        trigger: 'axis',
+        formatter: '<div class="p-1">Tahun <strong>{b}</strong><br/><span style="color:#00d27a">●</span> Pegawai Masuk: <strong>{c}</strong> Orang</div>'
+      },
+      grid: {
+        left: '2%',
+        right: '4%',
+        bottom: '3%',
+        top: '12%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        data: years,
+        axisLine: { lineStyle: { color: '#cbd5e1' } },
+        axisLabel: { color: '#475569', fontWeight: 600 }
+      },
+      yAxis: {
+        type: 'value',
+        minInterval: 1,
+        splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } },
+        axisLabel: { color: '#64748b', formatter: (val) => Math.floor(val) }
+      },
+      series: [
+        {
+          name: 'Penerimaan Pegawai',
+          type: 'line',
+          smooth: true,
+          data: counts,
+          symbolSize: 8,
+          itemStyle: { color: '#00d27a' },
+          areaStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: 'rgba(0, 210, 122, 0.4)' },
+              { offset: 1, color: 'rgba(0, 210, 122, 0.02)' }
+            ])
+          },
+          lineStyle: { width: 3 },
+          label: {
+            show: true,
+            position: 'top',
+            color: '#166534',
+            fontWeight: 'bold',
+            fontSize: 11
+          }
+        }
+      ]
+    };
+    chart.setOption(option);
+  }
+
+  function renderChartPendidikan(dataPendidikan) {
+    const chart = initChart('chart-pendidikan');
+    if (!chart || !Array.isArray(dataPendidikan)) return;
+
+    // Horizontal bar chart for clean, uncluttered educational levels
+    const sorted = [...dataPendidikan].sort((a, b) => parseInt(a.total, 10) - parseInt(b.total, 10));
+    const names = sorted.map(d => d.jenjang || 'Lainnya');
+    const values = sorted.map(d => parseInt(d.total, 10));
+
+    const option = {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' },
+        formatter: '<div class="p-1">Jenjang: <strong>{b}</strong><br/>Jumlah: <strong>{c}</strong> Pegawai</div>'
+      },
+      grid: {
+        left: '2%',
+        right: '12%',
+        bottom: '3%',
+        top: '4%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'value',
+        minInterval: 1,
+        splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } },
+        axisLabel: { color: '#64748b', formatter: (val) => Math.floor(val) }
+      },
+      yAxis: {
+        type: 'category',
+        data: names,
+        axisLine: { lineStyle: { color: '#cbd5e1' } },
+        axisLabel: {
+          color: '#334155',
+          fontSize: 11,
+          fontWeight: 600
+        }
+      },
+      series: [
+        {
+          name: 'Jumlah Pegawai',
+          type: 'bar',
+          data: values,
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [
+              { offset: 0, color: '#7c3aed' },
+              { offset: 1, color: '#a78bfa' }
+            ]),
+            borderRadius: [0, 4, 4, 0]
+          },
+          label: {
+            show: true,
+            position: 'right',
+            fontSize: 11,
+            fontWeight: 'bold',
+            color: '#4c1d95'
+          }
+        }
+      ]
+    };
+    chart.setOption(option);
+  }
+
+  function renderKehadiran(kehadiran) {
+    const elPeriode = document.getElementById('dash-kehadiran-periode');
+    const elScan = document.getElementById('dash-kehadiran-scan');
+    if (!kehadiran || !kehadiran.tersedia) {
+      if (elPeriode) elPeriode.innerText = 'Log Belum Tersedia';
+      if (elScan) elScan.innerText = '-';
+      return;
+    }
+
+    if (elPeriode) elPeriode.innerText = `Periode: ${kehadiran.periode}`;
+    if (elScan) elScan.innerText = `${kehadiran.total_scan.toLocaleString()} Scan Presensi`;
+
+    const chart = initChart('chart-kehadiran');
+    if (!chart || !kehadiran.harian) return;
+
+    const days = kehadiran.harian.map(d => `Tgl ${d.hari}`);
+    const scans = kehadiran.harian.map(d => parseInt(d.total, 10));
+
+    const option = {
+      tooltip: {
+        trigger: 'axis',
+        formatter: '<div class="p-1"><strong>{b}</strong><br/>Total Scan: <strong>{c}</strong> Presensi</div>'
+      },
+      grid: { left: '2%', right: '3%', bottom: '5%', top: '10%', containLabel: true },
+      xAxis: {
+        type: 'category',
+        data: days,
+        axisLine: { lineStyle: { color: '#cbd5e1' } },
+        axisLabel: { fontSize: 10, rotate: 30, color: '#475569' }
+      },
+      yAxis: {
+        type: 'value',
+        minInterval: 1,
+        splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } },
+        axisLabel: { color: '#64748b', formatter: (val) => Math.floor(val) }
+      },
+      series: [
+        {
+          name: 'Scan Fingerprint / Presensi',
+          type: 'bar',
+          data: scans,
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#0284c7' },
+              { offset: 1, color: '#38bdf8' }
+            ]),
+            borderRadius: [4, 4, 0, 0]
+          }
+        }
+      ]
+    };
+    chart.setOption(option);
+  }
+
+  // --- Modal Handlers ---
+
+  async function openModalUltah() {
+    const modalEl = document.getElementById('modal-dash-ultah');
+    if (!modalEl) return;
+    const tbody = document.getElementById('tbody-dash-ultah');
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Mengambil daftar ulang tahun...</td></tr>';
+    
+    const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    bsModal.show();
+
+    try {
+      const nowMonth = new Date().getMonth() + 1;
+      const res = await httpGet(`${apiUrl}/dashboard/detail/ultah?bulan=${nowMonth}`);
+      if (res && res.code === 200 && Array.isArray(res.data) && res.data.length > 0) {
+        let html = '';
+        res.data.forEach((p, idx) => {
+          html += `
+            <tr>
+              <td class="text-center text-muted fw-bold">${idx + 1}</td>
+              <td class="fw-bold text-dark">${p.NAMA}</td>
+              <td><code>${p.NIP || '-'}</code></td>
+              <td>${p.BAGIAN || '-'}</td>
+              <td><span class="badge badge-contrast-warning">${p.TGL_LAHIR_FORMAT}</span> <span class="ms-1 text-muted">(${p.UMUR} thn)</span></td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = html;
+      } else {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">Tidak ada pegawai yang berulang tahun bulan ini.</td></tr>';
+      }
+    } catch (err) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-danger">Gagal memuat data ulang tahun.</td></tr>';
+    }
+  }
+
+  async function openModalStrSip() {
+    const modalEl = document.getElementById('modal-dash-str-sip');
+    if (!modalEl) return;
+    const tbodyStr = document.getElementById('tbody-dash-str');
+    const tbodySip = document.getElementById('tbody-dash-sip');
+    tbodyStr.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-muted"><span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Memuat data STR...</td></tr>';
+    tbodySip.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-muted"><span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Memuat data SIP...</td></tr>';
+
+    const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    bsModal.show();
+
+    try {
+      const res = await httpGet(`${apiUrl}/dashboard/detail/str_sip`);
+      if (res && res.code === 200 && res.data) {
+        // STR
+        const strList = res.data.str || [];
+        if (strList.length > 0) {
+          let html = '';
+          strList.forEach((s, idx) => {
+            const sisa = parseInt(s.SISA_HARI, 10);
+            let badgeClass = sisa < 0 ? 'bg-danger text-white' : (sisa <= 60 ? 'bg-warning text-dark' : 'bg-info text-white');
+            let labelSisa = sisa < 0 ? `Lewat ${Math.abs(sisa)} hari` : `${sisa} hari lagi`;
+            html += `
+              <tr>
+                <td class="text-center text-muted fw-bold">${idx + 1}</td>
+                <td class="fw-bold text-dark">${s.NAMA}</td>
+                <td><code>${s.NO_STR || '-'}</code></td>
+                <td>${s.TGL_EXPIRED_FORMAT}</td>
+                <td><span class="badge ${badgeClass} fw-semibold">${labelSisa}</span></td>
+              </tr>
+            `;
+          });
+          tbodyStr.innerHTML = html;
+        } else {
+          tbodyStr.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-muted">Tidak ada STR yang kedaluwarsa dalam 6 bulan.</td></tr>';
+        }
+
+        // SIP
+        const sipList = res.data.sip || [];
+        if (sipList.length > 0) {
+          let html = '';
+          sipList.forEach((s, idx) => {
+            const sisa = parseInt(s.SISA_HARI, 10);
+            let badgeClass = sisa < 0 ? 'bg-danger text-white' : (sisa <= 60 ? 'bg-warning text-dark' : 'bg-info text-white');
+            let labelSisa = sisa < 0 ? `Lewat ${Math.abs(sisa)} hari` : `${sisa} hari lagi`;
+            html += `
+              <tr>
+                <td class="text-center text-muted fw-bold">${idx + 1}</td>
+                <td class="fw-bold text-dark">${s.NAMA}</td>
+                <td><code>${s.NO_SIP || '-'}</code></td>
+                <td>${s.TGL_EXPIRED_FORMAT}</td>
+                <td><span class="badge ${badgeClass} fw-semibold">${labelSisa}</span></td>
+              </tr>
+            `;
+          });
+          tbodySip.innerHTML = html;
+        } else {
+          tbodySip.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-muted">Tidak ada SIP yang kedaluwarsa dalam 6 bulan.</td></tr>';
+        }
+      }
+    } catch (err) {
+      tbodyStr.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-danger">Gagal memuat STR.</td></tr>';
+      tbodySip.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-danger">Gagal memuat SIP.</td></tr>';
+    }
+  }
+
+  async function openModalPensiun() {
+    const modalEl = document.getElementById('modal-dash-pensiun');
+    if (!modalEl) return;
+    const tbody = document.getElementById('tbody-dash-pensiun');
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Memuat daftar suksesi pensiun...</td></tr>';
+    
+    const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    bsModal.show();
+
+    try {
+      const res = await httpGet(`${apiUrl}/dashboard/detail/pensiun`);
+      if (res && res.code === 200 && Array.isArray(res.data) && res.data.length > 0) {
+        let html = '';
+        res.data.forEach((p, idx) => {
+          html += `
+            <tr>
+              <td class="text-center text-muted fw-bold">${idx + 1}</td>
+              <td class="fw-bold text-dark">${p.NAMA}</td>
+              <td><code>${p.NIP || '-'}</code></td>
+              <td>${p.BAGIAN || '-'}</td>
+              <td>${p.STATUS_PEGAWAI || '-'}</td>
+              <td><span class="badge badge-contrast-info">${p.UMUR} Tahun</span> <small class="text-muted">(${p.TGL_LAHIR_FORMAT})</small></td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = html;
+      } else {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">Tidak ada pegawai yang mendekati batas usia pensiun.</td></tr>';
+      }
+    } catch (err) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger">Gagal memuat data pensiun.</td></tr>';
+    }
+  }
+
+  // Quick Navigation Helper
+  async function jumpToModule(modulePath) {
+    if (typeof loadModule === 'function') {
+      await loadModule(`modules${modulePath}`, '#container-isi');
+      const sideLink = document.querySelector(`[data-target="${modulePath}"]`);
+      if (sideLink) {
+        document.querySelectorAll('#navbarVerticalNav .nav-link').forEach(el => el.classList.remove('active'));
+        sideLink.classList.add('active');
+      }
+    }
+  }
+
+  // Search Jump to Pegawai
+  function handleQuickSearch() {
+    const searchInput = document.getElementById('dash-quick-search-input');
+    if (!searchInput) return;
+    const query = searchInput.value.trim();
+    jumpToModule('/staff_rs/pegawai').then(() => {
+      if (query) {
+        setTimeout(() => {
+          const pegSearch = document.getElementById('search_pegawai');
+          if (pegSearch) {
+            pegSearch.value = query;
+            pegSearch.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+        }, 400);
+      }
+    });
+  }
+
+  // Bind Buttons & Events
+  function bindEvents() {
+    const btnRefresh = document.getElementById('btn-refresh-dash');
+    if (btnRefresh) btnRefresh.onclick = () => loadDashboard();
+
+    const btnUltah = document.getElementById('btn-view-ultah');
+    if (btnUltah) btnUltah.onclick = () => openModalUltah();
+
+    const btnStrSip = document.getElementById('btn-view-str-sip');
+    if (btnStrSip) btnStrSip.onclick = () => openModalStrSip();
+
+    const btnStrSipBanner = document.getElementById('btn-banner-str-sip');
+    if (btnStrSipBanner) btnStrSipBanner.onclick = () => openModalStrSip();
+
+    const btnPensiun = document.getElementById('btn-view-pensiun');
+    if (btnPensiun) btnPensiun.onclick = () => openModalPensiun();
+
+    // Quick action buttons
+    document.querySelectorAll('[data-jump-module]').forEach(btn => {
+      btn.onclick = (e) => {
+        e.preventDefault();
+        const target = btn.getAttribute('data-jump-module');
+        if (target) jumpToModule(target);
+      };
+    });
+
+    // Quick search enter key
+    const searchInput = document.getElementById('dash-quick-search-input');
+    if (searchInput) {
+      searchInput.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleQuickSearch();
+        }
+      };
+    }
+    const btnQuickSearch = document.getElementById('dash-quick-search-btn');
+    if (btnQuickSearch) {
+      btnQuickSearch.onclick = () => handleQuickSearch();
+    }
+  }
+
+  // Clean and prepare container
+  const infopx = document.getElementById('infopx');
+  if (infopx) infopx.classList.add('d-none');
+  const contentCol = document.getElementById('content');
+  if (contentCol) {
+    contentCol.classList.remove('col-lg-8', 'col-xl-10');
+    contentCol.classList.add('col-12');
+  }
+
+  // Start Live Clock
+  updateLiveClockAndShift();
+  if (clockInterval) clearInterval(clockInterval);
+  clockInterval = setInterval(updateLiveClockAndShift, 1000);
+
+  bindEvents();
+  await loadDashboard();
+
+  document.dashboard = {
+    loadDashboard,
+    openModalUltah,
+    openModalStrSip,
+    openModalPensiun,
+    jumpToModule
+  };
+</script>
+
+<template>
+  <div class="dash-container pb-4" role="main" aria-label="Dashboard Eksekutif SDM Rumah Sakit">
+    
+    <!-- Hero Banner with Live Hospital Shift & Digital Clock -->
+    <div class="dash-hero-card mb-4" role="region" aria-label="Informasi Operasional Rumah Sakit">
+      <div class="row align-items-center">
+        <div class="col-lg-7 mb-3 mb-lg-0">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon-bubble bg-soft-primary bg-opacity-25 text-white" style="background: rgba(255,255,255,0.12);" aria-hidden="true">
+              <i class="fas fa-hospital-alt"></i>
+            </div>
+            <div>
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="live-pulse-dot" aria-hidden="true"></span>
+                <span class="text-white text-opacity-85 small fw-semibold" id="dash-live-date">Memuat tanggal...</span>
+              </div>
+              <h3 class="mb-1 fw-bold text-white">Dashboard Eksekutif SDM & Kepegawaian</h3>
+              <p class="text-white text-opacity-75 small mb-0">Pemantauan tenaga medis, perizinan profesi (STR/SIP), distribusi bagian, dan presensi rumah sakit</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-5 text-lg-end">
+          <div class="d-inline-flex flex-wrap align-items-center justify-content-lg-end gap-2">
+            <!-- Digital Clock & Shift Status Bar -->
+            <div class="d-flex align-items-center bg-black bg-opacity-30 rounded-pill p-1 pe-3 border border-white border-opacity-15 shadow-sm">
+              <span id="dash-shift-badge" class="badge bg-primary text-white rounded-pill px-3 py-1 fw-bold me-2">
+                <i class="fas fa-user-md me-1" aria-hidden="true"></i>
+                <span id="dash-shift-name">Shift Pagi</span> (<span id="dash-shift-hours">07:00 - 14:00</span>)
+              </span>
+              <span class="badge bg-dark bg-opacity-75 text-light border border-secondary p-1 px-2 font-monospace fw-bold" id="dash-live-clock" style="font-size: 0.85rem;" aria-live="off">
+                --:--:-- WIB
+              </span>
+            </div>
+            <!-- Refresh Button -->
+            <button id="btn-refresh-dash" class="btn btn-sm btn-outline-light rounded-pill px-3 shadow-sm" aria-label="Segarkan data statistik dashboard">
+              <i class="fas fa-sync-alt me-1" aria-hidden="true"></i> Segarkan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alert Banner (Appears dynamically if STR/SIP Expiring) -->
+    <div id="dash-alert-banner" class="alert d-flex align-items-center justify-content-between p-3 mb-4 shadow-sm border-0 d-none" role="alert" style="border-radius: 0.75rem; background-color: #fee2e2; border-left: 4px solid #dc2626 !important;">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon-bubble bg-danger text-white shadow-sm" style="width: 40px; height: 40px; font-size: 1.1rem;" aria-hidden="true">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div>
+          <h6 class="mb-0 fw-bold" style="color: #991b1b;">Peringatan Kritis: Izin Tenaga Medis Perlu Perpanjangan</h6>
+          <span class="small" style="color: #7f1d1d;" id="dash-alert-banner-msg">Terdapat dokumen STR/SIP yang akan kedaluwarsa.</span>
+        </div>
+      </div>
+      <button class="btn btn-sm btn-danger px-3 shadow-sm fw-semibold" id="btn-banner-str-sip" aria-label="Periksa daftar STR dan SIP yang akan berakhir">
+        <i class="fas fa-id-card-alt me-1" aria-hidden="true"></i> Periksa Sekarang
+      </button>
+    </div>
+
+    <!-- Quick Actions Bar & Instant Employee Search -->
+    <div class="card p-3 mb-4 border-0 shadow-sm" style="border-radius: 0.75rem; background: #ffffff;" role="region" aria-label="Pintasan Cepat dan Pencarian">
+      <div class="row g-3 align-items-center">
+        <!-- Search Box -->
+        <div class="col-xl-4 col-lg-5">
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0 text-muted" id="search-icon-addon">
+              <i class="fas fa-search" aria-hidden="true"></i>
+            </span>
+            <input type="text" id="dash-quick-search-input" class="form-control bg-light border-start-0 border-end-0" placeholder="Cari nama / NIP pegawai..." aria-label="Cari nama atau NIP pegawai" aria-describedby="search-icon-addon">
+            <button class="btn btn-primary px-3 fw-semibold" type="button" id="dash-quick-search-btn" aria-label="Eksekusi pencarian pegawai">
+              Cari
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Access Module Links -->
+        <div class="col-xl-8 col-lg-7">
+          <div class="row g-2">
+            <div class="col-sm-3 col-6">
+              <button class="quick-action-btn" data-jump-module="/staff_rs/pegawai" aria-label="Buka Direktori Pegawai">
+                <div class="qa-icon bg-soft-primary text-primary">
+                  <i class="fas fa-user-friends" aria-hidden="true"></i>
+                </div>
+                <div class="text-truncate">
+                  <span class="d-block fw-bold small text-truncate">Pegawai</span>
+                  <span class="d-block text-muted" style="font-size: 0.7rem;">Direktori SDM</span>
+                </div>
+              </button>
+            </div>
+            <div class="col-sm-3 col-6">
+              <button class="quick-action-btn" data-jump-module="/absensi/rekap" aria-label="Buka Rekap Kehadiran">
+                <div class="qa-icon bg-soft-info text-info">
+                  <i class="fas fa-calendar-check" aria-hidden="true"></i>
+                </div>
+                <div class="text-truncate">
+                  <span class="d-block fw-bold small text-truncate">Presensi</span>
+                  <span class="d-block text-muted" style="font-size: 0.7rem;">Rekap & Log</span>
+                </div>
+              </button>
+            </div>
+            <div class="col-sm-3 col-6">
+              <button class="quick-action-btn" data-jump-module="/payroll/gaji" aria-label="Buka Penggajian">
+                <div class="qa-icon bg-soft-success text-success">
+                  <i class="fas fa-money-check-alt" aria-hidden="true"></i>
+                </div>
+                <div class="text-truncate">
+                  <span class="d-block fw-bold small text-truncate">Penggajian</span>
+                  <span class="d-block text-muted" style="font-size: 0.7rem;">Slip & Gaji</span>
+                </div>
+              </button>
+            </div>
+            <div class="col-sm-3 col-6">
+              <button class="quick-action-btn" data-jump-module="/kinerja/target_skp" aria-label="Buka Kinerja SKP">
+                <div class="qa-icon text-white" style="background-color: #7c3aed;">
+                  <i class="fas fa-chart-line" aria-hidden="true"></i>
+                </div>
+                <div class="text-truncate">
+                  <span class="d-block fw-bold small text-truncate">SKP Kinerja</span>
+                  <span class="d-block text-muted" style="font-size: 0.7rem;">Evaluasi SDM</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vital Executive KPI Stat Cards (4 Cards) -->
+    <div class="row g-3 mb-4" role="region" aria-label="Statistik Vital SDM">
+      
+      <!-- Card 1: Total Pegawai & Gender Ratio -->
+      <div class="col-sm-6 col-xl-3">
+        <div class="card dash-stat-card dash-stat-primary p-3">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+              <span class="text-uppercase text-muted fw-bold" style="font-size: 0.72rem; letter-spacing: 0.05em;">Total Tenaga Kerja</span>
+              <div class="stat-number mt-1 text-primary" id="dash-total-pegawai" aria-live="polite">0</div>
+            </div>
+            <div class="stat-icon-bubble bg-soft-primary" aria-hidden="true">
+              <i class="fas fa-hospital-user"></i>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="d-flex justify-content-between text-muted small mb-1" style="font-size: 0.78rem;">
+              <span><i class="fas fa-mars text-primary me-1" aria-hidden="true"></i>Pria: <b id="dash-badge-pria" class="text-dark">-</b></span>
+              <span><i class="fas fa-venus text-danger me-1" aria-hidden="true"></i>Wanita: <b id="dash-badge-wanita" class="text-dark">-</b></span>
+            </div>
+            <div class="gender-bar d-flex" title="Rasio Gender" aria-label="Rasio Gender">
+              <div class="gender-pria" id="dash-bar-pria" style="width: 50%;"></div>
+              <div class="gender-wanita" id="dash-bar-wanita" style="width: 50%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Dokumen Kritis STR / SIP -->
+      <div class="col-sm-6 col-xl-3">
+        <div class="card dash-stat-card dash-stat-danger p-3">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+              <span class="text-uppercase text-muted fw-bold" style="font-size: 0.72rem; letter-spacing: 0.05em;">Peringatan STR & SIP</span>
+              <div class="d-flex align-items-baseline gap-2 mt-1">
+                <span class="stat-number text-danger" id="dash-alert-expiring" aria-live="polite">0</span>
+                <span class="badge badge-contrast-danger fw-semibold" style="font-size: 0.7rem;">≤ 6 Bulan</span>
+              </div>
+            </div>
+            <div class="stat-icon-bubble bg-soft-danger" aria-hidden="true">
+              <i class="fas fa-id-card-alt"></i>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+            <span class="text-muted small" style="font-size: 0.78rem;" id="dash-sub-expiring">
+              STR: 0 | SIP: 0
+            </span>
+            <button class="btn btn-xs btn-outline-danger py-1 px-2 fw-semibold" id="btn-view-str-sip" style="font-size: 0.75rem;" aria-haspopup="dialog" aria-label="Buka rincian STR dan SIP yang mendekati kedaluwarsa">
+              Lihat Detail
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Ulang Tahun Pegawai -->
+      <div class="col-sm-6 col-xl-3">
+        <div class="card dash-stat-card dash-stat-warning p-3">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+              <span class="text-uppercase text-muted fw-bold" style="font-size: 0.72rem; letter-spacing: 0.05em;">Ulang Tahun Pegawai</span>
+              <div class="d-flex align-items-baseline gap-2 mt-1">
+                <span class="stat-number text-warning" id="dash-ultah-hari" aria-live="polite">0</span>
+                <span class="text-muted small fw-semibold">Hari Ini</span>
+              </div>
+            </div>
+            <div class="stat-icon-bubble bg-soft-warning" aria-hidden="true">
+              <i class="fas fa-birthday-cake"></i>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+            <span class="text-muted small" style="font-size: 0.78rem;">
+              Bulan ini: <b class="text-dark" id="dash-ultah-bulan">0</b> pegawai
+            </span>
+            <button class="btn btn-xs btn-outline-warning py-1 px-2 fw-semibold text-dark" id="btn-view-ultah" style="font-size: 0.75rem;" aria-haspopup="dialog" aria-label="Buka daftar pegawai ulang tahun bulan ini">
+              Lihat Daftar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Masa Pensiun -->
+      <div class="col-sm-6 col-xl-3">
+        <div class="card dash-stat-card dash-stat-info p-3">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+              <span class="text-uppercase text-muted fw-bold" style="font-size: 0.72rem; letter-spacing: 0.05em;">Masa Pensiun (≥56 Thn)</span>
+              <div class="stat-number mt-1 text-info" id="dash-pensiun" aria-live="polite">0</div>
+            </div>
+            <div class="stat-icon-bubble bg-soft-info" aria-hidden="true">
+              <i class="fas fa-user-clock"></i>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+            <span class="text-muted small" style="font-size: 0.78rem;">
+              Perencanaan Suksesi
+            </span>
+            <button class="btn btn-xs btn-outline-info py-1 px-2 fw-semibold" id="btn-view-pensiun" style="font-size: 0.75rem;" aria-haspopup="dialog" aria-label="Buka daftar pegawai mendekati masa pensiun">
+              Lihat Daftar
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Analytical Charts Row 1: Unit / Bagian & Status Pegawai -->
+    <div class="row g-3 mb-4" role="region" aria-label="Grafik Distribusi Pegawai">
+      <!-- Chart Bagian -->
+      <div class="col-lg-8">
+        <div class="card dash-chart-card p-3 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h6 class="mb-0 fw-bold text-dark">Distribusi Pegawai per Unit / Bagian</h6>
+              <span class="text-muted small">10 Unit & Instalasi Rumah Sakit dengan jumlah staf terbanyak</span>
+            </div>
+            <span class="badge badge-contrast-primary px-2 py-1"><i class="fas fa-clinic-medical me-1" aria-hidden="true"></i>Unit RS</span>
+          </div>
+          <div id="chart-bagian" class="dash-chart-container" style="height: 360px;" role="img" aria-label="Grafik batang horizontal distribusi pegawai per unit atau instalasi rumah sakit"></div>
+        </div>
+      </div>
+
+      <!-- Chart Status Kepegawaian -->
+      <div class="col-lg-4">
+        <div class="card dash-chart-card p-3 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h6 class="mb-0 fw-bold text-dark">Status Hubungan Kerja</h6>
+              <span class="text-muted small">Komposisi status pegawai</span>
+            </div>
+            <span class="badge badge-contrast-success px-2 py-1"><i class="fas fa-id-badge me-1" aria-hidden="true"></i>Status</span>
+          </div>
+          <div id="chart-status-pegawai" class="dash-chart-container" style="height: 360px;" role="img" aria-label="Grafik donat komposisi status kepegawaian"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analytical Charts Row 2: Pertumbuhan & Pendidikan -->
+    <div class="row g-3 mb-4" role="region" aria-label="Grafik Pertumbuhan dan Kualifikasi Akademik">
+      <!-- Chart Tren Pertumbuhan -->
+      <div class="col-lg-7">
+        <div class="card dash-chart-card p-3 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h6 class="mb-0 fw-bold text-dark">Tren Penerimaan & Pertumbuhan SDM</h6>
+              <span class="text-muted small">Historis pegawai bergabung dari tahun ke tahun</span>
+            </div>
+            <span class="badge badge-contrast-success px-2 py-1"><i class="fas fa-chart-line me-1" aria-hidden="true"></i>Perekrutan</span>
+          </div>
+          <div id="chart-pertumbuhan" class="dash-chart-container" style="height: 310px;" role="img" aria-label="Grafik garis tren penerimaan staf SDM rumah sakit dari tahun ke tahun"></div>
+        </div>
+      </div>
+
+      <!-- Chart Pendidikan -->
+      <div class="col-lg-5">
+        <div class="card dash-chart-card p-3 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h6 class="mb-0 fw-bold text-dark">Distribusi Kualifikasi Akademik</h6>
+              <span class="text-muted small">Jenjang pendidikan tenaga medis & penunjang</span>
+            </div>
+            <span class="badge px-2 py-1 text-white" style="background-color: #7c3aed;"><i class="fas fa-graduation-cap me-1" aria-hidden="true"></i>Pendidikan</span>
+          </div>
+          <div id="chart-pendidikan" class="dash-chart-container" style="height: 310px;" role="img" aria-label="Grafik batang jenjang kualifikasi pendidikan pegawai"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analytical Charts Row 3: Aktivitas Presensi Fingerprint / Scan -->
+    <div class="row g-3" role="region" aria-label="Log Presensi dan Aktivitas Kehadiran">
+      <div class="col-12">
+        <div class="card dash-chart-card p-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <h6 class="mb-0 fw-bold text-dark">Aktivitas Presensi Mesin & Fingerprint</h6>
+              <span class="text-muted small" id="dash-kehadiran-periode">Memuat log kehadiran...</span>
+            </div>
+            <span class="badge badge-contrast-info px-2 py-1" id="dash-kehadiran-scan">
+              <i class="fas fa-fingerprint me-1" aria-hidden="true"></i> -
+            </span>
+          </div>
+          <div id="chart-kehadiran" class="dash-chart-container" style="height: 230px;" role="img" aria-label="Grafik aktivitas scan presensi harian"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accessible Modals -->
+
+    <!-- Modal Ulang Tahun -->
+    <div class="modal fade" id="modal-dash-ultah" tabindex="-1" aria-modal="true" role="dialog" aria-labelledby="modal-dash-ultah-title" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header bg-warning text-dark">
+            <h5 class="modal-title fw-bold" id="modal-dash-ultah-title">
+              <i class="fas fa-birthday-cake me-2" aria-hidden="true"></i>Daftar Pegawai Ulang Tahun Bulan Ini
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+          </div>
+          <div class="modal-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm table-striped table-hover mb-0 align-middle">
+                <caption class="visually-hidden">Daftar Pegawai yang Berulang Tahun Bulan Ini</caption>
+                <thead class="table-light">
+                  <tr>
+                    <th scope="col" class="text-center" style="width: 45px;">No</th>
+                    <th scope="col">Nama Pegawai</th>
+                    <th scope="col">NIP</th>
+                    <th scope="col">Bagian / Unit</th>
+                    <th scope="col">Tanggal Lahir</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-dash-ultah"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="modal-footer bg-light py-2">
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal STR & SIP -->
+    <div class="modal fade" id="modal-dash-str-sip" tabindex="-1" aria-modal="true" role="dialog" aria-labelledby="modal-dash-str-sip-title" aria-hidden="true">
+      <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title fw-bold" id="modal-dash-str-sip-title">
+              <i class="fas fa-id-card-alt me-2" aria-hidden="true"></i>Peringatan Masa Berlaku STR & SIP (≤ 6 Bulan)
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
+          </div>
+          <div class="modal-body p-3">
+            <ul class="nav nav-tabs nav-fill mb-3" id="tabStrSip" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active fw-bold" id="tab-str-link" data-bs-toggle="tab" data-bs-target="#tab-str" type="button" role="tab" aria-controls="tab-str" aria-selected="true">
+                  <i class="fas fa-certificate text-danger me-1" aria-hidden="true"></i> Surat Tanda Registrasi (STR)
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold" id="tab-sip-link" data-bs-toggle="tab" data-bs-target="#tab-sip" type="button" role="tab" aria-controls="tab-sip" aria-selected="false">
+                  <i class="fas fa-file-medical text-primary me-1" aria-hidden="true"></i> Surat Izin Praktik (SIP)
+                </button>
+              </li>
+            </ul>
+            <div class="tab-content" id="tabStrSipContent">
+              <div class="tab-pane fade show active" id="tab-str" role="tabpanel" aria-labelledby="tab-str-link">
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover align-middle mb-0">
+                    <caption class="visually-hidden">Daftar STR yang Mendekati Masa Kedaluwarsa</caption>
+                    <thead class="table-light">
+                      <tr>
+                        <th scope="col" class="text-center" style="width: 45px;">No</th>
+                        <th scope="col">Nama Tenaga Medis</th>
+                        <th scope="col">Nomor STR</th>
+                        <th scope="col">Masa Berlaku</th>
+                        <th scope="col">Status Sisa Waktu</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tbody-dash-str"></tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="tab-pane fade" id="tab-sip" role="tabpanel" aria-labelledby="tab-sip-link">
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover align-middle mb-0">
+                    <caption class="visually-hidden">Daftar SIP yang Mendekati Masa Kedaluwarsa</caption>
+                    <thead class="table-light">
+                      <tr>
+                        <th scope="col" class="text-center" style="width: 45px;">No</th>
+                        <th scope="col">Nama Tenaga Medis</th>
+                        <th scope="col">Nomor SIP</th>
+                        <th scope="col">Masa Berlaku</th>
+                        <th scope="col">Status Sisa Waktu</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tbody-dash-sip"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer bg-light py-2">
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Pensiun -->
+    <div class="modal fade" id="modal-dash-pensiun" tabindex="-1" aria-modal="true" role="dialog" aria-labelledby="modal-dash-pensiun-title" aria-hidden="true">
+      <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header bg-info text-white">
+            <h5 class="modal-title fw-bold" id="modal-dash-pensiun-title">
+              <i class="fas fa-user-clock me-2" aria-hidden="true"></i>Daftar Pegawai Mendekati Usia Pensiun (≥56 Tahun)
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
+          </div>
+          <div class="modal-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm table-striped table-hover mb-0 align-middle">
+                <caption class="visually-hidden">Daftar Pegawai Mendekati Usia Pensiun</caption>
+                <thead class="table-light">
+                  <tr>
+                    <th scope="col" class="text-center" style="width: 45px;">No</th>
+                    <th scope="col">Nama Pegawai</th>
+                    <th scope="col">NIP</th>
+                    <th scope="col">Bagian / Unit</th>
+                    <th scope="col">Status Kepegawaian</th>
+                    <th scope="col">Usia Saat Ini</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-dash-pensiun"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="modal-footer bg-light py-2">
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</template>

@@ -1,0 +1,294 @@
+<style>
+  .table-status_pegawai-card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  }
+  .btn-action-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+</style>
+
+<script type="module">
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+
+  const apiUrl = (typeof config !== 'undefined' && config.api_url) 
+    ? config.api_url 
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  let allData = [];
+
+  function getModal() {
+    const modalEl = document.getElementById('modal-form-status_pegawai');
+    if (!modalEl) return null;
+    return window.bootstrap ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+  }
+
+  async function loadData() {
+    const tableBody = document.getElementById('table-status_pegawai');
+    if (!tableBody) return;
+    tableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data Status Pegawai...</td></tr>';
+
+    try {
+      const res = await httpGet(`${apiUrl}/master/status_pegawai`);
+      if (res && res.code === 200 && Array.isArray(res.data)) {
+        allData = res.data;
+        renderTable(allData);
+      } else {
+        allData = [];
+        tableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">Tidak ada data Status Pegawai tersedia.</td></tr>';
+        const totalInfo = document.getElementById('total-rows-info-status_pegawai');
+        if (totalInfo) totalInfo.innerText = 'Total: 0 data';
+      }
+    } catch (err) {
+      console.error(err);
+      tableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-danger">Gagal memuat data dari server.</td></tr>';
+    }
+  }
+
+  function renderTable(items) {
+    const tableBody = document.getElementById('table-status_pegawai');
+    if (!tableBody) return;
+
+    const totalInfo = document.getElementById('total-rows-info-status_pegawai');
+    if (totalInfo) totalInfo.innerText = `Total: ${items.length} data`;
+
+    if (!items.length) {
+      tableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">Tidak ada data ditemukan.</td></tr>';
+      return;
+    }
+
+    tableBody.innerHTML = items.map((item, idx) => `
+      <tr>
+        <td class="text-center">${idx + 1}</td>
+        <td class="text-center font-monospace fw-bold text-dark">${item.KD_STATUS_PEGAWAI}</td>
+        <td class="fw-semi-bold">${item.STATUS_PEGAWAI || '-'}</td>
+        <td class="text-center">
+          <div class="d-inline-flex gap-1">
+            <button type="button" class="btn btn-sm btn-outline-warning btn-edit-status_pegawai py-1 px-2 btn-action-icon" data-id="${item.KD_STATUS_PEGAWAI}" title="Edit Data">
+              <i class="fas fa-edit"></i> Edit
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger btn-delete-status_pegawai py-1 px-2 btn-action-icon" data-id="${item.KD_STATUS_PEGAWAI}" data-nama="${item.STATUS_PEGAWAI || ''}" title="Soft Delete Data">
+              <i class="fas fa-trash-alt"></i> Soft Delete
+            </button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    // Attach row events
+    tableBody.querySelectorAll('.btn-edit-status_pegawai').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openEditModal(btn.getAttribute('data-id'));
+      });
+    });
+
+    tableBody.querySelectorAll('.btn-delete-status_pegawai').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const id = btn.getAttribute('data-id');
+        const nama = btn.getAttribute('data-nama');
+        deleteData(id, nama);
+      });
+    });
+  }
+
+  function openAddModal() {
+    document.getElementById('modal-title-status_pegawai').innerText = 'Tambah Data Status Pegawai';
+    document.getElementById('modal-subtitle-status_pegawai').innerText = 'Masukkan informasi data Status Pegawai baru';
+    document.getElementById('input-pk-status_pegawai').value = '';
+    document.getElementById('input-display-status_pegawai').value = '';
+    const modal = getModal();
+    if (modal) modal.show();
+  }
+
+  function openEditModal(id) {
+    const item = allData.find(a => String(a.KD_STATUS_PEGAWAI) === String(id));
+    if (!item) return;
+
+    document.getElementById('modal-title-status_pegawai').innerText = 'Ubah Data Status Pegawai';
+    document.getElementById('modal-subtitle-status_pegawai').innerText = `Perbarui data untuk ID: ${item.KD_STATUS_PEGAWAI}`;
+    document.getElementById('input-pk-status_pegawai').value = item.KD_STATUS_PEGAWAI;
+    document.getElementById('input-display-status_pegawai').value = item.STATUS_PEGAWAI || '';
+    const modal = getModal();
+    if (modal) modal.show();
+  }
+
+  async function saveData() {
+    const pkVal = document.getElementById('input-pk-status_pegawai').value.trim();
+    const displayVal = document.getElementById('input-display-status_pegawai').value.trim();
+
+    if (!displayVal) {
+      alert('Status Pegawai wajib diisi!');
+      document.getElementById('input-display-status_pegawai').focus();
+      return;
+    }
+
+    const btnSimpan = document.getElementById('btn-simpan-status_pegawai');
+    btnSimpan.disabled = true;
+    btnSimpan.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...';
+
+    const payload = {
+      KD_STATUS_PEGAWAI: pkVal,
+      STATUS_PEGAWAI: displayVal.toUpperCase()
+    };
+
+    try {
+      const res = await httpPost(`${apiUrl}/master/status_pegawai/save`, payload);
+      btnSimpan.disabled = false;
+      btnSimpan.innerHTML = '<i class="fas fa-save me-1"></i> Simpan';
+
+      if (res && res.code === 200) {
+        const modal = getModal();
+        if (modal) modal.hide();
+        loadData();
+      } else {
+        alert(res?.data?.message || 'Gagal menyimpan data.');
+      }
+    } catch (err) {
+      console.error(err);
+      btnSimpan.disabled = false;
+      btnSimpan.innerHTML = '<i class="fas fa-save me-1"></i> Simpan';
+      alert('Terjadi kesalahan saat menghubungi server.');
+    }
+  }
+
+  async function deleteData(id, nama) {
+    if (!confirm(`Apakah Anda yakin ingin menghapus data Status Pegawai "${nama}" (ID: ${id})?`)) {
+      return;
+    }
+
+    try {
+      const res = await httpPost(`${apiUrl}/master/status_pegawai/delete`, { id: id });
+      if (res && res.code === 200) {
+        loadData();
+      } else {
+        alert(res?.data?.message || 'Gagal menghapus data.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Terjadi kesalahan saat menghapus data.');
+    }
+  }
+
+  // Filter Search
+  document.getElementById('search-status_pegawai')?.addEventListener('input', (e) => {
+    const q = e.target.value.toLowerCase().trim();
+    if (!q) {
+      renderTable(allData);
+      return;
+    }
+    const filtered = allData.filter(item => 
+      String(item.KD_STATUS_PEGAWAI).toLowerCase().includes(q) || 
+      (item.STATUS_PEGAWAI && item.STATUS_PEGAWAI.toLowerCase().includes(q))
+    );
+    renderTable(filtered);
+  });
+
+  document.getElementById('btn-tambah-status_pegawai')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openAddModal();
+  });
+
+  document.getElementById('btn-simpan-status_pegawai')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    saveData();
+  });
+
+  // Hook for global/sidebar SPA calls
+  window.status_pegawai = {
+    loadData,
+    openAddModal,
+    openEditModal,
+    deleteData,
+    saveData
+  };
+  document.status_pegawai = window.status_pegawai;
+
+  // Initial load
+  loadData();
+</script>
+
+<template>
+  <div class="container-fluid p-0">
+    <div class="card mb-3 table-status_pegawai-card">
+      <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center py-3 gap-2">
+        <div>
+          <h5 class="mb-0 text-primary fw-bold"><i class="fas fa-user-tag me-2"></i>Master Data Status Pegawai</h5>
+          <small class="text-muted">Kelola status kepegawaian staf rumah sakit</small>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <div class="input-group input-group-sm" style="width: 240px;">
+            <input type="text" class="form-control" id="search-status_pegawai" placeholder="Cari ID / Status Pegawai...">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+          </div>
+          <button class="btn btn-sm btn-primary" id="btn-tambah-status_pegawai" type="button">
+            <i class="fas fa-plus me-1"></i> Tambah Status Pegawai
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-striped align-middle mb-0">
+            <thead class="table-light border-bottom">
+              <tr class="fs--1 text-dark">
+                <th class="text-center" style="width: 60px;">No</th>
+                <th class="text-center" style="width: 120px;">ID</th>
+                <th>Status Pegawai</th>
+                <th class="text-center" style="width: 200px;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="table-status_pegawai">
+              <tr>
+                <td colspan="4" class="text-center py-4 text-muted">Memuat data Status Pegawai...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2 border-top">
+        <small class="text-muted" id="total-rows-info-status_pegawai">Total: 0 data</small>
+      </div>
+    </div>
+
+    <!-- MODAL FORM TAMBAH / UBAH Status Pegawai -->
+    <div class="modal fade" id="modal-form-status_pegawai" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-white px-4 py-3 border-bottom d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+              <div class="d-flex align-items-center justify-content-center text-primary rounded-3" style="width: 38px; height: 38px; background: rgba(44, 123, 229, 0.08);">
+                <i class="fas fa-user-tag fs-1"></i>
+              </div>
+              <div>
+                <h5 class="modal-title fw-bold text-dark mb-0" id="modal-title-status_pegawai">Tambah Data Status Pegawai</h5>
+                <small class="text-muted d-block" id="modal-subtitle-status_pegawai">Masukkan informasi data Status Pegawai baru</small>
+              </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+          </div>
+
+          <div class="modal-body px-4 py-3">
+            <form id="form-status_pegawai">
+              <input type="hidden" id="input-pk-status_pegawai" name="KD_STATUS_PEGAWAI">
+              <div class="mb-3">
+                <label for="input-display-status_pegawai" class="form-label fw-semi-bold">Status Pegawai <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="input-display-status_pegawai" name="STATUS_PEGAWAI" placeholder="Contoh: TETAP, KONTRAK, MAGANG, MITRA" required>
+              </div>
+            </form>
+          </div>
+
+          <div class="modal-footer bg-light px-4 py-2 border-top">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-simpan-status_pegawai">
+              <i class="fas fa-save me-1"></i> Simpan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

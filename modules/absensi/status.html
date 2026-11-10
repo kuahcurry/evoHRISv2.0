@@ -1,0 +1,378 @@
+<style>
+  .absensi-status .card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem;
+  }
+  .absensi-status .table th {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+  }
+  .absensi-status .table td {
+    vertical-align: middle;
+    font-size: 0.85rem;
+  }
+</style>
+
+<script type="module" defer>
+  import { httpGet } from './assets/js/core/http.js';
+
+  let rawStatusData = [];
+  let filteredStatusData = [];
+  let masterBagian = [];
+  let currentPage = 1;
+  const pageSize = 25;
+
+  const tag = 'absensi_status';
+
+  const initModule = async () => {
+    // Default to 2026-04-01 until 2026-04-05
+    const tglMulaiEl = document.getElementById('filter-tgl-mulai-status');
+    const tglSampaiEl = document.getElementById('filter-tgl-sampai-status');
+    if (tglMulaiEl && !tglMulaiEl.value) tglMulaiEl.value = '2026-04-01';
+    if (tglSampaiEl && !tglSampaiEl.value) tglSampaiEl.value = '2026-04-05';
+
+    await loadMaster();
+    await loadData();
+    bindEvents();
+  };
+
+  const loadMaster = async () => {
+    try {
+      const res = await httpGet(`${config.api_url}/absensi/master`);
+      if (res && res.code === 200 && res.data) {
+        masterBagian = res.data.bagian || [];
+        populateBagianSelect();
+      }
+    } catch (e) {
+      console.warn('Master bagian load error:', e);
+    }
+  };
+
+  const populateBagianSelect = () => {
+    const sel = document.getElementById('filter-bagian-status');
+    if (!sel) return;
+    let html = '<option value="">-- Semua Unit / Bagian --</option>';
+    masterBagian.forEach(b => {
+      html += `<option value="${b.KD_BAGIAN}">${b.BAGIAN}</option>`;
+    });
+    sel.innerHTML = html;
+  };
+
+  const loadData = async () => {
+    const tbody = document.getElementById('tbody-status');
+    const spinner = document.getElementById('loading-status');
+    
+    if (spinner) spinner.classList.remove('d-none');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat rincian status kehadiran...</td></tr>';
+
+    try {
+      const tglMulai = document.getElementById('filter-tgl-mulai-status')?.value || '2026-04-01';
+      const tglSampai = document.getElementById('filter-tgl-sampai-status')?.value || '2026-04-05';
+      const kdBagian = document.getElementById('filter-bagian-status')?.value || '';
+      const statusFilter = document.getElementById('filter-tipe-status')?.value || '';
+
+      // Parallel fetch: data & summary
+      let urlData = `${config.api_url}/absensi/status?tgl_mulai=${encodeURIComponent(tglMulai)}&tgl_sampai=${encodeURIComponent(tglSampai)}&limit=500`;
+      let urlSummary = `${config.api_url}/absensi/status-summary?tgl_mulai=${encodeURIComponent(tglMulai)}&tgl_sampai=${encodeURIComponent(tglSampai)}`;
+      
+      if (kdBagian) {
+        urlData += `&kd_bagian=${encodeURIComponent(kdBagian)}`;
+        urlSummary += `&kd_bagian=${encodeURIComponent(kdBagian)}`;
+      }
+      if (statusFilter) {
+        urlData += `&status=${encodeURIComponent(statusFilter)}`;
+      }
+
+      const [resData, resSummary] = await Promise.all([
+        httpGet(urlData),
+        httpGet(urlSummary)
+      ]);
+
+      if (resSummary && resSummary.code === 200 && resSummary.data) {
+        updateSummaryCards(resSummary.data);
+      }
+
+      if (resData && resData.code === 200 && resData.data) {
+        const dataObj = resData.data;
+        rawStatusData = Array.isArray(dataObj) ? dataObj : (dataObj.data || []);
+        filteredStatusData = [...rawStatusData];
+        currentPage = 1;
+        document.getElementById('total-badge-status').textContent = `${dataObj.total || rawStatusData.length} Catatan`;
+        renderTable();
+      } else {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">Tidak ada data kehadiran pada periode tersebut.</td></tr>';
+      }
+    } catch (e) {
+      console.error('Error loading absensi status:', e);
+      if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Gagal memuat status: ${e.message}</td></tr>`;
+    } finally {
+      if (spinner) spinner.classList.add('d-none');
+    }
+  };
+
+  const updateSummaryCards = (summary) => {
+    document.getElementById('card-stat-hadir').textContent = summary.hadir || 0;
+    document.getElementById('card-stat-terlambat').textContent = summary.terlambat || 0;
+    document.getElementById('card-stat-izin').textContent = (summary.izin || 0) + (summary.cuti || 0);
+    document.getElementById('card-stat-sakit').textContent = summary.sakit || 0;
+    document.getElementById('card-stat-alpa').textContent = summary.alpa || 0;
+  };
+
+  const renderTable = () => {
+    const tbody = document.getElementById('tbody-status');
+    const badgeEl = document.getElementById('total-badge-status');
+    if (!tbody) return;
+
+    if (badgeEl) badgeEl.textContent = `${filteredStatusData.length} Catatan`;
+
+    if (filteredStatusData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">Data presensi tidak ditemukan sesuai filter.</td></tr>';
+      renderPagination(0);
+      return;
+    }
+
+    const startIdx = (currentPage - 1) * pageSize;
+    const endIdx = startIdx + pageSize;
+    const pageItems = filteredStatusData.slice(startIdx, endIdx);
+
+    let html = '';
+    pageItems.forEach((row, idx) => {
+      let statusBadge = '<span class="badge bg-secondary">Unknown</span>';
+      if (row.status === 'Hadir') statusBadge = '<span class="badge bg-success">Hadir</span>';
+      else if (row.status === 'Terlambat') statusBadge = '<span class="badge bg-warning text-dark">Terlambat</span>';
+      else if (row.status === 'Alpa') statusBadge = '<span class="badge bg-danger">Alpa</span>';
+      else if (row.status === 'Libur') statusBadge = '<span class="badge bg-light text-muted border">Libur</span>';
+      else if (row.status === 'Izin' || row.status === 'Cuti') statusBadge = `<span class="badge bg-info">${row.status}</span>`;
+      else if (row.status === 'Sakit') statusBadge = '<span class="badge bg-primary">Sakit</span>';
+
+      const terlambatText = row.menit_terlambat > 0 
+        ? `<span class="badge bg-soft-warning text-warning fw-bold">+${row.menit_terlambat} mnt</span>`
+        : '<span class="text-muted small">-</span>';
+
+      html += `
+        <tr>
+          <td class="text-center text-muted">${startIdx + idx + 1}</td>
+          <td class="text-nowrap fw-bold text-dark">${row.tanggal || row.tanggal_jadwal || '-'}</td>
+          <td>
+            <div class="fw-bold">${row.nama || row.NAMA || '-'}</div>
+            <div class="text-muted small">NIP: ${row.nip || row.NIP || '-'}</div>
+          </td>
+          <td class="text-muted small">${row.bagian || row.nama_bagian || '-'}</td>
+          <td>
+            <div class="small fw-semibold text-primary">${row.nama_shift || row.STANDARISASI || '-'}</div>
+            <div class="text-muted extra-small">${row.jadwal_masuk || row.JAM_MASUK || '-'} - ${row.jadwal_pulang || row.JAM_PULANG || '-'}</div>
+          </td>
+          <td class="text-success fw-bold">${row.jam_datang || '-'}</td>
+          <td class="text-info fw-bold">${row.jam_keluar || '-'}</td>
+          <td class="text-center">${row.durasi_kerja || row.jam_kerja || '-'}</td>
+          <td class="text-center">${statusBadge}</td>
+          <td class="text-center">${terlambatText}</td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    renderPagination(filteredStatusData.length);
+  };
+
+  const renderPagination = (totalItems) => {
+    const el = document.getElementById('pagination-status');
+    if (!el) return;
+    const totalPages = Math.ceil(totalItems / pageSize);
+
+    if (totalPages <= 1) {
+      el.innerHTML = '';
+      return;
+    }
+
+    let html = `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage - 1}">«</a></li>`;
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) {
+        html += `<li class="page-item ${p === currentPage ? 'active' : ''}"><a class="page-link" href="#" data-page="${p}">${p}</a></li>`;
+      } else if (p === currentPage - 3 || p === currentPage + 3) {
+        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      }
+    }
+    html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage + 1}">»</a></li>`;
+    el.innerHTML = html;
+
+    el.querySelectorAll('.page-link').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const p = parseInt(btn.getAttribute('data-page'));
+        if (p && p !== currentPage && p >= 1 && p <= totalPages) {
+          currentPage = p;
+          renderTable();
+        }
+      });
+    });
+  };
+
+  const bindEvents = () => {
+    document.getElementById('btn-filter-status')?.addEventListener('click', () => loadData());
+    document.getElementById('btn-refresh-status')?.addEventListener('click', () => loadData());
+
+    document.getElementById('search-status')?.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        filteredStatusData = [...rawStatusData];
+      } else {
+        filteredStatusData = rawStatusData.filter(r => 
+          (r.NAMA && r.NAMA.toLowerCase().includes(q)) ||
+          (r.NIP && r.NIP.toLowerCase().includes(q)) ||
+          (r.nama_bagian && r.nama_bagian.toLowerCase().includes(q)) ||
+          (r.STANDARISASI && r.STANDARISASI.toLowerCase().includes(q))
+        );
+      }
+      currentPage = 1;
+      renderTable();
+    });
+  };
+
+  window.absensi_status = { loadData };
+  document.absensi_status = { loadData };
+
+  initModule();
+</script>
+
+<template>
+  <div class="container-fluid py-3 absensi-status">
+    <!-- Header -->
+    <div class="row align-items-center mb-3">
+      <div class="col-md-7">
+        <div class="d-flex align-items-center">
+          <div class="avatar bg-soft-info text-info p-3 rounded-circle me-3">
+            <i class="fas fa-user-clock fa-2x"></i>
+          </div>
+          <div>
+            <h4 class="mb-0 fw-bold">Rekapitulasi Status Kehadiran</h4>
+            <p class="text-muted small mb-0">Rincian ketepatan waktu, keterlambatan, dan status presensi harian pegawai RS</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-5 text-md-end mt-2 mt-md-0">
+        <span class="badge bg-primary px-3 py-2 me-2" id="total-badge-status">0 Catatan</span>
+        <button class="btn btn-outline-secondary btn-sm me-2" id="btn-refresh-status" title="Segarkan Data">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Counter Cards -->
+    <div class="row g-2 mb-3">
+      <div class="col">
+        <div class="card p-2 text-center border-bottom border-3 border-success">
+          <div class="text-muted small">Hadir Tepat Waktu</div>
+          <h4 class="mb-0 fw-bold text-success" id="card-stat-hadir">0</h4>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card p-2 text-center border-bottom border-3 border-warning">
+          <div class="text-muted small">Terlambat</div>
+          <h4 class="mb-0 fw-bold text-warning" id="card-stat-terlambat">0</h4>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card p-2 text-center border-bottom border-3 border-info">
+          <div class="text-muted small">Izin / Cuti</div>
+          <h4 class="mb-0 fw-bold text-info" id="card-stat-izin">0</h4>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card p-2 text-center border-bottom border-3 border-primary">
+          <div class="text-muted small">Sakit</div>
+          <h4 class="mb-0 fw-bold text-primary" id="card-stat-sakit">0</h4>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card p-2 text-center border-bottom border-3 border-danger">
+          <div class="text-muted small">Alpa</div>
+          <h4 class="mb-0 fw-bold text-danger" id="card-stat-alpa">0</h4>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter & Table Card -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-white py-3 border-bottom">
+        <div class="row g-2 align-items-center">
+          <div class="col-md-2">
+            <label class="form-label small text-muted mb-1">Dari Tanggal:</label>
+            <input type="date" class="form-control form-control-sm" id="filter-tgl-mulai-status" value="2026-04-01">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small text-muted mb-1">Sampai Tanggal:</label>
+            <input type="date" class="form-control form-control-sm" id="filter-tgl-sampai-status" value="2026-04-05">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-muted mb-1">Unit / Bagian:</label>
+            <select class="form-select form-select-sm" id="filter-bagian-status">
+              <option value="">-- Semua Unit / Bagian --</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small text-muted mb-1">Status:</label>
+            <select class="form-select form-select-sm" id="filter-tipe-status">
+              <option value="">-- Semua Status --</option>
+              <option value="Hadir">Hadir</option>
+              <option value="Terlambat">Terlambat</option>
+              <option value="Alpa">Alpa</option>
+              <option value="Izin">Izin / Cuti</option>
+              <option value="Libur">Libur</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small text-muted mb-1">Pencarian:</label>
+            <input type="text" class="form-control form-control-sm" id="search-status" placeholder="Cari pegawai...">
+          </div>
+          <div class="col-md-1 d-flex align-items-end">
+            <button class="btn btn-primary btn-sm w-100" id="btn-filter-status" title="Filter Data">
+              <i class="fas fa-filter"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="d-none text-center py-2 bg-light border-bottom" id="loading-status">
+          <span class="spinner-border spinner-border-sm text-primary me-2"></span>Memperbarui data kehadiran...
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th style="width: 40px;" class="text-center">No</th>
+                <th style="width: 105px;">Tanggal</th>
+                <th>Nama Pegawai</th>
+                <th>Unit / Bagian</th>
+                <th>Shift Terjadwal</th>
+                <th style="width: 90px;">Masuk</th>
+                <th style="width: 90px;">Pulang</th>
+                <th style="width: 80px;" class="text-center">Durasi</th>
+                <th style="width: 100px;" class="text-center">Status</th>
+                <th style="width: 95px;" class="text-center">Keterlambatan</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-status">
+              <tr>
+                <td colspan="10" class="text-center py-4 text-muted">
+                  <span class="spinner-border spinner-border-sm me-2"></span>Memuat rincian status kehadiran...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card-footer bg-white py-2 border-top d-flex justify-content-between align-items-center">
+        <span class="text-muted small">Menampilkan data presensi terverifikasi mesin biometrik</span>
+        <ul class="pagination pagination-sm mb-0" id="pagination-status"></ul>
+      </div>
+    </div>
+  </div>
+</template>

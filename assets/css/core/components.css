@@ -1,0 +1,316 @@
+div[data-role="frame"]::before {
+ content: attr(data-title);
+ position: absolute;
+ top: -14px;
+ left: 8px;
+ background: #fff;
+}
+div[data-role="frame"] {
+ --bs-card-spacer-y: 1rem;
+ --bs-card-spacer-x: 1rem;
+ --bs-card-title-spacer-y: 0.5rem;
+ --bs-card-title-color: ;
+ --bs-card-subtitle-color: ;
+ --bs-card-border-width: 1px;
+ --bs-card-border-color: rgba(0, 0, 0, 0.175);
+ --bs-card-border-radius: 0.375rem;
+ --bs-card-box-shadow: ;
+ --bs-card-inner-border-radius: calc(0.375rem - 1);
+ --bs-card-cap-padding-y: 0.5rem;
+ --bs-card-cap-padding-x: 1rem;
+ --bs-card-cap-bg: rgba(33,37,41, 0.03);
+ --bs-card-cap-color: ;
+ --bs-card-height: ;
+ --bs-card-color: ;
+ --bs-card-bg: #fff;
+ --bs-card-img-overlay-padding: 1rem;
+ --bs-card-group-margin: 0.75rem;
+ position: relative;
+ display: flex;
+ flex-direction: column;
+ min-width: 0;
+ height: auto;
+ color: #212529;
+ word-wrap: break-word;
+ background-color: #fff;
+ background-clip: border-box;
+ border: 1px solid rgba(0, 0, 0, 0.175);
+ border-radius: 0.375rem;
+ padding: 1rem;
+}
+div[data-role="selector"] > input ~ a[href="#!selectorclose"] {
+ position: absolute;
+ top: 4px;
+ right: 5px;
+ background: #fff;
+ z-index: 1;
+}
+div[data-role="selector"] > input ~ svg[data-prefix="fas"]{
+ position: absolute;
+ font-size: 12px;
+ top: 8px;
+ right: 8px;
+ z-index: 0;
+}
+div[data-role="selector"] > .dropdown-menu > table {
+ width: 100%;
+ border-spacing: 0;
+}
+div[data-role="selector"] > .dropdown-menu > table thead, div[data-role="selector"] > .dropdown-menu > table tbody {
+ display: block;
+}
+div[data-role="selector"] > .dropdown-menu > table thead tr th {
+ height: 40px;
+ line-height: 40px;
+}
+div[data-role="selector"] > .dropdown-menu > table tbody {
+ max-height: 200px;
+ overflow-y: scroll;
+ overflow-x: hidden;
+}
+/* Working #1 Beta 1.0
+nav[data-role="tabs"] {
+ position: relative;
+ margin-top: 36px;
+}
+nav[data-role="tabs"] > * {
+ margin: 0;
+ padding: 0;
+ border: 0;
+ list-style-type: none;
+}
+nav[data-role="tabs"] > .tabs-nav {
+ position: absolute;
+ top: -35px;
+ left: 0px;
+ z-index: 1;
+ white-space: nowrap;
+}
+nav[data-role="tabs"] > .tabs-nav, nav[data-role="tabs"] > .tabs-nav > .navtab {
+ list-style: none;
+ margin: 0;
+ padding: 0;
+}
+nav[data-role="tabs"] > .tabs-nav > .navtab {
+ display: inline-block;
+ margin: 0;
+ margin-left: 0;
+ padding: 0;
+ border-top-left-radius: 5px;
+ border-top-right-radius: 5px;
+ border: solid 0.5px #cecece;
+ border-bottom: none;
+}
+nav[data-role="tabs"] > .tabs-nav > .navtab > button {
+ border: none;
+ height: 100%;
+ width: 100%;
+ margin: 0;
+ padding: 5px 12px;
+ background: none;
+}
+nav[data-role="tabs"] > .tabs-nav > .navtab.active {
+ border-bottom: solid 1px #ffff;
+}
+nav[data-role="tabs"] > .tabs-content {
+ margin-left: 0px;
+ border: solid 1px #cecece;
+}
+nav[data-role="tabs"] > .tabs-content > .contenttab {
+ display: none;
+ padding: 10px;
+ min-height: 100px;
+}
+nav[data-role="tabs"] > .tabs-content > .contenttab.active {
+ display: block;
+ padding: 10px;
+ min-height: 100px;
+}
+*/ 
+/* Working #2 Beta 1.1
+nav[data-role="tabs"] {
+ position: relative;
+ overflow-x: hidden;
+}
+nav[data-role="tabs"] > * {
+ margin: 0;
+ padding: 0;
+ border: 0;
+ list-style-type: none;
+}
+nav[data-role="tabs"] > .scroller {
+ position: absolute;
+ top: 0px;
+ z-index: 2; 
+ width: 24px;
+ height: 35px;
+}
+nav[data-role="tabs"] > .scroller > a {
+ display: block;
+ width: 24px;
+ height: 35px;
+ text-align: center;
+ line-height: 35px;
+}
+nav[data-role="tabs"] > .scroller-left {
+ left: 0px;
+ background: #cecece;
+ border-top-left-radius: 5px;
+}
+nav[data-role="tabs"] > .scroller-right {
+ right: 0px;
+ background: #cecece;
+ border-top-right-radius: 5px;
+}
+nav[data-role="tabs"] > .tabs-nav {
+ position: absolute;
+ top: 0px;
+ left: 0px;
+ z-index: 1;
+ white-space: nowrap;
+}
+nav[data-role="tabs"] > .tabs-nav, nav[data-role="tabs"] > .tabs-nav > .navtab {
+ list-style: none;
+ margin: 0;
+ padding: 0;
+}
+nav[data-role="tabs"] > .tabs-nav > .navtab {
+ display: inline-block;
+ margin: 0;
+ margin-left: 0;
+ padding: 0;
+ border-top-left-radius: 5px;
+ border-top-right-radius: 5px;
+ border: solid 0.5px #cecece;
+ border-bottom: none;
+}
+nav[data-role="tabs"] > .tabs-nav > .navtab > button {
+ border: none;
+ height: 100%;
+ width: 100%;
+ margin: 0;
+ padding: 5px 12px;
+ background: none;
+}
+nav[data-role="tabs"] > .tabs-nav > .navtab.active {
+ border-bottom: solid 1px #ffff;
+}
+nav[data-role="tabs"] > .tabs-content {
+ margin-left: 0px;
+ margin-top: 35px;
+ border: solid 1px #cecece;
+}
+nav[data-role="tabs"] > .tabs-content > .contenttab {
+ display: none;
+ padding: 10px;
+ min-height: 100px;
+}
+nav[data-role="tabs"] > .tabs-content > .contenttab.active {
+ display: block;
+ padding: 10px;
+ min-height: 100px;
+}
+*/
+/* Beta */
+nav[data-role="tabs"] {
+ position: relative;
+ overflow: hidden;
+}
+/* nav[data-role="tabs"] > * {
+ margin: 0;
+ padding: 0;
+ border: 0;
+ list-style-type: none;
+} */
+nav[data-role="tabs"] > .nav-bar {
+ position: relative;
+ display: block;
+ height: 35px;
+}
+nav[data-role="tabs"] > .nav-bar > .scroller {
+ display: inline-block;
+ /* position: absolute; */
+ top: 0px;
+ z-index: 2; 
+ width: 24px;
+ height: 35px;
+}
+nav[data-role="tabs"] > .nav-bar > .scroller-left {
+ position: absolute;
+ left: 0px;
+ background: #cecece;
+ border-top-left-radius: 5px;
+}
+nav[data-role="tabs"] > .nav-bar > .scroller-right {
+ position: absolute;
+ right: 0px;
+ background: #cecece;
+ border-top-right-radius: 5px;
+}
+nav[data-role="tabs"] > .nav-bar > .scroller > a {
+ display: inline-block;
+ width: 24px;
+ height: 35px;
+ text-align: center;
+ line-height: 35px;
+}
+nav[data-role="tabs"] > .nav-bar > .nav-container {
+ position: relative;
+ display: inline-block;
+ overflow: hidden;
+ height: 35px;
+ margin-left: 0px;
+ margin-right: 0px;
+ border-top-left-radius: 5px;
+ border-top-right-radius: 5px;
+ /* background: red; */
+}
+nav[data-role="tabs"] > .nav-bar > .nav-container > .tabs-nav {
+ position: absolute;
+ display: inline-block;
+ list-style-type: none;
+ top: 0px;
+ left: 0px;
+ margin: 0;
+ padding: 0;
+ z-index: 1;
+ white-space: nowrap;
+}
+nav[data-role="tabs"] > .nav-bar > .nav-container > .tabs-nav > .navtab {
+ display: inline-block;
+ margin: 0;
+ padding: 0;
+ border-top-left-radius: 5px;
+ border-top-right-radius: 5px;
+ border: solid 0.5px #cecece;
+ border-bottom: none;
+}
+nav[data-role="tabs"] > .nav-bar > .nav-container > .tabs-nav > .navtab > button {
+ border: none;
+ height: 100%;
+ width: 100%;
+ margin: 0;
+ padding: 5px 12px;
+ background: none;
+}
+nav[data-role="tabs"] > .nav-bar > .nav-container > .tabs-nav > .navtab.active {
+ border-bottom: solid 1px #ffff;
+}
+nav[data-role="tabs"] > .tabs-content {
+ position: relative;
+ display: block;
+ margin-left: 0px;
+ /* margin-top: 35px; */
+ border: solid 1px #cecece;
+}
+nav[data-role="tabs"] > .tabs-content > .contenttab {
+ display: none;
+ margin: 0;
+ padding: 10px;
+ min-height: 100px;
+}
+nav[data-role="tabs"] > .tabs-content > .contenttab.active {
+ display: block;
+ padding: 10px;
+ min-height: 100px;
+}

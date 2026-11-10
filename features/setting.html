@@ -1,0 +1,56 @@
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+  import { getCurrentUser, getSelectedPasien, getFormEntries, setFormEntries } from './assets/js/core/helpers.js';
+
+  const id = 'setting';
+  const frm_entries = document.getElementById('setting_unit-entries');
+  const selunits = frm_entries.querySelector('select[data-tag="sel_units"]');
+  const loadData = async () => {
+    const currentuser = getCurrentUser();
+    let rows = currentuser.units;
+    if (currentuser.jabatan !== 'dokter') {
+      const frm_data = {kd_user: currentuser.kd_user};
+      let rs = await httpGet(`${config.api_url}/user/units`, frm_data);
+      rows = rs.code == 200 ? rs.data : [];
+    }
+    if (rows.length > 0) {
+      const options = rows.map(i => `<option value="${i.kd_unit}">${i.nama_unit}</option>`);
+      selunits.innerHTML = options.join('');
+      selunits.value = currentuser.kd_unit;
+    }else {
+      selunits.innerHTML = '<option selected>Belum terkofigurasi</option>';
+    }
+  }
+  const saveData = async (mode) => {
+    let currentuser = getCurrentUser();
+    let unit = selunits.value;
+    let params = {kd_user: currentuser.kd_user, kd_unit: unit};
+    let rs = await httpPost(`${config.api_url}/user/unit/save`, params);
+    if (rs.code == 200) {
+      if (mode == 'aktifkan') {
+        let selected = currentuser.units.filter(u => u.kd_unit == unit);
+        if (currentuser.jabatan == 'dokter') {
+          await document.listpasien.changeUnit(selected, true);
+          await document.listpasien.setUnits();
+          
+        } else if (currentuser.jabatan == 'perawat') {
+          await document.listpasien.changeUnit(selected, true);
+          await document.listpasien.changeDokter();
+          await document.listpasien.setDokters();
+        }
+      } else {
+        showDialog({type: 'info', label: `<span class="text-black">Simpan sukses</span>`})
+        document.main.sendHome();
+      }
+    } else { showDialog({ui: 'interactive', type: 'warning', label: `<span class="text-danger">Simpan gagal</span>`}) }
+  }
+  document.setting = { id, loadData, saveData };
+</script>
+
+<template>
+ <div id="setting_unit-entries" class="m-0 p-0 mt-1">
+  <select class="form-select form-select-sm" data-tag="sel_units" data-field="default_unit">
+   <option>Belum terkofigurasi</option>
+  </select>
+ </div>
+</template>

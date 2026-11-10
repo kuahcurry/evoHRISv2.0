@@ -1,0 +1,5 @@
+/api/vendor
+/api/.htaccess
+/api/.env
+/api/writable/logs
+.htaccess

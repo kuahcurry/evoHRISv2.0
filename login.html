@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html data-bs-theme="light" lang="en-US" dir="ltr">
+<head>
+ <title>evoHRIS v2.1</title>
+ <meta charset="utf-8">
+ <meta http-equiv="X-UA-Compatible" content="IE=edge">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <meta name="msapplication-TileImage" content="assets/mstile-150.png">
+ <meta name="theme-color" content="#ffffff">
+ <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon-180.png">
+ <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+ <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+ <link rel="shortcut icon" type="image/x-icon" href="assets/favicon-x.png">
+ <link rel="manifest" href="assets/manifest.json">
+ <link href="assets/fonts/fonts.css" rel="stylesheet">
+ <link href="assets/css/vendor/simplebar.min.css" rel="stylesheet">
+ <link href="assets/css/vendor/theme.css" rel="stylesheet">
+ <link href="assets/css/core/styles.css" rel="stylesheet">
+ <script src="assets/js/config.js"></script>
+ <script src="assets/js/vendor/config.js"></script>
+ <script src="assets/js/vendor/simplebar.min.js"></script>
+ <script src="assets/js/vendor/popper.min.js"></script>
+ <script src="assets/js/vendor/bootstrap.min.js"></script>
+ <script src="assets/js/vendor/anchor.min.js"></script>
+ <script src="assets/js/vendor/is.min.js"></script>
+ <script src="assets/js/vendor/all.min.js"></script>
+ <script src="assets/js/vendor/lodash.min.js"></script>
+ <script src="assets/js/vendor/list.min.js"></script>
+ <script src="assets/js/vendor/theme.min.js"></script>
+ <script src="assets/js/core/injector.js"></script>
+ <script type="module" defer>
+  import { httpPost } from './assets/js/core/http.js';
+  import { saveSession } from './assets/js/core/helpers.js';
+  import EvoDialog from './components/EvoDialog.js';
+  
+  const dialog = new EvoDialog('loginDialog');
+  /*
+  const found = await navigator.credentials.get({password: true});
+  if (found) {
+   const isRememberMe = document.querySelector('#remember-me');
+   isRememberMe.checked = true;
+  }
+  */
+  let btnlogin = document.getElementById('btn_login');
+  btnlogin.addEventListener('click', async (e) => {
+   e.preventDefault();
+   const email = document.querySelector('[type="text"]');
+   const passwd = document.querySelector('[type="password"]');
+   let auth = {
+    username: email.value,
+    password: passwd.value
+   };
+   const isRememberMe = document.querySelector('#remember-me');
+   let rs = await httpPost(`${config.api_url}/login/auth`, auth);
+   if (rs.code == 200) {
+    let data = rs.data[0];
+    let instalasi = data.tag_instalasi;
+    saveSession({id: 'app', data: data});
+    saveSession({id: 'instalasi', data: instalasi});
+    if (window.PasswordCredential && isRememberMe.checked) {
+     const cred = new PasswordCredential({
+      id: auth.username,
+      password: auth.password
+     });
+     navigator.credentials.store(cred);
+    }
+    window.location.replace('main.html');
+   } else {
+    let options = {
+     size: 'small',
+     modal: true,
+     autoclose: true,
+     autoCloseAfter: 2000
+    }
+    let params = {
+     type: 'warning',
+     title: '<span class="text-black">Peringatan</span>',
+     label: '<span class="text-danger">Maaf, user dan password salah!!</span>'
+    };
+    dialog.open(options, params);
+   }
+  })
+ </script>
+</head>
+<body>
+ <main class="main" id="top">
+  <div class="container" data-layout="container">
+   <div class="row flex-center py-4">
+    <div class="col-sm-10 col-md-8 col-lg-6 col-xl-5 col-xxl-4">
+     <div class="position-relative text-center">
+      <img class="me-2 mb-3" src="assets/img/pic_logo.png" alt="Re-Medis v2.1" />
+      <div class="position-absolute version"><span class="font-sans-serif fs--1">v2.1</span> <a href="#" title="Re-Medis v2.1"><span class="fa-solid fa-circle-info"></span></a></div>
+     </div>
+     <div class="card">
+      <div class="card-body p-4 p-sm-5">
+       <div class="row flex-between-center mb-2">
+        <div class="col-auto">
+         <h5>Log in</h5>
+        </div>
+        <div class="col-auto fs--1 text-600"><span class="mb-0">or</span> <span><a href="pages/register.html">Create an account</a></span></div>
+       </div>
+       <form>
+        <div class="mb-3">
+         <input class="form-control form-control-sm prefix-icon" type="text" placeholder="Email/Username" />
+        </div>
+        <div class="mb-3">
+         <input class="form-control form-control-sm prefix-icon" type="password" placeholder="Password" />
+        </div>
+        <div class="row flex-between-center">
+         <div class="col-auto">
+          <div class="form-check mb-0">
+           <input class="form-check-input" type="checkbox" id="remember-me" />
+           <label class="form-check-label mb-0" for="remember-me">Remember me</label>
+          </div>
+         </div>
+         <div class="col-auto"><a class="fs--1" href="pages/forgot-password.html">Forgot Password?</a></div>
+        </div>
+        <div class="mb-3">
+         <button class="btn btn-primary d-block w-100 mt-3" id="btn_login" name="submit" onsubmit="return false">Log in</button>
+        </div>
+       </form>
+       <div class="position-relative mt-4">
+        <hr />
+        <div class="divider-content-center">or log in with</div>
+       </div>
+       <div class="row g-2 mt-2">
+        <div class="col-sm-12"><a class="btn btn-outline-google-plus btn-sm d-block w-100" href="#"><span class="fab fa-google-plus-g me-2" data-fa-transform="grow-8"></span> google</a></div>
+       </div>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+ </main>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<script type="module" defer>
+  import { httpPost, httpGet } from './assets/js/core/http.js';
+  import { getCurrentUser, getSelectedPasien, getFormEntries, setFormEntries } from './assets/js/core/helpers.js';
+  import EvoDialog from './components/EvoDialog.js';
+  import EvoSelector from './components/EvoSelector.js';
+  
+  const id = 'ganti_dokter';
+  const mainDialog = new EvoDialog('mainDialog');
+  let ganti_dokter = {};
+  let frm_actions = getThisForm(id).actions;
+  const frm_entries = getThisForm(id).entries;
+  //get dokter
+ const selDokter = new EvoSelector('selector-kd_paramedis');
+  selDokter.on('typed', async (e) => {
+    let w = e.detail.value;
+    await loadDokter(w);
+  })
+  selDokter.on('selected', async (e) => {
+    let data = e.detail.value;
+  });
+  selDokter.on('cleared', async (e) => await loadDokter('', true));
+  const loadDokter = async (keyword = '', cleared = false) => {
+    const listpasien = document.getElementById('daftarpasien-title');
+    const selectedpasien = getSelectedPasien(`pasien-${listpasien.dataset.tagger}`);
+    document.getElementById('#!txt_no_kunjungan').value = selectedpasien.no_kunjungan;
+    let frm_data = {
+      keyword: keyword,
+      kd_unit: selectedpasien.kd_unit
+    }
+    let rs = await httpGet(`${config.api_url}/dokter/load`, frm_data);
+    let dataset = [];
+    if (rs.code == 200) {
+      dataset = rs.data;
+      const options = dataset.map(v => {
+        return {text: v.nama_paramedis, value: v.kd_paramedis};
+      });
+      selDokter.addOptions(options);
+      if(cleared == false) selDokter.value = selectedpasien.kd_paramedis;
+    }
+  }
+  const dokterConfig = {
+    placeholder: 'Pilih dokter',
+    captureTypedOn: 'change',
+    items: {},
+  }
+  const loadData = async () => {
+    await loadDokter();
+  }
+  const saveData = async () => {
+    const listpasien = document.getElementById('daftarpasien-title');
+    const currentuser = getCurrentUser('kd_user'); 
+    const selectedpasien = getSelectedPasien(`pasien-${listpasien.dataset.tagger}`);
+    const frm_data = {
+      single_id: selectedpasien.single_id, 
+      no_kunjungan: selectedpasien.no_kunjungan, 
+      no_medicalrecord: selectedpasien.no_medicalrecord, 
+      kd_paramedis: selDokter.value, 
+      kd_user: currentuser
+    };
+    return await httpPost(`${config.api_url}/dokter/save`, frm_data);
+  }
+
+  document.ganti_dokter = { id, loadData, saveData };
+ </script>
+
+<template>
+  <div id="ganti_dokter-entries" class="m-0 p-0 mt-1">
+    <div class="card">
+      <div class="card-body mb-5">
+        <div class="col mb-2">
+          <div class="create-product-description-textarea">
+            <input class="form-control form-control-sm" id="#!txt_no_kunjungan" placeholder="No Kunjungan" type="text" data-type="txt" disabled="disabled" data-field="no_kunjungan"/>
+          </div>
+        </div>
+        <div class="col mb-2">
+          <!-- <select class="form-select js-choice" id="sel_kd_paramedis" size="1" data-options='{"removeItemButton":true,"placeholder":true}' data-field="kd_paramedis">
+          </select> -->
+          <select id="selector-kd_paramedis" placeholder="Pilih unit order" data-field="kd_paramedis"></select>
+        </div>
+        <!-- <a class="btn btn-sm btn-primary fs--1" href="#!btn-simpan" role="button"><span class="fas fa-floppy-disk"></span> Simpan</a> -->
+      </div>
+    </div>
+  </div>
+</template>

@@ -1,0 +1,87 @@
+<script type="module" defer>
+  import { httpGet } from './assets/js/core/http.js';
+  import { getCurrentUser, saveSession } from './assets/js/core/helpers.js';
+
+  const id = 'setting_role';
+  let roles = [];
+  let selected = null;
+  const root = () => document.getElementById('setting_role-entries');
+  const el = tag => root()?.querySelector(`[data-tag="${tag}"]`);
+  const norm = value => String(value ?? '').toLowerCase();
+
+  const render = () => {
+    const list = el('role_list');
+    if (!list) return;
+    const keyword = norm(el('search_role').value).trim();
+    const filtered = roles.filter(r => [r.jabatan, r.nama_jabatanparamedis, r.nama_jabatan, r.nama_unit, r.nama_instalasi, r.kd_jabatan].some(v => norm(v).includes(keyword)));
+    list.replaceChildren();
+    for (const row of filtered) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `btn text-start w-100 border rounded-3 p-3 ${selected === row ? 'border-primary bg-soft-primary' : 'bg-white'}`;
+      btn.setAttribute('aria-pressed', String(selected === row));
+      const title = document.createElement('div');
+      title.className = 'fw-bold text-dark';
+      title.textContent = row.nama_jabatanparamedis || row.jabatan || row.nama_jabatan || `Jabatan ${row.kd_jabatan}`;
+      const desc = document.createElement('div');
+      desc.className = 'text-muted fs--1 mt-1';
+      desc.textContent = [row.nama_unit, row.nama_instalasi].filter(Boolean).join(' · ') || `Kode jabatan: ${row.kd_jabatan}`;
+      btn.append(title, desc);
+      btn.addEventListener('click', () => { selected = row; render(); });
+      const cell = document.createElement('div');
+      cell.className = 'col'; cell.append(btn); list.append(cell);
+    }
+    el('role_message').textContent = roles.length === 0 ? 'Tidak ada hak akses aktif.' : filtered.length === 0 ? 'Tidak ada hasil pencarian.' : `${filtered.length} hak akses tersedia`;
+  };
+
+  const loadData = async (mode = 'view', providedRoles = null) => {
+    const user = getCurrentUser();
+    selected = null;
+    el('username').textContent = user?.nama_user || 'Pengguna';
+    el('usercode').textContent = user?.kd_user ?? '-';
+    el('search_role').value = '';
+    el('role_message').textContent = 'Memuat hak akses...';
+    roles = [];
+    try {
+      const rs = Array.isArray(providedRoles) ? providedRoles : await httpGet(`${config.api_url}/user/loadUserRole`);
+      if (!Array.isArray(rs) && rs?.code != 200) throw new Error(rs?.message || 'Gagal memuat hak akses');
+      const data = Array.isArray(rs) ? rs : (Array.isArray(rs?.data) ? rs.data : []);
+      roles = data.filter(r => String(r.kd_user) === String(user?.kd_user) && (r.aktif === true || String(r.aktif) === '1'));
+      render();
+      return { code: 200, data: roles };
+    } catch (error) {
+      el('role_message').textContent = 'Gagal memuat hak akses. Silakan logout lalu login kembali.';
+      return { code: 500, message: error.message };
+    }
+  };
+
+  const saveData = async () => {
+    if (!selected) return { code: 400, message: 'Silakan pilih hak akses terlebih dahulu.' };
+    // Main mengaktivasi pilihan ini ke backend sebelum menyimpan session.
+    return { code: 200, data: selected };
+  };
+
+  const init = () => {
+    if (!root() || root().dataset.ready === '1') return;
+    root().dataset.ready = '1';
+    el('search_role').addEventListener('input', render);
+  };
+
+  document.setting_role = { id, init, loadData, saveData };
+</script>
+
+<template>
+  <div id="setting_role-entries" class="p-2">
+    <div class="d-flex align-items-center gap-3 mb-3">
+      <div class="rounded-circle bg-soft-primary text-primary p-3"><i class="fas fa-user-shield fa-lg"></i></div>
+      <div><h5 class="mb-1 fw-bold">Selamat datang di EvoMedis</h5><div class="text-muted fs--1">Pilih hak akses untuk melanjutkan.</div></div>
+    </div>
+    <div class="rounded-3 bg-light p-3 mb-3 d-flex justify-content-between align-items-center">
+      <div><div class="fw-bold" data-tag="username">Pengguna</div><small class="text-muted">Kode User: <span data-tag="usercode">-</span></small></div>
+    </div>
+    <div class="input-group mb-3"><span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span><input type="search" class="form-control" data-tag="search_role" placeholder="Cari jabatan, unit, atau instalasi..." autocomplete="off"></div>
+    <div class="row row-cols-1 row-cols-md-2 g-2" data-tag="role_list"></div>
+    <div class="text-muted fs--1 mt-3" data-tag="role_message" aria-live="polite">Memuat hak akses...</div>
+    <div class="alert alert-info py-2 mt-3 mb-0 fs--1"><i class="fas fa-info-circle me-1"></i> Pilih satu hak akses untuk melanjutkan ke aplikasi.</div>
+  </div>
+</template>

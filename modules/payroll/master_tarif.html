@@ -1,0 +1,338 @@
+<style>
+  .payroll-tarif .card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem;
+  }
+  .payroll-tarif .table th {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+  }
+  .payroll-tarif .table td {
+    vertical-align: middle;
+    font-size: 0.85rem;
+  }
+</style>
+
+<template>
+  <div class="payroll-tarif container-fluid py-3">
+    <!-- Header -->
+    <div class="row mb-3 align-items-center">
+      <div class="col-md-6">
+        <h4 class="mb-1 text-primary fw-bold">
+          <i class="fas fa-sliders-h me-2"></i>Master Tarif & Ketentuan Penggajian
+        </h4>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0 small">
+            <li class="breadcrumb-item"><a href="#">Payroll</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Konfigurasi Tarif</li>
+          </ol>
+        </nav>
+      </div>
+      <div class="col-md-6 text-md-end mt-2 mt-md-0">
+        <button class="btn btn-primary btn-sm" id="btn-open-simulasi">
+          <i class="fas fa-calculator me-1"></i>Simulasi Hitung Gaji
+        </button>
+      </div>
+    </div>
+
+    <!-- Rule Configuration Cards -->
+    <div class="row g-3 mb-4">
+      <!-- Card BPJS Kes -->
+      <div class="col-md-4">
+        <div class="card h-100 border-start border-success border-4 shadow-sm">
+          <div class="card-header bg-white py-2 fw-bold text-success d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-shield-alt me-1"></i>BPJS Kesehatan</span>
+            <span class="badge bg-success">Aktif</span>
+          </div>
+          <div class="card-body p-3 small">
+            <div class="d-flex justify-content-between mb-2 pb-1 border-bottom">
+              <span class="text-muted">Iuran Pemberi Kerja (Tunjangan)</span>
+              <span class="fw-bold text-success">3.0 %</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2 pb-1 border-bottom">
+              <span class="text-muted">Iuran Pekerja (Potongan)</span>
+              <span class="fw-bold text-danger">2.0 %</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2 pb-1 border-bottom">
+              <span class="text-muted">Batas Maksimal Upah (Plafon)</span>
+              <span class="fw-bold">Rp 12.000.000</span>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Dasar Perhitungan</span>
+              <span class="fw-bold text-primary">Gaji Pokok / UMK</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card BPJS Ketenagakerjaan -->
+      <div class="col-md-4">
+        <div class="card h-100 border-start border-info border-4 shadow-sm">
+          <div class="card-header bg-white py-2 fw-bold text-info d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-briefcase me-1"></i>BPJS Ketenagakerjaan</span>
+            <span class="badge bg-info text-white">Aktif</span>
+          </div>
+          <div class="card-body p-3 small">
+            <div class="d-flex justify-content-between mb-2 pb-1 border-bottom">
+              <span class="text-muted">JHT Pemberi Kerja (Tunjangan)</span>
+              <span class="fw-bold text-info">3.7 %</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2 pb-1 border-bottom">
+              <span class="text-muted">JHT Pekerja (Potongan)</span>
+              <span class="fw-bold text-danger">2.0 %</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2 pb-1 border-bottom">
+              <span class="text-muted">JKK (Kecelakaan Kerja)</span>
+              <span class="fw-bold text-info">0.24 %</span>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">JKM (Kematian)</span>
+              <span class="fw-bold text-info">0.30 %</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Parameter Denda -->
+      <div class="col-md-4">
+        <div class="card h-100 border-start border-danger border-4 shadow-sm">
+          <div class="card-header bg-white py-2 fw-bold text-danger d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-gavel me-1"></i>Penalti Disiplin & Absensi</span>
+            <span class="badge bg-danger">Otomatis</span>
+          </div>
+          <div class="card-body p-3 small">
+            <div class="d-flex justify-content-between mb-2 pb-1 border-bottom">
+              <span class="text-muted">Denda Keterlambatan (THPJK)</span>
+              <span class="fw-bold text-danger">Rp 1.000 / menit</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2 pb-1 border-bottom">
+              <span class="text-muted">Pulang Cepat (PSW)</span>
+              <span class="fw-bold text-warning">Rp 1.000 / menit</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2 pb-1 border-bottom">
+              <span class="text-muted">Mangkir / Alpa Tanpa Izin</span>
+              <span class="fw-bold text-danger">1 Hari (Gapok / 22)</span>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Standar Hari Kerja Efektif</span>
+              <span class="fw-bold">22 Hari / Bulan</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Master Jabatan & Standar Gapok -->
+    <div class="card shadow-sm">
+      <div class="card-header bg-light py-2 px-3 fw-bold small text-dark d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-id-badge me-2"></i>Standar Tunjangan dan Jabatan Pegawai</span>
+        <div style="width: 250px;">
+          <input type="text" class="form-control form-control-sm" id="search-jabatan" placeholder="Cari Jabatan...">
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-striped align-middle mb-0" id="table-master-jabatan">
+            <thead>
+              <tr>
+                <th style="width: 50px;" class="text-center">No</th>
+                <th>Kode Jabatan</th>
+                <th>Nama Jabatan</th>
+                <th class="text-end">Estimasi Gaji Dasar</th>
+                <th class="text-end">Tunjangan Fungsional</th>
+                <th class="text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-master-jabatan">
+              <tr>
+                <td colspan="6" class="text-center py-4 text-muted">
+                  <i class="fas fa-spinner fa-spin fa-2x mb-2 d-block text-primary"></i>Memuat master jabatan...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL SIMULASI KALKULATOR GAJI -->
+  <div class="modal fade" id="modal-simulasi-gaji" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title fs-6"><i class="fas fa-calculator me-2"></i>Kalkulator Simulasi Gaji Pegawai</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Gaji Pokok / UMK (Rp)</label>
+            <input type="number" class="form-control form-control-sm sim-input" id="sim-gapok" value="3500000">
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Uang Lembur (Rp)</label>
+              <input type="number" class="form-control form-control-sm sim-input" id="sim-lembur" value="0">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Tunjangan Lain (Rp)</label>
+              <input type="number" class="form-control form-control-sm sim-input" id="sim-honor" value="0">
+            </div>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Keterlambatan (Menit)</label>
+              <input type="number" class="form-control form-control-sm sim-input" id="sim-menit" value="15">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Alpa / Mangkir (Hari)</label>
+              <input type="number" class="form-control form-control-sm sim-input" id="sim-alpa" value="0">
+            </div>
+          </div>
+
+          <div class="card bg-light border p-3 small">
+            <div class="fw-bold text-dark border-bottom pb-1 mb-2">Hasil Perhitungan Otomatis:</div>
+            <div class="d-flex justify-content-between mb-1">
+              <span>Tunjangan BPJS Kes (3%):</span>
+              <strong class="text-success" id="sim-res-tunj-kes">Rp 0</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+              <span>Tunjangan BPJS TK (3.7% + 0.54%):</span>
+              <strong class="text-info" id="sim-res-tunj-tk">Rp 0</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+              <span>Potongan BPJS Kes (2%):</span>
+              <strong class="text-danger" id="sim-res-pot-kes">Rp 0</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+              <span>Potongan BPJS TK (2%):</span>
+              <strong class="text-danger" id="sim-res-pot-tk">Rp 0</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+              <span>Denda Absensi & Terlambat:</span>
+              <strong class="text-danger" id="sim-res-denda">Rp 0</strong>
+            </div>
+            <div class="border-top pt-2 mt-2 d-flex justify-content-between align-items-center">
+              <span class="fw-bold">Estimasi Gaji Bersih (THP):</span>
+              <h5 class="fw-bold text-success mb-0" id="sim-res-thp">Rp 0</h5>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script type="module" defer>
+  import { httpGet } from './assets/js/core/http.js';
+
+  let masterList = [];
+
+  const formatRupiah = (val) => {
+    const num = parseFloat(val) || 0;
+    return 'Rp ' + num.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  };
+
+  const initModule = () => {
+    bindEvents();
+    loadTarifData();
+  };
+
+  const loadTarifData = async () => {
+    try {
+      const res = await httpGet(`${config.api_url}/payroll/master-tarif`);
+      if (res && res.code === 200 && res.data) {
+        masterList = res.data.jabatan || [];
+        renderJabatanTable(masterList);
+      }
+    } catch (e) {
+      console.error('Error fetching master tarif:', e);
+    }
+  };
+
+  const renderJabatanTable = (list) => {
+    const tbody = document.getElementById('tbody-master-jabatan');
+    if (!tbody) return;
+
+    if (!list || list.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="text-center py-4 text-muted">Tidak ada data jabatan.</td>
+        </tr>`;
+      return;
+    }
+
+    let html = '';
+    list.forEach((j, idx) => {
+      html += `
+        <tr>
+          <td class="text-center font-monospace">${idx + 1}</td>
+          <td><span class="badge bg-light text-dark font-monospace border">${j.KD_JABATAN || '-'}</span></td>
+          <td class="fw-bold text-dark">${j.JABATAN || '-'}</td>
+          <td class="text-end font-monospace">Rp 3.500.000</td>
+          <td class="text-end font-monospace text-primary">Rp 500.000</td>
+          <td class="text-center"><span class="badge bg-success">Aktif</span></td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+  };
+
+  const runSimulation = () => {
+    const gapok = parseFloat(document.getElementById('sim-gapok')?.value) || 0;
+    const lembur = parseFloat(document.getElementById('sim-lembur')?.value) || 0;
+    const honor = parseFloat(document.getElementById('sim-honor')?.value) || 0;
+    const menit = parseInt(document.getElementById('sim-menit')?.value) || 0;
+    const alpa = parseInt(document.getElementById('sim-alpa')?.value) || 0;
+
+    const tunjKes = gapok * 0.03;
+    const tunjTk = gapok * (0.037 + 0.0024 + 0.0030);
+
+    const potKes = gapok * 0.02;
+    const potTk = gapok * 0.02;
+    const dendaTerlambat = menit * 1000;
+    const dendaAlpa = alpa * (gapok / 22);
+    const totDenda = dendaTerlambat + dendaAlpa;
+
+    const thp = (gapok + lembur + honor) - (potKes + potTk + totDenda);
+
+    document.getElementById('sim-res-tunj-kes').textContent = formatRupiah(tunjKes);
+    document.getElementById('sim-res-tunj-tk').textContent = formatRupiah(tunjTk);
+    document.getElementById('sim-res-pot-kes').textContent = formatRupiah(potKes);
+    document.getElementById('sim-res-pot-tk').textContent = formatRupiah(potTk);
+    document.getElementById('sim-res-denda').textContent = formatRupiah(totDenda);
+    document.getElementById('sim-res-thp').textContent = formatRupiah(thp);
+  };
+
+  const bindEvents = () => {
+    document.getElementById('btn-open-simulasi')?.addEventListener('click', () => {
+      runSimulation();
+      const modal = new bootstrap.Modal(document.getElementById('modal-simulasi-gaji'));
+      modal.show();
+    });
+
+    document.querySelectorAll('.sim-input').forEach(inp => {
+      inp.addEventListener('input', runSimulation);
+    });
+
+    document.getElementById('search-jabatan')?.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase();
+      const filtered = masterList.filter(j =>
+        (j.JABATAN || '').toLowerCase().includes(q) ||
+        (j.KD_JABATAN || '').toLowerCase().includes(q)
+      );
+      renderJabatanTable(filtered);
+    });
+  };
+
+  initModule();
+</script>

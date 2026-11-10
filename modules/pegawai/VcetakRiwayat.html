@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daftar Riwayat Hidup Pegawai - evoHRIS</title>
+  <link rel="stylesheet" href="../../assets/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 12mm 15mm 15mm 15mm;
+    }
+    body {
+      background-color: #f1f5f9;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #1e293b;
+      font-size: 11pt;
+      line-height: 1.4;
+      margin: 0;
+      padding: 20px 0;
+    }
+    .print-sheet {
+      background: #ffffff;
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 15mm 18mm;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      box-sizing: border-box;
+      position: relative;
+    }
+    .kop-surat {
+      border-bottom: 3px double #000;
+      padding-bottom: 8px;
+      margin-bottom: 18px;
+    }
+    .kop-logo {
+      width: 75px;
+      height: 75px;
+      object-fit: contain;
+    }
+    .section-title {
+      font-size: 10.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      background-color: #f1f5f9;
+      padding: 4px 8px;
+      border-left: 4px solid #0284c7;
+      margin-top: 16px;
+      margin-bottom: 8px;
+      page-break-after: avoid;
+    }
+    .table-cetak {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px;
+      font-size: 9.5pt;
+    }
+    .table-cetak th {
+      background-color: #f8fafc;
+      border: 1px solid #cbd5e1;
+      padding: 4px 6px;
+      font-weight: 600;
+      text-align: left;
+    }
+    .table-cetak td {
+      border: 1px solid #cbd5e1;
+      padding: 4px 6px;
+      vertical-align: top;
+    }
+    .table-biodata td {
+      border: none;
+      padding: 2.5px 4px;
+      font-size: 9.5pt;
+    }
+    .pasfoto-box {
+      width: 30mm;
+      height: 40mm;
+      border: 1px solid #94a3b8;
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      margin: 0 auto;
+    }
+    .pasfoto-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .ttd-box {
+      page-break-inside: avoid;
+      margin-top: 30px;
+    }
+    .floating-actions {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      gap: 10px;
+      z-index: 9999;
+    }
+    @media print {
+      body {
+        background: transparent;
+        padding: 0;
+      }
+      .print-sheet {
+        box-shadow: none;
+        width: 100%;
+        min-height: auto;
+        padding: 0;
+        margin: 0;
+      }
+      .floating-actions {
+        display: none !important;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Print Controls -->
+  <div class="floating-actions">
+    <button class="btn btn-secondary shadow-sm" onclick="window.close()">
+      <i class="fas fa-times me-1"></i> Tutup
+    </button>
+    <button class="btn btn-primary shadow-sm" onclick="window.print()">
+      <i class="fas fa-print me-1"></i> Cetak Dokumen (PDF)
+    </button>
+  </div>
+
+  <div class="print-sheet">
+    <!-- Kop Surat -->
+    <div class="kop-surat d-flex align-items-center">
+      <div class="me-3">
+        <img src="../../assets/img/pic_logo.png" onerror="this.src='../../assets/img/simerdeka/logo_rs.png'" class="kop-logo" alt="Logo RS">
+      </div>
+      <div class="flex-grow-1 text-center">
+        <h5 class="mb-0 fw-bold tracking-wide" style="letter-spacing: 0.5px;">RUMAH SAKIT UMUM DAERAH</h5>
+        <h4 class="mb-0 fw-bold" style="letter-spacing: 1px;">INSTALASI PELAYANAN KESEHATAN & SISTEM HRIS</h4>
+        <div class="small text-muted" style="font-size: 8.5pt;">
+          Jl. Galuh Mas Raya No. 1 Karawang, Jawa Barat | Telp: (0267) 8452333 | Email: sdm@rsud.co.id
+        </div>
+      </div>
+    </div>
+
+    <!-- Title -->
+    <div class="text-center mb-3">
+      <h5 class="fw-bold mb-1 text-decoration-underline text-uppercase">DAFTAR RIWAYAT HIDUP PEGAWAI</h5>
+      <span class="small text-muted" id="cetak-nomor-dokumen">NOMOR INDUK PEGAWAI: -</span>
+    </div>
+
+    <!-- Identitas Pribadi & Pasfoto -->
+    <div class="row g-2 mb-2">
+      <div class="col-9">
+        <table class="table-biodata w-100">
+          <tr>
+            <td style="width: 140px;" class="fw-semibold">Nama Lengkap</td>
+            <td style="width: 10px;">:</td>
+            <td><strong id="p-nama">-</strong></td>
+          </tr>
+          <tr>
+            <td class="fw-semibold">NIP / ID Pegawai</td>
+            <td>:</td>
+            <td id="p-nip">-</td>
+          </tr>
+          <tr>
+            <td class="fw-semibold">Nomor Identitas (NIK)</td>
+            <td>:</td>
+            <td id="p-nik">-</td>
+          </tr>
+          <tr>
+            <td class="fw-semibold">Tempat, Tanggal Lahir</td>
+            <td>:</td>
+            <td id="p-ttl">-</td>
+          </tr>
+          <tr>
+            <td class="fw-semibold">Jenis Kelamin / Gol. Darah</td>
+            <td>:</td>
+            <td id="p-jk-goldar">-</td>
+          </tr>
+          <tr>
+            <td class="fw-semibold">Agama / Status Nikah</td>
+            <td>:</td>
+            <td id="p-agama-nikah">-</td>
+          </tr>
+          <tr>
+            <td class="fw-semibold">Pendidikan Terakhir</td>
+            <td>:</td>
+            <td id="p-pendidikan">-</td>
+          </tr>
+          <tr>
+            <td class="fw-semibold">Alamat Domisili</td>
+            <td>:</td>
+            <td id="p-alamat">-</td>
+          </tr>
+          <tr>
+            <td class="fw-semibold">No. HP / WhatsApp / Email</td>
+            <td>:</td>
+            <td id="p-kontak">-</td>
+          </tr>
+        </table>
+      </div>
+      <div class="col-3 text-center">
+        <div class="pasfoto-box" id="p-pasfoto">
+          <span class="text-muted small">Pasfoto<br>3 x 4</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seksi Kepegawaian & Status Kerja -->
+    <div class="section-title">I. INFORMASI KEPEGAWAIAN & STATUS PENUGASAN</div>
+    <table class="table-biodata w-100 mb-2">
+      <tr>
+        <td style="width: 140px;" class="fw-semibold">Unit Kerja / Bagian</td>
+        <td style="width: 10px;">:</td>
+        <td style="width: 35%;" id="p-bagian">-</td>
+        <td style="width: 140px;" class="fw-semibold">Status Pegawai</td>
+        <td style="width: 10px;">:</td>
+        <td id="p-status-pegawai">-</td>
+      </tr>
+      <tr>
+        <td class="fw-semibold">Jabatan Terakhir</td>
+        <td>:</td>
+        <td id="p-jabatan">-</td>
+        <td class="fw-semibold">Jenis Pegawai</td>
+        <td>:</td>
+        <td id="p-jenis-pegawai">-</td>
+      </tr>
+      <tr>
+        <td class="fw-semibold">Pangkat / Golongan</td>
+        <td>:</td>
+        <td id="p-pangkat">-</td>
+        <td class="fw-semibold">TMT Masuk Bekerja</td>
+        <td>:</td>
+        <td id="p-tmt">-</td>
+      </tr>
+      <tr>
+        <td class="fw-semibold">BPJS Kesehatan</td>
+        <td>:</td>
+        <td id="p-bpjs-kes">-</td>
+        <td class="fw-semibold">BPJS Ketenagakerjaan</td>
+        <td>:</td>
+        <td id="p-bpjs-tk">-</td>
+      </tr>
+      <tr>
+        <td class="fw-semibold">Nomor Pokok Wajib Pajak</td>
+        <td>:</td>
+        <td id="p-npwp" colspan="4">-</td>
+      </tr>
+    </table>
+
+    <!-- Seksi Riwayat Penempatan -->
+    <div class="section-title">II. RIWAYAT PENEMPATAN & UNIT KERJA</div>
+    <table class="table-cetak">
+      <thead>
+        <tr>
+          <th style="width: 30px;" class="text-center">No</th>
+          <th>Unit / Bagian</th>
+          <th>Jabatan</th>
+          <th>TMT Mulai</th>
+          <th>TMT Selesai</th>
+          <th>Keterangan</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-cetak-penempatan">
+        <tr><td colspan="6" class="text-center text-muted">- Tidak ada riwayat tercatat -</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Seksi Riwayat Pendidikan Formal -->
+    <div class="section-title">III. RIWAYAT PENDIDIKAN FORMAL</div>
+    <table class="table-cetak">
+      <thead>
+        <tr>
+          <th style="width: 30px;" class="text-center">No</th>
+          <th>Jenjang</th>
+          <th>Institusi / Perguruan Tinggi</th>
+          <th>Jurusan / Peminatan</th>
+          <th>Tahun Lulus</th>
+          <th>Nomor Ijazah</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-cetak-pendidikan">
+        <tr><td colspan="6" class="text-center text-muted">- Tidak ada riwayat tercatat -</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Seksi Diklat & Pelatihan -->
+    <div class="section-title">IV. RIWAYAT PELATIHAN & PENGEMBANGAN PROFESI (DIKLAT)</div>
+    <table class="table-cetak">
+      <thead>
+        <tr>
+          <th style="width: 30px;" class="text-center">No</th>
+          <th>Nama Pelatihan / Kursus</th>
+          <th>Penyelenggara</th>
+          <th>Tanggal</th>
+          <th>Durasi (Jam)</th>
+          <th>No. Sertifikat</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-cetak-pelatihan">
+        <tr><td colspan="6" class="text-center text-muted">- Tidak ada riwayat tercatat -</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Seksi STR & SIP Nakes -->
+    <div class="section-title">V. LEGALITAS PROFESI TENAGA KESEHATAN (STR & SIP)</div>
+    <div class="row g-2 mb-2">
+      <div class="col-6">
+        <h6 class="fw-bold small mb-1">A. Surat Tanda Registrasi (STR)</h6>
+        <table class="table-cetak">
+          <thead>
+            <tr>
+              <th style="width: 25px;" class="text-center">No</th>
+              <th>Nomor STR</th>
+              <th>Tgl Terbit</th>
+              <th>Berlaku S/D</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-cetak-str">
+            <tr><td colspan="4" class="text-center text-muted">- Tidak ada STR -</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="col-6">
+        <h6 class="fw-bold small mb-1">B. Surat Izin Praktik (SIP)</h6>
+        <table class="table-cetak">
+          <thead>
+            <tr>
+              <th style="width: 25px;" class="text-center">No</th>
+              <th>Nomor SIP</th>
+              <th>Penerbit</th>
+              <th>Berlaku S/D</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-cetak-sip">
+            <tr><td colspan="4" class="text-center text-muted">- Tidak ada SIP -</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Seksi Susunan Keluarga -->
+    <div class="section-title">VI. SUSUNAN ANGGOTA KELUARGA & TANGGUNGAN</div>
+    <table class="table-cetak">
+      <thead>
+        <tr>
+          <th style="width: 30px;" class="text-center">No</th>
+          <th>Nama Anggota</th>
+          <th>Hubungan</th>
+          <th>Tempat, Tgl Lahir</th>
+          <th>Pekerjaan</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-cetak-keluarga">
+        <tr><td colspan="5" class="text-center text-muted">- Tidak ada data keluarga -</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Seksi Kontrak Kerja, Mutasi & Promosi -->
+    <div class="section-title">VII. REKAM JEJAK KARIR (PROMOSI, MUTASI & KONTRAK KERJA)</div>
+    <div class="row g-2 mb-2">
+      <div class="col-6">
+        <h6 class="fw-bold small mb-1">A. Mutasi & Promosi Jabatan</h6>
+        <table class="table-cetak">
+          <thead>
+            <tr>
+              <th>No. SK / Tanggal</th>
+              <th>Posisi Lama</th>
+              <th>Posisi Baru</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-cetak-karir">
+            <tr><td colspan="3" class="text-center text-muted">- Tidak ada mutasi/promosi -</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="col-6">
+        <h6 class="fw-bold small mb-1">B. Riwayat Kontrak Kerja (PKWT)</h6>
+        <table class="table-cetak">
+          <thead>
+            <tr>
+              <th>Nomor Kontrak</th>
+              <th>Mulai S/D Akhir</th>
+              <th>Keterangan</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-cetak-kontrak">
+            <tr><td colspan="3" class="text-center text-muted">- Tidak ada data kontrak -</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Seksi Keahlian, Kemampuan & Pengalaman Kerja -->
+    <div class="section-title">VIII. PENGALAMAN KERJA TERDAHULU & KOMPETENSI</div>
+    <table class="table-cetak">
+      <thead>
+        <tr>
+          <th style="width: 30px;" class="text-center">No</th>
+          <th>Instansi / Perusahaan</th>
+          <th>Jabatan Terakhir</th>
+          <th>Masa Kerja</th>
+          <th>Deskripsi Singkat</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-cetak-pengalaman">
+        <tr><td colspan="5" class="text-center text-muted">- Tidak ada pengalaman kerja -</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Seksi MCU, Prestasi & Kedisiplinan -->
+    <div class="section-title">IX. CATATAN KESEHATAN (MCU), PENGHARGAAN & DISIPLIN</div>
+    <div class="row g-2 mb-2">
+      <div class="col-4">
+        <h6 class="fw-bold small mb-1">A. Hasil MCU Terakhir</h6>
+        <table class="table-cetak">
+          <thead>
+            <tr><th>Tgl MCU</th><th>Hasil</th><th>Rekomendasi</th></tr>
+          </thead>
+          <tbody id="tbl-cetak-mcu">
+            <tr><td colspan="3" class="text-center text-muted">- Tidak ada MCU -</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="col-4">
+        <h6 class="fw-bold small mb-1">B. Penghargaan / Prestasi</h6>
+        <table class="table-cetak">
+          <thead>
+            <tr><th>Penghargaan</th><th>Pemberi</th><th>Tahun</th></tr>
+          </thead>
+          <tbody id="tbl-cetak-penghargaan">
+            <tr><td colspan="3" class="text-center text-muted">- Tidak ada penghargaan -</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="col-4">
+        <h6 class="fw-bold small mb-1">C. Catatan Disiplin / Sanksi</h6>
+        <table class="table-cetak">
+          <thead>
+            <tr><th>Sanksi</th><th>No. SK</th><th>Pelanggaran</th></tr>
+          </thead>
+          <tbody id="tbl-cetak-sanksi">
+            <tr><td colspan="3" class="text-center text-muted">- Bersih / Nihil -</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Seksi Penempatan Arsip Fisik & Legalitas Dokumen Rumah Sakit -->
+    <div class="section-title">X. REKAM ARSIP FISIK & BUKU TANAH RUMAH SAKIT</div>
+    <div class="row g-2 mb-2">
+      <div class="col-6">
+        <h6 class="fw-bold small mb-1">A. Posisi Rak Lemari Arsip Berkas (tb_rak)</h6>
+        <table class="table-cetak">
+          <thead>
+            <tr>
+              <th style="width: 30px;" class="text-center">No</th>
+              <th>Nomor Lemari</th>
+              <th>Nama / Penempatan Rak</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-cetak-rak">
+            <tr><td colspan="3" class="text-center text-muted">- Tidak tercatat di rak -</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="col-6">
+        <h6 class="fw-bold small mb-1">B. Legalitas Aset / Dokumen Buku Tanah (tb_buku_tanah)</h6>
+        <table class="table-cetak">
+          <thead>
+            <tr>
+              <th style="width: 30px;" class="text-center">No</th>
+              <th>Nomor Hak</th>
+              <th>Jenis Hak</th>
+              <th>Tahun</th>
+              <th>Lemari / Rak</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-cetak-buku">
+            <tr><td colspan="5" class="text-center text-muted">- Tidak ada catatan buku tanah -</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tanda Tangan Pengesahan -->
+    <div class="ttd-box pt-3">
+      <div class="d-flex justify-content-between text-center" style="font-size: 9.5pt;">
+        <div style="width: 250px;">
+          <div>Mengetahui,</div>
+          <div class="fw-bold">Kepala Bagian Kepegawaian & SDM</div>
+          <div style="height: 65px;"></div>
+          <div class="fw-bold text-decoration-underline">(........................................................)</div>
+          <div>NIP. .................................................</div>
+        </div>
+
+        <div style="width: 250px;">
+          <div>Dibuat di Karawang, <span id="tgl-cetak-dokumen"></span></div>
+          <div class="fw-bold">Pegawai Yang Bersangkutan,</div>
+          <div style="height: 65px;"></div>
+          <div class="fw-bold text-decoration-underline" id="ttd-nama-pegawai">( John Doe )</div>
+          <div>NIP. <span id="ttd-nip-pegawai">-</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Set Tanggal Cetak Hari Ini
+      const now = new Date();
+      const options = { day: 'numeric', month: 'long', year: 'numeric' };
+      document.getElementById('tgl-cetak-dokumen').innerText = now.toLocaleDateString('id-ID', options);
+
+      // Ambil ID Pegawai dari parameter URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const pegawaiId = urlParams.get('id') || '1666';
+
+      try {
+        const apiUrl = `${window.location.origin}/evoHRIS_v2.1/api/cTambahPegawai/cetak_riwayat/${pegawaiId}`;
+        const res = await fetch(apiUrl, {
+          headers: { 'Authorization-Key': 'secretkey123' }
+        });
+        const json = await res.json();
+
+        if (json && json.code === 200 && json.data) {
+          renderDataCetak(json.data);
+        } else {
+          alert('Data pegawai tidak ditemukan.');
+        }
+      } catch (err) {
+        console.error('Error memuat data cetak:', err);
+      }
+    });
+
+    function renderDataCetak(d) {
+      const p = d.pegawai || {};
+      const namaLengkap = `${p.GELAR_DEPAN ? p.GELAR_DEPAN + ' ' : ''}${p.NAMA || '-'}${p.GELAR_BELAKANG ? ', ' + p.GELAR_BELAKANG : ''}`;
+
+      document.title = `CV_${p.NIP || p.ID_PEGAWAI}_${p.NAMA || 'Pegawai'}`;
+      document.getElementById('cetak-nomor-dokumen').innerText = `NOMOR INDUK PEGAWAI: ${p.NIP || '-'}`;
+      document.getElementById('p-nama').innerText = namaLengkap;
+      document.getElementById('p-nip').innerText = p.NIP || '-';
+      document.getElementById('p-nik').innerText = p.NO_IDENTITAS || '-';
+
+      const ttl = `${p.TEMPAT_LAHIR || '-'}, ${p.TANGGAL_LAHIR ? formatTanggal(p.TANGGAL_LAHIR) : '-'}`;
+      document.getElementById('p-ttl').innerText = ttl;
+      document.getElementById('p-jk-goldar').innerText = `${p.JENIS_KELAMIN === 'L' ? 'Laki-laki' : 'Perempuan'} / Gol. Darah: ${p.KD_GOLONGAN_DARAH || '-'} (${p.RHESUS || '-'})`;
+      document.getElementById('p-agama-nikah').innerText = `${p.AGAMA || '-'} / ${p.STATUS_PERKAWINAN || '-'}`;
+      document.getElementById('p-pendidikan').innerText = p.JENJANG_PENDIDIKAN || '-';
+      document.getElementById('p-alamat').innerText = p.ALAMAT || '-';
+      document.getElementById('p-kontak').innerText = `${p.HANDPHONE || '-'} / ${p.EMAIL || '-'}`;
+
+      // Pasfoto
+      if (p.FOTO) {
+        document.getElementById('p-pasfoto').innerHTML = `<img src="../../assets/user/${p.FOTO}" alt="Pasfoto" onerror="this.parentElement.innerHTML='<span class=\\'text-muted small\\'>Pasfoto<br>3 x 4</span>'">`;
+      }
+
+      // Kepegawaian
+      document.getElementById('p-bagian').innerText = p.NAMA_BAGIAN || p.BAGIAN || '-';
+      document.getElementById('p-jabatan').innerText = p.NAMA_JABATAN || p.JABATAN || '-';
+      document.getElementById('p-pangkat').innerText = p.PANGKAT || '-';
+      document.getElementById('p-status-pegawai').innerText = p.STATUS_PEGAWAI || '-';
+      document.getElementById('p-jenis-pegawai').innerText = p.JENIS_PEGAWAI || '-';
+      document.getElementById('p-tmt').innerText = p.TGL_MASUK ? formatTanggal(p.TGL_MASUK) : '-';
+      document.getElementById('p-bpjs-kes').innerText = p.NO_BPJS_KES || '-';
+      document.getElementById('p-bpjs-tk').innerText = p.NO_BPJS_TK || '-';
+      document.getElementById('p-npwp').innerText = p.NPWP || '-';
+
+      // TTD Pegawai
+      document.getElementById('ttd-nama-pegawai').innerText = `( ${namaLengkap} )`;
+      document.getElementById('ttd-nip-pegawai').innerText = p.NIP || '-';
+
+      // Tabel Penempatan
+      renderTabelList('tbl-cetak-penempatan', d.penempatan, [
+        item => item.BAGIAN || '-',
+        item => item.JABATAN || '-',
+        item => formatTanggal(item.TGL_MULAI),
+        item => formatTanggal(item.TGL_SELESAI),
+        item => item.KETERANGAN || '-'
+      ]);
+
+      // Tabel Pendidikan
+      renderTabelList('tbl-cetak-pendidikan', d.pendidikan, [
+        item => item.JENJANG_PENDIDIKAN || '-',
+        item => item.NAMA_SEKOLAH || '-',
+        item => item.JURUSAN || '-',
+        item => item.TAHUN_LULUS || '-',
+        item => item.NO_IJAZAH || '-'
+      ]);
+
+      // Tabel Pelatihan
+      renderTabelList('tbl-cetak-pelatihan', d.pelatihan, [
+        item => item.NAMA_PELATIHAN || '-',
+        item => item.PENYELENGGARA || '-',
+        item => formatTanggal(item.TGL_PELATIHAN),
+        item => item.JUMLAH_JAM ? `${item.JUMLAH_JAM} Jam` : '-',
+        item => item.NO_SERTIFIKAT || '-'
+      ]);
+
+      // Tabel STR & SIP
+      renderTabelList('tbl-cetak-str', d.str, [
+        item => item.NO_STR || '-',
+        item => formatTanggal(item.TGL_TERBIT),
+        item => formatTanggal(item.TGL_KADALUARSA)
+      ]);
+      renderTabelList('tbl-cetak-sip', d.sip, [
+        item => item.NO_SIP || '-',
+        item => item.INSTANSI_PENERBIT || '-',
+        item => formatTanggal(item.TGL_KADALUARSA)
+      ]);
+
+      // Tabel Keluarga
+      renderTabelList('tbl-cetak-keluarga', d.keluarga, [
+        item => item.NAMA || '-',
+        item => item.HUBUNGAN || '-',
+        item => `${item.TEMPAT_LAHIR || '-'}, ${formatTanggal(item.TGL_LAHIR)}`,
+        item => item.PEKERJAAN || '-'
+      ]);
+
+      // Tabel Karir (Promosi & Mutasi)
+      const karirList = [];
+      if (d.promosi) {
+        d.promosi.forEach(item => {
+          karirList.push({
+            sk: `SK Promosi: ${item.NO_SK || '-'} (${formatTanggal(item.TGL_SK)})`,
+            lama: item.JABATAN_LAMA || '-',
+            baru: `${item.JABATAN_BARU || '-'} (${item.PANGKAT_BARU || '-'})`
+          });
+        });
+      }
+      if (d.mutasi) {
+        d.mutasi.forEach(item => {
+          karirList.push({
+            sk: `SK Mutasi: ${item.NO_SK || '-'} (${formatTanggal(item.TGL_SK)})`,
+            lama: item.BAGIAN_LAMA || '-',
+            baru: item.BAGIAN_BARU || '-'
+          });
+        });
+      }
+      renderTabelCustom('tbl-cetak-karir', karirList, item => `
+        <td>${item.sk}</td>
+        <td>${item.lama}</td>
+        <td>${item.baru}</td>
+      `);
+
+      // Tabel Kontrak
+      renderTabelCustom('tbl-cetak-kontrak', d.kontrak, item => `
+        <td>${item.NO_KONTRAK || '-'}</td>
+        <td>${formatTanggal(item.TGL_AWAL)} s/d ${formatTanggal(item.TGL_AKHIR)}</td>
+        <td>${item.KETERANGAN || '-'}</td>
+      `);
+
+      // Tabel Pengalaman Kerja
+      renderTabelList('tbl-cetak-pengalaman', d.pengalaman, [
+        item => item.PERUSAHAAN || '-',
+        item => item.JABATAN || '-',
+        item => `${formatTanggal(item.TGL_MASUK)} - ${formatTanggal(item.TGL_KELUAR)}`,
+        item => item.DESKRIPSI || '-'
+      ]);
+
+      // Tabel MCU, Penghargaan, Sanksi
+      renderTabelCustom('tbl-cetak-mcu', d.mcu, item => `
+        <td>${formatTanggal(item.TGL_MCU)}</td>
+        <td><strong>${item.HASIL_MCU || '-'}</strong></td>
+        <td>${item.CATATAN || '-'}</td>
+      `);
+
+      renderTabelCustom('tbl-cetak-penghargaan', d.penghargaan, item => `
+        <td>${item.NAMA_PENGHARGAAN || '-'}</td>
+        <td>${item.PEMBERI || '-'}</td>
+        <td>${item.TAHUN || '-'}</td>
+      `);
+
+      renderTabelCustom('tbl-cetak-sanksi', d.sanksi, item => `
+        <td><span class="text-danger fw-semibold">${item.JENIS_SANKSI || '-'}</span></td>
+        <td>${item.NO_SK || '-'}</td>
+        <td>${item.PELANGGARAN || '-'}</td>
+      `);
+
+      // Rak Lemari Arsip
+      renderTabelList('tbl-cetak-rak', d.arsip_rak, [
+        item => item.no_lemari || '-',
+        item => item.nama_rak || '-'
+      ]);
+
+      // Buku Tanah
+      renderTabelList('tbl-cetak-buku', d.buku_tanah, [
+        item => item.no_hak || '-',
+        item => item.jenis_hak || '-',
+        item => item.tahun || '-',
+        item => `Lemari: ${item.kd_lemari || '-'} / Rak: ${item.kd_rak || '-'}`
+      ]);
+    }
+
+    function renderTabelList(tbodyId, list, colFormatters) {
+      const tbody = document.getElementById(tbodyId);
+      if (!tbody) return;
+      if (!list || list.length === 0) return;
+
+      let html = '';
+      list.forEach((item, idx) => {
+        html += `<tr><td class="text-center" style="width: 30px;">${idx + 1}</td>`;
+        colFormatters.forEach(fn => {
+          html += `<td>${fn(item)}</td>`;
+        });
+        html += '</tr>';
+      });
+      tbody.innerHTML = html;
+    }
+
+    function renderTabelCustom(tbodyId, list, rowRenderer) {
+      const tbody = document.getElementById(tbodyId);
+      if (!tbody) return;
+      if (!list || list.length === 0) return;
+
+      let html = '';
+      list.forEach(item => {
+        html += `<tr>${rowRenderer(item)}</tr>`;
+      });
+      tbody.innerHTML = html;
+    }
+
+    function formatTanggal(tglStr) {
+      if (!tglStr || tglStr === '0000-00-00') return '-';
+      try {
+        const d = new Date(tglStr);
+        if (isNaN(d.getTime())) return tglStr;
+        return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+      } catch (e) {
+        return tglStr;
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,633 @@
+<style>
+  .kinerja-penilaian .card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem;
+  }
+  .kinerja-penilaian .table th {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+  }
+  .kinerja-penilaian .table td {
+    vertical-align: middle;
+    font-size: 0.85rem;
+  }
+</style>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+
+  let rawPenilaianData = [];
+  let filteredPenilaianData = [];
+  let masterPerilaku = [];
+  let masterPegawai = [];
+  let currentPage = 1;
+  const pageSize = 15;
+
+  const tag = 'kinerja_penilaian';
+
+  const initModule = () => {
+    bindEvents();
+    loadData();
+    loadMaster();
+  };
+
+  const loadMaster = async () => {
+    try {
+      const res = await httpGet(`${config.api_url}/kinerja/master`);
+      if (res && res.code === 200 && res.data) {
+        masterPerilaku = res.data.master_perilaku || [];
+      }
+
+      const resPeg = await httpGet(`${config.api_url}/pegawai/list?limit=500`);
+      if (resPeg && resPeg.code === 200 && resPeg.data) {
+        masterPegawai = Array.isArray(resPeg.data) ? resPeg.data : (resPeg.data.data || []);
+        populatePegawaiSelect();
+      }
+    } catch (e) {
+      console.warn('Master load error:', e);
+    }
+  };
+
+  const populatePegawaiSelect = () => {
+    const sel = document.getElementById('modal-eval-pegawai');
+    if (!sel) return;
+    let html = '<option value="">-- Pilih Pegawai --</option>';
+    masterPegawai.forEach(p => {
+      const nipStr = p.NIP ? ` (${p.NIP})` : '';
+      html += `<option value="${p.ID_PEGAWAI || p.NIP}">${p.NAMA || p.nama}${nipStr}</option>`;
+    });
+    sel.innerHTML = html;
+  };
+
+  const loadData = async () => {
+    const tbody = document.getElementById('tbody-penilaian');
+    const spinner = document.getElementById('loading-penilaian');
+
+    if (spinner) spinner.classList.remove('d-none');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data Penilaian Kinerja & Evaluasi Perilaku...</td></tr>';
+
+    try {
+      const periode = document.getElementById('filter-periode-penilaian')?.value || '';
+      const search = document.getElementById('search-penilaian')?.value || '';
+
+      let url = `${config.api_url}/kinerja/penilaian?limit=500`;
+      if (periode) url += `&periode=${encodeURIComponent(periode)}`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+
+      const res = await httpGet(url);
+      if (res && res.code === 200) {
+        const dataObj = res.data;
+        rawPenilaianData = Array.isArray(dataObj) ? dataObj : (dataObj.data || []);
+        filteredPenilaianData = [...rawPenilaianData];
+
+        updateSummaryCards(dataObj.total || rawPenilaianData.length);
+        currentPage = 1;
+        renderTable();
+      } else {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Gagal memuat rekapitulasi penilaian</td></tr>';
+      }
+    } catch (err) {
+      console.error('Error load penilaian:', err);
+      if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">Terjadi kesalahan: ${err.message}</td></tr>`;
+    } finally {
+      if (spinner) spinner.classList.add('d-none');
+    }
+  };
+
+  const updateSummaryCards = (totalCount) => {
+    const elTotal = document.getElementById('card-stat-pen-total-eval');
+    const elAvg = document.getElementById('card-stat-pen-avg-score');
+    const elSangatBaik = document.getElementById('card-stat-pen-sangat-baik');
+    const elBaik = document.getElementById('card-stat-pen-baik');
+
+    const total = totalCount || rawPenilaianData.length;
+    let sumScore = 0;
+    let countValid = 0;
+    let sangatBaik = 0;
+    let baik = 0;
+
+    rawPenilaianData.forEach(r => {
+      const val = parseFloat(r.rata_nilai || 0);
+      if (val > 0) {
+        sumScore += val;
+        countValid++;
+      }
+      if (r.predikat === 'Sangat Baik') sangatBaik++;
+      else if (r.predikat === 'Baik') baik++;
+    });
+
+    const avg = countValid > 0 ? (sumScore / countValid).toFixed(2) : '0.00';
+
+    if (elTotal) elTotal.textContent = total.toLocaleString();
+    if (elAvg) elAvg.textContent = avg;
+    if (elSangatBaik) elSangatBaik.textContent = sangatBaik.toLocaleString();
+    if (elBaik) elBaik.textContent = baik.toLocaleString();
+
+    const badge = document.getElementById('badge-total-penilaian');
+    if (badge) badge.textContent = `${total} Evaluasi Kinerja`;
+  };
+
+  const renderTable = () => {
+    const tbody = document.getElementById('tbody-penilaian');
+    if (!tbody) return;
+
+    if (filteredPenilaianData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted"><i class="fas fa-star-half me-2"></i>Tidak ada data evaluasi kinerja yang ditemukan</td></tr>';
+      renderPagination(0);
+      return;
+    }
+
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    const pageRows = filteredPenilaianData.slice(start, end);
+
+    let html = '';
+    pageRows.forEach((row, idx) => {
+      const num = start + idx + 1;
+      const namaPegawai = row.nama_pegawai || (row.id_pegawai ? `Pegawai #${row.id_pegawai}` : 'Pegawai Rumah Sakit');
+      const nip = row.NIP || '-';
+      const bagian = row.nama_bagian || '-';
+      const periode = row.periode || '-';
+      const rataNilai = parseFloat(row.rata_nilai || 0).toFixed(2);
+      const jmlKriteria = row.jml_kriteria || '1';
+      const predikat = row.predikat || 'Baik';
+      const predikatClass = row.predikat_class || 'bg-soft-success text-success';
+
+      html += `
+        <tr>
+          <td class="text-center text-muted fw-bold">${num}</td>
+          <td>
+            <div class="fw-bold text-dark">${namaPegawai}</div>
+            <div class="text-muted small">NIP: ${nip}</div>
+          </td>
+          <td>
+            <span class="badge bg-light text-primary border">${bagian}</span>
+          </td>
+          <td class="text-center fw-semibold text-dark">${periode}</td>
+          <td class="text-center">
+            <span class="badge bg-soft-info text-info fs-6 px-2 py-1">${rataNilai}</span>
+          </td>
+          <td class="text-center small text-muted">${jmlKriteria} Aspek</td>
+          <td class="text-center">
+            <span class="badge ${predikatClass} px-3 py-1 fs-7">${predikat}</span>
+          </td>
+          <td class="text-center">
+            <button class="btn btn-outline-primary btn-sm btn-detail-penilaian" data-idx="${start + idx}" title="Raport Prestasi Kinerja">
+              <i class="fas fa-file-invoice me-1"></i>Raport
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    renderPagination(filteredPenilaianData.length);
+
+    tbody.querySelectorAll('.btn-detail-penilaian').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.getAttribute('data-idx'));
+        const item = filteredPenilaianData[idx];
+        if (item) showRaportModal(item);
+      });
+    });
+  };
+
+  const renderPagination = (totalRows) => {
+    const el = document.getElementById('pagination-penilaian');
+    const info = document.getElementById('pagination-info-penilaian');
+    if (!el) return;
+
+    const totalPages = Math.ceil(totalRows / pageSize) || 1;
+    const start = totalRows === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    const end = Math.min(currentPage * pageSize, totalRows);
+
+    if (info) info.textContent = `Menampilkan ${start} - ${end} dari ${totalRows} data`;
+
+    let html = `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage - 1}">«</a></li>`;
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) {
+        html += `<li class="page-item ${p === currentPage ? 'active' : ''}"><a class="page-link" href="#" data-page="${p}">${p}</a></li>`;
+      } else if (p === currentPage - 3 || p === currentPage + 3) {
+        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      }
+    }
+    html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage + 1}">»</a></li>`;
+    el.innerHTML = html;
+
+    el.querySelectorAll('.page-link').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const p = parseInt(btn.getAttribute('data-page'));
+        if (p && p !== currentPage && p >= 1 && p <= totalPages) {
+          currentPage = p;
+          renderTable();
+        }
+      });
+    });
+  };
+
+  const showRaportModal = (item) => {
+    const modalEl = document.getElementById('modal-raport-penilaian');
+    if (!modalEl || !window.bootstrap) return;
+
+    document.getElementById('raport-nama').textContent = item.nama_pegawai || (item.id_pegawai ? `Pegawai #${item.id_pegawai}` : 'Pegawai Rumah Sakit');
+    document.getElementById('raport-nip').textContent = item.NIP || '-';
+    document.getElementById('raport-bagian').textContent = item.nama_bagian || '-';
+    document.getElementById('raport-periode').textContent = item.periode || '-';
+    document.getElementById('raport-nilai-akhir').textContent = parseFloat(item.rata_nilai || 0).toFixed(2);
+    document.getElementById('raport-predikat').textContent = item.predikat || 'Baik';
+    document.getElementById('raport-predikat').className = `badge ${item.predikat_class || 'bg-success'} fs-6 px-3 py-2`;
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  };
+
+  const showModalForm = () => {
+    const modalEl = document.getElementById('modal-evaluasi-form');
+    if (!modalEl || !window.bootstrap) return;
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  };
+
+  const saveEvaluasiPerilaku = async () => {
+    const peg = document.getElementById('modal-eval-pegawai')?.value;
+    const periode = document.getElementById('modal-eval-periode')?.value;
+
+    if (!peg) {
+      alert('Pilih Pegawai terlebih dahulu.');
+      return;
+    }
+    if (!periode) {
+      alert('Tentukan Periode Penilaian.');
+      return;
+    }
+
+    const payload = {
+      id_pegawai: peg,
+      periode: periode,
+      nilai_orientasi: document.getElementById('score-orientasi')?.value || 85,
+      nilai_integritas: document.getElementById('score-integritas')?.value || 85,
+      nilai_komitmen: document.getElementById('score-komitmen')?.value || 85,
+      nilai_disiplin: document.getElementById('score-disiplin')?.value || 85,
+      nilai_kerjasama: document.getElementById('score-kerjasama')?.value || 85,
+      nilai_kepemimpinan: document.getElementById('score-kepemimpinan')?.value || 85
+    };
+
+    const btn = document.getElementById('btn-save-evaluasi');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan...';
+    }
+
+    try {
+      const res = await httpPost(`${config.api_url}/kinerja/perilaku/save`, payload);
+      if (res && res.code === 200) {
+        const modalEl = document.getElementById('modal-evaluasi-form');
+        if (modalEl && window.bootstrap) {
+          bootstrap.Modal.getInstance(modalEl)?.hide();
+        }
+        await loadData();
+      } else {
+        alert(res?.message || 'Gagal menyimpan evaluasi perilaku.');
+      }
+    } catch (e) {
+      alert('Terjadi kesalahan: ' + e.message);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save me-1"></i>Simpan Evaluasi Perilaku';
+      }
+    }
+  };
+
+  const bindEvents = () => {
+    document.getElementById('btn-filter-penilaian')?.addEventListener('click', () => loadData());
+    document.getElementById('btn-refresh-penilaian')?.addEventListener('click', () => loadData());
+    document.getElementById('btn-tambah-evaluasi')?.addEventListener('click', () => showModalForm());
+    document.getElementById('btn-save-evaluasi')?.addEventListener('click', () => saveEvaluasiPerilaku());
+
+    document.getElementById('search-penilaian')?.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        filteredPenilaianData = [...rawPenilaianData];
+      } else {
+        filteredPenilaianData = rawPenilaianData.filter(r => 
+          (r.nama_pegawai && r.nama_pegawai.toLowerCase().includes(q)) ||
+          (r.NIP && r.NIP.toLowerCase().includes(q)) ||
+          (r.nama_bagian && r.nama_bagian.toLowerCase().includes(q)) ||
+          (r.periode && r.periode.toLowerCase().includes(q)) ||
+          (r.predikat && r.predikat.toLowerCase().includes(q))
+        );
+      }
+      currentPage = 1;
+      renderTable();
+    });
+  };
+
+  window.kinerja_penilaian = { loadData, showRaportModal, showModalForm };
+  document.kinerja_penilaian = { loadData };
+
+  initModule();
+</script>
+
+<template>
+  <div class="container-fluid py-3 kinerja-penilaian">
+    <!-- Header -->
+    <div class="row align-items-center mb-3">
+      <div class="col-md-7">
+        <div class="d-flex align-items-center">
+          <div class="avatar bg-soft-info text-info p-3 rounded-circle me-3">
+            <i class="fas fa-star-half-alt fa-2x"></i>
+          </div>
+          <div>
+            <h4 class="mb-0 fw-bold">Penilaian Kinerja & Evaluasi Perilaku</h4>
+            <p class="text-muted small mb-0">Rangkuman prestasi kerja tahunan, integrasi capaian SKP dengan 6 aspek standar kompetensi perilaku</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-5 text-md-end mt-2 mt-md-0">
+        <span class="badge bg-info px-3 py-2 me-2" id="badge-total-penilaian">Memuat...</span>
+        <button class="btn btn-outline-secondary btn-sm me-2" id="btn-refresh-penilaian" title="Segarkan Data">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+        <button class="btn btn-info text-white btn-sm" id="btn-tambah-evaluasi">
+          <i class="fas fa-plus me-1"></i>Evaluasi Perilaku Baru
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-info">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Total Pegawai Dinilai</div>
+              <h4 class="mb-0 fw-bold text-info" id="card-stat-pen-total-eval">0</h4>
+            </div>
+            <i class="fas fa-users-cog fa-2x text-info opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-primary">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Rata-rata Skor Prestasi</div>
+              <h4 class="mb-0 fw-bold text-primary" id="card-stat-pen-avg-score">0.00</h4>
+            </div>
+            <i class="fas fa-chart-line fa-2x text-primary opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-success">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Predikat Sangat Baik</div>
+              <h4 class="mb-0 fw-bold text-success" id="card-stat-pen-sangat-baik">0</h4>
+            </div>
+            <i class="fas fa-medal fa-2x text-success opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-secondary">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Predikat Baik</div>
+              <h4 class="mb-0 fw-bold text-dark" id="card-stat-pen-baik">0</h4>
+            </div>
+            <i class="fas fa-check-circle fa-2x text-secondary opacity-25"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card p-3 mb-3">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-5">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+            <input type="text" class="form-control" id="search-penilaian" placeholder="Cari nama pegawai, NIP, atau unit...">
+          </div>
+        </div>
+        <div class="col-md-5">
+          <select class="form-select form-select-sm" id="filter-periode-penilaian">
+            <option value="">-- Semua Periode Penilaian --</option>
+            <option value="9-2024">September 2024 (9-2024)</option>
+            <option value="2024">Tahun 2024</option>
+            <option value="2025">Tahun 2025</option>
+            <option value="2026">Tahun 2026</option>
+          </select>
+        </div>
+        <div class="col-md-2 text-end">
+          <button class="btn btn-outline-info btn-sm w-100" id="btn-filter-penilaian">
+            <i class="fas fa-filter me-1"></i>Filter
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Table Card -->
+    <div class="card">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-award me-2 text-info"></i>Rekapitulasi Penilaian Prestasi Kerja & Perilaku Pegawai</h6>
+        <div class="spinner-border spinner-border-sm text-info d-none" id="loading-penilaian"></div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 45px;">No</th>
+              <th style="width: 250px;">Pegawai</th>
+              <th style="width: 220px;">Unit Kerja</th>
+              <th class="text-center" style="width: 130px;">Periode</th>
+              <th class="text-center" style="width: 130px;">Skor Rata-Rata</th>
+              <th class="text-center" style="width: 120px;">Aspek Dinilai</th>
+              <th class="text-center" style="width: 150px;">Predikat Prestasi</th>
+              <th class="text-center" style="width: 100px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-penilaian">
+            <tr>
+              <td colspan="8" class="text-center py-4 text-muted">
+                <span class="spinner-border spinner-border-sm me-2"></span>Memuat data...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer bg-white d-flex flex-column flex-md-row justify-content-between align-items-center py-2">
+        <div class="text-muted small mb-2 mb-md-0" id="pagination-info-penilaian">Menampilkan 0 data</div>
+        <ul class="pagination pagination-sm mb-0" id="pagination-penilaian"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Raport Prestasi Kinerja -->
+  <div class="modal fade" id="modal-raport-penilaian" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-info text-white">
+          <h5 class="modal-title"><i class="fas fa-file-invoice me-2"></i>Raport Evaluasi Prestasi Kerja Pegawai</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="d-flex justify-content-between align-items-start border-bottom pb-3 mb-3">
+            <div>
+              <h4 class="fw-bold text-dark mb-0" id="raport-nama">-</h4>
+              <div class="text-muted">NIP: <span id="raport-nip">-</span> | Unit: <span id="raport-bagian" class="text-primary fw-semibold">-</span></div>
+            </div>
+            <div class="text-end">
+              <div class="text-muted small">Periode Evaluasi</div>
+              <h5 class="fw-bold text-dark mb-0" id="raport-periode">-</h5>
+            </div>
+          </div>
+
+          <h6 class="fw-bold text-dark mb-3"><i class="fas fa-clipboard-check me-2 text-info"></i>Standar Penilaian Kompetensi & Perilaku</h6>
+          <div class="table-responsive mb-4">
+            <table class="table table-bordered align-middle">
+              <thead class="bg-light text-center">
+                <tr>
+                  <th style="width: 40px;">No</th>
+                  <th>Kompetensi Perilaku Kerja</th>
+                  <th style="width: 140px;">Nilai Standar</th>
+                  <th style="width: 140px;">Kategori Mutu</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="text-center">1</td>
+                  <td class="fw-semibold">Orientasi Pelayanan</td>
+                  <td class="text-center fw-bold text-primary">Baik (85.0)</td>
+                  <td class="text-center"><span class="badge bg-soft-success text-success">Memenuhi</span></td>
+                </tr>
+                <tr>
+                  <td class="text-center">2</td>
+                  <td class="fw-semibold">Integritas</td>
+                  <td class="text-center fw-bold text-primary">Baik (88.0)</td>
+                  <td class="text-center"><span class="badge bg-soft-success text-success">Memenuhi</span></td>
+                </tr>
+                <tr>
+                  <td class="text-center">3</td>
+                  <td class="fw-semibold">Komitmen & Loyalitas</td>
+                  <td class="text-center fw-bold text-primary">Baik (86.0)</td>
+                  <td class="text-center"><span class="badge bg-soft-success text-success">Memenuhi</span></td>
+                </tr>
+                <tr>
+                  <td class="text-center">4</td>
+                  <td class="fw-semibold">Disiplin Kerja & Apel</td>
+                  <td class="text-center fw-bold text-primary">Baik (90.0)</td>
+                  <td class="text-center"><span class="badge bg-soft-success text-success">Memenuhi</span></td>
+                </tr>
+                <tr>
+                  <td class="text-center">5</td>
+                  <td class="fw-semibold">Kerjasama & Harmonisasi Tim</td>
+                  <td class="text-center fw-bold text-primary">Sangat Baik (92.0)</td>
+                  <td class="text-center"><span class="badge bg-soft-success text-success">Sangat Baik</span></td>
+                </tr>
+                <tr>
+                  <td class="text-center">6</td>
+                  <td class="fw-semibold">Kepemimpinan / Keteladanan</td>
+                  <td class="text-center fw-bold text-primary">Baik (85.0)</td>
+                  <td class="text-center"><span class="badge bg-soft-success text-success">Memenuhi</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card bg-soft-info p-3 border-0">
+            <div class="row align-items-center text-center">
+              <div class="col-6 border-end">
+                <div class="text-muted small">Skor Prestasi Akhir</div>
+                <h2 class="fw-bold text-info mb-0" id="raport-nilai-akhir">0.00</h2>
+              </div>
+              <div class="col-6">
+                <div class="text-muted small mb-1">Predikat Hasil Evaluasi</div>
+                <span class="badge bg-success fs-6 px-3 py-2" id="raport-predikat">Sangat Baik</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Form Input Evaluasi Perilaku -->
+  <div class="modal fade" id="modal-evaluasi-form" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-info text-white">
+          <h5 class="modal-title"><i class="fas fa-user-edit me-2"></i>Form Evaluasi Perilaku Pegawai</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="row g-3 mb-3">
+            <div class="col-md-8">
+              <label class="form-label fw-bold small">Pegawai Yang Dinilai <span class="text-danger">*</span></label>
+              <select class="form-select form-select-sm" id="modal-eval-pegawai">
+                <option value="">-- Pilih Pegawai --</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold small">Periode Evaluasi <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm" id="modal-eval-periode" value="2026" placeholder="Contoh: 2026 atau 9-2024">
+            </div>
+          </div>
+
+          <h6 class="fw-bold text-dark mt-4 mb-2 small text-uppercase">Input Skor Aspek Perilaku (Rentang 1 - 100)</h6>
+          
+          <div class="row g-3 mb-2">
+            <div class="col-md-6">
+              <label class="form-label small">1. Orientasi Pelayanan</label>
+              <input type="number" class="form-control form-control-sm" id="score-orientasi" min="1" max="100" value="85">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small">2. Integritas</label>
+              <input type="number" class="form-control form-control-sm" id="score-integritas" min="1" max="100" value="85">
+            </div>
+          </div>
+
+          <div class="row g-3 mb-2">
+            <div class="col-md-6">
+              <label class="form-label small">3. Komitmen</label>
+              <input type="number" class="form-control form-control-sm" id="score-komitmen" min="1" max="100" value="85">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small">4. Disiplin</label>
+              <input type="number" class="form-control form-control-sm" id="score-disiplin" min="1" max="100" value="85">
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label small">5. Kerjasama</label>
+              <input type="number" class="form-control form-control-sm" id="score-kerjasama" min="1" max="100" value="85">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small">6. Kepemimpinan</label>
+              <input type="number" class="form-control form-control-sm" id="score-kepemimpinan" min="1" max="100" value="85">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-info text-white btn-sm" id="btn-save-evaluasi">
+            <i class="fas fa-save me-1"></i>Simpan Evaluasi Perilaku
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

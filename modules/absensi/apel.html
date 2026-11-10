@@ -1,0 +1,183 @@
+<style>
+  .absensi-apel .card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem;
+  }
+  .absensi-apel .table th {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+  }
+  .absensi-apel .table td {
+    vertical-align: middle;
+    font-size: 0.85rem;
+  }
+</style>
+
+<script type="module" defer>
+  import { httpGet } from './assets/js/core/http.js';
+
+  let rawApelData = [];
+  let filteredApelData = [];
+
+  const tag = 'absensi_apel';
+
+  const initModule = async () => {
+    await loadData();
+    bindEvents();
+  };
+
+  const loadData = async () => {
+    const tbody = document.getElementById('tbody-apel');
+    const spinner = document.getElementById('loading-apel');
+    
+    if (spinner) spinner.classList.remove('d-none');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data apel...</td></tr>';
+
+    try {
+      const res = await httpGet(`${config.api_url}/absensi/apel`);
+      if (res && res.code === 200 && res.data) {
+        rawApelData = res.data || [];
+        filteredApelData = [...rawApelData];
+        renderTable();
+      } else {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Belum ada konfigurasi apel.</td></tr>';
+      }
+    } catch (e) {
+      console.error('Error loading apel:', e);
+      if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Gagal memuat apel: ${e.message}</td></tr>`;
+    } finally {
+      if (spinner) spinner.classList.add('d-none');
+    }
+  };
+
+  const renderTable = () => {
+    const tbody = document.getElementById('tbody-apel');
+    const badgeEl = document.getElementById('total-badge-apel');
+    if (!tbody) return;
+
+    if (badgeEl) badgeEl.textContent = `${filteredApelData.length} Kategori Apel`;
+
+    if (filteredApelData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Data apel tidak ditemukan.</td></tr>';
+      return;
+    }
+
+    let html = '';
+    filteredApelData.forEach((row, idx) => {
+      html += `
+        <tr>
+          <td class="text-center text-muted">${idx + 1}</td>
+          <td>
+            <div class="fw-bold text-dark"><i class="fas fa-flag text-danger me-2"></i>${row.nama_apel || '-'}</div>
+            <div class="text-muted small">ID: ${row.kd_jenis_apel || row.id_jenis_apel || '-'} | Tempat: ${row.tempat || 'RS'}</div>
+          </td>
+          <td class="text-center fw-bold text-primary">${row.jam_mulai_apel || row.jam_mulai || '-'}</td>
+          <td class="text-center">
+            <span class="badge bg-soft-warning text-warning fw-bold">+${row.toleransi_apel || row.toleransi || 0} menit</span>
+          </td>
+          <td class="text-muted small">${row.keterangan || 'Apel rutin pegawai RS'}</td>
+          <td class="text-center">
+            <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Aktif</span>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+  };
+
+  const bindEvents = () => {
+    document.getElementById('btn-refresh-apel')?.addEventListener('click', () => loadData());
+    document.getElementById('search-apel')?.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        filteredApelData = [...rawApelData];
+      } else {
+        filteredApelData = rawApelData.filter(r => 
+          (r.nama_apel && r.nama_apel.toLowerCase().includes(q)) ||
+          (r.keterangan && r.keterangan.toLowerCase().includes(q))
+        );
+      }
+      renderTable();
+    });
+  };
+
+  window.absensi_apel = { loadData };
+  document.absensi_apel = { loadData };
+
+  initModule();
+</script>
+
+<template>
+  <div class="container-fluid py-3 absensi-apel">
+    <!-- Header -->
+    <div class="row align-items-center mb-3">
+      <div class="col-md-7">
+        <div class="d-flex align-items-center">
+          <div class="avatar bg-soft-danger text-danger p-3 rounded-circle me-3">
+            <i class="fas fa-flag fa-2x"></i>
+          </div>
+          <div>
+            <h4 class="mb-0 fw-bold">Konfigurasi & Rekap Apel Pagi</h4>
+            <p class="text-muted small mb-0">Pengaturan jadwal apel pagi gabungan, upacara rutin, dan parameter toleransi scan</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-5 text-md-end mt-2 mt-md-0">
+        <span class="badge bg-primary px-3 py-2 me-2" id="total-badge-apel">0 Kategori Apel</span>
+        <button class="btn btn-outline-secondary btn-sm me-2" id="btn-refresh-apel" title="Segarkan Data">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Card Info -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-white py-3 border-bottom">
+        <div class="row g-2 align-items-center justify-content-between">
+          <div class="col-md-4">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
+              <input type="text" class="form-control bg-light border-start-0" id="search-apel" placeholder="Cari nama apel...">
+            </div>
+          </div>
+          <div class="col-md-6 text-end text-muted small">
+            <span>Scan log biometrik apel terintegrasi otomatis dengan mesin finger</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="d-none text-center py-2 bg-light border-bottom" id="loading-apel">
+          <span class="spinner-border spinner-border-sm text-primary me-2"></span>Memperbarui data apel...
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th style="width: 40px;" class="text-center">No</th>
+                <th>Nama Kegiatan Apel</th>
+                <th style="width: 130px;" class="text-center">Jam Mulai</th>
+                <th style="width: 140px;" class="text-center">Toleransi Waktu</th>
+                <th>Keterangan Pelaksanaan</th>
+                <th style="width: 100px;" class="text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-apel">
+              <tr>
+                <td colspan="7" class="text-center py-4 text-muted">
+                  <span class="spinner-border spinner-border-sm me-2"></span>Memuat konfigurasi apel...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

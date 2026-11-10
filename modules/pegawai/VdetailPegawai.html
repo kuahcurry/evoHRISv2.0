@@ -1,0 +1,1841 @@
+<style>
+  .profile-hero-card {
+    border-radius: 0.5rem;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    overflow: hidden;
+  }
+  .profile-cover {
+    height: 110px;
+    background: linear-gradient(135deg, #2c7be5 0%, #1a4f94 100%);
+  }
+  .profile-avatar-wrap {
+    position: relative;
+    width: 110px;
+    height: 110px;
+    margin-top: -55px;
+    margin-left: 1.5rem;
+  }
+  .profile-avatar-img {
+    width: 110px;
+    height: 110px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 4px solid #ffffff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    background: #ffffff;
+  }
+  .profile-avatar-placeholder {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    border: 4px solid #ffffff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    background: #e9ecef;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    font-weight: 700;
+  }
+  .btn-change-photo {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  }
+  .nav-tabs-pegawai {
+    border-bottom: 2px solid #edf2f7;
+    gap: 0.25rem;
+  }
+  .nav-tabs-pegawai .nav-link {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #64748b;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 0.6rem 0.9rem;
+    border-radius: 0;
+    transition: all 0.2s ease;
+  }
+  .nav-tabs-pegawai .nav-link:hover {
+    color: #2c7be5;
+    border-bottom-color: #cbd5e1;
+  }
+  .nav-tabs-pegawai .nav-link.active {
+    color: #2c7be5;
+    background: transparent;
+    border-bottom: 2px solid #2c7be5;
+  }
+  .tab-badge {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 10px;
+    background: #edf2f7;
+    color: #475569;
+  }
+  .nav-tabs-pegawai .nav-link.active .tab-badge {
+    background: rgba(44, 123, 229, 0.15);
+    color: #2c7be5;
+  }
+  .riwayat-table thead th {
+    font-size: 0.76rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #475569;
+    background-color: #f8fafc;
+  }
+</style>
+
+<script type="module">
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+
+  const apiUrl = (typeof config !== 'undefined' && config.api_url) 
+    ? config.api_url 
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  let currentPegawaiId = null;
+  let detailData = null;
+  let masterData = {};
+
+  async function init() {
+    // Ambil ID pegawai dari sessionStorage, window, atau URL query
+    const urlParams = new URLSearchParams(window.location.search);
+    currentPegawaiId = sessionStorage.getItem('selected_pegawai_id') 
+      || window.selected_pegawai_id 
+      || urlParams.get('id') 
+      || '1666';
+
+    bindHeaderEvents();
+    await loadMasterDropdowns();
+    await loadDetailData();
+  }
+
+  async function loadMasterDropdowns() {
+    try {
+      const res = await httpGet(`${apiUrl}/cPegawai/master`);
+      if (res && res.code === 200 && res.data) {
+        masterData = res.data;
+        populateDropdowns();
+      }
+    } catch (err) {
+      console.error('Error load master dropdowns:', err);
+    }
+  }
+
+  function populateDropdowns() {
+    fillSelect('edit-agama', masterData.agama, 'KD_AGAMA', 'AGAMA', 'Pilih Agama');
+    fillSelect('edit-identitas', masterData.identitas, 'KD_IDENTITAS', 'IDENTITAS', 'Pilih Identitas');
+    fillSelect('edit-goldar', masterData.gol_darah, 'KD_GOLONGAN_DARAH', 'GOLONGAN_DARAH', 'Pilih Golongan Darah');
+    fillSelect('edit-status-nikah', masterData.perkawinan, 'KD_STATUS_PERKAWINAN', 'STATUS_PERKAWINAN', 'Pilih Status Perkawinan');
+    fillSelect('edit-bagian', masterData.bagian, 'KD_BAGIAN', 'BAGIAN', 'Pilih Bagian');
+    fillSelect('edit-jabatan', masterData.jabatan, 'KD_JABATAN', 'JABATAN', 'Pilih Jabatan');
+    fillSelect('edit-pangkat', masterData.pangkat, 'KD_PANGKAT', 'PANGKAT', 'Pilih Pangkat');
+    fillSelect('edit-status-pegawai', masterData.status_pegawai, 'KD_STATUS_PEGAWAI', 'STATUS_PEGAWAI', 'Pilih Status Pegawai');
+    fillSelect('edit-jenis-pegawai', masterData.jenis_pegawai, 'KD_JENIS_PEGAWAI', 'JENIS_PEGAWAI', 'Pilih Jenis Pegawai');
+    fillSelect('edit-pendidikan', masterData.jenjang_pendidikan, 'KD_JENJANG', 'JENJANG_PENDIDIKAN', 'Pilih Pendidikan');
+    fillSelect('edit-provinsi', masterData.provinsi, 'KD_PROVINSI', 'PROVINSI', 'Pilih Provinsi');
+  }
+
+  function fillSelect(elId, list = [], valKey, textKey, placeholder) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    let opts = `<option value="">-- ${placeholder} --</option>`;
+    list.forEach(item => {
+      opts += `<option value="${item[valKey]}">${item[textKey]}</option>`;
+    });
+    el.innerHTML = opts;
+  }
+
+  async function loadDetailData() {
+    const loadingCard = document.getElementById('detail-loading-state');
+    const mainContent = document.getElementById('detail-main-content');
+    if (loadingCard) loadingCard.classList.remove('d-none');
+    if (mainContent) mainContent.classList.add('d-none');
+
+    try {
+      const res = await httpGet(`${apiUrl}/cPegawai/edit_detail/${currentPegawaiId}`);
+      if (res && res.code === 200 && res.data) {
+        detailData = res.data;
+        renderHeaderInfo(detailData.pegawai || {});
+        renderProfilForm(detailData.pegawai || {});
+        renderAllRiwayatTables();
+        updateTabBadges();
+      } else {
+        alert(res?.data?.message || 'Data pegawai tidak ditemukan.');
+      }
+    } catch (err) {
+      console.error('Error load detail pegawai:', err);
+      alert('Gagal memuat detail pegawai dari server.');
+    } finally {
+      if (loadingCard) loadingCard.classList.add('d-none');
+      if (mainContent) mainContent.classList.remove('d-none');
+    }
+  }
+
+  function renderHeaderInfo(p) {
+    const nama = p.NAMA || '-';
+    const nip = p.NIP || '-';
+    const nik = p.NO_IDENTITAS || '-';
+    const bagian = p.NAMA_BAGIAN || p.BAGIAN || '-';
+    const jabatan = p.NAMA_JABATAN || p.JABATAN || '-';
+    const statusPeg = p.STATUS_PEGAWAI || '-';
+    const pangkat = p.PANGKAT || '-';
+    const tglMasuk = p.TGL_MASUK ? new Date(p.TGL_MASUK).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' }) : '-';
+
+    document.getElementById('header-nama').innerText = nama;
+    document.getElementById('header-nip').innerText = nip;
+    document.getElementById('header-nik').innerText = nik;
+    document.getElementById('header-bagian').innerText = bagian;
+    document.getElementById('header-jabatan').innerText = jabatan;
+    document.getElementById('header-status').innerText = statusPeg;
+    document.getElementById('header-pangkat').innerText = pangkat;
+    document.getElementById('header-tgl-masuk').innerText = tglMasuk;
+
+    const avatarWrap = document.getElementById('header-avatar-container');
+    if (avatarWrap) {
+      const avatarSrc = p.FOTO ? `./assets/user/${p.FOTO}` : null;
+      if (avatarSrc) {
+        avatarWrap.innerHTML = `
+          <img src="${avatarSrc}" class="profile-avatar-img" alt="${nama}" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\'profile-avatar-placeholder\\'>${nama.charAt(0).toUpperCase()}</div>';">
+          <button type="button" class="btn btn-sm btn-primary btn-change-photo" id="btn-trigger-upload-foto" title="Ganti Foto">
+            <i class="fas fa-camera"></i>
+          </button>
+        `;
+      } else {
+        avatarWrap.innerHTML = `
+          <div class="profile-avatar-placeholder">${nama.charAt(0).toUpperCase()}</div>
+          <button type="button" class="btn btn-sm btn-primary btn-change-photo" id="btn-trigger-upload-foto" title="Unggah Foto">
+            <i class="fas fa-camera"></i>
+          </button>
+        `;
+      }
+      document.getElementById('btn-trigger-upload-foto')?.addEventListener('click', () => {
+        document.getElementById('input-quick-foto')?.click();
+      });
+    }
+  }
+
+  function renderProfilForm(p) {
+    setVal('edit-nama', p.NAMA);
+    setVal('edit-gelar-depan', p.GELAR_DEPAN);
+    setVal('edit-gelar-belakang', p.GELAR_BELAKANG);
+    setVal('edit-nip', p.NIP);
+    setVal('edit-nik', p.NO_IDENTITAS);
+    setVal('edit-kk', p.NO_KK);
+    setVal('edit-jk', p.JENIS_KELAMIN || 'L');
+    setVal('edit-tempat-lahir', p.TEMPAT_LAHIR);
+    setVal('edit-tgl-lahir', p.TANGGAL_LAHIR);
+    setVal('edit-agama', p.KD_AGAMA);
+    setVal('edit-goldar', p.KD_GOLONGAN_DARAH);
+    setVal('edit-rhesus', p.RHESUS);
+    setVal('edit-status-nikah', p.KD_STATUS_PERKAWINAN);
+    setVal('edit-pendidikan', p.KD_JENJANG);
+
+    setVal('edit-bagian', p.KD_BAGIAN);
+    setVal('edit-jabatan', p.KD_JABATAN);
+    setVal('edit-pangkat', p.KD_PANGKAT);
+    setVal('edit-status-pegawai', p.KD_STATUS_PEGAWAI);
+    setVal('edit-jenis-pegawai', p.KD_JENIS_PEGAWAI);
+    setVal('edit-tgl-masuk', p.TGL_MASUK);
+    setVal('edit-status-aktif', p.STATUS_AKTIF !== undefined ? String(p.STATUS_AKTIF) : '1');
+
+    setVal('edit-hp', p.HANDPHONE);
+    setVal('edit-email', p.EMAIL);
+    setVal('edit-alamat', p.ALAMAT);
+    setVal('edit-provinsi', p.KD_PROVINSI);
+    setVal('edit-kodepos', p.KODE_POS);
+
+    setVal('edit-bpjs-kes', p.NO_BPJS_KES);
+    setVal('edit-bpjs-tk', p.NO_BPJS_TK);
+    setVal('edit-npwp', p.NPWP);
+
+    // Cascading lokasi jika ada
+    if (p.KD_PROVINSI) {
+      loadKabupatenOptions(p.KD_PROVINSI, p.KD_KABUPATEN);
+    }
+    if (p.KD_KABUPATEN) {
+      loadKecamatanOptions(p.KD_KABUPATEN, p.KD_KECAMATAN);
+    }
+    if (p.KD_KECAMATAN) {
+      loadKelurahanOptions(p.KD_KECAMATAN, p.KD_KELURAHAN);
+    }
+  }
+
+  function setVal(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.value = val !== null && val !== undefined ? val : '';
+  }
+
+  async function loadKabupatenOptions(kdProv, selected = '') {
+    try {
+      const res = await httpGet(`${apiUrl}/cPegawai/get_kabupaten`, { kd_provinsi: kdProv });
+      if (res && res.code === 200) {
+        fillSelect('edit-kabupaten', res.data || [], 'KD_KABUPATEN', 'KABUPATEN', 'Pilih Kabupaten / Kota');
+        if (selected) setVal('edit-kabupaten', selected);
+      }
+    } catch (e) { console.error(e); }
+  }
+
+  async function loadKecamatanOptions(kdKab, selected = '') {
+    try {
+      const res = await httpGet(`${apiUrl}/cPegawai/get_kecamatan`, { kd_kabupaten: kdKab });
+      if (res && res.code === 200) {
+        fillSelect('edit-kecamatan', res.data || [], 'KD_KECAMATAN', 'KECAMATAN', 'Pilih Kecamatan');
+        if (selected) setVal('edit-kecamatan', selected);
+      }
+    } catch (e) { console.error(e); }
+  }
+
+  async function loadKelurahanOptions(kdKec, selected = '') {
+    try {
+      const res = await httpGet(`${apiUrl}/cPegawai/get_kelurahan`, { kd_kecamatan: kdKec });
+      if (res && res.code === 200) {
+        fillSelect('edit-kelurahan', res.data || [], 'KD_KELURAHAN', 'KELURAHAN', 'Pilih Kelurahan / Desa');
+        if (selected) setVal('edit-kelurahan', selected);
+      }
+    } catch (e) { console.error(e); }
+  }
+
+  // Update profil submit
+  async function submitUpdateProfil(e) {
+    if (e) e.preventDefault();
+    const btn = document.getElementById('btn-simpan-update-profil');
+    const oldText = btn ? btn.innerHTML : '';
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan Perubahan...';
+    }
+
+    const payload = {
+      ID_PEGAWAI: currentPegawaiId,
+      NAMA: document.getElementById('edit-nama')?.value.trim() || '',
+      GELAR_DEPAN: document.getElementById('edit-gelar-depan')?.value.trim() || '',
+      GELAR_BELAKANG: document.getElementById('edit-gelar-belakang')?.value.trim() || '',
+      NIP: document.getElementById('edit-nip')?.value.trim() || '',
+      NO_IDENTITAS: document.getElementById('edit-nik')?.value.trim() || '',
+      NO_KK: document.getElementById('edit-kk')?.value.trim() || '',
+      JENIS_KELAMIN: document.getElementById('edit-jk')?.value || 'L',
+      TEMPAT_LAHIR: document.getElementById('edit-tempat-lahir')?.value.trim() || '',
+      TANGGAL_LAHIR: document.getElementById('edit-tgl-lahir')?.value || '',
+      KD_AGAMA: document.getElementById('edit-agama')?.value || '',
+      KD_GOLONGAN_DARAH: document.getElementById('edit-goldar')?.value || '',
+      RHESUS: document.getElementById('edit-rhesus')?.value || '',
+      KD_STATUS_PERKAWINAN: document.getElementById('edit-status-nikah')?.value || '',
+      KD_JENJANG: document.getElementById('edit-pendidikan')?.value || '',
+
+      KD_BAGIAN: document.getElementById('edit-bagian')?.value || '',
+      KD_JABATAN: document.getElementById('edit-jabatan')?.value || '',
+      KD_PANGKAT: document.getElementById('edit-pangkat')?.value || '',
+      KD_STATUS_PEGAWAI: document.getElementById('edit-status-pegawai')?.value || '',
+      KD_JENIS_PEGAWAI: document.getElementById('edit-jenis-pegawai')?.value || '',
+      TGL_MASUK: document.getElementById('edit-tgl-masuk')?.value || '',
+      STATUS_AKTIF: document.getElementById('edit-status-aktif')?.value || '1',
+
+      HANDPHONE: document.getElementById('edit-hp')?.value.trim() || '',
+      EMAIL: document.getElementById('edit-email')?.value.trim() || '',
+      ALAMAT: document.getElementById('edit-alamat')?.value.trim() || '',
+      KD_PROVINSI: document.getElementById('edit-provinsi')?.value || '',
+      KD_KABUPATEN: document.getElementById('edit-kabupaten')?.value || '',
+      KD_KECAMATAN: document.getElementById('edit-kecamatan')?.value || '',
+      KD_KELURAHAN: document.getElementById('edit-kelurahan')?.value || '',
+      KODE_POS: document.getElementById('edit-kodepos')?.value.trim() || '',
+
+      NO_BPJS_KES: document.getElementById('edit-bpjs-kes')?.value.trim() || '',
+      NO_BPJS_TK: document.getElementById('edit-bpjs-tk')?.value.trim() || '',
+      NPWP: document.getElementById('edit-npwp')?.value.trim() || ''
+    };
+
+    try {
+      const res = await httpPost(`${apiUrl}/cPegawai/update_data_pegawai/${currentPegawaiId}`, payload);
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = oldText;
+      }
+
+      if (res && res.code === 200) {
+        alert('Data profil pegawai berhasil diperbarui!');
+        loadDetailData();
+      } else {
+        alert(res?.data?.message || 'Gagal memperbarui profil pegawai.');
+      }
+    } catch (err) {
+      console.error('Error update profil:', err);
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = oldText;
+      }
+      alert('Terjadi kesalahan saat menyimpan perubahan profil.');
+    }
+  }
+
+  // --- RIWAYAT TABLES RENDERING ---
+  function renderAllRiwayatTables() {
+    renderTableGeneric('penempatan', detailData.penempatan || [], [
+      { key: 'BAGIAN', label: 'Unit / Bagian' },
+      { key: 'JABATAN', label: 'Jabatan' },
+      { key: 'TGL_MULAI', label: 'Mulai' },
+      { key: 'TGL_SELESAI', label: 'Selesai' },
+      { key: 'KETERANGAN', label: 'Keterangan' }
+    ], 'KD_PENEMPATAN');
+
+    renderTableGeneric('pendidikan', detailData.pendidikan || [], [
+      { key: 'JENJANG_PENDIDIKAN', label: 'Jenjang' },
+      { key: 'NAMA_SEKOLAH', label: 'Institusi / Universitas' },
+      { key: 'JURUSAN', label: 'Jurusan / Prodi' },
+      { key: 'TAHUN_LULUS', label: 'Tahun Lulus' },
+      { key: 'NO_IJAZAH', label: 'No. Ijazah' }
+    ], 'KD_PENDIDIKAN');
+
+    renderTableGeneric('pelatihan', detailData.pelatihan || [], [
+      { key: 'NAMA_PELATIHAN', label: 'Nama Pelatihan / Diklat' },
+      { key: 'PENYELENGGARA', label: 'Penyelenggara' },
+      { key: 'TGL_PELATIHAN', label: 'Tanggal' },
+      { key: 'JUMLAH_JAM', label: 'Jam' },
+      { key: 'NO_SERTIFIKAT', label: 'No. Sertifikat' }
+    ], 'KD_PELATIHAN');
+
+    renderTableGeneric('str', detailData.str || [], [
+      { key: 'NO_STR', label: 'Nomor STR' },
+      { key: 'TGL_TERBIT', label: 'Tgl Terbit' },
+      { key: 'TGL_KADALUARSA', label: 'Berlaku Sampai' },
+      { key: 'KETERANGAN', label: 'Keterangan' }
+    ], 'KD_STR');
+
+    renderTableGeneric('sip', detailData.sip || [], [
+      { key: 'NO_SIP', label: 'Nomor SIP' },
+      { key: 'INSTANSI_PENERBIT', label: 'Penerbit' },
+      { key: 'TGL_BERLAKU', label: 'Mulai' },
+      { key: 'TGL_KADALUARSA', label: 'Berlaku Sampai' }
+    ], 'KD_SIP');
+
+    renderTableGeneric('mutasi', detailData.mutasi || [], [
+      { key: 'NO_SK', label: 'No. SK Mutasi' },
+      { key: 'TGL_SK', label: 'Tgl SK' },
+      { key: 'BAGIAN_LAMA', label: 'Dari Unit' },
+      { key: 'BAGIAN_BARU', label: 'Menjadi Unit' },
+      { key: 'KETERANGAN', label: 'Alasan / Keterangan' }
+    ], 'KD_MUTASI_DARI');
+
+    renderTableGeneric('promosi', detailData.promosi || [], [
+      { key: 'NO_SK', label: 'No. SK Promosi' },
+      { key: 'TGL_SK', label: 'Tgl SK' },
+      { key: 'JABATAN_LAMA', label: 'Jabatan Lama' },
+      { key: 'JABATAN_BARU', label: 'Jabatan Baru' },
+      { key: 'PANGKAT_BARU', label: 'Pangkat Baru' }
+    ], 'KD_PROMOSI_DARI');
+
+    renderTableGeneric('kontrak', detailData.kontrak || [], [
+      { key: 'NO_KONTRAK', label: 'Nomor Kontrak' },
+      { key: 'TGL_AWAL', label: 'Mulai Kontrak' },
+      { key: 'TGL_AKHIR', label: 'Akhir Kontrak' },
+      { key: 'KETERANGAN', label: 'Keterangan' }
+    ], 'KD_KONTRAK');
+
+    renderTableGeneric('cuti', detailData.cuti || [], [
+      { key: 'JENIS_CUTI', label: 'Jenis Cuti' },
+      { key: 'TGL_MULAI', label: 'Dari' },
+      { key: 'TGL_SELESAI', label: 'Sampai' },
+      { key: 'JUMLAH_HARI', label: 'Hari' },
+      { key: 'KETERANGAN', label: 'Alasan' }
+    ], 'KD_CUTI');
+
+    renderTableGeneric('keluarga', detailData.keluarga || [], [
+      { key: 'NAMA', label: 'Nama Lengkap' },
+      { key: 'HUBUNGAN', label: 'Hubungan' },
+      { key: 'TEMPAT_LAHIR', label: 'Tempat Lahir' },
+      { key: 'TGL_LAHIR', label: 'Tanggal Lahir' },
+      { key: 'PEKERJAAN', label: 'Pekerjaan' }
+    ], 'KD_KELUARGA');
+
+    renderTableGeneric('pengalaman', detailData.pengalaman || [], [
+      { key: 'PERUSAHAAN', label: 'Instansi / Perusahaan' },
+      { key: 'JABATAN', label: 'Posisi / Jabatan' },
+      { key: 'TGL_MASUK', label: 'Mulai' },
+      { key: 'TGL_KELUAR', label: 'Selesai' },
+      { key: 'DESKRIPSI', label: 'Keterangan' }
+    ], 'KD_PENGALAMAN');
+
+    renderTableGeneric('keahlian', detailData.keahlian || [], [
+      { key: 'KEAHLIAN', label: 'Bidang Keahlian' },
+      { key: 'TINGKAT', label: 'Tingkat Kemahiran' },
+      { key: 'SERTIFIKASI', label: 'Lembaga Sertifikasi' }
+    ], 'KD_KEAHLIAN');
+
+    renderTableGeneric('kemampuan', detailData.kemampuan || [], [
+      { key: 'NAMA_KEMAMPUAN', label: 'Kemampuan / Bahasa' },
+      { key: 'TINGKAT_KEMAHIRAN', label: 'Kemahiran' },
+      { key: 'KETERANGAN', label: 'Catatan' }
+    ], 'KD_KEMAMPUAN');
+
+    renderTableGeneric('mcu', detailData.mcu || [], [
+      { key: 'TGL_MCU', label: 'Tanggal MCU' },
+      { key: 'HASIL_MCU', label: 'Hasil Pemeriksaan' },
+      { key: 'DOKTER_PEMERIKSA', label: 'Dokter' },
+      { key: 'CATATAN', label: 'Rekomendasi Medis' }
+    ], 'KD_MCU');
+
+    renderTableGeneric('penghargaan', detailData.penghargaan || [], [
+      { key: 'NAMA_PENGHARGAAN', label: 'Nama Penghargaan' },
+      { key: 'PEMBERI', label: 'Pemberi Penghargaan' },
+      { key: 'TAHUN', label: 'Tahun' },
+      { key: 'KETERANGAN', label: 'Deskripsi' }
+    ], 'KD_PENGHARGAAN');
+
+    renderTableGeneric('sanksi', detailData.sanksi || [], [
+      { key: 'JENIS_SANKSI', label: 'Tingkat Sanksi / SP' },
+      { key: 'NO_SK', label: 'No. SK' },
+      { key: 'TGL_SANKSI', label: 'Tanggal' },
+      { key: 'PELANGGARAN', label: 'Pelanggaran' }
+    ], 'KD_SANKSI');
+
+    renderTableGeneric('phk', detailData.phk || [], [
+      { key: 'JENIS_PHK', label: 'Status / Alasan PHK' },
+      { key: 'NO_SK', label: 'No. SK Pensiun/PHK' },
+      { key: 'TGL_PHK', label: 'Tanggal Efektif' },
+      { key: 'KETERANGAN', label: 'Keterangan' }
+    ], 'KD_PHK');
+
+    // Rak Lemari Arsip
+    renderTableGeneric('rak', detailData.rak || [], [
+      { key: 'no_lemari', label: 'Nomor Lemari' },
+      { key: 'nama_rak', label: 'Nama / Posisi Rak' }
+    ], 'no_rak');
+
+    // Buku Tanah
+    renderTableGeneric('buku', detailData.buku || [], [
+      { key: 'no_hak', label: 'Nomor Hak' },
+      { key: 'jenis_hak', label: 'Jenis Hak' },
+      { key: 'tahun', label: 'Tahun' },
+      { key: 'kd_lemari', label: 'Lemari' },
+      { key: 'kd_rak', label: 'Rak' }
+    ], 'id_buku');
+  }
+
+  function renderTableGeneric(mode, items, columns, idKey) {
+    const tbody = document.getElementById(`table-${mode}-body`);
+    if (!tbody) return;
+
+    if (!items || items.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="${columns.length + 2}" class="text-center py-3 text-muted small">Belum ada riwayat ${mode} tercatat.</td></tr>`;
+      return;
+    }
+
+    let html = '';
+    items.forEach((item, idx) => {
+      const idVal = item[idKey] || item.NO_AUTO || idx;
+      html += `<tr><td class="text-center text-muted small" style="width: 40px;">${idx + 1}</td>`;
+      columns.forEach(col => {
+        let val = item[col.key] || item[col.key.toLowerCase()] || '-';
+        html += `<td class="small">${val}</td>`;
+      });
+      html += `
+        <td class="text-end" style="width: 90px;">
+          <button type="button" class="btn btn-xs btn-outline-danger btn-delete-riwayat py-0 px-2" data-mode="${mode}" data-id="${idVal}" title="Hapus Riwayat">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+        </td>
+      </tr>`;
+    });
+
+    tbody.innerHTML = html;
+
+    tbody.querySelectorAll('.btn-delete-riwayat').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const m = btn.getAttribute('data-mode');
+        const id = btn.getAttribute('data-id');
+        hapusRiwayatGeneric(m, id);
+      });
+    });
+  }
+
+  function updateTabBadges() {
+    const badgeMap = {
+      'badge-count-penempatan': detailData?.penempatan?.length || 0,
+      'badge-count-pendidikan': detailData?.pendidikan?.length || 0,
+      'badge-count-pelatihan': detailData?.pelatihan?.length || 0,
+      'badge-count-str': detailData?.str?.length || 0,
+      'badge-count-sip': detailData?.sip?.length || 0,
+      'badge-count-mutasi': detailData?.mutasi?.length || 0,
+      'badge-count-promosi': detailData?.promosi?.length || 0,
+      'badge-count-kontrak': detailData?.kontrak?.length || 0,
+      'badge-count-cuti': detailData?.cuti?.length || 0,
+      'badge-count-keluarga': detailData?.keluarga?.length || 0,
+      'badge-count-pengalaman': detailData?.pengalaman?.length || 0,
+      'badge-count-keahlian': detailData?.keahlian?.length || 0,
+      'badge-count-kemampuan': detailData?.kemampuan?.length || 0,
+      'badge-count-mcu': detailData?.mcu?.length || 0,
+      'badge-count-penghargaan': detailData?.penghargaan?.length || 0,
+      'badge-count-sanksi': detailData?.sanksi?.length || 0,
+      'badge-count-phk': detailData?.phk?.length || 0,
+      'badge-count-rak': detailData?.rak?.length || 0,
+      'badge-count-buku': detailData?.buku?.length || 0
+    };
+
+    for (const [id, count] of Object.entries(badgeMap)) {
+      const el = document.getElementById(id);
+      if (el) el.innerText = count;
+    }
+  }
+
+  async function hapusRiwayatGeneric(mode, id) {
+    if (!confirm(`Apakah Anda yakin ingin menghapus catatan riwayat ${mode} ini?`)) return;
+
+    try {
+      const res = await httpPost(`${apiUrl}/cPegawai/delete_data`, {
+        mode: mode,
+        id: id
+      });
+      if (res && res.code === 200) {
+        loadDetailData();
+      } else {
+        alert(res?.data?.message || 'Gagal menghapus catatan riwayat.');
+      }
+    } catch (err) {
+      console.error('Error delete riwayat:', err);
+      alert('Terjadi kesalahan saat menghapus data.');
+    }
+  }
+
+  // Bind Header Events & Navigations
+  function bindHeaderEvents() {
+    document.getElementById('btn-kembali-ke-direktori')?.addEventListener('click', () => {
+      const sectionDetail = document.getElementById('section-detail-pegawai');
+      const sectionList = document.getElementById('section-list-pegawai');
+      if (sectionDetail && sectionList) {
+        sectionDetail.classList.add('d-none');
+        sectionList.classList.remove('d-none');
+        if (window.vpegawai && typeof window.vpegawai.loadData === 'function') {
+          window.vpegawai.loadData();
+        }
+        return;
+      }
+      if (typeof loadModule === 'function') {
+        loadModule('modules/pegawai/Vpegawai', '#container-isi');
+      }
+    });
+
+    document.getElementById('btn-cetak-riwayat-a4')?.addEventListener('click', () => {
+      window.open(`./modules/pegawai/VcetakRiwayat.html?id=${currentPegawaiId}`, '_blank');
+    });
+
+    document.getElementById('form-edit-profil-pegawai')?.addEventListener('submit', submitUpdateProfil);
+
+    // Quick upload foto
+    document.getElementById('input-quick-foto')?.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('foto', file);
+      formData.append('id_pegawai', currentPegawaiId);
+
+      try {
+        const upRes = await fetch(`${apiUrl}/cPegawai/upload_foto`, {
+          method: 'POST',
+          headers: { 'Authorization-Key': config.auth_key },
+          body: formData
+        });
+        const upJson = await upRes.json();
+        if (upJson && (upJson.code === 200 || upJson.status === true)) {
+          alert('Foto profil berhasil diperbarui!');
+          loadDetailData();
+        } else {
+          alert(upJson?.message || 'Gagal mengunggah foto profil.');
+        }
+      } catch (err) {
+        console.error('Upload foto error:', err);
+        alert('Terjadi kesalahan saat mengunggah foto.');
+      }
+    });
+
+    // Cascading Wilayah on edit
+    document.getElementById('edit-provinsi')?.addEventListener('change', (e) => {
+      loadKabupatenOptions(e.target.value);
+    });
+    document.getElementById('edit-kabupaten')?.addEventListener('change', (e) => {
+      loadKecamatanOptions(e.target.value);
+    });
+    document.getElementById('edit-kecamatan')?.addEventListener('change', (e) => {
+      loadKelurahanOptions(e.target.value);
+    });
+
+    // Modal Ubah Password
+    document.getElementById('btn-modal-ganti-pass')?.addEventListener('click', () => {
+      document.getElementById('form-ganti-pass')?.reset();
+      const modalEl = document.getElementById('modal-ganti-password');
+      if (modalEl && window.bootstrap) {
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+      }
+    });
+
+    document.getElementById('form-ganti-pass')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const passLama = document.getElementById('pass-lama')?.value;
+      const passBaru = document.getElementById('pass-baru')?.value;
+      const passKonf = document.getElementById('pass-konfirmasi')?.value;
+
+      if (!passLama) {
+        alert('Password lama wajib diisi!');
+        return;
+      }
+      if (!passBaru || passBaru.length < 5) {
+        alert('Password baru minimal 5 karakter!');
+        return;
+      }
+      if (passBaru !== passKonf) {
+        alert('Konfirmasi password baru tidak cocok!');
+        return;
+      }
+
+      // Verifikasi password lama via cek_pass
+      try {
+        const cekRes = await httpPost(`${apiUrl}/cPegawai/cek_pass`, {
+          id_pegawai: currentPegawaiId,
+          password: passLama
+        });
+
+        if (!cekRes || cekRes.code !== 200) {
+          alert('Password lama yang Anda masukkan salah!');
+          return;
+        }
+
+        // Update password baru
+        const upRes = await httpPost(`${apiUrl}/cPegawai/update_pass`, {
+          id_pegawai: currentPegawaiId,
+          password: passBaru
+        });
+
+        if (upRes && upRes.code === 200) {
+          alert('Password akun pengguna berhasil diperbarui!');
+          const modalEl = document.getElementById('modal-ganti-password');
+          if (modalEl && window.bootstrap) {
+            bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+          }
+        } else {
+          alert(upRes?.data?.message || 'Gagal mengubah password.');
+        }
+      } catch (err) {
+        console.error('Error ganti password:', err);
+        alert('Terjadi kesalahan saat memproses password.');
+      }
+    });
+
+    // Modal Generic Tambah Riwayat Form
+    bindModalTambahRiwayat();
+  }
+
+  function bindModalTambahRiwayat() {
+    // Tombol Tambah Riwayat Generic
+    document.querySelectorAll('.btn-open-modal-riwayat').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mode = btn.getAttribute('data-mode');
+        openModalTambahRiwayat(mode);
+      });
+    });
+
+    document.getElementById('form-modal-riwayat')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const mode = document.getElementById('modal-riwayat-mode')?.value;
+      if (!mode) return;
+
+      const f1 = document.getElementById('modal-riwayat-field1')?.value || '';
+      const f2 = document.getElementById('modal-riwayat-field2')?.value || '';
+      const f3 = document.getElementById('modal-riwayat-field3')?.value || '';
+      const f4 = document.getElementById('modal-riwayat-field4')?.value || '';
+      const f5 = document.getElementById('modal-riwayat-field5')?.value || '';
+
+      const payload = { ID_PEGAWAI: currentPegawaiId, id_pegawai: currentPegawaiId };
+
+      let endpoint = '';
+      switch (mode) {
+        case 'penempatan':
+          endpoint = `${apiUrl}/cPegawai/update_data_penempatan`;
+          payload.KD_BAGIAN = f1; payload.KD_JABATAN = f2; payload.TGL_MULAI = f3; payload.TGL_SELESAI = f4; payload.KETERANGAN = f5;
+          break;
+        case 'pendidikan':
+          endpoint = `${apiUrl}/cPegawai/update_data_pendidikan`;
+          payload.KD_JENJANG = f1; payload.NAMA_SEKOLAH = f2; payload.JURUSAN = f3; payload.TAHUN_LULUS = f4; payload.NO_IJAZAH = f5;
+          break;
+        case 'pelatihan':
+          endpoint = `${apiUrl}/cPegawai/update_data_pelatihan`;
+          payload.NAMA_PELATIHAN = f1; payload.PENYELENGGARA = f2; payload.TGL_PELATIHAN = f3; payload.JUMLAH_JAM = f4; payload.NO_SERTIFIKAT = f5;
+          break;
+        case 'str':
+          endpoint = `${apiUrl}/cPegawai/update_data_str`;
+          payload.NO_STR = f1; payload.TGL_TERBIT = f2; payload.TGL_KADALUARSA = f3; payload.KETERANGAN = f4;
+          break;
+        case 'sip':
+          endpoint = `${apiUrl}/cPegawai/update_data_sip`;
+          payload.NO_SIP = f1; payload.INSTANSI_PENERBIT = f2; payload.TGL_BERLAKU = f3; payload.TGL_KADALUARSA = f4;
+          break;
+        case 'kontrak':
+          endpoint = `${apiUrl}/cPegawai/update_data_kontrak`;
+          payload.NO_KONTRAK = f1; payload.TGL_AWAL = f2; payload.TGL_AKHIR = f3; payload.KETERANGAN = f4;
+          break;
+        case 'cuti':
+          endpoint = `${apiUrl}/cPegawai/update_data_cuti`;
+          payload.KD_JENIS_CUTI = f1; payload.TGL_MULAI = f2; payload.TGL_SELESAI = f3; payload.JUMLAH_HARI = f4; payload.KETERANGAN = f5;
+          break;
+        case 'keluarga':
+          endpoint = `${apiUrl}/cPegawai/update_data_keluarga`;
+          payload.NAMA = f1; payload.KD_HUBUNGAN = f2; payload.TEMPAT_LAHIR = f3; payload.TGL_LAHIR = f4; payload.PEKERJAAN = f5;
+          break;
+        case 'pengalaman':
+          endpoint = `${apiUrl}/cPegawai/update_data_pengalaman`;
+          payload.PERUSAHAAN = f1; payload.JABATAN = f2; payload.TGL_MASUK = f3; payload.TGL_KELUAR = f4; payload.DESKRIPSI = f5;
+          break;
+        case 'keahlian':
+          endpoint = `${apiUrl}/cPegawai/update_data_keahlian`;
+          payload.KEAHLIAN = f1; payload.TINGKAT = f2; payload.SERTIFIKASI = f3;
+          break;
+        case 'kemampuan':
+          endpoint = `${apiUrl}/cPegawai/update_data_kemampuan`;
+          payload.NAMA_KEMAMPUAN = f1; payload.TINGKAT_KEMAHIRAN = f2; payload.KETERANGAN = f3;
+          break;
+        case 'mcu':
+          endpoint = `${apiUrl}/cPegawai/update_data_mcu`;
+          payload.TGL_MCU = f1; payload.HASIL_MCU = f2; payload.DOKTER_PEMERIKSA = f3; payload.CATATAN = f4;
+          break;
+        case 'penghargaan':
+          endpoint = `${apiUrl}/cPegawai/update_data_penghargaan`;
+          payload.NAMA_PENGHARGAAN = f1; payload.PEMBERI = f2; payload.TAHUN = f3; payload.KETERANGAN = f4;
+          break;
+        case 'sanksi':
+          endpoint = `${apiUrl}/cPegawai/update_data_sanksi`;
+          payload.KD_JENIS_SANKSI = f1; payload.NO_SK = f2; payload.TGL_SANKSI = f3; payload.PELANGGARAN = f4;
+          break;
+        case 'phk':
+          endpoint = `${apiUrl}/cPegawai/update_data_phk`;
+          payload.KD_JENIS_PHK = f1; payload.NO_SK = f2; payload.TGL_PHK = f3; payload.KETERANGAN = f4;
+          break;
+        case 'rak':
+          endpoint = `${apiUrl}/cPegawai/update_data_rak`;
+          payload.no_lemari = f1; payload.nama_rak = f2;
+          break;
+        case 'buku':
+          endpoint = `${apiUrl}/cPegawai/update_data_buku`;
+          payload.no_hak = f1; payload.jenis_hak = f2; payload.tahun = f3; payload.kd_lemari = f4; payload.kd_rak = f5;
+          break;
+        default:
+          return;
+      }
+
+      try {
+        const res = await httpPost(endpoint, payload);
+        if (res && res.code === 200) {
+          const mEl = document.getElementById('modal-tambah-riwayat');
+          if (mEl && window.bootstrap) bootstrap.Modal.getOrCreateInstance(mEl).hide();
+          loadDetailData();
+        } else {
+          alert(res?.data?.message || 'Gagal menyimpan riwayat.');
+        }
+      } catch (err) {
+        console.error('Error simpan riwayat:', err);
+        alert('Terjadi kesalahan saat menyimpan riwayat.');
+      }
+    });
+  }
+
+  function openModalTambahRiwayat(mode) {
+    const modalEl = document.getElementById('modal-tambah-riwayat');
+    if (!modalEl || !window.bootstrap) return;
+
+    document.getElementById('form-modal-riwayat')?.reset();
+    document.getElementById('modal-riwayat-mode').value = mode;
+
+    const titleEl = document.getElementById('modal-riwayat-title');
+    const f1Group = document.getElementById('group-riwayat-f1');
+    const f2Group = document.getElementById('group-riwayat-f2');
+    const f3Group = document.getElementById('group-riwayat-f3');
+    const f4Group = document.getElementById('group-riwayat-f4');
+    const f5Group = document.getElementById('group-riwayat-f5');
+
+    // Reset visual visibility
+    f1Group.classList.remove('d-none');
+    f2Group.classList.remove('d-none');
+    f3Group.classList.remove('d-none');
+    f4Group.classList.remove('d-none');
+    f5Group.classList.remove('d-none');
+
+    // Customize per mode
+    if (mode === 'penempatan') {
+      titleEl.innerText = 'Tambah Riwayat Penempatan Unit';
+      setLabel('lbl-f1', 'Bagian / Unit'); setLabel('lbl-f2', 'Jabatan'); setLabel('lbl-f3', 'Tgl Mulai (YYYY-MM-DD)'); setLabel('lbl-f4', 'Tgl Selesai'); setLabel('lbl-f5', 'Keterangan');
+    } else if (mode === 'pendidikan') {
+      titleEl.innerText = 'Tambah Riwayat Pendidikan Formal';
+      setLabel('lbl-f1', 'Jenjang Pendidikan'); setLabel('lbl-f2', 'Nama Institusi / Universitas'); setLabel('lbl-f3', 'Jurusan'); setLabel('lbl-f4', 'Tahun Lulus'); setLabel('lbl-f5', 'No. Ijazah');
+    } else if (mode === 'pelatihan') {
+      titleEl.innerText = 'Tambah Riwayat Diklat & Pelatihan';
+      setLabel('lbl-f1', 'Nama Pelatihan'); setLabel('lbl-f2', 'Penyelenggara'); setLabel('lbl-f3', 'Tanggal (YYYY-MM-DD)'); setLabel('lbl-f4', 'Durasi (Jam)'); setLabel('lbl-f5', 'No. Sertifikat');
+    } else if (mode === 'str') {
+      titleEl.innerText = 'Tambah Catatan STR Nakes';
+      setLabel('lbl-f1', 'Nomor STR'); setLabel('lbl-f2', 'Tgl Terbit (YYYY-MM-DD)'); setLabel('lbl-f3', 'Berlaku Sampai'); setLabel('lbl-f4', 'Keterangan');
+      f5Group.classList.add('d-none');
+    } else if (mode === 'sip') {
+      titleEl.innerText = 'Tambah Catatan SIP Dokter / Nakes';
+      setLabel('lbl-f1', 'Nomor SIP'); setLabel('lbl-f2', 'Instansi Penerbit'); setLabel('lbl-f3', 'Tgl Mulai'); setLabel('lbl-f4', 'Tgl Berakhir');
+      f5Group.classList.add('d-none');
+    } else if (mode === 'kontrak') {
+      titleEl.innerText = 'Tambah Riwayat Kontrak Kerja (PKWT)';
+      setLabel('lbl-f1', 'Nomor Kontrak'); setLabel('lbl-f2', 'Tgl Awal'); setLabel('lbl-f3', 'Tgl Akhir'); setLabel('lbl-f4', 'Keterangan');
+      f5Group.classList.add('d-none');
+    } else if (mode === 'cuti') {
+      titleEl.innerText = 'Tambah Catatan Cuti Pegawai';
+      setLabel('lbl-f1', 'Jenis Cuti (Tahunan/Sakit/dsb)'); setLabel('lbl-f2', 'Tgl Mulai'); setLabel('lbl-f3', 'Tgl Selesai'); setLabel('lbl-f4', 'Jumlah Hari'); setLabel('lbl-f5', 'Keterangan / Alasan');
+    } else if (mode === 'keluarga') {
+      titleEl.innerText = 'Tambah Anggota Keluarga';
+      setLabel('lbl-f1', 'Nama Lengkap'); setLabel('lbl-f2', 'Hubungan (Suami/Istri/Anak)'); setLabel('lbl-f3', 'Tempat Lahir'); setLabel('lbl-f4', 'Tanggal Lahir'); setLabel('lbl-f5', 'Pekerjaan');
+    } else if (mode === 'pengalaman') {
+      titleEl.innerText = 'Tambah Pengalaman Kerja Terdahulu';
+      setLabel('lbl-f1', 'Nama Instansi / Perusahaan'); setLabel('lbl-f2', 'Jabatan / Posisi'); setLabel('lbl-f3', 'Tgl Masuk'); setLabel('lbl-f4', 'Tgl Selesai'); setLabel('lbl-f5', 'Deskripsi Pekerjaan');
+    } else if (mode === 'keahlian') {
+      titleEl.innerText = 'Tambah Keahlian Khusus';
+      setLabel('lbl-f1', 'Nama Keahlian'); setLabel('lbl-f2', 'Tingkat Kemahiran'); setLabel('lbl-f3', 'Lembaga Sertifikasi');
+      f4Group.classList.add('d-none'); f5Group.classList.add('d-none');
+    } else if (mode === 'kemampuan') {
+      titleEl.innerText = 'Tambah Kemampuan Bahasa / IT';
+      setLabel('lbl-f1', 'Bahasa / Bidang IT'); setLabel('lbl-f2', 'Tingkat Kemahiran (Dasar/Mahir/Aktif)'); setLabel('lbl-f3', 'Keterangan');
+      f4Group.classList.add('d-none'); f5Group.classList.add('d-none');
+    } else if (mode === 'mcu') {
+      titleEl.innerText = 'Tambah Catatan Medical Check Up';
+      setLabel('lbl-f1', 'Tanggal MCU (YYYY-MM-DD)'); setLabel('lbl-f2', 'Hasil MCU (Fit / Unfit)'); setLabel('lbl-f3', 'Dokter Pemeriksa'); setLabel('lbl-f4', 'Catatan / Rekomendasi');
+      f5Group.classList.add('d-none');
+    } else if (mode === 'penghargaan') {
+      titleEl.innerText = 'Tambah Riwayat Penghargaan / Prestasi';
+      setLabel('lbl-f1', 'Nama Penghargaan'); setLabel('lbl-f2', 'Instansi Pemberi'); setLabel('lbl-f3', 'Tahun Perolehan'); setLabel('lbl-f4', 'Keterangan');
+      f5Group.classList.add('d-none');
+    } else if (mode === 'sanksi') {
+      titleEl.innerText = 'Tambah Catatan Sanksi / Disiplin';
+      setLabel('lbl-f1', 'Jenis Sanksi (Teguran/SP1/SP2/SP3)'); setLabel('lbl-f2', 'No. SK'); setLabel('lbl-f3', 'Tanggal SK'); setLabel('lbl-f4', 'Pelanggaran yang Dilakukan');
+      f5Group.classList.add('d-none');
+    } else if (mode === 'phk') {
+      titleEl.innerText = 'Tambah Catatan PHK / Pensiun';
+      setLabel('lbl-f1', 'Alasan (Pensiun/Resign/PHK)'); setLabel('lbl-f2', 'No. SK'); setLabel('lbl-f3', 'Tanggal Efektif'); setLabel('lbl-f4', 'Keterangan Tambahan');
+      f5Group.classList.add('d-none');
+    } else if (mode === 'rak') {
+      titleEl.innerText = 'Tambah Rak Lemari Arsip';
+      setLabel('lbl-f1', 'Nomor Lemari'); setLabel('lbl-f2', 'Nama / Posisi Rak');
+      f3Group.classList.add('d-none'); f4Group.classList.add('d-none'); f5Group.classList.add('d-none');
+    } else if (mode === 'buku') {
+      titleEl.innerText = 'Tambah Dokumen Buku Tanah';
+      setLabel('lbl-f1', 'Nomor Hak'); setLabel('lbl-f2', 'Jenis Hak'); setLabel('lbl-f3', 'Tahun'); setLabel('lbl-f4', 'KD Lemari'); setLabel('lbl-f5', 'KD Rak');
+    }
+
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  }
+
+  function setLabel(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.innerText = text;
+  }
+
+  // Global namespace hooks
+  window.vdetailpegawai = {
+    init,
+    loadDetailData
+  };
+  document.vdetailpegawai = window.vdetailpegawai;
+
+  // Run initialization
+  init();
+</script>
+
+<template>
+  <div class="container-fluid px-3 py-3">
+    <!-- State Loading -->
+    <div id="detail-loading-state" class="text-center py-5">
+      <div class="spinner-border text-primary mb-2" role="status"></div>
+      <div class="text-muted small">Memuat detail profil dan 18 riwayat kepegawaian...</div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="detail-main-content" class="d-none">
+      <!-- Profile Hero Card -->
+      <div class="profile-hero-card mb-3">
+        <div class="profile-cover position-relative">
+          <div class="position-absolute top-0 end-0 p-3">
+            <button type="button" class="btn btn-light btn-sm shadow-sm" id="btn-kembali-ke-direktori">
+              <i class="fas fa-arrow-left me-1"></i> Kembali ke Direktori
+            </button>
+          </div>
+        </div>
+        <div class="p-3 pt-0">
+          <div class="d-flex flex-wrap align-items-end justify-content-between gap-3">
+            <div class="d-flex align-items-end gap-3">
+              <div id="header-avatar-container" class="profile-avatar-wrap">
+                <!-- Avatar Loaded Dynamically -->
+              </div>
+              <input type="file" id="input-quick-foto" class="d-none" accept="image/jpeg,image/png,image/jpg">
+              <div class="mb-2">
+                <h4 class="mb-1 text-dark fw-bold" id="header-nama">-</h4>
+                <div class="d-flex flex-wrap align-items-center gap-2 text-muted small">
+                  <span><i class="fas fa-id-badge text-primary me-1"></i>NIP: <strong id="header-nip">-</strong></span>
+                  <span class="text-secondary opacity-50">|</span>
+                  <span><i class="fas fa-id-card text-info me-1"></i>NIK: <span id="header-nik">-</span></span>
+                  <span class="text-secondary opacity-50">|</span>
+                  <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="fas fa-check-circle me-1"></i><span id="header-status">Pegawai</span></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Top Actions -->
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <button type="button" class="btn btn-outline-primary btn-sm" id="btn-modal-ganti-pass">
+                <i class="fas fa-key me-1"></i> Ganti Password
+              </button>
+              <button type="button" class="btn btn-primary btn-sm" id="btn-cetak-riwayat-a4">
+                <i class="fas fa-print me-1"></i> Cetak Resume A4
+              </button>
+            </div>
+          </div>
+
+          <!-- Metadata Badges Bar -->
+          <div class="d-flex flex-wrap gap-2 mt-3 pt-3 border-top">
+            <div class="badge bg-light text-dark border py-2 px-3 fw-normal">
+              <i class="fas fa-hospital me-1 text-primary"></i> Unit: <strong id="header-bagian">-</strong>
+            </div>
+            <div class="badge bg-light text-dark border py-2 px-3 fw-normal">
+              <i class="fas fa-briefcase me-1 text-info"></i> Jabatan: <strong id="header-jabatan">-</strong>
+            </div>
+            <div class="badge bg-light text-dark border py-2 px-3 fw-normal">
+              <i class="fas fa-medal me-1 text-warning"></i> Pangkat: <strong id="header-pangkat">-</strong>
+            </div>
+            <div class="badge bg-light text-dark border py-2 px-3 fw-normal">
+              <i class="fas fa-calendar-alt me-1 text-success"></i> TMT: <strong id="header-tgl-masuk">-</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Navigation -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-bottom p-0">
+          <ul class="nav nav-tabs nav-tabs-pegawai px-3 pt-2" id="detailPegawaiTabs" role="tablist">
+            <li class="nav-item">
+              <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-profil" type="button">
+                <i class="fas fa-user-circle me-1"></i> Biodata & Profil
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-penempatan" type="button">
+                <i class="fas fa-hospital-user me-1"></i> Penempatan <span class="tab-badge" id="badge-count-penempatan">0</span>
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-pendidikan" type="button">
+                <i class="fas fa-graduation-cap me-1"></i> Pendidikan <span class="tab-badge" id="badge-count-pendidikan">0</span>
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-pelatihan" type="button">
+                <i class="fas fa-chalkboard-teacher me-1"></i> Pelatihan <span class="tab-badge" id="badge-count-pelatihan">0</span>
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-medis" type="button">
+                <i class="fas fa-stethoscope me-1"></i> STR & SIP
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-karir" type="button">
+                <i class="fas fa-chart-line me-1"></i> Mutasi & Promosi
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-kontrak" type="button">
+                <i class="fas fa-file-contract me-1"></i> Kontrak <span class="tab-badge" id="badge-count-kontrak">0</span>
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-cuti" type="button">
+                <i class="fas fa-calendar-minus me-1"></i> Cuti <span class="tab-badge" id="badge-count-cuti">0</span>
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-keluarga" type="button">
+                <i class="fas fa-users me-1"></i> Keluarga <span class="tab-badge" id="badge-count-keluarga">0</span>
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-skill" type="button">
+                <i class="fas fa-briefcase me-1"></i> Pengalaman & Skill
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-kesehatan" type="button">
+                <i class="fas fa-heartbeat me-1"></i> MCU <span class="tab-badge" id="badge-count-mcu">0</span>
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-disiplin" type="button">
+                <i class="fas fa-award me-1"></i> Prestasi & Disiplin
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-phk" type="button">
+                <i class="fas fa-user-times me-1"></i> PHK & Pensiun
+              </button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-arsip" type="button">
+                <i class="fas fa-archive me-1"></i> Lemari Rak & Buku Tanah
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="card-body p-3">
+          <div class="tab-content" id="detailPegawaiTabContent">
+            <!-- TAB 1: FORM EDIT PROFIL & BIODATA -->
+            <div class="tab-pane fade show active" id="tab-profil" role="tabpanel">
+              <form id="form-edit-profil-pegawai">
+                <div class="row g-3">
+                  <div class="col-lg-12">
+                    <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
+                      <i class="fas fa-id-card me-1"></i> Identitas Pribadi
+                    </h6>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label small fw-semibold text-muted mb-1">Gelar Depan</label>
+                    <input type="text" class="form-control form-control-sm" id="edit-gelar-depan">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small fw-semibold text-muted mb-1">Nama Lengkap <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control form-control-sm" id="edit-nama" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label small fw-semibold text-muted mb-1">Gelar Belakang</label>
+                    <input type="text" class="form-control form-control-sm" id="edit-gelar-belakang">
+                  </div>
+
+                  <div class="col-md-4">
+                    <label class="form-label small fw-semibold text-muted mb-1">NIP Pegawai</label>
+                    <input type="text" class="form-control form-control-sm" id="edit-nip">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label small fw-semibold text-muted mb-1">NIK (KTP)</label>
+                    <input type="text" class="form-control form-control-sm" id="edit-nik" maxlength="16">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label small fw-semibold text-muted mb-1">Nomor Kartu Keluarga (KK)</label>
+                    <input type="text" class="form-control form-control-sm" id="edit-kk" maxlength="16">
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted mb-1">Jenis Kelamin</label>
+                    <select class="form-select form-select-sm" id="edit-jk">
+                      <option value="L">Laki-laki</option>
+                      <option value="P">Perempuan</option>
+                    </select>
+                  </div>
+                  <div class="col-md-5">
+                    <label class="form-label small fw-semibold text-muted mb-1">Tempat Lahir</label>
+                    <input type="text" class="form-control form-control-sm" id="edit-tempat-lahir">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label small fw-semibold text-muted mb-1">Tanggal Lahir</label>
+                    <input type="date" class="form-control form-control-sm" id="edit-tgl-lahir">
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted mb-1">Agama</label>
+                    <select class="form-select form-select-sm" id="edit-agama"></select>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label small fw-semibold text-muted mb-1">Gol. Darah</label>
+                    <select class="form-select form-select-sm" id="edit-goldar"></select>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label small fw-semibold text-muted mb-1">Rhesus</label>
+                    <select class="form-select form-select-sm" id="edit-rhesus">
+                      <option value="">-</option>
+                      <option value="+">+</option>
+                      <option value="-">-</option>
+                    </select>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label small fw-semibold text-muted mb-1">Status Nikah</label>
+                    <select class="form-select form-select-sm" id="edit-status-nikah"></select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted mb-1">Pendidikan Terakhir</label>
+                    <select class="form-select form-select-sm" id="edit-pendidikan"></select>
+                  </div>
+
+                  <!-- Penempatan -->
+                  <div class="col-lg-12 mt-4">
+                    <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
+                      <i class="fas fa-briefcase me-1"></i> Penempatan & Status Kerja
+                    </h6>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label small fw-semibold text-muted mb-1">Bagian / Unit Kerja</label>
+                    <select class="form-select form-select-sm" id="edit-bagian"></select>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label small fw-semibold text-muted mb-1">Jabatan Pegawai</label>
+                    <select class="form-select form-select-sm" id="edit-jabatan"></select>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label small fw-semibold text-muted mb-1">Pangkat / Golongan</label>
+                    <select class="form-select form-select-sm" id="edit-pangkat"></select>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted mb-1">Status Kepegawaian</label>
+                    <select class="form-select form-select-sm" id="edit-status-pegawai"></select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted mb-1">Jenis Pegawai</label>
+                    <select class="form-select form-select-sm" id="edit-jenis-pegawai"></select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted mb-1">TMT Mulai Bekerja</label>
+                    <input type="date" class="form-control form-control-sm" id="edit-tgl-masuk">
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted mb-1">Status Kerja</label>
+                    <select class="form-select form-select-sm" id="edit-status-aktif">
+                      <option value="1">Aktif</option>
+                      <option value="0">Non-Aktif</option>
+                    </select>
+                  </div>
+
+                  <!-- Kontak & Domisili -->
+                  <div class="col-lg-12 mt-4">
+                    <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
+                      <i class="fas fa-map-marker-alt me-1"></i> Kontak & Domisili
+                    </h6>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small fw-semibold text-muted mb-1">No. Handphone / WhatsApp</label>
+                    <input type="text" class="form-control form-control-sm" id="edit-hp">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small fw-semibold text-muted mb-1">Email Aktif</label>
+                    <input type="email" class="form-control form-control-sm" id="edit-email">
+                  </div>
+                  <div class="col-md-12">
+                    <label class="form-label small fw-semibold text-muted mb-1">Alamat Jalan</label>
+                    <textarea class="form-control form-control-sm" id="edit-alamat" rows="2"></textarea>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted mb-1">Provinsi</label>
+                    <select class="form-select form-select-sm" id="edit-provinsi"></select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted mb-1">Kabupaten / Kota</label>
+                    <select class="form-select form-select-sm" id="edit-kabupaten"></select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted mb-1">Kecamatan</label>
+                    <select class="form-select form-select-sm" id="edit-kecamatan"></select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label small fw-semibold text-muted mb-1">Kelurahan / Desa</label>
+                    <select class="form-select form-select-sm" id="edit-kelurahan"></select>
+                  </div>
+
+                  <!-- BPJS & Pajak -->
+                  <div class="col-lg-12 mt-4">
+                    <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">
+                      <i class="fas fa-shield-alt me-1"></i> Jaminan & Perpajakan
+                    </h6>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label small fw-semibold text-muted mb-1">BPJS Kesehatan</label>
+                    <input type="text" class="form-control form-control-sm" id="edit-bpjs-kes">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label small fw-semibold text-muted mb-1">BPJS Ketenagakerjaan</label>
+                    <input type="text" class="form-control form-control-sm" id="edit-bpjs-tk">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label small fw-semibold text-muted mb-1">NPWP</label>
+                    <input type="text" class="form-control form-control-sm" id="edit-npwp">
+                  </div>
+
+                  <div class="col-12 text-end mt-4">
+                    <button type="submit" class="btn btn-primary btn-sm px-4" id="btn-simpan-update-profil">
+                      <i class="fas fa-save me-1"></i> Simpan Perubahan Profil
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <!-- TAB 2: PENEMPATAN -->
+            <div class="tab-pane fade" id="tab-penempatan" role="tabpanel">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-hospital-user text-primary me-2"></i>Riwayat Penempatan Unit</h6>
+                <button type="button" class="btn btn-sm btn-outline-primary btn-open-modal-riwayat" data-mode="penempatan">
+                  <i class="fas fa-plus me-1"></i> Tambah Penempatan
+                </button>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover table-striped riwayat-table align-middle">
+                  <thead>
+                    <tr>
+                      <th class="text-center" style="width: 40px;">No</th>
+                      <th>Unit / Bagian</th>
+                      <th>Jabatan</th>
+                      <th>Tgl Mulai</th>
+                      <th>Tgl Selesai</th>
+                      <th>Keterangan</th>
+                      <th class="text-end" style="width: 90px;">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-penempatan-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- TAB 3: PENDIDIKAN -->
+            <div class="tab-pane fade" id="tab-pendidikan" role="tabpanel">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-graduation-cap text-primary me-2"></i>Riwayat Pendidikan Formal</h6>
+                <button type="button" class="btn btn-sm btn-outline-primary btn-open-modal-riwayat" data-mode="pendidikan">
+                  <i class="fas fa-plus me-1"></i> Tambah Pendidikan
+                </button>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover table-striped riwayat-table align-middle">
+                  <thead>
+                    <tr>
+                      <th class="text-center" style="width: 40px;">No</th>
+                      <th>Jenjang</th>
+                      <th>Institusi / Universitas</th>
+                      <th>Jurusan</th>
+                      <th>Tahun Lulus</th>
+                      <th>No. Ijazah</th>
+                      <th class="text-end" style="width: 90px;">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-pendidikan-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- TAB 4: PELATIHAN -->
+            <div class="tab-pane fade" id="tab-pelatihan" role="tabpanel">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-chalkboard-teacher text-primary me-2"></i>Riwayat Diklat & Kursus</h6>
+                <button type="button" class="btn btn-sm btn-outline-primary btn-open-modal-riwayat" data-mode="pelatihan">
+                  <i class="fas fa-plus me-1"></i> Tambah Pelatihan
+                </button>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover table-striped riwayat-table align-middle">
+                  <thead>
+                    <tr>
+                      <th class="text-center" style="width: 40px;">No</th>
+                      <th>Nama Pelatihan</th>
+                      <th>Penyelenggara</th>
+                      <th>Tanggal</th>
+                      <th>Durasi (Jam)</th>
+                      <th>No. Sertifikat</th>
+                      <th class="text-end" style="width: 90px;">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-pelatihan-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- TAB 5: STR & SIP -->
+            <div class="tab-pane fade" id="tab-medis" role="tabpanel">
+              <!-- STR -->
+              <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-id-card-alt text-primary me-2"></i>Surat Tanda Registrasi (STR Nakes)</h6>
+                  <button type="button" class="btn btn-sm btn-outline-primary btn-open-modal-riwayat" data-mode="str">
+                    <i class="fas fa-plus me-1"></i> Tambah STR
+                  </button>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-hover table-striped riwayat-table align-middle">
+                    <thead>
+                      <tr>
+                        <th class="text-center" style="width: 40px;">No</th>
+                        <th>Nomor STR</th>
+                        <th>Tgl Terbit</th>
+                        <th>Berlaku Sampai</th>
+                        <th>Keterangan</th>
+                        <th class="text-end" style="width: 90px;">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="table-str-body"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- SIP -->
+              <div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-file-medical text-primary me-2"></i>Surat Izin Praktik (SIP Dokter / Nakes)</h6>
+                  <button type="button" class="btn btn-sm btn-outline-primary btn-open-modal-riwayat" data-mode="sip">
+                    <i class="fas fa-plus me-1"></i> Tambah SIP
+                  </button>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-hover table-striped riwayat-table align-middle">
+                    <thead>
+                      <tr>
+                        <th class="text-center" style="width: 40px;">No</th>
+                        <th>Nomor SIP</th>
+                        <th>Instansi Penerbit</th>
+                        <th>Tgl Berlaku</th>
+                        <th>Berlaku Sampai</th>
+                        <th class="text-end" style="width: 90px;">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="table-sip-body"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 6: MUTASI & PROMOSI -->
+            <div class="tab-pane fade" id="tab-karir" role="tabpanel">
+              <!-- Mutasi -->
+              <div class="mb-4">
+                <h6 class="fw-bold mb-2 text-dark"><i class="fas fa-exchange-alt text-primary me-2"></i>Catatan Mutasi Internal</h6>
+                <div class="table-responsive">
+                  <table class="table table-hover table-striped riwayat-table align-middle">
+                    <thead>
+                      <tr>
+                        <th class="text-center" style="width: 40px;">No</th>
+                        <th>No. SK</th>
+                        <th>Tgl SK</th>
+                        <th>Unit Lama</th>
+                        <th>Unit Baru</th>
+                        <th>Keterangan</th>
+                        <th class="text-end" style="width: 90px;">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="table-mutasi-body"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Promosi -->
+              <div>
+                <h6 class="fw-bold mb-2 text-dark"><i class="fas fa-level-up-alt text-primary me-2"></i>Catatan Promosi & Kepangkatan</h6>
+                <div class="table-responsive">
+                  <table class="table table-hover table-striped riwayat-table align-middle">
+                    <thead>
+                      <tr>
+                        <th class="text-center" style="width: 40px;">No</th>
+                        <th>No. SK</th>
+                        <th>Tgl SK</th>
+                        <th>Jabatan Lama</th>
+                        <th>Jabatan Baru</th>
+                        <th>Pangkat Baru</th>
+                        <th class="text-end" style="width: 90px;">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="table-promosi-body"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 7: KONTRAK KERJA -->
+            <div class="tab-pane fade" id="tab-kontrak" role="tabpanel">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-file-contract text-primary me-2"></i>Riwayat Perjanjian Kerja (PKWT / Kontrak)</h6>
+                <button type="button" class="btn btn-sm btn-outline-primary btn-open-modal-riwayat" data-mode="kontrak">
+                  <i class="fas fa-plus me-1"></i> Tambah Kontrak
+                </button>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover table-striped riwayat-table align-middle">
+                  <thead>
+                    <tr>
+                      <th class="text-center" style="width: 40px;">No</th>
+                      <th>No. Kontrak</th>
+                      <th>Mulai</th>
+                      <th>Akhir</th>
+                      <th>Keterangan</th>
+                      <th class="text-end" style="width: 90px;">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-kontrak-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- TAB 8: CUTI & IZIN -->
+            <div class="tab-pane fade" id="tab-cuti" role="tabpanel">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-calendar-minus text-primary me-2"></i>Riwayat Cuti & Izin Pegawai</h6>
+                <button type="button" class="btn btn-sm btn-outline-primary btn-open-modal-riwayat" data-mode="cuti">
+                  <i class="fas fa-plus me-1"></i> Ajukan / Catat Cuti
+                </button>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover table-striped riwayat-table align-middle">
+                  <thead>
+                    <tr>
+                      <th class="text-center" style="width: 40px;">No</th>
+                      <th>Jenis Cuti</th>
+                      <th>Dari</th>
+                      <th>Sampai</th>
+                      <th>Hari</th>
+                      <th>Alasan</th>
+                      <th class="text-end" style="width: 90px;">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-cuti-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- TAB 9: KELUARGA -->
+            <div class="tab-pane fade" id="tab-keluarga" role="tabpanel">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-users text-primary me-2"></i>Susunan Anggota Keluarga & Tanggungan</h6>
+                <button type="button" class="btn btn-sm btn-outline-primary btn-open-modal-riwayat" data-mode="keluarga">
+                  <i class="fas fa-plus me-1"></i> Tambah Keluarga
+                </button>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover table-striped riwayat-table align-middle">
+                  <thead>
+                    <tr>
+                      <th class="text-center" style="width: 40px;">No</th>
+                      <th>Nama Anggota</th>
+                      <th>Hubungan</th>
+                      <th>Tempat Lahir</th>
+                      <th>Tgl Lahir</th>
+                      <th>Pekerjaan</th>
+                      <th class="text-end" style="width: 90px;">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-keluarga-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- TAB 10: PENGALAMAN & SKILL -->
+            <div class="tab-pane fade" id="tab-skill" role="tabpanel">
+              <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-history text-primary me-2"></i>Pengalaman Kerja Terdahulu</h6>
+                  <button type="button" class="btn btn-sm btn-outline-primary btn-open-modal-riwayat" data-mode="pengalaman">
+                    <i class="fas fa-plus me-1"></i> Tambah Pengalaman
+                  </button>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-hover table-striped riwayat-table align-middle">
+                    <thead>
+                      <tr>
+                        <th class="text-center" style="width: 40px;">No</th>
+                        <th>Instansi / Perusahaan</th>
+                        <th>Jabatan</th>
+                        <th>Mulai</th>
+                        <th>Selesai</th>
+                        <th>Deskripsi</th>
+                        <th class="text-end" style="width: 90px;">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="table-pengalaman-body"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Keahlian & Kemampuan -->
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-star text-warning me-2"></i>Keahlian Spesifik</h6>
+                    <button type="button" class="btn btn-sm btn-outline-primary btn-open-modal-riwayat" data-mode="keahlian">
+                      <i class="fas fa-plus me-1"></i> Tambah
+                    </button>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table table-hover table-striped riwayat-table align-middle">
+                      <thead>
+                        <tr>
+                          <th class="text-center" style="width: 40px;">No</th>
+                          <th>Keahlian</th>
+                          <th>Tingkat</th>
+                          <th>Sertifikasi</th>
+                          <th class="text-end" style="width: 80px;">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody id="table-keahlian-body"></tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-language text-info me-2"></i>Kemampuan Bahasa & IT</h6>
+                    <button type="button" class="btn btn-sm btn-outline-primary btn-open-modal-riwayat" data-mode="kemampuan">
+                      <i class="fas fa-plus me-1"></i> Tambah
+                    </button>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table table-hover table-striped riwayat-table align-middle">
+                      <thead>
+                        <tr>
+                          <th class="text-center" style="width: 40px;">No</th>
+                          <th>Kemampuan</th>
+                          <th>Tingkat</th>
+                          <th>Keterangan</th>
+                          <th class="text-end" style="width: 80px;">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody id="table-kemampuan-body"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 11: MCU & KESEHATAN -->
+            <div class="tab-pane fade" id="tab-kesehatan" role="tabpanel">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-heartbeat text-danger me-2"></i>Medical Check Up (Pemeriksaan Kesehatan Berkala)</h6>
+                <button type="button" class="btn btn-sm btn-outline-primary btn-open-modal-riwayat" data-mode="mcu">
+                  <i class="fas fa-plus me-1"></i> Tambah Hasil MCU
+                </button>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover table-striped riwayat-table align-middle">
+                  <thead>
+                    <tr>
+                      <th class="text-center" style="width: 40px;">No</th>
+                      <th>Tanggal MCU</th>
+                      <th>Hasil Pemeriksaan</th>
+                      <th>Dokter Pemeriksa</th>
+                      <th>Catatan / Rekomendasi</th>
+                      <th class="text-end" style="width: 90px;">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-mcu-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- TAB 12: PRESTASI & DISIPLIN -->
+            <div class="tab-pane fade" id="tab-disiplin" role="tabpanel">
+              <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-award text-success me-2"></i>Penghargaan & Prestasi Kerja</h6>
+                  <button type="button" class="btn btn-sm btn-outline-primary btn-open-modal-riwayat" data-mode="penghargaan">
+                    <i class="fas fa-plus me-1"></i> Tambah Penghargaan
+                  </button>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-hover table-striped riwayat-table align-middle">
+                    <thead>
+                      <tr>
+                        <th class="text-center" style="width: 40px;">No</th>
+                        <th>Nama Penghargaan</th>
+                        <th>Instansi Pemberi</th>
+                        <th>Tahun</th>
+                        <th>Keterangan</th>
+                        <th class="text-end" style="width: 90px;">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="table-penghargaan-body"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-gavel text-danger me-2"></i>Catatan Disiplin & Sanksi</h6>
+                  <button type="button" class="btn btn-sm btn-outline-danger btn-open-modal-riwayat" data-mode="sanksi">
+                    <i class="fas fa-plus me-1"></i> Tambah Sanksi
+                  </button>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-hover table-striped riwayat-table align-middle">
+                    <thead>
+                      <tr>
+                        <th class="text-center" style="width: 40px;">No</th>
+                        <th>Tingkat Sanksi</th>
+                        <th>No. SK</th>
+                        <th>Tanggal</th>
+                        <th>Pelanggaran</th>
+                        <th class="text-end" style="width: 90px;">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="table-sanksi-body"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 13: PHK & PENSIUN -->
+            <div class="tab-pane fade" id="tab-phk" role="tabpanel">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-user-times text-danger me-2"></i>Catatan Pemberhentian Kerja / PHK / Pensiun</h6>
+                <button type="button" class="btn btn-sm btn-outline-danger btn-open-modal-riwayat" data-mode="phk">
+                  <i class="fas fa-plus me-1"></i> Tambah Catatan PHK
+                </button>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover table-striped riwayat-table align-middle">
+                  <thead>
+                    <tr>
+                      <th class="text-center" style="width: 40px;">No</th>
+                      <th>Status / Alasan PHK</th>
+                      <th>No. SK</th>
+                      <th>Tanggal Efektif</th>
+                      <th>Keterangan</th>
+                      <th class="text-end" style="width: 90px;">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-phk-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- TAB 14: ARSIP RAK & BUKU TANAH -->
+            <div class="tab-pane fade" id="tab-arsip" role="tabpanel">
+              <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <div>
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-archive text-primary me-2"></i>Lokasi Rak Lemari Arsip Dokumen (tb_rak)</h6>
+                    <small class="text-muted">Manajemen penempatan berkas fisik pegawai di lemari arsip kepegawaian RS</small>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline-primary btn-open-modal-riwayat" data-mode="rak">
+                    <i class="fas fa-plus me-1"></i> Tambah Rak Lemari
+                  </button>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-hover table-striped riwayat-table align-middle">
+                    <thead>
+                      <tr>
+                        <th class="text-center" style="width: 40px;">No</th>
+                        <th>Nomor Lemari</th>
+                        <th>Nama / Posisi Rak</th>
+                        <th class="text-end" style="width: 90px;">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="table-rak-body"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <div>
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-book text-success me-2"></i>Buku Tanah & Legalitas Aset (tb_buku_tanah)</h6>
+                    <small class="text-muted">Pencatatan arsip sertifikat hak dan buku tanah legalitas Rumah Sakit</small>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline-success btn-open-modal-riwayat" data-mode="buku">
+                    <i class="fas fa-plus me-1"></i> Tambah Buku Tanah
+                  </button>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-hover table-striped riwayat-table align-middle">
+                    <thead>
+                      <tr>
+                        <th class="text-center" style="width: 40px;">No</th>
+                        <th>No. Hak</th>
+                        <th>Jenis Hak</th>
+                        <th>Tahun</th>
+                        <th>Lemari</th>
+                        <th>Rak</th>
+                        <th class="text-end" style="width: 90px;">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="table-buku-body"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL GANTI PASSWORD -->
+    <div class="modal fade" id="modal-ganti-password" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0">
+          <div class="modal-header bg-light py-2">
+            <h6 class="modal-title fw-bold text-dark"><i class="fas fa-key text-primary me-2"></i>Ubah Password Akun Pengguna</h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form id="form-ganti-pass">
+            <div class="modal-body py-3">
+              <div class="mb-3">
+                <label class="form-label small fw-semibold text-muted mb-1">Password Lama <span class="text-danger">*</span></label>
+                <input type="password" class="form-control form-control-sm" id="pass-lama" required placeholder="Masukkan password saat ini">
+              </div>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold text-muted mb-1">Password Baru <span class="text-danger">*</span></label>
+                <input type="password" class="form-control form-control-sm" id="pass-baru" required placeholder="Minimal 5 karakter">
+              </div>
+              <div>
+                <label class="form-label small fw-semibold text-muted mb-1">Konfirmasi Password Baru <span class="text-danger">*</span></label>
+                <input type="password" class="form-control form-control-sm" id="pass-konfirmasi" required placeholder="Ulangi password baru">
+              </div>
+            </div>
+            <div class="modal-footer bg-light py-2">
+              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+              <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save me-1"></i> Perbarui Password</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL DYNAMIC TAMBAH RIWAYAT -->
+    <div class="modal fade" id="modal-tambah-riwayat" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0">
+          <div class="modal-header bg-light py-2">
+            <h6 class="modal-title fw-bold text-dark" id="modal-riwayat-title">Tambah Riwayat</h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <form id="form-modal-riwayat">
+            <input type="hidden" id="modal-riwayat-mode">
+            <div class="modal-body py-3">
+              <div class="mb-2" id="group-riwayat-f1">
+                <label class="form-label small fw-semibold text-muted mb-1" id="lbl-f1">Field 1</label>
+                <input type="text" class="form-control form-control-sm" id="modal-riwayat-field1">
+              </div>
+              <div class="mb-2" id="group-riwayat-f2">
+                <label class="form-label small fw-semibold text-muted mb-1" id="lbl-f2">Field 2</label>
+                <input type="text" class="form-control form-control-sm" id="modal-riwayat-field2">
+              </div>
+              <div class="mb-2" id="group-riwayat-f3">
+                <label class="form-label small fw-semibold text-muted mb-1" id="lbl-f3">Field 3</label>
+                <input type="text" class="form-control form-control-sm" id="modal-riwayat-field3">
+              </div>
+              <div class="mb-2" id="group-riwayat-f4">
+                <label class="form-label small fw-semibold text-muted mb-1" id="lbl-f4">Field 4</label>
+                <input type="text" class="form-control form-control-sm" id="modal-riwayat-field4">
+              </div>
+              <div class="mb-2" id="group-riwayat-f5">
+                <label class="form-label small fw-semibold text-muted mb-1" id="lbl-f5">Field 5</label>
+                <input type="text" class="form-control form-control-sm" id="modal-riwayat-field5">
+              </div>
+            </div>
+            <div class="modal-footer bg-light py-2">
+              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+              <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save me-1"></i> Simpan Catatan</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

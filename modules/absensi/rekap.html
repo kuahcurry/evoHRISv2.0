@@ -1,0 +1,492 @@
+<style>
+  .absensi-rekap .card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem;
+  }
+  .absensi-rekap .table th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+    text-align: center;
+  }
+  .absensi-rekap .table td {
+    vertical-align: middle;
+    font-size: 0.8rem;
+  }
+  .matrix-day-cell {
+    min-width: 32px;
+    max-width: 38px;
+    padding: 3px !important;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+  }
+  .matrix-day-cell:hover {
+    transform: scale(1.15);
+    z-index: 5;
+    position: relative;
+  }
+  .shift-badge {
+    display: inline-block;
+    width: 28px;
+    height: 24px;
+    line-height: 24px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: bold;
+    color: #fff;
+    text-align: center;
+  }
+  .shift-badge.bg-success { background-color: #28a745 !important; }
+  .shift-badge.bg-warning { background-color: #ffc107 !important; color: #212529 !important; }
+  .shift-badge.bg-danger { background-color: #dc3545 !important; }
+  .shift-badge.bg-secondary { background-color: #6c757d !important; opacity: 0.6; }
+  .shift-badge.bg-info { background-color: #17a2b8 !important; }
+  .shift-badge.bg-light-libur { background-color: #e9ecef !important; color: #6c757d !important; }
+</style>
+
+<script type="module" defer>
+  import { httpGet } from './assets/js/core/http.js';
+
+  let rawRekapData = [];
+  let filteredRekapData = [];
+  let masterBagian = [];
+  let currentBulan = '2026-04'; // Default to active schedule month
+  let selectedBagian = '';
+
+  const tag = 'absensi_rekap';
+
+  const initModule = async () => {
+    // Set default month in filter
+    const now = new Date();
+    const curYear = now.getFullYear();
+    const curMonth = String(now.getMonth() + 1).padStart(2, '0');
+    // Check if 2026-04 has data, otherwise fallback to current
+    const monthInput = document.getElementById('filter-bulan-rekap');
+    if (monthInput) {
+      monthInput.value = '2026-04';
+      currentBulan = '2026-04';
+    }
+
+    await loadMaster();
+    await loadData();
+    bindEvents();
+  };
+
+  const loadMaster = async () => {
+    try {
+      const res = await httpGet(`${config.api_url}/absensi/master`);
+      if (res && res.code === 200 && res.data) {
+        masterBagian = res.data.bagian || [];
+        populateBagianSelect();
+      }
+    } catch (e) {
+      console.warn('Master data load error:', e);
+    }
+  };
+
+  const populateBagianSelect = () => {
+    const sel = document.getElementById('filter-bagian-rekap');
+    if (!sel) return;
+    let html = '<option value="">-- Semua Unit / Bagian --</option>';
+    masterBagian.forEach(b => {
+      html += `<option value="${b.KD_BAGIAN}">${b.BAGIAN}</option>`;
+    });
+    sel.innerHTML = html;
+  };
+
+  const loadData = async () => {
+    const tbody = document.getElementById('tbody-rekap');
+    const tableHeadDays = document.getElementById('thead-rekap-days');
+    const spinner = document.getElementById('loading-rekap');
+    
+    if (spinner) spinner.classList.remove('d-none');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="45" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat rekapitulasi kehadiran...</td></tr>';
+
+    try {
+      const monthVal = document.getElementById('filter-bulan-rekap')?.value || currentBulan;
+      const bagianVal = document.getElementById('filter-bagian-rekap')?.value || '';
+      
+      let url = `${config.api_url}/absensi/rekap-bulanan?bulan=${encodeURIComponent(monthVal)}`;
+      if (bagianVal) url += `&kd_bagian=${encodeURIComponent(bagianVal)}`;
+
+      const res = await httpGet(url);
+      if (res && res.code === 200 && res.data) {
+        rawRekapData = res.data.data || [];
+        filteredRekapData = [...rawRekapData];
+
+        updateStatCards(res.data);
+        renderHeaderDays(res.data.days_in_month || 30);
+        renderTableRows(res.data.days_in_month || 30);
+      } else {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="45" class="text-center py-4 text-muted">Data kehadiran tidak ditemukan.</td></tr>';
+      }
+    } catch (e) {
+      console.error('Error loading rekap absensi:', e);
+      if (tbody) tbody.innerHTML = `<tr><td colspan="45" class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Gagal memuat data: ${e.message}</td></tr>`;
+    } finally {
+      if (spinner) spinner.classList.add('d-none');
+    }
+  };
+
+  const updateStatCards = (data) => {
+    const elPegawai = document.getElementById('stat-total-pegawai');
+    const elHadir = document.getElementById('stat-total-hadir');
+    const elTerlambat = document.getElementById('stat-total-terlambat');
+    const elBadge = document.getElementById('total-badge-rekap');
+
+    if (elPegawai) elPegawai.textContent = data.total_pegawai || 0;
+    if (elHadir) elHadir.textContent = data.total_hadir || 0;
+    if (elTerlambat) elTerlambat.textContent = data.total_terlambat || 0;
+    if (elBadge) elBadge.textContent = `${data.total_pegawai || 0} Pegawai`;
+  };
+
+  const renderHeaderDays = (daysCount) => {
+    const theadRow = document.getElementById('thead-rekap-days');
+    if (!theadRow) return;
+
+    let html = `
+      <th style="width: 40px;">No</th>
+      <th style="min-width: 180px; text-align: left;">Nama & NIP Pegawai</th>
+      <th style="min-width: 140px; text-align: left;">Unit / Bagian</th>
+    `;
+
+    for (let d = 1; d <= daysCount; d++) {
+      html += `<th class="matrix-day-cell">${d}</th>`;
+    }
+
+    html += `
+      <th style="width: 50px;" title="Total Hadir" class="bg-soft-success text-success">H</th>
+      <th style="width: 50px;" title="Total Terlambat" class="bg-soft-warning text-warning">T</th>
+      <th style="width: 50px;" title="Total Izin / Cuti" class="bg-soft-info text-info">I/C</th>
+      <th style="width: 50px;" title="Total Alpa" class="bg-soft-danger text-danger">A</th>
+      <th style="width: 50px;" title="Total Libur" class="bg-soft-secondary text-secondary">L</th>
+    `;
+
+    theadRow.innerHTML = html;
+  };
+
+  const renderTableRows = (daysCount) => {
+    const tbody = document.getElementById('tbody-rekap');
+    if (!tbody) return;
+
+    if (filteredRekapData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="45" class="text-center py-4 text-muted">Tidak ada data sesuai filter pencarian.</td></tr>';
+      return;
+    }
+
+    let html = '';
+    filteredRekapData.forEach((peg, idx) => {
+      html += `<tr>`;
+      html += `<td class="text-center text-muted">${idx + 1}</td>`;
+      html += `
+        <td>
+          <div class="fw-bold text-dark">${peg.nama || '-'}</div>
+          <div class="text-muted small">NIP: ${peg.nip || '-'}</div>
+        </td>
+      `;
+      html += `<td class="text-muted small">${peg.bagian || '-'}</td>`;
+
+      for (let d = 1; d <= daysCount; d++) {
+        const dayData = peg.hari && peg.hari[d];
+        if (dayData) {
+          const shiftBadge = dayData.kode_shift || dayData.nama_shift || '-';
+          const title = `${dayData.nama_shift || ''} (${dayData.jam_masuk || ''} - ${dayData.jam_pulang || ''})\nMasuk: ${dayData.jam_datang}\nPulang: ${dayData.jam_keluar}\nStatus: ${dayData.status}`;
+          
+          let bgClass = 'bg-secondary';
+          if (dayData.badge_color === 'success') bgClass = 'bg-success';
+          else if (dayData.badge_color === 'warning') bgClass = 'bg-warning';
+          else if (dayData.badge_color === 'danger') bgClass = 'bg-danger';
+          else if (dayData.badge_color === 'info') bgClass = 'bg-info';
+          else if (dayData.status === 'Libur') bgClass = 'bg-light-libur';
+
+          html += `
+            <td class="matrix-day-cell" title="${title}" onclick="window.absensi_rekap.showDetailModal('${peg.id_pegawai}', '${peg.nama}', '${dayData.tanggal}', '${dayData.nama_shift}', '${dayData.jam_datang}', '${dayData.jam_keluar}', '${dayData.status}')">
+              <span class="shift-badge ${bgClass}">${shiftBadge.substring(0, 3)}</span>
+            </td>
+          `;
+        } else {
+          html += `<td class="matrix-day-cell text-muted text-center">-</td>`;
+        }
+      }
+
+      html += `<td class="text-center fw-bold text-success bg-soft-success">${peg.total_hadir || 0}</td>`;
+      html += `<td class="text-center fw-bold text-warning bg-soft-warning">${peg.total_terlambat || 0}</td>`;
+      html += `<td class="text-center fw-bold text-info bg-soft-info">${peg.total_izin_cuti || 0}</td>`;
+      html += `<td class="text-center fw-bold text-danger bg-soft-danger">${peg.total_alpa || 0}</td>`;
+      html += `<td class="text-center fw-bold text-secondary bg-soft-secondary">${peg.total_libur || 0}</td>`;
+      html += `</tr>`;
+    });
+
+    tbody.innerHTML = html;
+  };
+
+  const bindEvents = () => {
+    document.getElementById('btn-filter-rekap')?.addEventListener('click', () => loadData());
+    document.getElementById('btn-refresh-rekap')?.addEventListener('click', () => loadData());
+
+    document.getElementById('filter-bulan-rekap')?.addEventListener('change', () => loadData());
+    document.getElementById('filter-bagian-rekap')?.addEventListener('change', () => loadData());
+
+    document.getElementById('search-rekap')?.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        filteredRekapData = [...rawRekapData];
+      } else {
+        filteredRekapData = rawRekapData.filter(p => 
+          (p.nama && p.nama.toLowerCase().includes(q)) ||
+          (p.nip && p.nip.toLowerCase().includes(q)) ||
+          (p.bagian && p.bagian.toLowerCase().includes(q))
+        );
+      }
+      const daysCount = parseInt(document.getElementById('filter-bulan-rekap')?.value ? new Date(document.getElementById('filter-bulan-rekap').value + '-01').getDate() : 30) || 30;
+      renderTableRows(daysCount);
+    });
+  };
+
+  const showDetailModal = async (idPegawai, nama, tanggal, shift, jamDatang, jamKeluar, status) => {
+    const modalEl = document.getElementById('modal-detail-rekap');
+    if (!modalEl || !window.bootstrap) return;
+
+    document.getElementById('modal-det-nama').textContent = nama;
+    document.getElementById('modal-det-tanggal').textContent = tanggal;
+    document.getElementById('modal-det-shift').textContent = shift || '-';
+    document.getElementById('modal-det-status').textContent = status || '-';
+    document.getElementById('modal-det-masuk').textContent = jamDatang || '-';
+    document.getElementById('modal-det-keluar').textContent = jamKeluar || '-';
+
+    const rawListEl = document.getElementById('modal-det-raw-logs');
+    rawListEl.innerHTML = '<tr><td colspan="4" class="text-center py-2 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat log mesin sidik jari...</td></tr>';
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+
+    try {
+      const res = await httpGet(`${config.api_url}/absensi/log-detail?pin=${encodeURIComponent(idPegawai)}&tanggal=${encodeURIComponent(tanggal)}`);
+      if (res && res.code === 200 && res.data && res.data.length > 0) {
+        let rows = '';
+        res.data.forEach((l, idx) => {
+          rows += `
+            <tr>
+              <td class="text-center">${idx + 1}</td>
+              <td class="fw-bold">${l.scan_date}</td>
+              <td>${l.sn || '-'}</td>
+              <td><span class="badge bg-light text-dark border">${l.verify_mode == 1 ? 'Fingerprint' : 'Face / Log'}</span></td>
+            </tr>
+          `;
+        });
+        rawListEl.innerHTML = rows;
+      } else {
+        rawListEl.innerHTML = '<tr><td colspan="4" class="text-center py-2 text-muted">Tidak ada raw scan log tambahan pada tanggal ini.</td></tr>';
+      }
+    } catch (e) {
+      rawListEl.innerHTML = `<tr><td colspan="4" class="text-center py-2 text-warning">Log biometric tidak tersedia: ${e.message}</td></tr>`;
+    }
+  };
+
+  window.absensi_rekap = {
+    loadData,
+    showDetailModal
+  };
+
+  document.absensi_rekap = {
+    loadData
+  };
+
+  initModule();
+</script>
+
+<template>
+  <div class="container-fluid py-3 absensi-rekap">
+    <!-- Header -->
+    <div class="row align-items-center mb-3">
+      <div class="col-md-7">
+        <div class="d-flex align-items-center">
+          <div class="avatar bg-soft-primary text-primary p-3 rounded-circle me-3">
+            <i class="fas fa-calendar-check fa-2x"></i>
+          </div>
+          <div>
+            <h4 class="mb-0 fw-bold">Rekapitulasi Kehadiran Bulanan</h4>
+            <p class="text-muted small mb-0">Matrix jadwal kerja, status presensi, dan catatan jam kerja harian pegawai</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-5 text-md-end mt-2 mt-md-0">
+        <span class="badge bg-primary px-3 py-2 me-2" id="total-badge-rekap">0 Pegawai</span>
+        <button class="btn btn-outline-secondary btn-sm me-2" id="btn-refresh-rekap" title="Segarkan Data">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Stat Cards -->
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-primary">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Total Pegawai Terdata</div>
+              <h4 class="mb-0 fw-bold" id="stat-total-pegawai">0</h4>
+            </div>
+            <i class="fas fa-users fa-2x text-primary opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-success">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Total Kehadiran</div>
+              <h4 class="mb-0 fw-bold text-success" id="stat-total-hadir">0</h4>
+            </div>
+            <i class="fas fa-check-circle fa-2x text-success opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-warning">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Total Keterlambatan</div>
+              <h4 class="mb-0 fw-bold text-warning" id="stat-total-terlambat">0</h4>
+            </div>
+            <i class="fas fa-user-clock fa-2x text-warning opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-info">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Keterangan Legend</div>
+              <div class="d-flex gap-1 flex-wrap mt-1">
+                <span class="badge bg-success small">Hadir</span>
+                <span class="badge bg-warning text-dark small">Telat</span>
+                <span class="badge bg-danger small">Alpa</span>
+                <span class="badge bg-secondary small">Libur</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters & Table Card -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-white py-3 border-bottom">
+        <div class="row g-2 align-items-center">
+          <div class="col-md-3">
+            <label class="form-label small text-muted mb-1">Periode Bulan:</label>
+            <input type="month" class="form-control form-control-sm" id="filter-bulan-rekap" value="2026-04">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small text-muted mb-1">Unit / Bagian:</label>
+            <select class="form-select form-select-sm" id="filter-bagian-rekap">
+              <option value="">-- Memuat Bagian --</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-muted mb-1">Cari Pegawai:</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
+              <input type="text" class="form-control bg-light border-start-0" id="search-rekap" placeholder="Nama / NIP...">
+            </div>
+          </div>
+          <div class="col-md-2 d-flex align-items-end">
+            <button class="btn btn-primary btn-sm w-100" id="btn-filter-rekap">
+              <i class="fas fa-filter me-1"></i> Terapkan
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="d-none text-center py-2 bg-light border-bottom" id="loading-rekap">
+          <span class="spinner-border spinner-border-sm text-primary me-2"></span>Memperbarui matrix data...
+        </div>
+        <div class="table-responsive" style="max-height: 65vh;">
+          <table class="table table-bordered table-hover align-middle mb-0" id="table-rekap-matrix">
+            <thead class="sticky-top bg-light">
+              <tr id="thead-rekap-days">
+                <!-- Dynamically generated days 1..31 -->
+              </tr>
+            </thead>
+            <tbody id="tbody-rekap">
+              <tr>
+                <td colspan="45" class="text-center py-4 text-muted">
+                  <span class="spinner-border spinner-border-sm me-2"></span>Memuat rekapitulasi kehadiran...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Detail Log Harian -->
+    <div class="modal fade" id="modal-detail-rekap" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold"><i class="fas fa-fingerprint text-primary me-2"></i>Rincian Presensi Harian</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="card bg-light border-0 mb-3 p-3">
+              <div class="row g-2">
+                <div class="col-6">
+                  <small class="text-muted d-block">Nama Pegawai</small>
+                  <strong id="modal-det-nama">-</strong>
+                </div>
+                <div class="col-6">
+                  <small class="text-muted d-block">Tanggal</small>
+                  <strong id="modal-det-tanggal">-</strong>
+                </div>
+                <div class="col-6">
+                  <small class="text-muted d-block">Shift Terjadwal</small>
+                  <span class="badge bg-secondary" id="modal-det-shift">-</span>
+                </div>
+                <div class="col-6">
+                  <small class="text-muted d-block">Status Kehadiran</small>
+                  <span class="badge bg-primary" id="modal-det-status">-</span>
+                </div>
+                <div class="col-6">
+                  <small class="text-muted d-block">Jam Masuk (Aktual)</small>
+                  <strong class="text-success" id="modal-det-masuk">-</strong>
+                </div>
+                <div class="col-6">
+                  <small class="text-muted d-block">Jam Pulang (Aktual)</small>
+                  <strong class="text-info" id="modal-det-keluar">-</strong>
+                </div>
+              </div>
+            </div>
+
+            <h6 class="fw-bold mb-2 small text-uppercase text-muted"><i class="fas fa-list me-1"></i>Audit Raw Scan Biometrik (Mesin)</h6>
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered">
+                <thead class="bg-light">
+                  <tr>
+                    <th style="width: 40px;" class="text-center">No</th>
+                    <th>Waktu Scan</th>
+                    <th>Mesin SN</th>
+                    <th>Mode</th>
+                  </tr>
+                </thead>
+                <tbody id="modal-det-raw-logs">
+                  <!-- Injected via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

@@ -1,0 +1,764 @@
+<style>
+  .card-pegawai {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  .filter-panel {
+    background-color: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1rem 1.25rem;
+  }
+  .pegawai-avatar-thumb {
+    width: 44px;
+    height: 44px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid #e2e8f0;
+  }
+  .pegawai-avatar-placeholder {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background-color: #e9ecef;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  .badge-status-aktif {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    border: 1px solid #badbcc;
+  }
+  .badge-status-nonaktif {
+    background-color: #f8d7da;
+    color: #842029;
+    border: 1px solid #f5c2c7;
+  }
+  .table-pegawai thead th {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #475569;
+    background-color: #f8fafc;
+    vertical-align: middle;
+  }
+  .btn-action-group .btn {
+    padding: 0.28rem 0.55rem;
+    font-size: 0.78rem;
+  }
+  .pagination-container .page-link {
+    font-size: 0.82rem;
+    padding: 0.35rem 0.7rem;
+  }
+  .edit-expand-banner {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #2563eb;
+    border-radius: 0.5rem;
+    padding: 0.85rem 1.25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  }
+</style>
+
+<script type="module">
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+  import EvoPopup from './components/EvoPopup.js';
+
+  const apiUrl = (typeof config !== 'undefined' && config.api_url) 
+    ? config.api_url 
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  let state = {
+    page: 1,
+    limit: 10,
+    search: '',
+    kd_bagian: '',
+    kd_jabatan: '',
+    kd_status_pegawai: '',
+    status_aktif: '',
+    totalPages: 1,
+    totalRecords: 0,
+    isLoading: false
+  };
+
+  let masterData = {
+    bagian: [],
+    jabatan: [],
+    status_pegawai: []
+  };
+
+  let popupTambah = null;
+
+  async function initMasterFilters() {
+    try {
+      const res = await httpGet(`${apiUrl}/cPegawai/master`);
+      if (res && res.code === 200 && res.data) {
+        masterData.bagian = res.data.bagian || [];
+        masterData.jabatan = res.data.jabatan || [];
+        masterData.status_pegawai = res.data.status_pegawai || [];
+
+        populateSelect('filter-bagian', masterData.bagian, 'KD_BAGIAN', 'BAGIAN', 'Semua Unit / Bagian');
+        populateSelect('filter-jabatan', masterData.jabatan, 'KD_JABATAN', 'JABATAN', 'Semua Jabatan');
+        populateSelect('filter-status', masterData.status_pegawai, 'KD_STATUS_PEGAWAI', 'STATUS_PEGAWAI', 'Semua Status Pegawai');
+      }
+    } catch (err) {
+      console.warn('Gagal memuat master filter pegawai:', err);
+    }
+  }
+
+  function populateSelect(id, list, keyVal, keyText, defaultLabel) {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    let opts = `<option value="">${defaultLabel}</option>`;
+    list.forEach(item => {
+      const val = item[keyVal] ?? '';
+      const txt = item[keyText] ?? '';
+      opts += `<option value="${val}">${txt}</option>`;
+    });
+    sel.innerHTML = opts;
+  }
+
+  async function loadData(page = 1) {
+    if (state.isLoading) return;
+    state.isLoading = true;
+    state.page = page;
+
+    const tbody = document.getElementById('table-pegawai-body');
+    const loadingEl = document.getElementById('table-pegawai-loading');
+    const emptyEl = document.getElementById('table-pegawai-empty');
+    const totalInfo = document.getElementById('pegawai-total-info');
+
+    if (loadingEl) loadingEl.classList.remove('d-none');
+    if (emptyEl) emptyEl.classList.add('d-none');
+    if (tbody) tbody.innerHTML = '';
+
+    try {
+      const params = {
+        page: state.page,
+        limit: state.limit,
+        search: state.search,
+        kd_bagian: state.kd_bagian,
+        kd_jabatan: state.kd_jabatan,
+        kd_status_pegawai: state.kd_status_pegawai,
+        status_aktif: state.status_aktif
+      };
+
+      const res = await httpGet(`${apiUrl}/cTambahPegawai/index`, params);
+
+      if (loadingEl) loadingEl.classList.add('d-none');
+
+      if (res && res.code === 200 && res.data) {
+        const rows = res.data.data || [];
+        state.totalRecords = res.data.total || rows.length;
+        state.totalPages = Math.ceil(state.totalRecords / state.limit) || 1;
+
+        if (totalInfo) {
+          totalInfo.textContent = `Menampilkan ${rows.length} dari total ${state.totalRecords} pegawai`;
+        }
+
+        if (rows.length === 0) {
+          if (emptyEl) emptyEl.classList.remove('d-none');
+          renderPagination();
+          return;
+        }
+
+        renderTableRows(rows);
+        renderPagination();
+      } else {
+        if (emptyEl) emptyEl.classList.remove('d-none');
+        if (totalInfo) totalInfo.textContent = 'Gagal memuat data pegawai';
+      }
+    } catch (err) {
+      console.error('Error saat load data pegawai:', err);
+      if (loadingEl) loadingEl.classList.add('d-none');
+      if (emptyEl) emptyEl.classList.remove('d-none');
+      if (totalInfo) totalInfo.textContent = 'Terjadi kesalahan jaringan atau server';
+    } finally {
+      state.isLoading = false;
+    }
+  }
+
+  function renderTableRows(rows) {
+    const tbody = document.getElementById('table-pegawai-body');
+    if (!tbody) return;
+
+    let html = '';
+    const startNo = (state.page - 1) * state.limit;
+
+    rows.forEach((row, idx) => {
+      const no = startNo + idx + 1;
+      const idPeg = row.ID_PEGAWAI || row.id_pegawai || row.NO_AUTO || row.no_auto || '';
+      const nip = row.NIP || row.nip || '-';
+      const nik = row.NO_IDENTITAS || row.no_identitas || '-';
+      const nama = row.NAMA || row.nama || 'Tanpa Nama';
+      const gelarDepan = row.GELAR_DEPAN || row.gelar_depan || '';
+      const gelarBelakang = row.GELAR_BELAKANG || row.gelar_belakang || '';
+      const namaLengkap = `${gelarDepan ? gelarDepan + ' ' : ''}${nama}${gelarBelakang ? ', ' + gelarBelakang : ''}`;
+
+      const bagian = row.BAGIAN || row.bagian || row.nama_bagian || '-';
+      const jabatan = row.JABATAN || row.jabatan || row.nama_jabatan || '-';
+      const statusPeg = row.STATUS_PEGAWAI || row.status_pegawai || row.nama_status || 'Tetap';
+      const isAktif = (row.status_aktif == 1 || row.STATUS_AKTIF == 1 || row.status_aktif === '1' || row.status_aktif === null);
+      const foto = row.FOTO || row.foto || '';
+
+      const avatarHtml = foto 
+        ? `<img src="${foto}" class="pegawai-avatar-thumb me-2" alt="${nama}">`
+        : `<div class="pegawai-avatar-placeholder me-2">${nama.charAt(0).toUpperCase()}</div>`;
+
+      html += `
+        <tr>
+          <td class="text-center align-middle">${no}</td>
+          <td class="align-middle">
+            <div class="d-flex align-items-center">
+              ${avatarHtml}
+              <div>
+                <a href="javascript:void(0)" class="fw-bold text-decoration-none text-primary link-nama-pegawai" data-id="${idPeg}" data-nama="${namaLengkap}">
+                  ${namaLengkap}
+                </a>
+                <div class="text-muted small">
+                  <i class="far fa-id-card me-1"></i>NIK: ${nik}
+                </div>
+              </div>
+            </div>
+          </td>
+          <td class="align-middle">
+            <span class="badge bg-light text-dark border font-monospace px-2 py-1">${nip}</span>
+          </td>
+          <td class="align-middle">
+            <div class="fw-semibold text-dark">${bagian}</div>
+            <div class="text-muted small">${jabatan}</div>
+          </td>
+          <td class="align-middle">
+            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-2 py-1">
+              ${statusPeg}
+            </span>
+          </td>
+          <td class="text-center align-middle">
+            ${isAktif 
+              ? '<span class="badge badge-status-aktif px-2 py-1"><i class="fas fa-check-circle me-1"></i>Aktif</span>'
+              : '<span class="badge badge-status-nonaktif px-2 py-1"><i class="fas fa-times-circle me-1"></i>Nonaktif</span>'
+            }
+          </td>
+          <td class="text-end align-middle">
+            <div class="btn-group btn-action-group" role="group">
+              <button type="button" class="btn btn-outline-primary btn-edit-pegawai" data-id="${idPeg}" data-nama="${namaLengkap}" title="Edit Data & Rekam Jejak Pegawai">
+                <i class="fas fa-edit me-1"></i> Edit
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-cetak-pegawai" data-id="${idPeg}" title="Cetak Riwayat Lengkap">
+                <i class="fas fa-print"></i>
+              </button>
+              <button type="button" class="btn btn-outline-danger btn-hapus-pegawai" data-id="${idPeg}" data-nama="${namaLengkap}" title="Hapus Pegawai">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+
+    // Bind Edit inline expandable
+    tbody.querySelectorAll('.btn-edit-pegawai, .link-nama-pegawai').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.preventDefault();
+        const id = el.getAttribute('data-id');
+        const nama = el.getAttribute('data-nama');
+        expandEditPegawai(id, nama);
+      });
+    });
+
+    tbody.querySelectorAll('.btn-cetak-pegawai').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = btn.getAttribute('data-id');
+        bukaCetakRiwayat(id);
+      });
+    });
+
+    tbody.querySelectorAll('.btn-hapus-pegawai').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = btn.getAttribute('data-id');
+        const nama = btn.getAttribute('data-nama');
+        konfirmasiHapusPegawai(id, nama);
+      });
+    });
+  }
+
+  function renderPagination() {
+    const container = document.getElementById('pegawai-pagination');
+    if (!container) return;
+
+    if (state.totalPages <= 1) {
+      container.innerHTML = '';
+      return;
+    }
+
+    let html = '<ul class="pagination pagination-sm mb-0">';
+    
+    html += `
+      <li class="page-item ${state.page === 1 ? 'disabled' : ''}">
+        <a class="page-link" href="javascript:void(0)" data-page="${state.page - 1}">&laquo;</a>
+      </li>
+    `;
+
+    let startPage = Math.max(1, state.page - 2);
+    let endPage = Math.min(state.totalPages, startPage + 4);
+    if (endPage - startPage < 4) {
+      startPage = Math.max(1, endPage - 4);
+    }
+
+    if (startPage > 1) {
+      html += `<li class="page-item"><a class="page-link" href="javascript:void(0)" data-page="1">1</a></li>`;
+      if (startPage > 2) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+    }
+
+    for (let p = startPage; p <= endPage; p++) {
+      html += `
+        <li class="page-item ${p === state.page ? 'active' : ''}">
+          <a class="page-link" href="javascript:void(0)" data-page="${p}">${p}</a>
+        </li>
+      `;
+    }
+
+    if (endPage < state.totalPages) {
+      if (endPage < state.totalPages - 1) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      html += `<li class="page-item"><a class="page-link" href="javascript:void(0)" data-page="${state.totalPages}">${state.totalPages}</a></li>`;
+    }
+
+    html += `
+      <li class="page-item ${state.page === state.totalPages ? 'disabled' : ''}">
+        <a class="page-link" href="javascript:void(0)" data-page="${state.page + 1}">&raquo;</a>
+      </li>
+    `;
+
+    html += '</ul>';
+    container.innerHTML = html;
+
+    container.querySelectorAll('.page-link').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const p = parseInt(link.getAttribute('data-page'));
+        if (p && p >= 1 && p <= state.totalPages && p !== state.page) {
+          loadData(p);
+        }
+      });
+    });
+  }
+
+  // Buka Pop Up Tambah Pegawai via EvoPopup
+  function bukaPopupTambahPegawai() {
+    if (!popupTambah) {
+      popupTambah = new EvoPopup('modalTambahPegawai');
+      window.popupTambahPegawai = popupTambah;
+      popupTambah.on('onClosed', () => {
+        loadData(state.page);
+      });
+    }
+
+    popupTambah.open({
+      size: 'xl'
+    }, {
+      title: '<i class="fas fa-user-plus text-primary me-2"></i>Registrasi Pegawai Baru',
+      content: {
+        type: 'module',
+        name: 'modules/pegawai/VaddPegawai'
+      }
+    });
+  }
+
+  // Expand section Edit Pegawai
+  function expandEditPegawai(id, nama) {
+    if (!id) return;
+    sessionStorage.setItem('selected_pegawai_id', id);
+    window.selected_pegawai_id = id;
+
+    const sectionList = document.getElementById('section-list-pegawai');
+    const sectionDetail = document.getElementById('section-detail-pegawai');
+    const labelHeader = document.getElementById('label-pegawai-sedang-diedit');
+    const container = document.getElementById('container-detail-inline');
+
+    if (labelHeader) {
+      labelHeader.textContent = nama || `Pegawai #${id}`;
+    }
+
+    if (sectionList) sectionList.classList.add('d-none');
+    if (sectionDetail) {
+      sectionDetail.classList.remove('d-none');
+      if (typeof loadModule === 'function') {
+        loadModule('modules/pegawai/VdetailPegawai', '#container-detail-inline');
+      }
+      sectionDetail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  // Tutup section Edit Pegawai dan kembali ke direktori
+  function collapseDetailPegawai() {
+    const sectionList = document.getElementById('section-list-pegawai');
+    const sectionDetail = document.getElementById('section-detail-pegawai');
+    const container = document.getElementById('container-detail-inline');
+
+    if (sectionDetail) sectionDetail.classList.add('d-none');
+    if (container) container.innerHTML = '';
+    if (sectionList) {
+      sectionList.classList.remove('d-none');
+      loadData(state.page);
+      sectionList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  function bukaCetakRiwayat(id) {
+    if (!id) return;
+    window.open(`./modules/pegawai/VcetakRiwayat.html?id=${id}`, '_blank');
+  }
+
+  async function konfirmasiHapusPegawai(id, nama) {
+    if (!id) return;
+    
+    let confirmResult = false;
+    if (typeof Swal !== 'undefined') {
+      const res = await Swal.fire({
+        title: 'Konfirmasi Hapus Pegawai',
+        text: `Apakah Anda yakin ingin menghapus data pegawai "${nama}" (ID: ${id})?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="fas fa-trash-alt me-1"></i> Ya, Hapus',
+        cancelButtonText: 'Batal'
+      });
+      confirmResult = res.isConfirmed;
+    } else {
+      confirmResult = confirm(`Peringatan:\nApakah Anda yakin ingin menghapus data pegawai "${nama}" (ID: ${id})?\nTindakan ini juga akan menonaktifkan akun terkait.`);
+    }
+
+    if (!confirmResult) return;
+
+    try {
+      const res = await httpPost(`${apiUrl}/cPegawai/delete_data`, {
+        mode: 'pegawai',
+        id: id
+      });
+      if (res && res.code === 200) {
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            icon: 'success',
+            title: 'Berhasil',
+            text: 'Data pegawai berhasil dihapus.',
+            timer: 1500,
+            showConfirmButton: false
+          });
+        } else {
+          alert('Data pegawai berhasil dihapus.');
+        }
+        loadData(state.page);
+      } else {
+        const msg = res?.data?.message || 'Gagal menghapus data pegawai.';
+        if (typeof Swal !== 'undefined') {
+          Swal.fire('Gagal Hapus', msg, 'error');
+        } else {
+          alert(msg);
+        }
+      }
+    } catch (err) {
+      console.error('Error delete pegawai:', err);
+      if (typeof Swal !== 'undefined') {
+        Swal.fire('Error', 'Terjadi kesalahan saat menghapus data pegawai.', 'error');
+      } else {
+        alert('Terjadi kesalahan saat menghapus data pegawai.');
+      }
+    }
+  }
+
+  // Bind UI Controls
+  function bindEvents() {
+    const btnTambah = document.getElementById('btn-nav-tambah-pegawai');
+    if (btnTambah) {
+      btnTambah.addEventListener('click', () => {
+        bukaPopupTambahPegawai();
+      });
+    }
+
+    const btnRefresh = document.getElementById('btn-refresh-pegawai');
+    if (btnRefresh) {
+      btnRefresh.addEventListener('click', () => {
+        loadData(state.page);
+      });
+    }
+
+    const btnTutupDetail = document.getElementById('btn-tutup-detail-inline');
+    if (btnTutupDetail) {
+      btnTutupDetail.addEventListener('click', () => {
+        collapseDetailPegawai();
+      });
+    }
+
+    const btnCetakDetail = document.getElementById('btn-cetak-detail-inline');
+    if (btnCetakDetail) {
+      btnCetakDetail.addEventListener('click', () => {
+        const id = sessionStorage.getItem('selected_pegawai_id') || window.selected_pegawai_id;
+        bukaCetakRiwayat(id);
+      });
+    }
+
+    const inputSearch = document.getElementById('search-pegawai');
+    let searchTimer = null;
+    if (inputSearch) {
+      inputSearch.addEventListener('input', (e) => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+          state.search = e.target.value.trim();
+          loadData(1);
+        }, 400);
+      });
+      inputSearch.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          clearTimeout(searchTimer);
+          state.search = e.target.value.trim();
+          loadData(1);
+        }
+      });
+    }
+
+    const selBagian = document.getElementById('filter-bagian');
+    if (selBagian) {
+      selBagian.addEventListener('change', (e) => {
+        state.kd_bagian = e.target.value;
+        loadData(1);
+      });
+    }
+
+    const selJabatan = document.getElementById('filter-jabatan');
+    if (selJabatan) {
+      selJabatan.addEventListener('change', (e) => {
+        state.kd_jabatan = e.target.value;
+        loadData(1);
+      });
+    }
+
+    const selStatus = document.getElementById('filter-status');
+    if (selStatus) {
+      selStatus.addEventListener('change', (e) => {
+        state.kd_status_pegawai = e.target.value;
+        loadData(1);
+      });
+    }
+
+    const selAktif = document.getElementById('filter-aktif');
+    if (selAktif) {
+      selAktif.addEventListener('change', (e) => {
+        state.status_aktif = e.target.value;
+        loadData(1);
+      });
+    }
+
+    const selLimit = document.getElementById('filter-limit');
+    if (selLimit) {
+      selLimit.addEventListener('change', (e) => {
+        state.limit = parseInt(e.target.value) || 10;
+        loadData(1);
+      });
+    }
+
+    const btnReset = document.getElementById('btn-reset-filter');
+    if (btnReset) {
+      btnReset.addEventListener('click', () => {
+        if (inputSearch) inputSearch.value = '';
+        if (selBagian) selBagian.value = '';
+        if (selJabatan) selJabatan.value = '';
+        if (selStatus) selStatus.value = '';
+        if (selAktif) selAktif.value = '';
+        state.search = '';
+        state.kd_bagian = '';
+        state.kd_jabatan = '';
+        state.kd_status_pegawai = '';
+        state.status_aktif = '';
+        loadData(1);
+      });
+    }
+  }
+
+  // Global namespace hooks
+  window.vpegawai = {
+    loadData,
+    initMasterFilters,
+    bukaPopupTambahPegawai,
+    expandEditPegawai,
+    collapseDetailPegawai,
+    bukaCetakRiwayat
+  };
+  document.vpegawai = window.vpegawai;
+
+  // Initialize
+  bindEvents();
+  initMasterFilters();
+  loadData(1);
+</script>
+
+<template>
+  <div class="container-fluid px-3 py-3">
+    <!-- SECTION 1: DIREKTORI LIST PEGAWAI -->
+    <div id="section-list-pegawai">
+      <!-- Header Page -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+          <h4 class="mb-1 text-primary fw-bold">
+            <i class="fas fa-users me-2"></i>Data Pegawai
+          </h4>
+          <p class="text-muted mb-0 small">
+            Direktori profil kepegawaian terintegrasi, unit penempatan, dan manajemen rekam jejak karyawan.
+          </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-refresh-pegawai">
+            <i class="fas fa-sync-alt me-1"></i> Segarkan
+          </button>
+          <button type="button" class="btn btn-primary btn-sm shadow-sm" id="btn-nav-tambah-pegawai">
+            <i class="fas fa-user-plus me-1"></i> Tambah Pegawai
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Card -->
+      <div class="card card-pegawai">
+        <!-- Filter Toolbar -->
+        <div class="filter-panel">
+          <div class="row g-2 align-items-center">
+            <div class="col-lg-3 col-md-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Pencarian Pegawai</label>
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                <input type="text" class="form-control" id="search-pegawai" placeholder="Cari NIP, NIK, atau Nama...">
+              </div>
+            </div>
+
+            <div class="col-lg-2 col-md-3 col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Unit / Bagian</label>
+              <select class="form-select form-select-sm" id="filter-bagian">
+                <option value="">Semua Bagian</option>
+              </select>
+            </div>
+
+            <div class="col-lg-2 col-md-3 col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Jabatan</label>
+              <select class="form-select form-select-sm" id="filter-jabatan">
+                <option value="">Semua Jabatan</option>
+              </select>
+            </div>
+
+            <div class="col-lg-2 col-md-3 col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Status Pegawai</label>
+              <select class="form-select form-select-sm" id="filter-status">
+                <option value="">Semua Status</option>
+              </select>
+            </div>
+
+            <div class="col-lg-1 col-md-3 col-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Status Kerja</label>
+              <select class="form-select form-select-sm" id="filter-aktif">
+                <option value="">Semua</option>
+                <option value="1">Aktif</option>
+                <option value="0">Nonaktif</option>
+              </select>
+            </div>
+
+            <div class="col-lg-2 col-md-12 d-flex align-items-end gap-1 mt-auto">
+              <button type="button" class="btn btn-outline-secondary btn-sm w-100" id="btn-reset-filter" title="Reset Filter">
+                <i class="fas fa-undo me-1"></i> Reset
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Responsive -->
+        <div class="table-responsive">
+          <table class="table table-hover table-striped align-middle table-pegawai mb-0">
+            <thead>
+              <tr>
+                <th class="text-center" style="width: 50px;">No</th>
+                <th>Nama Pegawai & Identitas</th>
+                <th style="width: 140px;">NIP / NRP</th>
+                <th>Bagian & Jabatan</th>
+                <th style="width: 140px;">Status Pegawai</th>
+                <th class="text-center" style="width: 100px;">Status</th>
+                <th class="text-end" style="width: 190px;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="table-pegawai-body">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Loading State -->
+        <div id="table-pegawai-loading" class="text-center py-5 d-none">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Memuat data...</span>
+          </div>
+          <div class="text-muted small mt-2">Memuat data pegawai...</div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="table-pegawai-empty" class="text-center py-5 d-none">
+          <div class="text-muted mb-2">
+            <i class="fas fa-user-slash fa-3x"></i>
+          </div>
+          <h6 class="fw-bold text-secondary">Data Pegawai Tidak Ditemukan</h6>
+          <p class="text-muted small mb-0">Silakan sesuaikan kata kunci pencarian atau ubah kriteria filter.</p>
+        </div>
+
+        <!-- Footer Card: Pagination & Info -->
+        <div class="card-footer bg-white border-top py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small" id="pegawai-total-info">Menyiapkan data...</span>
+            <div class="d-flex align-items-center ms-2">
+              <label class="small text-muted me-1 mb-0">Baris:</label>
+              <select class="form-select form-select-sm py-0 ps-2 pe-4" style="width: 65px; height: 26px; font-size: 0.75rem;" id="filter-limit">
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+          <div class="pagination-container" id="pegawai-pagination">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 2: EXPANDABLE DETAIL / EDIT PEGAWAI INLINE -->
+    <div id="section-detail-pegawai" class="d-none">
+      <!-- Top Action Navigation Bar -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2 bg-white rounded-3 border">
+          <div class="d-flex align-items-center">
+            <button type="button" class="btn btn-sm btn-outline-secondary me-3 shadow-sm" id="btn-tutup-detail-inline">
+              <i class="fas fa-arrow-left me-1"></i> Kembali ke Daftar Pegawai
+            </button>
+            <div class="d-flex align-items-center flex-wrap gap-2">
+              <span class="badge bg-primary px-2 py-1"><i class="fas fa-user-edit me-1"></i> Edit Data Pegawai</span>
+              <span class="fw-bold text-dark fs-6" id="label-pegawai-sedang-diedit">Memuat Data Pegawai...</span>
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-cetak-detail-inline">
+              <i class="fas fa-print me-1"></i> Cetak Riwayat Hidup
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail/Edit Module Injected Container -->
+      <div id="container-detail-inline">
+        <!-- VdetailPegawai will be injected here -->
+      </div>
+    </div>
+
+  </div>
+</template>

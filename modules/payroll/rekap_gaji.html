@@ -1,0 +1,324 @@
+<style>
+  .payroll-rekap .card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem;
+  }
+  .payroll-rekap .table th {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+  }
+  .payroll-rekap .table td {
+    vertical-align: middle;
+    font-size: 0.85rem;
+  }
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+    #rekap-print-area, #rekap-print-area * {
+      visibility: visible;
+    }
+    #rekap-print-area {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      background: white !important;
+      color: black !important;
+      padding: 15px;
+    }
+    .no-print {
+      display: none !important;
+    }
+  }
+</style>
+
+<template>
+  <div class="payroll-rekap container-fluid py-3">
+    <!-- Header -->
+    <div class="row mb-3 align-items-center">
+      <div class="col-md-6">
+        <h4 class="mb-1 text-primary fw-bold">
+          <i class="fas fa-chart-pie me-2"></i>Rekapitulasi Penggajian Karyawan
+        </h4>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0 small">
+            <li class="breadcrumb-item"><a href="#">Payroll</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Rekap Gaji per Unit</li>
+          </ol>
+        </nav>
+      </div>
+      <div class="col-md-6 text-md-end mt-2 mt-md-0">
+        <button class="btn btn-outline-success btn-sm me-1" id="btn-print-rekap">
+          <i class="fas fa-print me-1"></i>Cetak Laporan
+        </button>
+        <button class="btn btn-primary btn-sm" id="btn-goto-gaji">
+          <i class="fas fa-list me-1"></i>Kelola Data Gaji
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card shadow-sm mb-3">
+      <div class="card-body p-3">
+        <div class="row g-2 align-items-center">
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label small fw-semibold mb-1">Periode Bulan</label>
+            <input type="month" class="form-control form-control-sm" id="rekap-filter-periode">
+          </div>
+          <div class="col-md-2 col-sm-6 text-md-start mt-auto pt-2">
+            <button class="btn btn-primary btn-sm w-100" id="btn-apply-filter">
+              <i class="fas fa-filter me-1"></i>Tampilkan Rekap
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="rekap-print-area">
+      <!-- Kop Cetak -->
+      <div class="d-none d-print-block text-center border-bottom pb-2 mb-3">
+        <h4 class="fw-bold mb-0">RUMAH SAKIT UMUM DAERAH</h4>
+        <div class="small text-muted">LAPORAN REKAPITULASI PEMBAYARAN GAJI PEGAWAI PER UNIT KERJA</div>
+        <div class="small fw-semibold mt-1">PERIODE: <span class="print-periode-label">-</span></div>
+      </div>
+
+      <!-- KPI Summary Cards -->
+      <div class="row g-3 mb-3">
+        <div class="col-sm-6 col-xl-3">
+          <div class="card border-start border-primary border-4 shadow-sm h-100">
+            <div class="card-body p-3">
+              <div class="text-uppercase text-muted small fw-semibold">Total Karyawan</div>
+              <h4 class="mb-0 fw-bold text-dark mt-1" id="rekap-total-pegawai">0</h4>
+              <div class="small text-muted mt-1" id="rekap-total-bagian">0 Unit / Bagian</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="card border-start border-info border-4 shadow-sm h-100">
+            <div class="card-body p-3">
+              <div class="text-uppercase text-muted small fw-semibold">Total Gaji Pokok</div>
+              <h4 class="mb-0 fw-bold text-info mt-1" id="rekap-total-gapok">Rp 0</h4>
+              <div class="small text-muted mt-1">Gaji Dasar Terbayar</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="card border-start border-danger border-4 shadow-sm h-100">
+            <div class="card-body p-3">
+              <div class="text-uppercase text-muted small fw-semibold">Total Potongan BPJS</div>
+              <h4 class="mb-0 fw-bold text-danger mt-1" id="rekap-total-potongan">Rp 0</h4>
+              <div class="small text-muted mt-1">Iuran BPJS Karyawan</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="card border-start border-success border-4 shadow-sm h-100">
+            <div class="card-body p-3">
+              <div class="text-uppercase text-muted small fw-semibold">Total Realisasi (THP)</div>
+              <h4 class="mb-0 fw-bold text-success mt-1" id="rekap-total-thp">Rp 0</h4>
+              <div class="small text-muted mt-1">Total Bersih Ditransfer</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table Rekap per Bagian -->
+      <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light py-2 px-3 fw-bold small text-dark d-flex justify-content-between align-items-center">
+          <span><i class="fas fa-building me-2"></i>Rincian Distribusi Anggaran Penggajian per Unit Kerja</span>
+          <span class="badge bg-primary" id="badge-periode">Periode: -</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover table-striped align-middle mb-0" id="table-rekap-bagian">
+              <thead>
+                <tr>
+                  <th style="width: 40px;" class="text-center">No</th>
+                  <th>Unit / Bagian</th>
+                  <th class="text-center">Jml Pegawai</th>
+                  <th class="text-end">Total Gaji Pokok</th>
+                  <th class="text-end">Tunjangan BPJS & Lain</th>
+                  <th class="text-end">Total Bruto</th>
+                  <th class="text-end text-danger">Total Potongan</th>
+                  <th class="text-end text-success fw-bold">Gaji Bersih (THP)</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-rekap-bagian">
+                <tr>
+                  <td colspan="8" class="text-center py-4 text-muted">
+                    <i class="fas fa-spinner fa-spin fa-2x mb-2 d-block text-primary"></i>Memuat rekapitulasi penggajian...
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot class="table-light fw-bold">
+                <tr>
+                  <td colspan="2" class="text-center">TOTAL KESELURUHAN</td>
+                  <td class="text-center" id="foot-total-pegawai">0</td>
+                  <td class="text-end font-monospace" id="foot-total-gapok">Rp 0</td>
+                  <td class="text-end font-monospace" id="foot-total-tunj">Rp 0</td>
+                  <td class="text-end font-monospace text-primary" id="foot-total-bruto">Rp 0</td>
+                  <td class="text-end font-monospace text-danger" id="foot-total-potongan">Rp 0</td>
+                  <td class="text-end font-monospace text-success" id="foot-total-thp">Rp 0</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TTD Pengesahan Cetak -->
+      <div class="d-none d-print-block row text-center mt-5 pt-4 small">
+        <div class="col-4">
+          <div>Mengetahui,</div>
+          <div>Direktur RSUD</div>
+          <div style="height: 70px;"></div>
+          <div class="fw-bold">( Dr. H. Direktur Utama, Sp.B )</div>
+          <div>NIP. 19750101 200003 1 001</div>
+        </div>
+        <div class="col-4"></div>
+        <div class="col-4">
+          <div>Kabupaten, <span class="print-tgl-sekarang"></span></div>
+          <div>Bendahara Pengeluaran</div>
+          <div style="height: 70px;"></div>
+          <div class="fw-bold">( Bendahara Gaji )</div>
+          <div>NIP. 19820512 200604 2 003</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script type="module" defer>
+  import { httpGet } from './assets/js/core/http.js';
+
+  const formatRupiah = (val) => {
+    const num = parseFloat(val) || 0;
+    return 'Rp ' + num.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  };
+
+  const initModule = () => {
+    const defaultPeriode = '2024-09';
+    const filterEl = document.getElementById('rekap-filter-periode');
+    if (filterEl) filterEl.value = defaultPeriode;
+
+    bindEvents();
+    loadRekapData();
+  };
+
+  const loadRekapData = async () => {
+    const periode = document.getElementById('rekap-filter-periode')?.value || '2024-09';
+    const tbody = document.getElementById('tbody-rekap-bagian');
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" class="text-center py-4 text-muted">
+            <i class="fas fa-spinner fa-spin fa-2x mb-2 d-block text-primary"></i>Memuat rekapitulasi penggajian...
+          </td>
+        </tr>`;
+    }
+
+    // Set printable labels
+    document.querySelectorAll('.print-periode-label').forEach(el => el.textContent = periode);
+    document.querySelectorAll('.print-tgl-sekarang').forEach(el => el.textContent = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }));
+    const badge = document.getElementById('badge-periode');
+    if (badge) badge.textContent = `Periode: ${periode}`;
+
+    try {
+      const res = await httpGet(`${config.api_url}/payroll/rekap?periode=${periode}`);
+      if (res && res.code === 200 && res.data) {
+        renderRekapTable(res.data.rekap_bagian || []);
+        renderTotals(res.data.summary || {});
+      } else {
+        renderRekapTable([]);
+      }
+    } catch (e) {
+      console.error('Error fetching payroll recap:', e);
+      if (tbody) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="text-center py-4 text-danger">
+              <i class="fas fa-exclamation-triangle fa-2x mb-2 d-block"></i>Gagal memuat data rekap.
+            </td>
+          </tr>`;
+      }
+    }
+  };
+
+  const renderRekapTable = (list) => {
+    const tbody = document.getElementById('tbody-rekap-bagian');
+    if (!tbody) return;
+
+    if (!list || list.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" class="text-center py-4 text-muted">
+            Tidak ada data penggajian untuk periode yang dipilih.
+          </td>
+        </tr>`;
+      return;
+    }
+
+    let html = '';
+    list.forEach((item, idx) => {
+      const gapok = parseFloat(item.total_gapok) || 0;
+      const bruto = parseFloat(item.total_bruto) || 0;
+      const tunjangan = bruto - gapok;
+      const potongan = parseFloat(item.total_potongan) || 0;
+      const thp = parseFloat(item.total_thp) || 0;
+
+      html += `
+        <tr>
+          <td class="text-center font-monospace">${idx + 1}</td>
+          <td>
+            <div class="fw-bold text-dark">${item.BAGIAN || 'Umum'}</div>
+            <div class="small text-muted font-monospace">KD: ${item.KD_BAGIAN || '-'}</div>
+          </td>
+          <td class="text-center"><span class="badge bg-secondary">${item.jumlah_pegawai} Orang</span></td>
+          <td class="text-end font-monospace">${formatRupiah(gapok)}</td>
+          <td class="text-end font-monospace text-primary">${formatRupiah(tunjangan)}</td>
+          <td class="text-end font-monospace text-primary fw-semibold">${formatRupiah(bruto)}</td>
+          <td class="text-end font-monospace text-danger">${formatRupiah(potongan)}</td>
+          <td class="text-end font-monospace text-success fw-bold">${formatRupiah(thp)}</td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+  };
+
+  const renderTotals = (summary) => {
+    document.getElementById('rekap-total-pegawai').textContent = (summary.total_pegawai || 0).toLocaleString('id-ID');
+    document.getElementById('rekap-total-bagian').textContent = `${summary.total_bagian || 0} Unit / Bagian`;
+    document.getElementById('rekap-total-gapok').textContent = formatRupiah(summary.sum_gapok);
+    document.getElementById('rekap-total-potongan').textContent = formatRupiah(summary.sum_potongan);
+    document.getElementById('rekap-total-thp').textContent = formatRupiah(summary.sum_gaji_bersih);
+
+    document.getElementById('foot-total-pegawai').textContent = `${summary.total_pegawai || 0} Orang`;
+    document.getElementById('foot-total-gapok').textContent = formatRupiah(summary.sum_gapok);
+    const sumBruto = parseFloat(summary.sum_bruto) || 0;
+    const sumGapok = parseFloat(summary.sum_gapok) || 0;
+    document.getElementById('foot-total-tunj').textContent = formatRupiah(sumBruto - sumGapok);
+    document.getElementById('foot-total-bruto').textContent = formatRupiah(sumBruto);
+    document.getElementById('foot-total-potongan').textContent = formatRupiah(summary.sum_potongan);
+    document.getElementById('foot-total-thp').textContent = formatRupiah(summary.sum_gaji_bersih);
+  };
+
+  const bindEvents = () => {
+    document.getElementById('btn-apply-filter')?.addEventListener('click', loadRekapData);
+    document.getElementById('rekap-filter-periode')?.addEventListener('change', loadRekapData);
+    document.getElementById('btn-print-rekap')?.addEventListener('click', () => window.print());
+    document.getElementById('btn-goto-gaji')?.addEventListener('click', () => {
+      if (window.loadModule) {
+        window.loadModule('modules/payroll/gaji.html');
+      }
+    });
+  };
+
+  initModule();
+</script>

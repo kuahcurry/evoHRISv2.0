@@ -1,0 +1,757 @@
+<style>
+  .kinerja-aktifitas .card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem;
+  }
+  .kinerja-aktifitas .table th {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+  }
+  .kinerja-aktifitas .table td {
+    vertical-align: middle;
+    font-size: 0.85rem;
+  }
+</style>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+
+  let rawAktifitasData = [];
+  let filteredAktifitasData = [];
+  let masterBagian = [];
+  let masterSatuanOutput = [];
+  let masterPegawai = [];
+  let masterTargetSkp = [];
+  let currentPage = 1;
+  const pageSize = 15;
+
+  const tag = 'kinerja_aktifitas';
+
+  const initModule = async () => {
+    await loadMaster();
+    await loadData();
+    bindEvents();
+  };
+
+  const loadMaster = async () => {
+    try {
+      const res = await httpGet(`${config.api_url}/kinerja/master`);
+      if (res && res.code === 200 && res.data) {
+        masterBagian = res.data.bagian || [];
+        masterSatuanOutput = res.data.satuan_output || [];
+        populateFilterDropdowns();
+      }
+
+      // Load pegawai for modal dropdown
+      const resPeg = await httpGet(`${config.api_url}/pegawai/list?limit=500`);
+      if (resPeg && resPeg.code === 200 && resPeg.data) {
+        masterPegawai = Array.isArray(resPeg.data) ? resPeg.data : (resPeg.data.data || []);
+        populatePegawaiSelect();
+      }
+
+      // Load target SKP for modal dropdown
+      const resTarget = await httpGet(`${config.api_url}/kinerja/target-skp?limit=500`);
+      if (resTarget && resTarget.code === 200 && resTarget.data) {
+        masterTargetSkp = Array.isArray(resTarget.data) ? resTarget.data : (resTarget.data.data || []);
+        populateTargetSkpSelect();
+      }
+    } catch (e) {
+      console.warn('Master load error:', e);
+    }
+  };
+
+  const populateFilterDropdowns = () => {
+    const selBagian = document.getElementById('filter-bagian-aktifitas');
+    if (selBagian) {
+      let html = '<option value="">-- Semua Unit / Bagian --</option>';
+      masterBagian.forEach(b => {
+        html += `<option value="${b.KD_BAGIAN}">${b.BAGIAN}</option>`;
+      });
+      selBagian.innerHTML = html;
+    }
+
+    const selOutput = document.getElementById('modal-akt-satuan');
+    if (selOutput) {
+      let html = '<option value="">-- Satuan Output --</option>';
+      masterSatuanOutput.forEach(s => {
+        html += `<option value="${s.id_output}">${s.nama_output}</option>`;
+      });
+      selOutput.innerHTML = html;
+    }
+  };
+
+  const populatePegawaiSelect = () => {
+    const sel = document.getElementById('modal-akt-pegawai');
+    if (!sel) return;
+    let html = '<option value="">-- Pilih Pegawai --</option>';
+    masterPegawai.forEach(p => {
+      const nipStr = p.NIP ? ` (${p.NIP})` : '';
+      html += `<option value="${p.ID_PEGAWAI || p.NIP}">${p.NAMA || p.nama}${nipStr}</option>`;
+    });
+    sel.innerHTML = html;
+  };
+
+  const populateTargetSkpSelect = (pegId = null) => {
+    const sel = document.getElementById('modal-akt-target');
+    if (!sel) return;
+    let html = '<option value="0">-- Kegiatan Non-Target / Rutin Umum --</option>';
+    let targets = masterTargetSkp;
+    if (pegId) {
+      targets = masterTargetSkp.filter(t => t.id_pegawai == pegId || (t.NIP && t.NIP == pegId));
+      if (targets.length === 0) targets = masterTargetSkp; // Fallback to all if none match strictly
+    }
+    targets.forEach(t => {
+      html += `<option value="${t.id_targetskp}">${t.uraian} (${t.nama_pegawai || 'SKP'})</option>`;
+    });
+    sel.innerHTML = html;
+  };
+
+  const loadData = async () => {
+    const tbody = document.getElementById('tbody-aktifitas');
+    const spinner = document.getElementById('loading-aktifitas');
+
+    if (spinner) spinner.classList.remove('d-none');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data Logbook Catatan Aktifitas...</td></tr>';
+
+    try {
+      const tglMulai = document.getElementById('filter-tgl-mulai')?.value || '';
+      const tglSelesai = document.getElementById('filter-tgl-selesai')?.value || '';
+      const bagian = document.getElementById('filter-bagian-aktifitas')?.value || '';
+      const status = document.getElementById('filter-status-aktifitas')?.value || '';
+      const search = document.getElementById('search-aktifitas')?.value || '';
+
+      let url = `${config.api_url}/kinerja/aktifitas?limit=500`;
+      if (tglMulai) url += `&tgl_mulai=${encodeURIComponent(tglMulai)}`;
+      if (tglSelesai) url += `&tgl_selesai=${encodeURIComponent(tglSelesai)}`;
+      if (bagian) url += `&bagian=${encodeURIComponent(bagian)}`;
+      if (status !== '') url += `&status=${encodeURIComponent(status)}`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+
+      const res = await httpGet(url);
+      if (res && res.code === 200) {
+        const dataObj = res.data;
+        rawAktifitasData = Array.isArray(dataObj) ? dataObj : (dataObj.data || []);
+        filteredAktifitasData = [...rawAktifitasData];
+
+        updateSummaryCards(dataObj.summary, dataObj.total || rawAktifitasData.length);
+        currentPage = 1;
+        renderTable();
+      } else {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Gagal memuat logbook aktifitas</td></tr>';
+      }
+    } catch (err) {
+      console.error('Error load aktifitas:', err);
+      if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-danger">Terjadi kesalahan: ${err.message}</td></tr>`;
+    } finally {
+      if (spinner) spinner.classList.add('d-none');
+    }
+  };
+
+  const updateSummaryCards = (summary, totalCount) => {
+    const elTotal = document.getElementById('card-stat-akt-total');
+    const elHours = document.getElementById('card-stat-akt-hours');
+    const elApproved = document.getElementById('card-stat-akt-approved');
+    const elPending = document.getElementById('card-stat-akt-pending');
+
+    const total = (summary && summary.total_aktifitas) ? summary.total_aktifitas : (totalCount || rawAktifitasData.length);
+    const approved = (summary && summary.approved) ? summary.approved : rawAktifitasData.filter(x => x.aktifitas_status === '1' || x.aktifitas_status === 1).length;
+    const pending = (summary && summary.pending) ? summary.pending : rawAktifitasData.filter(x => x.aktifitas_status !== '1' && x.aktifitas_status !== 1).length;
+
+    // Calculate total hours from minutes
+    let totalMinutes = 0;
+    rawAktifitasData.forEach(r => {
+      totalMinutes += parseInt(r.durasi_menit || 0) || 0;
+    });
+    const totalHours = (totalMinutes / 60).toFixed(1);
+
+    if (elTotal) elTotal.textContent = parseInt(total).toLocaleString();
+    if (elHours) elHours.textContent = `${totalHours} Jam`;
+    if (elApproved) elApproved.textContent = parseInt(approved).toLocaleString();
+    if (elPending) elPending.textContent = parseInt(pending).toLocaleString();
+
+    const badge = document.getElementById('badge-total-aktifitas');
+    if (badge) badge.textContent = `${total} Log Aktifitas`;
+  };
+
+  const getStatusBadge = (status) => {
+    if (status === '1' || status === 1) {
+      return '<span class="badge bg-soft-success text-success"><i class="fas fa-check-circle me-1"></i>Disetujui</span>';
+    } else if (status === '2' || status === 2) {
+      return '<span class="badge bg-soft-danger text-danger"><i class="fas fa-times-circle me-1"></i>Ditolak</span>';
+    } else {
+      return '<span class="badge bg-soft-warning text-warning"><i class="fas fa-hourglass-half me-1"></i>Menunggu</span>';
+    }
+  };
+
+  const renderTable = () => {
+    const tbody = document.getElementById('tbody-aktifitas');
+    if (!tbody) return;
+
+    if (filteredAktifitasData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted"><i class="fas fa-clipboard me-2"></i>Tidak ada catatan aktifitas harian</td></tr>';
+      renderPagination(0);
+      return;
+    }
+
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    const pageRows = filteredAktifitasData.slice(start, end);
+
+    let html = '';
+    pageRows.forEach((row, idx) => {
+      const num = start + idx + 1;
+      const idAkt = row.id_aktifitas || '';
+      const namaPegawai = row.nama_pegawai || row.id_pegawai || '-';
+      const nip = row.NIP || '-';
+      const bagian = row.nama_bagian || '-';
+      const aktifitas = row.aktifitas || '-';
+      const targetSkp = row.nama_target_skp ? `<div class="text-muted small fst-italic"><i class="fas fa-crosshairs me-1"></i>SKP: ${row.nama_target_skp}</div>` : '';
+      const tgl = (row.tgl_aktifitas || '').split(' ')[0] || '-';
+      const jamMulai = (row.jam_mulai || '').split(' ')[1] || row.jam_mulai || '-';
+      const jamSelesai = (row.jam_selesai || '').split(' ')[1] || row.jam_selesai || '-';
+      const output = `${row.aktifitas_output || '0'} ${row.aktifitas_output_satuan || row.nama_output || ''}`;
+      const durasi = row.durasi_menit ? `${row.durasi_menit} Menit` : '-';
+      const catatan = row.catatan || '-';
+      const badge = getStatusBadge(row.aktifitas_status);
+      const isApproved = row.aktifitas_status === '1' || row.aktifitas_status === 1;
+
+      html += `
+        <tr>
+          <td class="text-center text-muted fw-bold">${num}</td>
+          <td>
+            <div class="fw-bold text-dark">${tgl}</div>
+            <div class="text-muted small"><i class="far fa-clock me-1"></i>${jamMulai} - ${jamSelesai}</div>
+          </td>
+          <td>
+            <div class="fw-bold text-dark">${namaPegawai}</div>
+            <div class="text-muted small">NIP: ${nip}</div>
+            <div class="text-primary small">${bagian}</div>
+          </td>
+          <td>
+            <div class="fw-semibold text-dark">${aktifitas}</div>
+            ${targetSkp}
+          </td>
+          <td><span class="badge bg-light text-dark border">${output}</span></td>
+          <td class="text-center fw-semibold text-primary">${durasi}</td>
+          <td><div class="small text-muted text-truncate" style="max-width: 150px;" title="${catatan}">${catatan}</div></td>
+          <td class="text-center">${badge}</td>
+          <td class="text-center">
+            ${isApproved 
+              ? `<button class="btn btn-outline-info btn-sm btn-detail-akt" data-id="${idAkt}" title="Lihat Rincian"><i class="fas fa-eye"></i></button>` 
+              : `
+                <div class="btn-group btn-group-sm">
+                  <button class="btn btn-outline-success btn-approve-akt" data-id="${idAkt}" title="Setujui Aktifitas">
+                    <i class="fas fa-check"></i>
+                  </button>
+                  <button class="btn btn-outline-danger btn-reject-akt" data-id="${idAkt}" title="Tolak Aktifitas">
+                    <i class="fas fa-times"></i>
+                  </button>
+                  <button class="btn btn-outline-info btn-detail-akt" data-id="${idAkt}" title="Lihat Rincian">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                </div>
+              `}
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    renderPagination(filteredAktifitasData.length);
+
+    // Bind row action buttons
+    tbody.querySelectorAll('.btn-detail-akt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        showDetailModal(id);
+      });
+    });
+
+    tbody.querySelectorAll('.btn-approve-akt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        approveAktifitas(id, 1);
+      });
+    });
+
+    tbody.querySelectorAll('.btn-reject-akt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        approveAktifitas(id, 2);
+      });
+    });
+  };
+
+  const renderPagination = (totalRows) => {
+    const el = document.getElementById('pagination-aktifitas');
+    const info = document.getElementById('pagination-info-aktifitas');
+    if (!el) return;
+
+    const totalPages = Math.ceil(totalRows / pageSize) || 1;
+    const start = totalRows === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    const end = Math.min(currentPage * pageSize, totalRows);
+
+    if (info) info.textContent = `Menampilkan ${start} - ${end} dari ${totalRows} data`;
+
+    let html = `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage - 1}">«</a></li>`;
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) {
+        html += `<li class="page-item ${p === currentPage ? 'active' : ''}"><a class="page-link" href="#" data-page="${p}">${p}</a></li>`;
+      } else if (p === currentPage - 3 || p === currentPage + 3) {
+        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      }
+    }
+    html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage + 1}">»</a></li>`;
+    el.innerHTML = html;
+
+    el.querySelectorAll('.page-link').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const p = parseInt(btn.getAttribute('data-page'));
+        if (p && p !== currentPage && p >= 1 && p <= totalPages) {
+          currentPage = p;
+          renderTable();
+        }
+      });
+    });
+  };
+
+  const showDetailModal = (id) => {
+    const item = rawAktifitasData.find(x => x.id_aktifitas == id);
+    if (!item) return;
+
+    const modalEl = document.getElementById('modal-aktifitas-detail');
+    if (!modalEl || !window.bootstrap) return;
+
+    document.getElementById('modal-detail-akt-nama').textContent = item.nama_pegawai || item.id_pegawai || '-';
+    document.getElementById('modal-detail-akt-nip').textContent = item.NIP || '-';
+    document.getElementById('modal-detail-akt-bagian').textContent = item.nama_bagian || '-';
+    document.getElementById('modal-detail-akt-tgl').textContent = item.tgl_aktifitas || '-';
+    document.getElementById('modal-detail-akt-jam').textContent = `${item.jam_mulai || '-'} s/d ${item.jam_selesai || '-'}`;
+    document.getElementById('modal-detail-akt-durasi').textContent = `${item.durasi_menit || '0'} Menit`;
+    document.getElementById('modal-detail-akt-target').textContent = item.nama_target_skp || 'Kegiatan Rutin / Non-SKP';
+    document.getElementById('modal-detail-akt-uraian').textContent = item.aktifitas || '-';
+    document.getElementById('modal-detail-akt-output').textContent = `${item.aktifitas_output || '0'} ${item.aktifitas_output_satuan || item.nama_output || ''}`;
+    document.getElementById('modal-detail-akt-catatan').textContent = item.catatan || '-';
+    document.getElementById('modal-detail-akt-status').innerHTML = getStatusBadge(item.aktifitas_status);
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  };
+
+  const showModalForm = () => {
+    const modalEl = document.getElementById('modal-aktifitas-form');
+    if (!modalEl || !window.bootstrap) return;
+
+    // Set today default
+    const today = new Date().toISOString().split('T')[0];
+    const tglInput = document.getElementById('modal-akt-tgl');
+    if (tglInput) tglInput.value = today;
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  };
+
+  const saveAktifitas = async () => {
+    const peg = document.getElementById('modal-akt-pegawai')?.value;
+    const tgl = document.getElementById('modal-akt-tgl')?.value;
+    const uraian = document.getElementById('modal-akt-uraian')?.value;
+
+    if (!peg) {
+      alert('Pilih Pegawai terlebih dahulu.');
+      return;
+    }
+    if (!tgl) {
+      alert('Pilih Tanggal pelaksanaan aktifitas.');
+      return;
+    }
+    if (!uraian || !uraian.trim()) {
+      alert('Masukkan uraian tindakan / aktifitas kerja.');
+      return;
+    }
+
+    const payload = {
+      id_pegawai: peg,
+      id_target: document.getElementById('modal-akt-target')?.value || '0',
+      tgl_aktifitas: tgl,
+      jam_mulai: document.getElementById('modal-akt-jam-mulai')?.value || '08:00',
+      jam_selesai: document.getElementById('modal-akt-jam-selesai')?.value || '09:00',
+      aktifitas: uraian,
+      aktifitas_output: document.getElementById('modal-akt-output')?.value || '1',
+      id_output: document.getElementById('modal-akt-satuan')?.value || '1',
+      catatan: document.getElementById('modal-akt-catatan')?.value || ''
+    };
+
+    const btn = document.getElementById('btn-save-aktifitas');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan...';
+    }
+
+    try {
+      const res = await httpPost(`${config.api_url}/kinerja/aktifitas/save`, payload);
+      if (res && res.code === 200) {
+        const modalEl = document.getElementById('modal-aktifitas-form');
+        if (modalEl && window.bootstrap) {
+          bootstrap.Modal.getInstance(modalEl)?.hide();
+        }
+        await loadData();
+      } else {
+        alert(res?.message || 'Gagal mencatat aktifitas.');
+      }
+    } catch (e) {
+      alert('Terjadi kesalahan: ' + e.message);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save me-1"></i>Simpan Log Aktifitas';
+      }
+    }
+  };
+
+  const approveAktifitas = async (id, status) => {
+    const actionText = status === 1 ? 'menyetujui' : 'menolak';
+    if (!confirm(`Konfirmasi: Apakah Anda ingin ${actionText} catatan aktifitas ini?`)) return;
+
+    try {
+      const res = await httpPost(`${config.api_url}/kinerja/aktifitas/approve`, {
+        id_aktifitas: id,
+        status: status
+      });
+
+      if (res && res.code === 200) {
+        await loadData();
+      } else {
+        alert(res?.message || 'Gagal memproses status aktifitas.');
+      }
+    } catch (e) {
+      alert('Terjadi kesalahan: ' + e.message);
+    }
+  };
+
+  const bindEvents = () => {
+    document.getElementById('btn-filter-aktifitas')?.addEventListener('click', () => loadData());
+    document.getElementById('btn-refresh-aktifitas')?.addEventListener('click', () => loadData());
+    document.getElementById('btn-tambah-aktifitas')?.addEventListener('click', () => showModalForm());
+    document.getElementById('btn-save-aktifitas')?.addEventListener('click', () => saveAktifitas());
+
+    // When pegawai selected in modal, filter target SKP
+    document.getElementById('modal-akt-pegawai')?.addEventListener('change', (e) => {
+      populateTargetSkpSelect(e.target.value);
+    });
+
+    document.getElementById('search-aktifitas')?.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        filteredAktifitasData = [...rawAktifitasData];
+      } else {
+        filteredAktifitasData = rawAktifitasData.filter(r => 
+          (r.aktifitas && r.aktifitas.toLowerCase().includes(q)) ||
+          (r.nama_pegawai && r.nama_pegawai.toLowerCase().includes(q)) ||
+          (r.NIP && r.NIP.toLowerCase().includes(q)) ||
+          (r.nama_bagian && r.nama_bagian.toLowerCase().includes(q)) ||
+          (r.catatan && r.catatan.toLowerCase().includes(q))
+        );
+      }
+      currentPage = 1;
+      renderTable();
+    });
+  };
+
+  window.kinerja_aktifitas = { loadData, showDetailModal, showModalForm };
+  document.kinerja_aktifitas = { loadData };
+
+  initModule();
+</script>
+
+<template>
+  <div class="container-fluid py-3 kinerja-aktifitas">
+    <!-- Header -->
+    <div class="row align-items-center mb-3">
+      <div class="col-md-7">
+        <div class="d-flex align-items-center">
+          <div class="avatar bg-soft-warning text-warning p-3 rounded-circle me-3">
+            <i class="fas fa-book-reader fa-2x"></i>
+          </div>
+          <div>
+            <h4 class="mb-0 fw-bold">Logbook & Catatan Aktifitas Harian</h4>
+            <p class="text-muted small mb-0">Pencatatan real-time log pekerjaan harian, asuhan medis, administrasi, dan durasi kerja staf</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-5 text-md-end mt-2 mt-md-0">
+        <span class="badge bg-warning text-dark px-3 py-2 me-2" id="badge-total-aktifitas">Memuat...</span>
+        <button class="btn btn-outline-secondary btn-sm me-2" id="btn-refresh-aktifitas" title="Segarkan Data">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+        <button class="btn btn-warning btn-sm" id="btn-tambah-aktifitas">
+          <i class="fas fa-plus me-1"></i>Catat Aktifitas Baru
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-warning">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Total Aktifitas</div>
+              <h4 class="mb-0 fw-bold text-dark" id="card-stat-akt-total">0</h4>
+            </div>
+            <i class="fas fa-clipboard-list fa-2x text-warning opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-primary">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Total Jam Kerja</div>
+              <h4 class="mb-0 fw-bold text-primary" id="card-stat-akt-hours">0 Jam</h4>
+            </div>
+            <i class="fas fa-business-time fa-2x text-primary opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-success">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Telah Disetujui</div>
+              <h4 class="mb-0 fw-bold text-success" id="card-stat-akt-approved">0</h4>
+            </div>
+            <i class="fas fa-check-circle fa-2x text-success opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-secondary">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Menunggu Review</div>
+              <h4 class="mb-0 fw-bold text-muted" id="card-stat-akt-pending">0</h4>
+            </div>
+            <i class="fas fa-hourglass-half fa-2x text-secondary opacity-25"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card p-3 mb-3">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-3">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+            <input type="text" class="form-control" id="search-aktifitas" placeholder="Cari nama, kegiatan, catatan...">
+          </div>
+        </div>
+        <div class="col-md-2">
+          <input type="date" class="form-control form-control-sm" id="filter-tgl-mulai" title="Tanggal Mulai">
+        </div>
+        <div class="col-md-2">
+          <input type="date" class="form-control form-control-sm" id="filter-tgl-selesai" title="Tanggal Selesai">
+        </div>
+        <div class="col-md-2">
+          <select class="form-select form-select-sm" id="filter-bagian-aktifitas">
+            <option value="">-- Semua Unit / Bagian --</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select class="form-select form-select-sm" id="filter-status-aktifitas">
+            <option value="">-- Semua Status --</option>
+            <option value="1">Disetujui</option>
+            <option value="0">Menunggu Approval</option>
+            <option value="2">Ditolak</option>
+          </select>
+        </div>
+        <div class="col-md-1 text-end">
+          <button class="btn btn-outline-warning text-dark btn-sm w-100" id="btn-filter-aktifitas">
+            <i class="fas fa-filter"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Table Card -->
+    <div class="card">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-book me-2 text-warning"></i>Riwayat Catatan Logbook Harian Pegawai</h6>
+        <div class="spinner-border spinner-border-sm text-warning d-none" id="loading-aktifitas"></div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 45px;">No</th>
+              <th style="width: 130px;">Waktu & Jam</th>
+              <th style="width: 220px;">Pegawai & Unit</th>
+              <th>Aktifitas / Tindakan Dilakukan</th>
+              <th style="width: 110px;">Output</th>
+              <th class="text-center" style="width: 90px;">Durasi</th>
+              <th style="width: 140px;">Catatan</th>
+              <th class="text-center" style="width: 110px;">Status</th>
+              <th class="text-center" style="width: 110px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-aktifitas">
+            <tr>
+              <td colspan="10" class="text-center py-4 text-muted">
+                <span class="spinner-border spinner-border-sm me-2"></span>Memuat data...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer bg-white d-flex flex-column flex-md-row justify-content-between align-items-center py-2">
+        <div class="text-muted small mb-2 mb-md-0" id="pagination-info-aktifitas">Menampilkan 0 data</div>
+        <ul class="pagination pagination-sm mb-0" id="pagination-aktifitas"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detail Aktifitas -->
+  <div class="modal fade" id="modal-aktifitas-detail" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-warning text-dark">
+          <h5 class="modal-title"><i class="fas fa-clipboard-check me-2"></i>Rincian Catatan Aktifitas Harian</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="text-muted small d-block">Pegawai</label>
+              <h5 class="fw-bold text-dark mb-0" id="modal-detail-akt-nama">-</h5>
+              <div class="text-muted small">NIP: <span id="modal-detail-akt-nip">-</span></div>
+            </div>
+            <div class="col-md-6">
+              <label class="text-muted small d-block">Unit Kerja</label>
+              <h6 class="fw-semibold text-primary mb-0" id="modal-detail-akt-bagian">-</h6>
+              <div class="text-muted small">Tanggal: <span id="modal-detail-akt-tgl">-</span></div>
+            </div>
+          </div>
+
+          <div class="card bg-light p-3 mb-3">
+            <label class="text-muted small">Kaitan Target SKP</label>
+            <div class="fw-semibold text-dark mb-2" id="modal-detail-akt-target">-</div>
+            <label class="text-muted small">Uraian Aktifitas / Tindakan Medis</label>
+            <div class="fs-6 fw-bold text-dark" id="modal-detail-akt-uraian">-</div>
+          </div>
+
+          <div class="row g-3 text-center mb-3">
+            <div class="col-4">
+              <div class="p-3 border rounded bg-white">
+                <div class="text-muted small">Jam Kerja</div>
+                <h6 class="mb-0 text-dark fw-bold" id="modal-detail-akt-jam">-</h6>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="p-3 border rounded bg-white">
+                <div class="text-muted small">Total Durasi</div>
+                <h5 class="mb-0 text-primary fw-bold" id="modal-detail-akt-durasi">-</h5>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="p-3 border rounded bg-white">
+                <div class="text-muted small">Volume Output</div>
+                <h5 class="mb-0 text-success fw-bold" id="modal-detail-akt-output">-</h5>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="text-muted small d-block">Catatan Tambahan / Hasil Pelaksanaan</label>
+            <div class="p-2 border rounded bg-light text-dark small" id="modal-detail-akt-catatan">-</div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+            <span class="text-muted small">Status Verifikasi Atasan:</span>
+            <span id="modal-detail-akt-status">-</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Form Input Aktifitas -->
+  <div class="modal fade" id="modal-aktifitas-form" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-warning text-dark">
+          <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Catat Aktifitas Harian</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold small">Pegawai Pelaksana <span class="text-danger">*</span></label>
+              <select class="form-select form-select-sm" id="modal-akt-pegawai">
+                <option value="">-- Pilih Pegawai --</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold small">Target SKP Terkait</label>
+              <select class="form-select form-select-sm" id="modal-akt-target">
+                <option value="0">-- Kegiatan Non-Target / Rutin Umum --</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label class="form-label fw-bold small">Tanggal <span class="text-danger">*</span></label>
+              <input type="date" class="form-control form-control-sm" id="modal-akt-tgl">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold small">Jam Mulai</label>
+              <input type="time" class="form-control form-control-sm" id="modal-akt-jam-mulai" value="08:00">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold small">Jam Selesai</label>
+              <input type="time" class="form-control form-control-sm" id="modal-akt-jam-selesai" value="09:00">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold small">Uraian Aktifitas / Tindakan <span class="text-danger">*</span></label>
+            <textarea class="form-control" id="modal-akt-uraian" rows="3" placeholder="Contoh: Melakukan pemasangan infus dan observasi TTV pasien di ruang rawat inap..."></textarea>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold small">Volume / Output</label>
+              <input type="number" class="form-control form-control-sm" id="modal-akt-output" value="1">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold small">Satuan Output</label>
+              <select class="form-select form-select-sm" id="modal-akt-satuan">
+                <option value="">-- Satuan Output --</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold small">Catatan Hasil / Keterangan</label>
+            <input type="text" class="form-control form-control-sm" id="modal-akt-catatan" placeholder="Contoh: Tindakan berjalan lancar, kondisi pasien stabil">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-warning btn-sm" id="btn-save-aktifitas">
+            <i class="fas fa-save me-1"></i>Simpan Log Aktifitas
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

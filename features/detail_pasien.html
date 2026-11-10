@@ -1,0 +1,36 @@
+<script type="module" defer>
+  import { httpPost, httpGet } from './assets/js/core/http.js';
+  import { getCurrentUser, getSelectedPasien, getFormEntries, setFormEntries } from './assets/js/core/helpers.js';
+  
+  const id = 'detail_pasien';
+  let detail_pasien = {};
+  let frm_actions = document.getElementById('detail_pasien-actions');
+  const frm_entries = document.getElementById('detail_pasien-entries');
+  const loadData = async () => {
+    const listpasien = document.getElementById('daftarpasien-title');
+    const currentuser = getCurrentUser('kd_user'); 
+    const selectedpasien = getSelectedPasien(`pasien-${listpasien.dataset.tagger}`);
+    const frm_data = {kd_unit: selectedpasien.kd_unit};
+    let rs = await httpGet(`${config.api_url}/dokter/load`, frm_data);
+  }
+
+  document.detail_pasien = { id, loadData };
+ </script>
+
+<template>
+  <div id="detail_pasien-entries" class="m-0 p-0 mt-1">
+    <div class="card">
+      <div class="card-body mb-5">
+        <div class="col-md-6">
+          <div class="row">
+            <label for="" class="form-label text-capitalize col-md-3">nama</label>
+            <div class="col-md">
+              <input type="text" class="form-control form-control-sm" data-field="nama" disabled>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6"></div>
+      </div>
+    </div>
+  </div>
+</template>

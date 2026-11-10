@@ -1,0 +1,485 @@
+<style>
+  .kinerja-kegiatan .card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem;
+  }
+  .kinerja-kegiatan .table th {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+  }
+  .kinerja-kegiatan .table td {
+    vertical-align: middle;
+    font-size: 0.85rem;
+  }
+</style>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+
+  let rawKegiatanData = [];
+  let filteredKegiatanData = [];
+  let masterBagian = [];
+  let currentPage = 1;
+  const pageSize = 15;
+
+  const tag = 'kinerja_kegiatan';
+
+  const initModule = async () => {
+    await loadMaster();
+    await loadData();
+    bindEvents();
+  };
+
+  const loadMaster = async () => {
+    try {
+      const res = await httpGet(`${config.api_url}/kinerja/master`);
+      if (res && res.code === 200 && res.data) {
+        masterBagian = res.data.bagian || [];
+        populateBagianSelect();
+      }
+    } catch (e) {
+      console.warn('Master load error:', e);
+    }
+  };
+
+  const populateBagianSelect = () => {
+    const selFilter = document.getElementById('filter-bagian-kgt');
+    const selModal = document.getElementById('modal-kgt-bagian');
+    
+    let htmlFilter = '<option value="">-- Semua Unit / Bagian --</option>';
+    let htmlModal = '<option value="">-- Pilih Unit / Bagian --</option>';
+    
+    masterBagian.forEach(b => {
+      htmlFilter += `<option value="${b.KD_BAGIAN}">${b.BAGIAN}</option>`;
+      htmlModal += `<option value="${b.KD_BAGIAN}">${b.BAGIAN}</option>`;
+    });
+
+    if (selFilter) selFilter.innerHTML = htmlFilter;
+    if (selModal) selModal.innerHTML = htmlModal;
+  };
+
+  const loadData = async () => {
+    const tbody = document.getElementById('tbody-kegiatan');
+    const spinner = document.getElementById('loading-kegiatan');
+    
+    if (spinner) spinner.classList.remove('d-none');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data Program Kerja...</td></tr>';
+
+    try {
+      const kdBagian = document.getElementById('filter-bagian-kgt')?.value || '';
+      const search = document.getElementById('search-kegiatan')?.value || '';
+
+      let url = `${config.api_url}/kinerja/program-kerja?limit=500`;
+      if (kdBagian) url += `&bagian=${encodeURIComponent(kdBagian)}`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+
+      const res = await httpGet(url);
+      if (res && res.code === 200) {
+        const dataObj = res.data;
+        rawKegiatanData = Array.isArray(dataObj) ? dataObj : (dataObj.data || []);
+        filteredKegiatanData = [...rawKegiatanData];
+        
+        updateSummaryCards(dataObj.total || rawKegiatanData.length);
+        currentPage = 1;
+        renderTable();
+      } else {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Gagal memuat data program kerja</td></tr>';
+      }
+    } catch (err) {
+      console.error('Error load kegiatan:', err);
+      if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">Terjadi kesalahan: ${err.message}</td></tr>`;
+    } finally {
+      if (spinner) spinner.classList.add('d-none');
+    }
+  };
+
+  const updateSummaryCards = (totalCount) => {
+    const elTotal = document.getElementById('card-stat-kgt-total');
+    const elUnit = document.getElementById('card-stat-kgt-unit');
+    const elActive = document.getElementById('card-stat-kgt-active');
+
+    const total = totalCount || rawKegiatanData.length;
+    const units = new Set(rawKegiatanData.filter(x => x.nama_bagian).map(x => x.nama_bagian)).size;
+    const active = rawKegiatanData.filter(x => x.IS_DELL === '0' || x.IS_DELL === 0 || !x.IS_DELL).length;
+
+    if (elTotal) elTotal.textContent = total.toLocaleString();
+    if (elUnit) elUnit.textContent = units.toLocaleString();
+    if (elActive) elActive.textContent = active.toLocaleString();
+
+    const badge = document.getElementById('badge-total-kegiatan');
+    if (badge) badge.textContent = `${total} Program Kerja`;
+  };
+
+  const renderTable = () => {
+    const tbody = document.getElementById('tbody-kegiatan');
+    if (!tbody) return;
+
+    if (filteredKegiatanData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted"><i class="fas fa-folder-open me-2"></i>Tidak ada data program kerja yang cocok</td></tr>';
+      renderPagination(0);
+      return;
+    }
+
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    const pageRows = filteredKegiatanData.slice(start, end);
+
+    let html = '';
+    pageRows.forEach((row, idx) => {
+      const num = start + idx + 1;
+      const idKgt = row.ID_KGT || '-';
+      const desc = row.DESC_KGT || '-';
+      const bagian = row.nama_bagian || '<span class="text-muted fst-italic">Semua Unit / RS</span>';
+      const pic = row.nama_pegawai ? `${row.nama_pegawai} <div class="text-muted small">${row.NIP || ''}</div>` : '<span class="text-muted">-</span>';
+      const isActive = row.IS_DELL === '0' || row.IS_DELL === 0 || !row.IS_DELL;
+
+      html += `
+        <tr>
+          <td class="text-center text-muted fw-bold">${num}</td>
+          <td>
+            <div class="fw-semibold text-primary">${bagian}</div>
+            <div class="text-muted small">Kode Unit: ${row.KD_BAGIAN || '-'}</div>
+          </td>
+          <td>
+            <div class="fw-medium text-dark">${desc}</div>
+            <div class="text-muted small">ID Program: #${idKgt}</div>
+          </td>
+          <td>${pic}</td>
+          <td class="text-center">
+            ${isActive 
+              ? '<span class="badge bg-soft-success text-success"><i class="fas fa-check-circle me-1"></i>Aktif</span>'
+              : '<span class="badge bg-soft-secondary text-muted"><i class="fas fa-archive me-1"></i>Non-aktif</span>'}
+          </td>
+          <td class="text-center">
+            <button class="btn btn-outline-primary btn-sm btn-edit-kgt me-1" data-id="${idKgt}" title="Edit Program">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-outline-danger btn-sm btn-delete-kgt" data-id="${idKgt}" data-title="${desc}" title="Hapus Program">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    renderPagination(filteredKegiatanData.length);
+
+    // Bind row action buttons
+    tbody.querySelectorAll('.btn-edit-kgt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        showModalForm(id);
+      });
+    });
+
+    tbody.querySelectorAll('.btn-delete-kgt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const desc = btn.getAttribute('data-title');
+        confirmDelete(id, desc);
+      });
+    });
+  };
+
+  const renderPagination = (totalRows) => {
+    const el = document.getElementById('pagination-kegiatan');
+    const info = document.getElementById('pagination-info-kegiatan');
+    if (!el) return;
+
+    const totalPages = Math.ceil(totalRows / pageSize) || 1;
+    const start = totalRows === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    const end = Math.min(currentPage * pageSize, totalRows);
+
+    if (info) info.textContent = `Menampilkan ${start} - ${end} dari ${totalRows} data`;
+
+    let html = `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage - 1}">«</a></li>`;
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) {
+        html += `<li class="page-item ${p === currentPage ? 'active' : ''}"><a class="page-link" href="#" data-page="${p}">${p}</a></li>`;
+      } else if (p === currentPage - 3 || p === currentPage + 3) {
+        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      }
+    }
+    html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage + 1}">»</a></li>`;
+    el.innerHTML = html;
+
+    el.querySelectorAll('.page-link').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const p = parseInt(btn.getAttribute('data-page'));
+        if (p && p !== currentPage && p >= 1 && p <= totalPages) {
+          currentPage = p;
+          renderTable();
+        }
+      });
+    });
+  };
+
+  const showModalForm = (idKgt = null) => {
+    const modalEl = document.getElementById('modal-kegiatan-form');
+    if (!modalEl || !window.bootstrap) return;
+
+    const titleEl = document.getElementById('modal-kgt-title');
+    const inputId = document.getElementById('modal-kgt-id');
+    const inputDesc = document.getElementById('modal-kgt-desc');
+    const selectBagian = document.getElementById('modal-kgt-bagian');
+
+    if (idKgt) {
+      const item = rawKegiatanData.find(x => x.ID_KGT == idKgt);
+      if (titleEl) titleEl.textContent = 'Edit Program Kerja';
+      if (inputId) inputId.value = item ? item.ID_KGT : '';
+      if (inputDesc) inputDesc.value = item ? item.DESC_KGT : '';
+      if (selectBagian) selectBagian.value = item ? (item.KD_BAGIAN || '') : '';
+    } else {
+      if (titleEl) titleEl.textContent = 'Tambah Program Kerja Baru';
+      if (inputId) inputId.value = '';
+      if (inputDesc) inputDesc.value = '';
+      if (selectBagian) selectBagian.value = '';
+    }
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  };
+
+  const saveKegiatan = async () => {
+    const id = document.getElementById('modal-kgt-id')?.value || '';
+    const desc = document.getElementById('modal-kgt-desc')?.value || '';
+    const kdBagian = document.getElementById('modal-kgt-bagian')?.value || '';
+
+    if (!desc.trim()) {
+      alert('Mohon isi uraian Program Kerja.');
+      return;
+    }
+
+    const btn = document.getElementById('btn-save-kgt');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan...';
+    }
+
+    try {
+      const res = await httpPost(`${config.api_url}/kinerja/program-kerja/save`, {
+        id_kgt: id,
+        desc_kgt: desc,
+        kd_bagian: kdBagian
+      });
+
+      if (res && res.code === 200) {
+        const modalEl = document.getElementById('modal-kegiatan-form');
+        if (modalEl && window.bootstrap) {
+          bootstrap.Modal.getInstance(modalEl)?.hide();
+        }
+        await loadData();
+      } else {
+        alert(res?.message || 'Gagal menyimpan program kerja.');
+      }
+    } catch (e) {
+      alert('Terjadi kesalahan saat menyimpan: ' + e.message);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save me-1"></i>Simpan Program Kerja';
+      }
+    }
+  };
+
+  const confirmDelete = async (id, title) => {
+    if (!confirm(`Apakah Anda yakin ingin menghapus program kerja "${title}"?`)) return;
+
+    try {
+      const res = await httpPost(`${config.api_url}/kinerja/program-kerja/delete`, { id_kgt: id });
+      if (res && res.code === 200) {
+        await loadData();
+      } else {
+        alert(res?.message || 'Gagal menghapus program kerja.');
+      }
+    } catch (e) {
+      alert('Terjadi kesalahan: ' + e.message);
+    }
+  };
+
+  const bindEvents = () => {
+    document.getElementById('btn-filter-kgt')?.addEventListener('click', () => loadData());
+    document.getElementById('btn-refresh-kgt')?.addEventListener('click', () => loadData());
+    document.getElementById('btn-tambah-kgt')?.addEventListener('click', () => showModalForm());
+    document.getElementById('btn-save-kgt')?.addEventListener('click', () => saveKegiatan());
+
+    document.getElementById('search-kegiatan')?.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        filteredKegiatanData = [...rawKegiatanData];
+      } else {
+        filteredKegiatanData = rawKegiatanData.filter(r => 
+          (r.DESC_KGT && r.DESC_KGT.toLowerCase().includes(q)) ||
+          (r.nama_bagian && r.nama_bagian.toLowerCase().includes(q)) ||
+          (r.nama_pegawai && r.nama_pegawai.toLowerCase().includes(q))
+        );
+      }
+      currentPage = 1;
+      renderTable();
+    });
+  };
+
+  window.kinerja_kegiatan = { loadData, showModalForm };
+  document.kinerja_kegiatan = { loadData };
+
+  initModule();
+</script>
+
+<template>
+  <div class="container-fluid py-3 kinerja-kegiatan">
+    <!-- Header -->
+    <div class="row align-items-center mb-3">
+      <div class="col-md-7">
+        <div class="d-flex align-items-center">
+          <div class="avatar bg-soft-primary text-primary p-3 rounded-circle me-3">
+            <i class="fas fa-clipboard-list fa-2x"></i>
+          </div>
+          <div>
+            <h4 class="mb-0 fw-bold">Program Kerja & Kegiatan Tahunan</h4>
+            <p class="text-muted small mb-0">Master perencanaan kegiatan rumah sakit sebagai payung program Sasaran Kerja Pegawai (SKP)</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-5 text-md-end mt-2 mt-md-0">
+        <span class="badge bg-primary px-3 py-2 me-2" id="badge-total-kegiatan">Memuat...</span>
+        <button class="btn btn-outline-secondary btn-sm me-2" id="btn-refresh-kgt" title="Segarkan Data">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+        <button class="btn btn-primary btn-sm" id="btn-tambah-kgt">
+          <i class="fas fa-plus me-1"></i>Tambah Program Kerja
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-md-4">
+        <div class="card p-3 border-start border-4 border-primary">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Total Program Kerja</div>
+              <h4 class="mb-0 fw-bold" id="card-stat-kgt-total">0</h4>
+            </div>
+            <i class="fas fa-tasks fa-2x text-primary opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4">
+        <div class="card p-3 border-start border-4 border-success">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Unit Terlibat</div>
+              <h4 class="mb-0 fw-bold text-success" id="card-stat-kgt-unit">0</h4>
+            </div>
+            <i class="fas fa-hospital fa-2x text-success opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="card p-3 border-start border-4 border-info">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Program Aktif</div>
+              <h4 class="mb-0 fw-bold text-info" id="card-stat-kgt-active">0</h4>
+            </div>
+            <i class="fas fa-check-circle fa-2x text-info opacity-25"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card p-3 mb-3">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-5">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+            <input type="text" class="form-control" id="search-kegiatan" placeholder="Cari uraian program kerja, unit, atau PIC...">
+          </div>
+        </div>
+        <div class="col-md-5">
+          <select class="form-select form-select-sm" id="filter-bagian-kgt">
+            <option value="">-- Semua Unit / Bagian --</option>
+          </select>
+        </div>
+        <div class="col-md-2 text-end">
+          <button class="btn btn-outline-primary btn-sm w-100" id="btn-filter-kgt">
+            <i class="fas fa-filter me-1"></i>Filter
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Table Card -->
+    <div class="card">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-list me-2 text-primary"></i>Daftar Master Program Kerja</h6>
+        <div class="spinner-border spinner-border-sm text-primary d-none" id="loading-kegiatan"></div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 50px;">No</th>
+              <th style="width: 250px;">Unit / Bagian</th>
+              <th>Uraian Program Kerja</th>
+              <th style="width: 220px;">PIC Pegawai</th>
+              <th class="text-center" style="width: 120px;">Status</th>
+              <th class="text-center" style="width: 120px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-kegiatan">
+            <tr>
+              <td colspan="6" class="text-center py-4 text-muted">
+                <span class="spinner-border spinner-border-sm me-2"></span>Memuat data...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer bg-white d-flex flex-column flex-md-row justify-content-between align-items-center py-2">
+        <div class="text-muted small mb-2 mb-md-0" id="pagination-info-kegiatan">Menampilkan 0 data</div>
+        <ul class="pagination pagination-sm mb-0" id="pagination-kegiatan"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Form Program Kerja -->
+  <div class="modal fade" id="modal-kegiatan-form" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="modal-kgt-title">Program Kerja</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="modal-kgt-id">
+          <div class="mb-3">
+            <label class="form-label fw-bold small">Unit / Bagian Penanggung Jawab</label>
+            <select class="form-select form-select-sm" id="modal-kgt-bagian">
+              <option value="">-- Pilih Unit / Bagian --</option>
+            </select>
+            <div class="form-text">Pilih unit rumah sakit yang membawahi program ini</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold small">Uraian Program Kerja <span class="text-danger">*</span></label>
+            <textarea class="form-control" id="modal-kgt-desc" rows="4" placeholder="Contoh: Pemeliharaan Perangkat Keras dan Jaringan IT Rumah Sakit..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-save-kgt">
+            <i class="fas fa-save me-1"></i>Simpan Program Kerja
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

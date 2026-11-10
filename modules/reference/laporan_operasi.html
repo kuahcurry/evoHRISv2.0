@@ -1,0 +1,1104 @@
+<script type="module" defer>
+    import { httpPost, httpGet } from './assets/js/core/http.js';
+    import { getCurrentUser, getSelectedPasien, getFormEntries, setFormEntries } from './assets/js/core/helpers.js';
+    import EvoSelector from './components/EvoSelector.js';
+    import EvoDrawing from './components/EvoDrawbing.js';
+
+    const id = 'laporan_operasi';
+    const listpasien = document.getElementById('daftarpasien-title');
+    const currentuser = getCurrentUser('kd_user');
+    const selectedpasien = getSelectedPasien(`pasien-${listpasien.dataset.tagger}`);
+    const frm_entries = getThisForm(id).entries;
+    const frm_actions = document.getElementById(`${id}-actions`);
+
+    // let gambar = new EvoDrawing('gambar', {width:'400px'});
+
+    let dpjpObgyn_operasi = new EvoSelector('sel_dpjp_obgyn_operasi');
+    dpjpObgyn_operasi.on('typed', async (e) => {
+        let keyword = e.detail.value;
+        await operasi.getDokter(keyword, dpjpObgyn_operasi)
+    })
+    let dokterOperator_operasi = new EvoSelector('sel_dokter_operator_operasi');
+    dokterOperator_operasi.on('typed', async (e) => {x
+        let keyword = e.detail.value;
+        await operasi.getDokter(keyword, dokterOperator_operasi)
+    })
+    let asistenOperator_operasi = new EvoSelector('sel_asisten_operator_operasi');
+    asistenOperator_operasi.on('typed', async (e) => {
+        let keyword = e.detail.value;
+        await perawat.getPerawat(keyword, asistenOperator_operasi)
+    })
+    let dokterAnestesi_operasi = new EvoSelector('sel_dokter_anestesi_operasi');
+    dokterAnestesi_operasi.on('typed', async (e) => {
+        let keyword = e.detail.value;
+        await anestesi.getDokter(keyword, dokterAnestesi_operasi)
+    })
+    let asistenAnestesi_operasi = new EvoSelector('sel_asisten_anestesi_operasi');
+    asistenAnestesi_operasi.on('typed', async (e) => {
+        let keyword = e.detail.value;
+        await perawat.getPerawat(keyword, asistenAnestesi_operasi)
+    })
+    let dokterOperator_operasi_2 = new EvoSelector('sel_dokter_operator_operasi_2');
+    dokterOperator_operasi_2.on('typed', async (e) => {
+        let keyword = e.detail.value;
+        await operasi.getDokter(keyword, dokterOperator_operasi_2)
+    })
+    let asistenOperator_operasi_2 = new EvoSelector('sel_asisten_operator_operasi_2');
+    asistenOperator_operasi_2.on('typed', async (e) => {
+        let keyword = e.detail.value;
+        await perawat.getPerawat(keyword, asistenOperator_operasi_2)
+    })
+    let dokterOperator_operasi_3 = new EvoSelector('sel_dokter_operator_operasi_3');
+    dokterOperator_operasi_3.on('typed', async (e) => {
+        let keyword = e.detail.value;
+        await operasi.getDokter(keyword, dokterOperator_operasi_3)
+    })
+    let asistenOperator_operasi_3 = new EvoSelector('sel_asisten_operator_operasi_3');
+    asistenOperator_operasi_3.on('typed', async (e) => {
+        let keyword = e.detail.value;
+        await perawat.getPerawat(keyword, asistenOperator_operasi_3)
+    })
+    let operasi = {
+        counter: '',
+        reset: (async () => {
+            await setFormEntries(frm_entries, []);
+            operasi.counter = '';
+            dpjpObgyn_operasi.addOptions(operasi.dataDokterTemp);
+            dokterOperator_operasi.addOptions(operasi.dataDokterTemp);
+            asistenOperator_operasi.addOptions(perawat.dataPerawatTemp);
+            dokterAnestesi_operasi.addOptions(anestesi.dataDokterTemp);
+            asistenAnestesi_operasi.addOptions(perawat.dataPerawatTemp);
+            dokterOperator_operasi_2.addOptions(operasi.dataDokterTemp);
+            asistenOperator_operasi_2.addOptions(perawat.dataPerawatTemp);
+            dokterOperator_operasi_3.addOptions(operasi.dataDokterTemp);
+            asistenOperator_operasi_3.addOptions(perawat.dataPerawatTemp);
+        }),
+        dataDokter: [],
+        dataDokterTemp: [],
+        getDokter: (async (keyword = '', dataSel = {}) => {
+            if (keyword == '') {
+                let rs = await httpGet(`${config.api_url}/paramedis/load`, {});
+                if (rs.code == 200) {
+                    const options = rs.data.map(v => {
+                        return { text: v.nama_paramedis, value: v.kd_paramedis };
+                    });
+                    operasi.dataDokter = options;
+                    operasi.dataDokterTemp = options;
+                }
+            } else {
+                let found = operasi.dataDokter.filter(v => v.text.toLowerCase().includes(keyword.toLowerCase()));
+                if (found.length > 0) {
+                    let data = found.map(v => {
+                        return { text: v.text, value: v.value };
+                    })
+                    dataSel.addOptions(data);
+                }
+            }
+        }),
+
+        template: {
+            dataset: [],
+            id: '',
+            save: (async () => {
+                const txtNamaTemplate = document.getElementById('txt_nama_template').value;
+                const data_post = document.getElementById(operasi.template.id).value;
+                const kd_unit = getCurrentUser('kd_unit');
+                const data_operasi = getFormEntries(frm_entries);
+                if (data_post == '') {
+                    showDialog({ ui: 'interactive', type: 'warning', label: `<span class="text-danger">Laporan operasi belum diisi !!!</span>` });
+                    return false;
+                };
+                if (txtNamaTemplate == '') {
+                    showDialog({ ui: 'interactive', type: 'warning', label: `<span class="text-danger">Nama template belum diisi!!!</span>` });
+                    return false;
+                };
+                const frm_data = { kd_unit: kd_unit, kd_user: currentuser, nama: txtNamaTemplate, data_post: data_post };
+                let rs = await httpPost(`${config.api_url}/laporan_operasi/template_save`, frm_data);
+                if (rs.code == 200) {
+                    await operasi.template.loadData();
+                    showDialog({ type: 'info', label: '<span class="text-black">Simpan template sukses</span>' });
+                } else {
+                    let status = rs.code > 200 && rs.code == 304 ? 'Simpan template gagal!!!' : rs.status;
+                    showDialog({ ui: 'interactive', type: 'warning', label: `<span class="text-danger">${status}</span>` });
+                }
+            }),
+            delete: (async (id) => {
+                const frm_data = { kd_user: currentuser, id: id };
+                let rs = await httpPost(`${config.api_url}/laporan_operasi/template_delete`, frm_data);
+                if (rs.code == 200) {
+                    let rowIndex = operasi.template.dataset.findIndex(v => v.id == id);
+                    if (rowIndex > -1) {
+                        const elements = document.getElementsByClassName(`#!tr_template`);
+                        elements[rowIndex].remove();
+                        operasi.template.dataset.splice(rowIndex, 1);
+                        showDialog({ type: 'info', label: '<span class="text-black">Delete template sukses</span>' });
+                    }
+                } else {
+                    showDialog({ ui: 'interactive', type: 'warning', label: '<span class="text-danger">Delete template gagal</span>' });
+                }
+            }),
+            loadData: (async () => {
+                const listpasien = document.getElementById('daftarpasien-title');
+                const currentuser = getCurrentUser('kd_user');
+                const selectedpasien = getSelectedPasien(`pasien-${listpasien.dataset.tagger}`);
+                let rs = await httpGet(`${config.api_url}/laporan_operasi/template_load`, { kd_user: currentuser, kd_unit: selectedpasien.kd_unit });
+                let tbody = document.getElementById('tbodyTemplate');
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="3" class="text-start">
+                        <label for="" class="form-label fs-0 fw-bold text-dark text-capitalize">belum ada data</label>
+                        </td>
+                    </tr>
+                `;
+                if (rs.code == 200) {
+                    tbody.innerHTML = '';
+                    for await (let v of rs.data) {
+                        let tr = document.createElement('tr');
+                        tr.innerHTML = `
+                        <td class="text-center"><a href="#!btn-pilih-item-template_${v.id}" class="btn btn-sm btn-light pt-2" role="button" title="pilih" data-row='${JSON.stringify(v)}'><span class="fas fa-plus"></span></a></td>
+                        <td class="py-2 text-start">${v.nama}</td>
+                        <td class="text-center"><a href="#!btn-hapus-item-template_${v.id}" class="btn btn-sm btn-light pt-2" role="button" title="hapus" data-row='${JSON.stringify(v)}'><span class="fas fa-trash"></span></td>
+                    `;
+                        tbody.appendChild(tr).className = `#!tr_template py-2`;
+                        operasi.template.dataset = [...operasi.template.dataset, v];
+
+                        //pilih template
+                        const pilih_item = document.querySelectorAll(`a[href="#!btn-pilih-item-template_${v.id}"]`);
+                        pilih_item.forEach(v => {
+                            v.addEventListener('click', async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                let item = JSON.parse(e.target.dataset.row);
+                                let rowIndex = operasi.template.dataset.findIndex(v => v.id == item.id);
+                                if (rowIndex > -1) {
+                                    let data = operasi.template.dataset[rowIndex];
+                                    if(operasi.template.id != ''){
+                                        document.getElementById(operasi.template.id).value = data.data_post;
+                                    }
+                                    modalTemplate.hide();
+                                }
+                            })
+                        })
+
+                        //hapus
+                        const hapus_item = document.querySelectorAll(`a[href="#!btn-hapus-item-template_${v.id}"]`);
+                        hapus_item.forEach(v => {
+                            v.addEventListener('click', async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                let item = JSON.parse(e.target.dataset.row);
+                                await operasi.template.delete(item.id);
+                            })
+                        })
+                    }
+                }
+            })
+        }
+    }
+    let anestesi = {
+        dataDokter: [],
+        dataDokterTemp: [],
+        getDokter: (async (keyword = '', dataSel = {}) => {
+            if (keyword == '') {
+                let rs = await httpGet(`${config.api_url}/laporan_operasi/anestesi`, {});
+                if (rs.code == 200) {
+                    const options = rs.data.map(v => {
+                        return { text: v.nama_paramedis, value: v.kd_paramedis };
+                    });
+                    anestesi.dataDokter = options;
+                    anestesi.dataDokterTemp = options;
+                }
+            } else {
+                let found = anestesi.dataDokter.filter(v => v.text.toLowerCase().includes(keyword.toLowerCase()));
+                if (found.length > 0) {
+                    let data = found.map(v => {
+                        return { text: v.text, value: v.value };
+                    })
+                    dataSel.addOptions(data);
+                }
+            }
+        }),
+    }
+    let perawat = {
+        dataPerawat: [],
+        dataPerawatTemp: [],
+        getPerawat: (async (keyword = '', dataSel = {}) => {
+            if (keyword == '') {
+                let rs = await httpGet(`${config.api_url}/paramedis/load_perawat`, {bidan: true});
+                if (rs.code == 200) {
+                    const options = rs.data.map(v => {
+                        return { text: v.nama_paramedis, value: v.kd_paramedis };
+                    });
+                    perawat.dataPerawat = options;
+                    perawat.dataPerawatTemp = options;
+                }
+            } else {
+                let found = perawat.dataPerawat.filter(v => v.text.toLowerCase().includes(keyword.toLowerCase()));
+                if (found.length > 0) {
+                    let data = found.map(v => {
+                        return { text: v.text, value: v.value };
+                    })
+                    dataSel.addOptions(data);
+                }
+            }
+        }),
+    }
+
+    //btn-history
+    const modalHistory = new bootstrap.Modal(document.getElementById('history-modal'));
+    let btn_history = frm_actions.querySelector('a[href="#!btn-history"]');
+    btn_history.addEventListener('click', async (e) => {
+        const listpasien = document.getElementById('daftarpasien-title'); 
+        const selectedpasien = getSelectedPasien(`pasien-${listpasien.dataset.tagger}`);
+        loadHistory(selectedpasien.single_id,selectedpasien.no_registrasikunjungan);
+        modalHistory.show();
+    });
+
+    //history
+    const loadHistory = async () => {
+        const frm_data = { single_id: selectedpasien.single_id, no_kunjungan: selectedpasien.no_kunjungan };
+        let rs = await httpGet(`${config.api_url}/laporan_operasi/load_history`, frm_data);
+        console.log(rs);
+        const table_history = document.getElementById('tbl_history').getElementsByTagName('tbody')[0];
+        let dataset = [];
+        let no = 1;
+        table_history.innerHTML = '<td class="unit"></td><td class="dokter"></td><td class="status"></td><td class="pertanyaan"></td><td class="jawaban"></td>';
+        if (rs.code == 200) dataset = rs.data;
+        dataset.forEach(item => {
+            let dataPost = JSON.parse(item.data_post);
+            let edit = `<a href="#!btn-edit" id="btn_edit" class="btn btn-sm btn-light pt-2" role="button" title="Edit" data-row='${JSON.stringify(item)}'><span class="fas fa-edit"></span></a>`;
+            let hapus = `<a href="#!btn-hapus" id="btn_hapus" class="btn btn-sm btn-light pt-2" role="button" title="Hapus" data-row='${JSON.stringify(item)}'><span class="fas fa-trash-alt"></span></a>`;
+            let cetak = `<a href="#!btn-cetak" id="btn_cetak" class="btn btn-sm btn-light pt-2" role="button" title="Cetak" data-row='${JSON.stringify(item)}'><span class="fas fa-print"></span></a>`;
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="align-middle py-2">${no++}</td>
+                <td class="align-middle py-2">${dataPost.tgl_ops}</td>
+                <td class="align-middle py-2">${dataPost.jam_ops}</td>
+                <td class="align-middle py-2">${item.nm_dpjp_obgyn}</td>
+                <td class="align-middle py-2">${dataPost.diagnosis_pra_ops}</td>
+                <td>${edit}</td>
+                <td>${hapus}</td>
+                <td>${cetak}</td>`
+            ;
+            table_history.appendChild(row);
+        });
+
+        const alledit = document.querySelectorAll('a[href="#!btn-edit"]');
+        alledit.forEach(btn=>{
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                await operasi.reset();
+                let table_history = JSON.parse(e.target.dataset.row);
+                let data = JSON.parse(table_history.data_post);
+                operasi.counter = table_history.counter;
+                data['dokter_operator_2'] = data.dokter_operator_2 != undefined ? data.dokter_operator_2 : '';
+                data['asisten_operator_2'] = data.asisten_operator_2 != undefined ? data.asisten_operator_2 : '';
+                data['dokter_operator_3'] = data.dokter_operator_3 != undefined ? data.dokter_operator_3 : '';
+                data['asisten_operator_3'] = data.asisten_operator_3 != undefined ? data.asisten_operator_3 : '';
+                setFormEntries(frm_entries, data);
+                dpjpObgyn_operasi.value = data.dpjp_obgyn;
+                dokterOperator_operasi.value = data.dokter_operator;
+                asistenOperator_operasi.value = data.asisten_operator;
+                dokterAnestesi_operasi.value = data.dokter_anestesi;
+                asistenAnestesi_operasi.value = data.asisten_anestesi;
+                dokterOperator_operasi_2.value = data.dokter_operator_2;
+                asistenOperator_operasi_2.value = data.asisten_operator_2;
+                dokterOperator_operasi_3.value = data.dokter_operator_3;
+                asistenOperator_operasi_3.value = data.asisten_operator_3;
+                modalHistory.hide();
+            })
+        });
+
+        const allhapus = document.querySelectorAll('a[href="#!btn-hapus"]');
+        allhapus.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();   
+            let table_history = JSON.parse(e.target.dataset.row);
+            let data_post = JSON.parse(table_history.data_post);
+            const dialog = await showDialog({
+                ui: 'interactive',
+                type: 'question',
+                label: `<span class="text-black">Apakah yakin akan menghapus laporan operasi dokter <b>${table_history.nm_dokter_operator}</b> dengan diagnosis pra ops <b>${data_post.diagnosis_pra_ops}</b> ?</span>`,
+                buttons: [
+                    { label: 'Ya', class: 'btn-primary', onClick: async() => { dialog.close(); await deleteData(table_history); } },
+                    { label: 'Tidak', class: 'btn-secondary', onClick: () => dialog.close() }
+                ]
+            }, () => {}, 'dialog_delete_operator');
+            return true;
+        })
+        });
+
+        const btn_cetak = document.querySelectorAll('a[href="#!btn-cetak"]');
+        btn_cetak.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();   
+            let table_history = JSON.parse(e.target.dataset.row);
+            await cetakData(table_history);
+            return true;
+        })
+        });
+        await listInit();
+    }
+
+    const btn_cetak = frm_actions.querySelector('a[href="#!btn-cetak"]');
+    btn_cetak.addEventListener('click', async (e) => {
+        const listpasien = document.getElementById('daftarpasien-title');
+        const selectedpasien = getSelectedPasien(`pasien-${listpasien.dataset.tagger}`);
+        operasi.no_kunjungan = selectedpasien.no_kunjungan;
+        await cetakData(operasi);
+    })
+
+    const cetakData = async (tbl_history) => {
+        const listpasien = document.getElementById('daftarpasien-title');
+        const currentuser = getCurrentUser('kd_user');
+        const selectedpasien = getSelectedPasien(`pasien-${listpasien.dataset.tagger}`);
+        const frm_data = {
+            single_id: selectedpasien.single_id,
+            no_kunjungan: tbl_history.no_registrasikunjungan,
+            no_transaksi: selectedpasien.no_transaksi,
+            no_medicalrecord: selectedpasien.no_medicalrecord,
+            nama_pasien: selectedpasien.nama,
+            tgl_lahir: selectedpasien.tgl_lahir,
+            umur: selectedpasien.usia,
+            jenis_kelamin: selectedpasien.gender,
+            tgl_jam: selectedpasien.tgl_pendaftaran,
+            alamat: selectedpasien.alamat,
+            nik: selectedpasien.nik,
+            nama_paramedis: selectedpasien.nama_paramedis,
+            kd_unit: selectedpasien.kd_unit,
+            counter: tbl_history.counter,
+            tag: id,
+            table: 'rawat_inap.ri_laporan_operasi'
+        };
+        let rs = await httpPost(`${config.api_url}/laporan_operasi/print`, frm_data);
+        if (rs.code == 200) window.open(rs.data[0].file);
+        if (rs.code != 200) showDialog({ ui: 'interactive', size: 'large', type: 'warning', label: '<span class="text-danger">Cetakan poli belum termapping. Mohon hubungi administrator</span>' });
+    }
+
+    const deleteData = async (tbl_history) => {
+        const listpasien = document.getElementById('daftarpasien-title');
+        const currentuser = getCurrentUser('kd_user');
+        const selectedpasien = getSelectedPasien(`pasien-${listpasien.dataset.tagger}`);
+        const frm_data = {
+            single_id: tbl_history.single_id,
+            no_kunjungan: tbl_history.no_registrasikunjungan,
+            no_transaksi: selectedpasien.no_transaksi,
+            no_medicalrecord: selectedpasien.no_medicalrecord,
+            nama_pasien: selectedpasien.nama,
+            tgl_lahir: selectedpasien.tgl_lahir,
+            umur: selectedpasien.usia,
+            jenis_kelamin: selectedpasien.gender,
+            tgl_jam: selectedpasien.tgl_pendaftaran,
+            alamat: selectedpasien.alamat,
+            nik: selectedpasien.nik,
+            nama_paramedis: selectedpasien.nama_paramedis,
+            kd_unit: selectedpasien.kd_unit,
+            counter: tbl_history.counter,
+            kd_user: currentuser,
+            tag: id,
+            table: 'rawat_inap.ri_laporan_operasi'
+        };
+        let rs = await httpPost(`${config.api_url}/laporan_operasi/delete`, frm_data);
+        if (rs.code == 200) {
+            showDialog({ ui: 'interactive', size: 'medium', type: 'success', label: '<span class="text-dark">Sukses Hapus Data</span>' });
+            await loadHistory();
+        } else {
+            showDialog({ ui: 'interactive', size: 'medium', type: 'warning', label: '<span class="text-danger">Gagal Hapus Data</span>' });
+        }
+    }
+
+    const loadData = async () => {
+        await operasi.getDokter();
+        await anestesi.getDokter();
+        await perawat.getPerawat();
+        //selector
+        dpjpObgyn_operasi.addOptions(operasi.dataDokter);
+        dokterOperator_operasi.addOptions(operasi.dataDokter);
+        asistenOperator_operasi.addOptions(perawat.dataPerawat);
+        dokterAnestesi_operasi.addOptions(anestesi.dataDokter);
+        asistenAnestesi_operasi.addOptions(perawat.dataPerawat);
+        dokterOperator_operasi_2.addOptions(operasi.dataDokter);
+        asistenOperator_operasi_2.addOptions(perawat.dataPerawat);
+        dokterOperator_operasi_3.addOptions(operasi.dataDokter);
+        asistenOperator_operasi_3.addOptions(perawat.dataPerawat);
+        dpjpObgyn_operasi.value = '-';
+        dokterOperator_operasi.value = '-';
+        asistenOperator_operasi.value = '-';
+        dokterAnestesi_operasi.value = '-';
+        asistenAnestesi_operasi.value = '-';
+        dokterOperator_operasi_2.value = '-';
+        asistenOperator_operasi_2.value = '-';
+        dokterOperator_operasi_3.value = '-';
+        asistenOperator_operasi_3.value = '-';
+        //load
+        const frm_data = { single_id: selectedpasien.single_id, no_kunjungan: selectedpasien.no_kunjungan };
+        let rs = await httpGet(`${config.api_url}/laporan_operasi/load`, frm_data);
+        if (rs.code == 200) {
+            operasi.counter = rs.data[0].counter;
+            let data = JSON.parse(rs.data[0].data_post);
+            data['dokter_operator_2'] = data.dokter_operator_2 != undefined ? data.dokter_operator_2 : '';
+            data['asisten_operator_2'] = data.asisten_operator_2 != undefined ? data.asisten_operator_2 : '';
+            data['dokter_operator_3'] = data.dokter_operator_3 != undefined ? data.dokter_operator_3 : '';
+            data['asisten_operator_3'] = data.asisten_operator_3 != undefined ? data.asisten_operator_3 : '';
+            setFormEntries(frm_entries, data);
+            dpjpObgyn_operasi.value = data.dpjp_obgyn;
+            dokterOperator_operasi.value = data.dokter_operator;
+            asistenOperator_operasi.value = data.asisten_operator;
+            dokterAnestesi_operasi.value = data.dokter_anestesi;
+            asistenAnestesi_operasi.value = data.asisten_anestesi;
+            dokterOperator_operasi_2.value = data.dokter_operator_2;
+            asistenOperator_operasi_2.value = data.asisten_operator_2;
+            dokterOperator_operasi_3.value = data.dokter_operator_3;
+            asistenOperator_operasi_3.value = data.asisten_operator_3;
+        }
+    }
+    const saveData = async () => {
+        const data_operasi = getFormEntries(frm_entries);
+        const frm_data = {
+            single_id: selectedpasien.single_id,
+            no_kunjungan: selectedpasien.no_kunjungan,
+            no_medrec: selectedpasien.no_medicalrecord,
+            data_post: JSON.stringify(data_operasi),
+            kd_user: currentuser,
+            counter: operasi.counter,
+            // gambar: btoa(gambar.drawing),
+        };
+        console.log(frm_data); //return true;
+        let rs = await httpPost(`${config.api_url}/laporan_operasi/save`, frm_data);
+        return rs;
+    }
+
+    //btn_simpan
+    const btn_simpan = frm_actions.querySelector('a[href="#!btn-simpan"]');
+    btn_simpan.addEventListener('click', async (e) => {
+        e.preventDefault();
+        let isi_laporan = frm_entries.querySelector('textarea[data-field="laporan_ops"]');
+        if (dpjpObgyn_operasi.value == '' || dpjpObgyn_operasi.value == '-') {
+            let params = { ui: 'interactive', type: 'warning', label: '<span class="text-danger fs-1">Maaf DPJP harus dipilih, Mohon Lengkapi!!!</span>' };
+            showDialog(params);
+            return false;
+        }
+        if (dokterOperator_operasi.value == '' || dokterOperator_operasi.value == '-') {
+            let params = { ui: 'interactive', type: 'warning', label: '<span class="text-danger fs-1">Maaf Dokter Operator harus dipilih, Mohon Lengkapi!!!</span>' };
+            showDialog(params);
+            return false;
+        }
+        if (asistenOperator_operasi.value == '' || asistenOperator_operasi.value == '-') {
+            let params = { ui: 'interactive', type: 'warning', label: '<span class="text-danger fs-1">Maaf Asisten Operator harus dipilih, Mohon Lengkapi!!!</span>' };
+            showDialog(params);
+            return false;
+        }
+        if (dokterAnestesi_operasi.value == '' || dokterAnestesi_operasi.value == '-') {
+            let params = { ui: 'interactive', type: 'warning', label: '<span class="text-danger fs-1">Maaf Dokter Anestesi harus dipilih, Mohon Lengkapi!!!</span>' };
+            showDialog(params);
+            return false;
+        }
+        if (asistenAnestesi_operasi.value == '' || asistenAnestesi_operasi.value == '-') {
+            let params = { ui: 'interactive', type: 'warning', label: '<span class="text-danger fs-1">Maaf Asisten Anestesi harus dipilih, Mohon Lengkapi!!!</span>' };
+            showDialog(params);
+            return false;
+        }
+        if (isi_laporan.value == '' || isi_laporan.value == '-') {
+            let params = { ui: 'interactive', type: 'warning', label: '<span class="text-danger fs-1">Maaf Laporan Operasi  harus di isi, Mohon Lengkapi!!!</span>' };
+            showDialog(params);
+            return false;
+        }
+        let rs = await saveData();
+        let param = { ui: 'interactive', type: 'warning', label: '<span class="text-danger fs-1">Simpan Laporan Operasi gagal</span>' };
+        if (rs.code == 200) {
+            param = { type: 'info', label: '<span class="text-black">Simpan Laporan Operasi sukses</span>' };
+        }
+        await showDialog(param);
+    });
+    const btn_reset = frm_actions.querySelector('a[href="#!btn-reset"]');
+    btn_reset.addEventListener('click', async (e) => {
+        await operasi.reset();
+        dpjpObgyn_operasi.value = '-';
+        dokterOperator_operasi.value = '-';
+        asistenOperator_operasi.value = '-';
+        dokterAnestesi_operasi.value = '-';
+        asistenAnestesi_operasi.value = '-';
+    });
+
+    //template
+    const modalTemplate = new bootstrap.Modal(document.getElementById('template-modal'));
+    const btn_template_laporan = document.querySelector('a[href="#!btn-template_laporan"]');
+    btn_template_laporan.addEventListener('click', async (e) => {
+        await operasi.template.loadData();
+        let title = document.getElementById('modalTemplateTitle');
+        title.innerHTML = e.target.dataset.title != undefined ? e.target.dataset.title : '';
+        operasi.template.id = e.target.dataset.id != undefined ? e.target.dataset.id : '';
+        document.getElementById('txt_nama_template').value = '';
+        modalTemplate.show();
+    })
+    const btn_template_instruksi = document.querySelector('a[href="#!btn-template_instruksi"]');
+    btn_template_instruksi.addEventListener('click', async (e) => {
+        await operasi.template.loadData();
+        let title = document.getElementById('modalTemplateTitle');
+        title.innerHTML = e.target.dataset.title != undefined ? e.target.dataset.title : '';
+        operasi.template.id = e.target.dataset.id != undefined ? e.target.dataset.id : '';
+        document.getElementById('txt_nama_template').value = '';
+        modalTemplate.show();
+    });
+    const simpan_template = document.querySelector('a[href="#!btn-simpan-template"]');
+    simpan_template.addEventListener('click', async (e) => {
+        e.preventDefault();
+        let rs = await operasi.template.save();
+    })
+    const reload_template = document.querySelector('a[href="#!btn-reload-template"]');
+    reload_template.addEventListener('click', async (e) => {
+        e.preventDefault();
+        await operasi.template.loadData();
+    })
+
+    //TTD
+    const ttd_entries = document.getElementById('ttd_berkas-entries');
+    const modalTTD = new bootstrap.Modal(document.getElementById('ttd_berkas-modal'));
+    let btn_ttd_berkas = frm_actions.querySelector('a[href="#!btn-ttd_berkas"]');
+    btn_ttd_berkas.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const listpasien = document.getElementById('daftarpasien-title');
+        const selectedpasien = getSelectedPasien(`pasien-${listpasien.dataset.tagger}`);
+        const currentjabatan = getCurrentUser('jabatan');
+        const currentDokter = getCurrentUser('kd_paramedis');
+        const dpjp = selectedpasien.kd_paramedis;
+        console.log(currentDokter, dokterOperator_operasi.value);
+        // const frm_data = { single_id: selectedpasien.single_id, no_kunjungan: selectedpasien.no_kunjungan };
+        // let rs = await httpGet(`${config.api_url}/laporan_operasi/load`, frm_data);
+        // let data = JSON.parse(rs.data[0].data_post);
+        if (!currentjabatan.toLowerCase().includes('dokter')) {
+            showDialog({ ui: 'interactive', type: 'warning', label: '<span class="text-danger">Hanya untuk TTD Dokter!!</span>' });
+            return false;
+        }
+        if (currentDokter != dokterOperator_operasi.value) {
+            showDialog({ ui: 'interactive', type: 'warning', label: '<span class="text-danger">Maaf, Anda Harus Login Sesuai Dengan Dokter Operator pasien ini!!</span>' });
+            return false;
+        }
+        // if (currentDokter != dpjp) {
+        //     showDialog({ ui: 'interactive', type: 'warning', label: '<span class="text-danger">Maaf, anda bukan DPJP pasien ini!!</span>' });
+        //     return false;
+        // }
+        document.getElementById('txt_pin_verifikasi').value = '';
+        await modalTTD.show();
+    });
+    document.getElementById('txt_pin_verifikasi').addEventListener('input', function (e) {
+        this.value = this.value.replace(/[^0-9]/g, '');
+        if (this.value.length > 6) {
+            this.value = this.value.slice(0, 6);
+            this.classList.remove('is-invalid');
+        } else if (this.value.length < 6 && this.value.length > 0) {
+            this.classList.add('is-invalid');
+        } else {
+            this.classList.remove('is-invalid');
+        }
+    });
+    document.getElementById('togglePIN').addEventListener('click', function () {
+        const input = document.getElementById('txt_pin_verifikasi');
+        const icon = document.getElementById('togglePINIcon');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.textContent = 'Show';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye')
+        }
+    });
+    //btn-verif ttd
+    const btn_verif_ttd = ttd_entries.querySelector('a[href="#!btn-verif_ttd"]');
+    btn_verif_ttd.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const pin = document.getElementById('txt_pin_verifikasi').value;
+        const listpasien = document.getElementById('daftarpasien-title');
+        const currentuser = getCurrentUser('kd_user');
+        const selectedpasien = getSelectedPasien(`pasien-${listpasien.dataset.tagger}`);
+        if (pin.length == 0) {
+            showDialog({ type: 'warning', label: '<span class="text-danger">Mohon Isi PIN terlebih dahulu.</span>' });
+            return
+        }
+        if (pin.length > 0 && pin.length < 6) {
+            showDialog({ type: 'warning', label: '<span class="text-danger">PIN Harus terdiri dari 6 angka.</span>' });
+            return
+        }
+        const pin_data = {
+            no_kunjungan: selectedpasien.no_kunjungan,
+            single_id: selectedpasien.single_id,
+            kd_user: currentuser,
+            pin: pin,
+            tag: id,
+            table: 'rawat_inap.ri_laporan_operasi',
+            counter: operasi.counter
+        };
+        let rs = await httpGet(`${config.api_url}/verifikasi_pin`, pin_data);
+        if (rs.code == 200) {
+            const res = rs.data;
+            if (res.code == 200) {
+                const frm_data = { single_id: selectedpasien.single_id, no_kunjungan: selectedpasien.no_kunjungan, counter: operasi.counter };
+                let rs = await httpPost(`${config.api_url}/laporan_operasi/verif`, frm_data);
+                showDialog({ type: 'info', label: '<span class="text-black">Verifikasi Berhasil</span>' });
+                await modalTTD.hide();
+            } else {
+                showDialog({ ui: 'interactive', type: 'warning', label: '<span class="text-danger">Verifikasi Gagal!<br>' + res.pesan + '</span>' });
+            }
+        } else {
+            showDialog({ ui: 'interactive', type: 'warning', label: '<span class="text-danger">Verifikasi Gagal!!</span>' });
+        }
+    });
+    const btn_tutup_ttd = ttd_entries.querySelector('a[href="#!btn-tutup_ttd_dialog"]');
+    btn_tutup_ttd.addEventListener('click', async (e) => {
+        e.preventDefault();
+        document.getElementById('txt_pin_verifikasi').value = '';
+        await modalTTD.hide();
+    });
+    document.laporan_operasi = { id, loadData };
+</script>
+<template>
+    <div id="laporan_operasi-actions" class="card sticky-top">
+        <div class="card-body row justify-content-between p-0 pt-2 ps-2 pe-2">
+            <div class="col-md">
+                <h4>Laporan Operasi</h4>
+            </div>
+            <div class="col-auto">
+                <a class="btn btn-sm btn-primary fs--1" href="#!btn-simpan" role="button"><span class="fas fa-floppy-disk"></span> Simpan</a>
+                <a class="btn btn-secondary btn-sm" id="btn_history" href="#!btn-history" role="button"><span class="fa-solid fa-clock-rotate-left"></span> History</a>
+                <a class="btn btn-sm btn-secondary fs--1" href="#!btn-reset" role="button"><span class="fas fa-clock-rotate-left"></span> Baru</a>
+                <a class="btn btn-sm btn-secondary fs--1 d-none" href="#!btn-cetak" role="button"><span class="fas fa-print"></span>Cetak</a>
+                <a class="btn btn-sm btn-success fs--1" href="#!btn-ttd_berkas" role="button" style="width: 100px;"><span class="fas fa-check"></span> TTD</a>
+            </div>
+        </div>
+    </div>
+    <div id="laporan_operasi-entries" class="m-0 p-0 mt-3">
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row mb-3">
+                    <label for="" class="col-md-2 text-1000">DPJP Bedah</label>
+                    <div class="col-md-4">
+                        <select id="sel_dpjp_obgyn_operasi" data-field="dpjp_obgyn"
+                            placeholder="DPJP Bedah">
+                        </select>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="" class="col-md-2 text-1000">Dokter Operator</label>
+                    <div class="col-md-4">
+                        <select id="sel_dokter_operator_operasi"
+                            data-field="dokter_operator" placeholder="Dokter Operator">
+                        </select>
+                    </div>
+                    <label for="" class="col-md-2 text-1000">Asisten Operator</label>
+                    <div class="col-md-4">
+                        <select id="sel_asisten_operator_operasi"
+                            data-field="asisten_operator" placeholder="Asisten Operator">
+                        </select>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="" class="col-md-2 text-1000">Dokter Operator 2</label>
+                    <div class="col-md-4">
+                        <select id="sel_dokter_operator_operasi_2"
+                            data-field="dokter_operator_2" placeholder="Dokter Operator 2">
+                        </select>
+                    </div>
+                    <label for="" class="col-md-2 text-1000">Asisten Operator 2</label>
+                    <div class="col-md-4">
+                        <select id="sel_asisten_operator_operasi_2"
+                            data-field="asisten_operator_2" placeholder="Asisten Operator 2">
+                        </select>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="" class="col-md-2 text-1000">Dokter Operator 3</label>
+                    <div class="col-md-4">
+                        <select id="sel_dokter_operator_operasi_3"
+                            data-field="dokter_operator_3" placeholder="Dokter Operator 3">
+                        </select>
+                    </div>
+                    <label for="" class="col-md-2 text-1000">Asisten Operator 3</label>
+                    <div class="col-md-4">
+                        <select id="sel_asisten_operator_operasi_3"
+                            data-field="asisten_operator_3" placeholder="Asisten Operator 3">
+                        </select>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="" class="col-md-2 text-1000">Dokter Anestesi</label>
+                    <div class="col-md-4">
+                        <select id="sel_dokter_anestesi_operasi"
+                            data-field="dokter_anestesi" placeholder="Dokter Anestesi">
+                        </select>
+                    </div>
+                    <label for="" class="col-md-2 text-1000">Asisten Anestesi</label>
+                    <div class="col-md-4">
+                        <select id="sel_asisten_anestesi_operasi"
+                            data-field="asisten_anestesi" placeholder="Asisten Anestesi">
+                        </select>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="" class="col-md-2 text-1000">Diagnosis Pra Operasi</label>
+                    <div class="col-md-4">
+                        <textarea class="form-control" id="txt_diagnosis_pra_ops"
+                            placeholder="Diagnosis Pra Operasi...." rows="3" data-type="txt"
+                            data-field="diagnosis_pra_ops"></textarea>
+                    </div>
+                    <label for="" class="col-md-2 text-1000">Diagnosis Pasca Operasi</label>
+                    <div class="col-md-4">
+                        <textarea class="form-control" id="txt_diagnosis_pasca_ops"
+                            placeholder="Diagnosis Pasca Operasi...." rows="3" data-type="txt"
+                            data-field="diagnosis_pasca_ops"></textarea>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label class="col-md-2 text-1000">Waktu Operasi</label>
+                    <div class="col-md-10">
+                        <div class="form-group d-flex mb-3">
+                            <label class="mx-2">Tgl Operasi</label>
+                            <input type="date" class="form-control form-control-sm w-auto" id="txt_tgl_ops"
+                                data-type="txt" data-field="tgl_ops">
+                            <label class="ms-5 me-2">Jam Mulai</label>
+                            <input type="time" class="form-control form-control-sm w-auto" id="txt_jam_ops"
+                                data-type="txt" data-field="jam_ops">
+                            <label class="ms-5 me-2">Lama Operasi</label>
+                            <input type="text" class="form-control form-control-sm w-auto" id="txt_lama_ops"
+                                data-type="txt" data-field="lama_ops">
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label class="col-md-2 text-1000">Tindakan Operasi</label>
+                    <div class="col-md-6">
+                        <textarea class="form-control" id="txt_tindakan_ops" placeholder="Tindakan Operasi...." rows="3"
+                            data-type="txt" data-field="tindakan_ops"></textarea>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check form-check-inline mx-2">
+                            <input type="radio" class="form-check-input" name="rad_jenis_tindakan_ops" value="1"
+                                data-type="rad" data-field="jenis_tindakan_ops" />
+                            <label class="form-check-label" for="">Emergensi</label>
+                        </div>
+                        <div class="form-check form-check-inline mx-2">
+                            <input type="radio" class="form-check-input" name="rad_jenis_tindakan_ops" value="2"
+                                data-type="rad" data-field="jenis_tindakan_ops" />
+                            <label class="form-check-label" for="">Elektif</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label class="col-md-2 text-1000">Jenis Operasi</label>
+                    <div class="col-md-4">
+                        <div class="form-check form-check-inline mx-2">
+                            <input type="radio" class="form-check-input" name="rad_jenis_ops" value="1" data-type="rad"
+                                data-field="jenis_ops" />
+                            <label class="form-check-label" for="">Bersih</label>
+                        </div>
+                        <div class="form-check form-check-inline mx-2">
+                            <input type="radio" class="form-check-input" name="rad_jenis_ops" value="2" data-type="rad"
+                                data-field="jenis_ops" />
+                            <label class="form-check-label" for="">Bersih Tercemar</label>
+                        </div>
+                        <div class="form-check form-check-inline mx-2">
+                            <input type="radio" class="form-check-input" name="rad_jenis_ops" value="3" data-type="rad"
+                                data-field="jenis_ops" />
+                            <label class="form-check-label" for="">Tercemar</label>
+                        </div>
+                        <div class="form-check form-check-inline mx-2">
+                            <input type="radio" class="form-check-input" name="rad_jenis_ops" value="4" data-type="rad"
+                                data-field="jenis_ops" />
+                            <label class="form-check-label" for="">Kotor</label>
+                        </div>
+                    </div>
+                    <label class="col-md-2 text-1000">Operasi ke-</label>
+                    <div class="col-md-4">
+                        <div class="form-check form-check-inline mx-2">
+                            <input type="radio" class="form-check-input" name="rad_operasi_ke" value="1" data-type="rad"
+                                data-field="operasi_ke" />
+                            <label class="form-check-label" for="">1</label>
+                        </div>
+                        <div class="form-check form-check-inline mx-2">
+                            <input type="radio" class="form-check-input" name="rad_operasi_ke" value="2" data-type="rad"
+                                data-field="operasi_ke" />
+                            <label class="form-check-label" for="">Re Do</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label class="col-md-2 text-1000">Profilaksis</label>
+                    <div class="col-md">
+                        <div class="form-check form-check-inline mx-2">
+                            <input class="form-check-input" id="rad_profilaksis_ya" type="radio" name="profilaksis"
+                                value="1" data-type="rad" data-field="profilaksis">
+                            <label class="form-check-label" for="rad_profilaksis_ya">Ya</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" id="rad_profilaksis_tidak" type="radio" name="profilaksis"
+                                value="2" data-type="rad" data-field="profilaksis">
+                            <label class="form-check-label" for="rad_profilaksis_tidak">Tidak</label>
+                        </div>
+                    </div>
+                    <!-- <div class="col-md-10">
+                        <input type="text" class="form-control form-control-sm" id="txt_profilaksis" data-type="txt" data-field="profilaksis">
+                    </div> -->
+                </div>
+                <div class="row mb-3">
+                    <label class="col-md-2 text-1000">Antibiotik yang diberikan</label>
+                    <div class="col-md-4">
+                        <input type="text" class="form-control form-control-sm" id="txt_antibiotik" data-type="txt"
+                            data-field="antibiotik">
+                    </div>
+                    <label class="col-md-2 text-1000">Waktu Pemberian</label>
+                    <div class="col-md-4">
+                        <div class="form-group d-flex">
+                            <input type="text" class="form-control form-control-sm w-auto" id="txt_waktu_antibiotik"
+                                data-type="txt" data-field="waktu_antibiotik">
+                            <label class="mx-2">Jam sebelum operasi</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <label class="col-md-2">Temuan Operasi</label>
+                    <div class="col-md-10">
+                        <textarea class="form-control" id="txt_temuan_operasi" placeholder="Temuan Operasi...." rows="6"
+                            data-type="txt" data-field="temuan_operasi"></textarea>
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <label class="col-md-2">Komplikasi selama operasi(bila ada)</label>
+                    <div class="col-md-10">
+                        <textarea class="form-control" id="txt_komplikasi_operasi"
+                            placeholder="Komplikasi Selama Operasi...." rows="6" data-type="txt"
+                            data-field="komplikasi_operasi"></textarea>
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <label class="col-md-2">Jumlah pendarahan</label>
+                    <div class="col-md-3 d-flex">
+                        <input type="text" data-type="txt" data-field="txt_jumlah_pendarahan" id="txt_jumlah_pendarahan"
+                            class="form-control form-control-sm">
+                        <label class="my-auto">&nbsp;cc</label>
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <label class="col-md-2">Jaringan ke patologi</label>
+                    <div class="col-md-1">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" id="rad_patologi_ya" type="radio" name="patologi" value="1"
+                                data-type="rad" data-field="patologi">
+                            <label class="form-check-label" for="rad_patologi_ya">Ya</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="my-auto d-inline-block">Tgl&nbsp;</label>
+                        <input style="width: 80%;" type="date" class="form-control form-control-sm d-inline-block"
+                            id="txt_patologi" data-type="txt" data-field="tgl_patologi">
+                    </div>
+
+                </div>
+                <div class="row mb-2">
+                    <label class="col-md-2"></label>
+                    <div class="col-md-1">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" id="rad_patologi_tidak" type="radio" name="patologi" value="2" data-type="rad" data-field="patologi">
+                            <label class="form-check-label" for="rad_patologi_tidak">Tidak</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" class="form-control form-control-sm d-inline-block" id="txt_patologi_tdk" data-type="txt" data-field="txt_patologi_tdk" placeholder="Alasan....">
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <label class="col-md-2">Macam jaringan dikirim</label>
+                    <div class="col-md-3">
+                        <input type="text" class="form-control form-control-sm d-inline-block" id="txt_macam_jaringan" data-type="txt" data-field="txt_macam_jaringan">
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <label class="col-md-2">Jenis dan nomor implan</label>
+                    <div class="col-md-3">
+                        <input type="text" class="form-control form-control-sm d-inline-block" id="txt_jns_implan" data-type="txt" data-field="txt_jns_implan">
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <label class="col-md-2">Penempelan label pasien</label>
+                    <div class="col-md-3">
+                        <div class="form-check form-check-inline mx-2">
+                            <input type="radio" class="form-check-input" name="rad_label_pasien" value="1" data-type="rad" data-field="label_pasien" />
+                            <label class="form-check-label" for="">Sudah</label>
+                        </div>
+                        <div class="form-check form-check-inline mx-2">
+                            <input type="radio" class="form-check-input" name="rad_label_pasien" value="2" data-type="rad" data-field="label_pasien" />
+                            <label class="form-check-label" for="">Belum</label>
+                        </div>
+                    </div>
+                </div>
+                <!-- <div class="row mb-3">
+                    <label for="" class="col-md-2 text-1000">Gambar</label>
+                    <div class="col-md-10 form-group">
+                        <gambar></gambar>
+                    </div>
+                </div> -->
+                <div class="row mb-3">
+                    <label for="" class="col-md-2 text-1000">Laporan Operasi</label>
+                    <div class="col-md-10 form-group">
+                        <textarea class="form-control" id="txt_laporan_ops" placeholder="Laporan Operasi...." rows="6" data-type="txt" data-field="laporan_ops"></textarea>
+                        <a class="btn btn-sm btn-secondary fs--1 mt-2" href="#!btn-template_laporan" role="button" data-id="txt_laporan_ops" data-title="Template Laporan Operasi"><span class="fas fa-file"></span> Template Laporan Operasi</a>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="" class="col-md-2 text-1000">Instruksi Pasca Operasi</label>
+                    <div class="col-md-10">
+                        <textarea class="form-control" id="txt_instruksi_pasca_ops" placeholder="Instruksi Pasca Operasi...." rows="6" data-type="txt" data-field="instruksi_pasca_ops"></textarea>
+                        <a class="btn btn-sm btn-secondary fs--1 mt-2" href="#!btn-template_instruksi" role="button" data-id="txt_instruksi_pasca_ops" data-title="Template Instruksi Pasca Operasi"><span class="fas fa-file"></span> Template Instruksi Pasca Operasi</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- modal -->
+        <div class="modal fade" id="template-modal" data-bs-keyboard="false" data-bs-backdrop="static" tabindex="-1"
+            role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+                <div class="modal-content position-relative">
+                    <div class="position-absolute top-0 end-0 mt-2 me-2 z-1">
+                        <button class="btn-close btn btn-sm btn-circle d-flex flex-center transition-base" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-0">
+                        <div class="rounded-top-3 py-3 ps-4 pe-6 bg-body-tertiary">
+                            <h4 class="mb-1" id="modalTemplateTitle">Template</h4>
+                        </div>
+                        <div class="p-4 pb-0">
+                            <div class="row mb-2">
+                                <div class="col-md-7 d-inline">
+                                    <input class="form-control form-control-sm" id="txt_nama_template" type="text" placeholder="Nama Template" data-type="txt" />
+                                </div>
+                                <div class="col-auto">
+                                    <a class="btn btn-sm btn-primary fs--1" href="#!btn-simpan-template" role="button"><span class="fas fa-floppy-disk"></span> Simpan</a>
+                                    <a class="btn btn-sm btn-primary fs--1" href="#!btn-reload-template" role="button"><span class="fas fa-refresh"></span></a>
+                                </div>
+                            </div>
+                            <div class="table-responsive mb-3">
+                                <table class="table table-sm table-bordered table-striped fs--1 mb-0 overflow-hidden text-center">
+                                    <thead class="bg-300">
+                                        <tr>
+                                            <td class="text-900 sort pe-1 white-space-nowrap text-center" style="width: 70px;">Pilih</td>
+                                            <td class="text-900 sort pe-1 white-space-nowrap text-center" style="width: auto;">Nama</td>
+                                            <td class="text-900 sort pe-1 white-space-nowrap text-center" style="width: 70px;">Hapus</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyTemplate">
+                                        <tr>
+                                            <td colspan="3" class="text-start">
+                                                <label for="" class="form-label fs-0 fw-bold text-dark text-capitalize">belum ada data</label>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- modal -->
+        <div class="modal fade" id="history-modal" data-bs-keyboard="false" data-bs-backdrop="static" tabindex="-1" role="dialog" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+            <div class="modal-content position-relative">
+              <div class="position-absolute top-0 end-0 mt-2 me-2 z-1">
+                <button class="btn-close btn btn-sm btn-circle d-flex flex-center transition-base" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body p-0">
+                <div class="rounded-top-3 py-3 ps-4 pe-6 bg-body-tertiary">
+                  <h4 class="mb-1" id="modalExampleDemoLabel">History</h4>
+                </div>
+                <div class="p-4 pb-0">
+                  <div id="tbl_history"  data-list='{"valueNames":["no","tanggal","jam","unit","dokter","status"],"page":5,"pagination":true}' class="mb-3">
+                    <div class="table-responsive">
+                      <table class="table table-sm table-striped fs--1 mb-0 overflow-hidden text-center">
+                        <thead class="bg-200">
+                          <tr>
+                            <th class="text-900 sort pe-1 align-middle white-space-nowrap text-capitalize" data-sort="no" rowspan="2" style="width: 30px">No</th>
+                            <th class="text-900 sort pe-1 align-middle white-space-nowrap text-capitalize" data-sort="tanggal" rowspan="2" style="width: 80px">tanggal</th>
+                            <th class="text-900 sort pe-1 align-middle white-space-nowrap text-capitalize" data-sort="jam" rowspan="2" style="width: 80px">Jam</th>
+                            <th class="text-900 sort pe-1 align-middle white-space-nowrap text-capitalize" data-sort="dokter" rowspan="2" style="width: 250px">Dokter</th>
+                            <th class="text-900 sort pe-1 align-middle white-space-nowrap text-capitalize" data-sort="status" rowspan="2" style="width: 150px">Diagnosis</th>
+                            <th class="text-900 sort pe-1 align-middle white-space-nowrap text-capitalize" data-sort="aksi" colspan="3" style="width: 100px">aksi</th>
+                          </tr>
+                          <tr>
+                            <th class="text-900 sort pe-1 align-middle white-space-nowrap text-capitalize" data-sort="#">Edit</th>
+                            <th class="text-900 sort pe-1 align-middle white-space-nowrap text-capitalize" data-sort="#">Hapus</th>
+                            <th class="text-900 sort pe-1 align-middle white-space-nowrap text-capitalize" data-sort="#">Cetak</th>
+                          </tr>
+                        </thead>
+                        <tbody class="list">
+                        <td class="tanggal"></td>
+                        <td class="jam"></td>
+                        <td class="unit"></td>
+                        <td class="dokter"></td>
+                        <td class="status"></td>
+                        <td class="pertanyaan"></td>
+                        <td class="jawaban"></td>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div class="d-flex justify-content-center mt-3">
+                      <button class="btn btn-sm btn-falcon-default me-1" type="button" title="Previous" data-list-pagination="prev"><span class="fas fa-chevron-left"></span> </button>
+                      <ul class="pagination mb-0"></ul>
+                      <button class="btn btn-sm btn-falcon-default ms-1" type="button" title="Next" data-list-pagination="next" href="#!btn-hapus"><span class="fas fa-chevron-right"></span> </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+    </div>
+    <!-- Verifikasi PIN -->
+    <div class="modal fade" id="ttd_berkas-modal" data-bs-keyboard="false" data-bs-backdrop="static" tabindex="-1"
+        role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-s" role="document">
+            <div class="modal-content position-relative">
+                <div class="position-absolute top-0 end-0 mt-2 me-2 z-1">
+                    <button class="btn-close btn btn-sm btn-circle d-flex flex-center transition-base"
+                        data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="rounded-top-3 py-3 ps-4 pe-6 bg-body-tertiary">
+                        <h4 class="mb-1" id="modalExampleDemoLabel">Verifikasi PIN</h4>
+                    </div>
+                    <div class="p-3 pb-0">
+                        <div id="ttd_berkas-entries">
+                            <div class="row mb-3">
+                                <div class="col-mb-12">
+                                    <div class="input-group">
+                                        <input type="password" id="txt_pin_verifikasi"
+                                            class="form-control form-control-sm" data-type="txt"
+                                            data-field="pin_verifikasi" maxlength="6" placeholder="Masukkan PIN">
+                                        <div class="input-group-append">
+                                            <button class="btn btn-outline-secondary" type="button" id="togglePIN">
+                                                <span class="fas fa-eye" id="togglePINIcon"></span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mb-3 justify-content-center">
+                                <div class="col-mb-12 text-center">
+                                    <a class="btn btn-sm btn-primary" type="button" title="Verif" href="#!btn-verif_ttd"
+                                        role="button" style="width: 130px;">
+                                        <span class="fas fa-check"></span>Verifikasi
+                                    </a>
+                                    <a class="btn btn-sm btn-danger" type="button" title="Tutup"
+                                        href="#!btn-tutup_ttd_dialog" role="button" style="width: 130px;">
+                                        <span class="fas fa-times"></span>Tutup
+                                    </a>
+                                </div>
+                            </div>
+                            <!-- <div class="d-flex justify-content-center mb-3">
+                         </div> -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>

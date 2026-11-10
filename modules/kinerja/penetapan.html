@@ -1,0 +1,550 @@
+<style>
+  .kinerja-penetapan .card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem;
+  }
+  .kinerja-penetapan .table th {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+  }
+  .kinerja-penetapan .table td {
+    vertical-align: middle;
+    font-size: 0.85rem;
+  }
+</style>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+
+  let rawPenetapanData = [];
+  let filteredPenetapanData = [];
+  let masterBagian = [];
+  let selectedIds = new Set();
+  let currentPage = 1;
+  const pageSize = 15;
+
+  const tag = 'kinerja_penetapan';
+
+  const initModule = async () => {
+    await loadMaster();
+    await loadData();
+    bindEvents();
+  };
+
+  const loadMaster = async () => {
+    try {
+      const res = await httpGet(`${config.api_url}/kinerja/master`);
+      if (res && res.code === 200 && res.data) {
+        masterBagian = res.data.bagian || [];
+        populateBagianSelect();
+      }
+    } catch (e) {
+      console.warn('Master load error:', e);
+    }
+  };
+
+  const populateBagianSelect = () => {
+    const selBagian = document.getElementById('filter-bagian-penetapan');
+    if (!selBagian) return;
+    let html = '<option value="">-- Semua Unit / Bagian --</option>';
+    masterBagian.forEach(b => {
+      html += `<option value="${b.KD_BAGIAN}">${b.BAGIAN}</option>`;
+    });
+    selBagian.innerHTML = html;
+  };
+
+  const loadData = async () => {
+    const tbody = document.getElementById('tbody-penetapan');
+    const spinner = document.getElementById('loading-penetapan');
+
+    if (spinner) spinner.classList.remove('d-none');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data verifikasi & penetapan target SKP...</td></tr>';
+
+    try {
+      const bagian = document.getElementById('filter-bagian-penetapan')?.value || '';
+      const status = document.getElementById('filter-status-penetapan')?.value || '';
+      const search = document.getElementById('search-penetapan')?.value || '';
+
+      let url = `${config.api_url}/kinerja/target-skp?limit=500`;
+      if (bagian) url += `&bagian=${encodeURIComponent(bagian)}`;
+      if (status !== '') url += `&status=${encodeURIComponent(status)}`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+
+      const res = await httpGet(url);
+      if (res && res.code === 200) {
+        const dataObj = res.data;
+        rawPenetapanData = Array.isArray(dataObj) ? dataObj : (dataObj.data || []);
+        filteredPenetapanData = [...rawPenetapanData];
+        selectedIds.clear();
+        updateSelectAllState();
+
+        updateSummaryCards(dataObj.summary, dataObj.total || rawPenetapanData.length);
+        currentPage = 1;
+        renderTable();
+      } else {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Gagal memuat data penetapan SKP</td></tr>';
+      }
+    } catch (err) {
+      console.error('Error load penetapan:', err);
+      if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-danger">Terjadi kesalahan: ${err.message}</td></tr>`;
+    } finally {
+      if (spinner) spinner.classList.add('d-none');
+    }
+  };
+
+  const updateSummaryCards = (summary, totalCount) => {
+    const elPending = document.getElementById('card-stat-pen-pending');
+    const elApproved = document.getElementById('card-stat-pen-approved');
+    const elRejected = document.getElementById('card-stat-pen-rejected');
+    const elTotal = document.getElementById('card-stat-pen-total');
+
+    if (summary) {
+      if (elPending) elPending.textContent = (summary.pending || 0).toLocaleString();
+      if (elApproved) elApproved.textContent = (summary.approved || 0).toLocaleString();
+      if (elRejected) elRejected.textContent = (summary.rejected || 0).toLocaleString();
+      if (elTotal) elTotal.textContent = (summary.total_targets || totalCount || 0).toLocaleString();
+    } else {
+      const total = totalCount || rawPenetapanData.length;
+      const approved = rawPenetapanData.filter(x => x.status === '1' || x.status === 1).length;
+      const rejected = rawPenetapanData.filter(x => x.status === '2' || x.status === 2).length;
+      const pending = total - approved - rejected;
+
+      if (elPending) elPending.textContent = pending.toLocaleString();
+      if (elApproved) elApproved.textContent = approved.toLocaleString();
+      if (elRejected) elRejected.textContent = rejected.toLocaleString();
+      if (elTotal) elTotal.textContent = total.toLocaleString();
+    }
+
+    const badge = document.getElementById('badge-total-penetapan');
+    if (badge) badge.textContent = `${totalCount || rawPenetapanData.length} Pengajuan`;
+  };
+
+  const getStatusBadge = (status) => {
+    if (status === '1' || status === 1) {
+      return '<span class="badge bg-soft-success text-success"><i class="fas fa-check-circle me-1"></i>Ditetapkan / Disetujui</span>';
+    } else if (status === '2' || status === 2) {
+      return '<span class="badge bg-soft-danger text-danger"><i class="fas fa-times-circle me-1"></i>Ditolak</span>';
+    } else {
+      return '<span class="badge bg-soft-warning text-warning"><i class="fas fa-hourglass-half me-1"></i>Menunggu Verifikasi</span>';
+    }
+  };
+
+  const renderTable = () => {
+    const tbody = document.getElementById('tbody-penetapan');
+    if (!tbody) return;
+
+    if (filteredPenetapanData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted"><i class="fas fa-check-circle me-2"></i>Tidak ada antrean penetapan target SKP</td></tr>';
+      renderPagination(0);
+      return;
+    }
+
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    const pageRows = filteredPenetapanData.slice(start, end);
+
+    let html = '';
+    pageRows.forEach((row, idx) => {
+      const num = start + idx + 1;
+      const idTarget = row.id_targetskp || '';
+      const namaPegawai = row.nama_pegawai || row.id_pegawai || '-';
+      const nip = row.NIP || '-';
+      const bagian = row.nama_bagian || '-';
+      const uraian = row.uraian || '-';
+      const program = row.nama_programkerja ? `<div class="text-muted small fst-italic"><i class="fas fa-project-diagram me-1"></i>${row.nama_programkerja}</div>` : '';
+      const output = `${row.output || '0'} ${row.output_satuan || row.nama_output || ''}`;
+      const waktu = `${row.waktu || '0'} ${row.waktu_satuan || row.nama_waktu || ''}`;
+      const isApproved = row.status === '1' || row.status === 1;
+      const isChecked = selectedIds.has(idTarget);
+
+      html += `
+        <tr>
+          <td class="text-center">
+            <input type="checkbox" class="form-check-input check-row-pen" value="${idTarget}" ${isChecked ? 'checked' : ''} ${isApproved ? 'disabled' : ''}>
+          </td>
+          <td class="text-center text-muted fw-bold">${num}</td>
+          <td>
+            <div class="fw-bold text-dark">${namaPegawai}</div>
+            <div class="text-muted small">NIP: ${nip}</div>
+            <div class="text-primary small">${bagian}</div>
+          </td>
+          <td>
+            <div class="fw-medium text-dark">${uraian}</div>
+            ${program}
+            <div class="text-muted small">Tgl Entri: ${row.tgl_entri || '-'}</div>
+          </td>
+          <td class="text-center fw-bold text-info">${row.ak || '0'}</td>
+          <td><span class="badge bg-light text-dark border">${output}</span></td>
+          <td><span class="badge bg-light text-dark border">${waktu}</span></td>
+          <td class="text-center">${getStatusBadge(row.status)}</td>
+          <td class="text-center">
+            ${isApproved 
+              ? `<span class="text-muted small"><i class="fas fa-lock me-1"></i>Ditetapkan</span>` 
+              : `
+                <div class="btn-group btn-group-sm">
+                  <button class="btn btn-outline-success btn-approve-single" data-id="${idTarget}" title="Setujui Target">
+                    <i class="fas fa-check"></i>
+                  </button>
+                  <button class="btn btn-outline-danger btn-reject-single" data-id="${idTarget}" title="Tolak Target">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              `}
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    renderPagination(filteredPenetapanData.length);
+    updateBulkButtonState();
+
+    // Bind row check boxes
+    tbody.querySelectorAll('.check-row-pen').forEach(chk => {
+      chk.addEventListener('change', (e) => {
+        const id = e.target.value;
+        if (e.target.checked) {
+          selectedIds.add(id);
+        } else {
+          selectedIds.delete(id);
+        }
+        updateSelectAllState();
+        updateBulkButtonState();
+      });
+    });
+
+    // Bind approve / reject buttons
+    tbody.querySelectorAll('.btn-approve-single').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        executeApproval([id], 1);
+      });
+    });
+
+    tbody.querySelectorAll('.btn-reject-single').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        promptRejectModal([id]);
+      });
+    });
+  };
+
+  const renderPagination = (totalRows) => {
+    const el = document.getElementById('pagination-penetapan');
+    const info = document.getElementById('pagination-info-penetapan');
+    if (!el) return;
+
+    const totalPages = Math.ceil(totalRows / pageSize) || 1;
+    const start = totalRows === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    const end = Math.min(currentPage * pageSize, totalRows);
+
+    if (info) info.textContent = `Menampilkan ${start} - ${end} dari ${totalRows} data`;
+
+    let html = `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage - 1}">«</a></li>`;
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) {
+        html += `<li class="page-item ${p === currentPage ? 'active' : ''}"><a class="page-link" href="#" data-page="${p}">${p}</a></li>`;
+      } else if (p === currentPage - 3 || p === currentPage + 3) {
+        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      }
+    }
+    html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage + 1}">»</a></li>`;
+    el.innerHTML = html;
+
+    el.querySelectorAll('.page-link').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const p = parseInt(btn.getAttribute('data-page'));
+        if (p && p !== currentPage && p >= 1 && p <= totalPages) {
+          currentPage = p;
+          renderTable();
+        }
+      });
+    });
+  };
+
+  const updateSelectAllState = () => {
+    const selectAll = document.getElementById('check-all-penetapan');
+    if (!selectAll) return;
+    const pendingOnPage = filteredPenetapanData.filter(x => x.status !== '1' && x.status !== 1);
+    if (pendingOnPage.length === 0) {
+      selectAll.checked = false;
+      selectAll.disabled = true;
+    } else {
+      selectAll.disabled = false;
+      selectAll.checked = pendingOnPage.every(x => selectedIds.has(x.id_targetskp));
+    }
+  };
+
+  const updateBulkButtonState = () => {
+    const btnApprove = document.getElementById('btn-bulk-approve');
+    const badgeCount = document.getElementById('selected-count-penetapan');
+    const count = selectedIds.size;
+    if (badgeCount) badgeCount.textContent = count;
+    if (btnApprove) btnApprove.disabled = (count === 0);
+  };
+
+  const executeApproval = async (ids, status, catatan = '') => {
+    if (!ids || ids.length === 0) return;
+
+    const actionText = status === 1 ? 'menyetujui & menetapkan' : 'menolak';
+    if (!confirm(`Konfirmasi: Apakah Anda yakin ingin ${actionText} ${ids.length} target SKP ini?`)) return;
+
+    try {
+      const res = await httpPost(`${config.api_url}/kinerja/target-skp/approve`, {
+        ids: ids,
+        status: status,
+        catatan: catatan
+      });
+
+      if (res && res.code === 200) {
+        selectedIds.clear();
+        await loadData();
+      } else {
+        alert(res?.message || 'Gagal memproses approval.');
+      }
+    } catch (e) {
+      alert('Terjadi kesalahan: ' + e.message);
+    }
+  };
+
+  const promptRejectModal = (ids) => {
+    const modalEl = document.getElementById('modal-reject-penetapan');
+    if (!modalEl || !window.bootstrap) return;
+
+    document.getElementById('modal-reject-ids').value = JSON.stringify(ids);
+    document.getElementById('modal-reject-notes').value = '';
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  };
+
+  const bindEvents = () => {
+    document.getElementById('btn-filter-penetapan')?.addEventListener('click', () => loadData());
+    document.getElementById('btn-refresh-penetapan')?.addEventListener('click', () => loadData());
+
+    document.getElementById('check-all-penetapan')?.addEventListener('change', (e) => {
+      const pendingRows = filteredPenetapanData.filter(x => x.status !== '1' && x.status !== 1);
+      if (e.target.checked) {
+        pendingRows.forEach(r => selectedIds.add(r.id_targetskp));
+      } else {
+        pendingRows.forEach(r => selectedIds.delete(r.id_targetskp));
+      }
+      renderTable();
+    });
+
+    document.getElementById('btn-bulk-approve')?.addEventListener('click', () => {
+      const ids = Array.from(selectedIds);
+      executeApproval(ids, 1);
+    });
+
+    document.getElementById('btn-confirm-reject')?.addEventListener('click', () => {
+      const idsStr = document.getElementById('modal-reject-ids')?.value;
+      const notes = document.getElementById('modal-reject-notes')?.value || '';
+      try {
+        const ids = JSON.parse(idsStr);
+        executeApproval(ids, 2, notes);
+        const modalEl = document.getElementById('modal-reject-penetapan');
+        if (modalEl && window.bootstrap) {
+          bootstrap.Modal.getInstance(modalEl)?.hide();
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    document.getElementById('search-penetapan')?.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        filteredPenetapanData = [...rawPenetapanData];
+      } else {
+        filteredPenetapanData = rawPenetapanData.filter(r => 
+          (r.uraian && r.uraian.toLowerCase().includes(q)) ||
+          (r.nama_pegawai && r.nama_pegawai.toLowerCase().includes(q)) ||
+          (r.NIP && r.NIP.toLowerCase().includes(q)) ||
+          (r.nama_bagian && r.nama_bagian.toLowerCase().includes(q))
+        );
+      }
+      currentPage = 1;
+      renderTable();
+    });
+  };
+
+  window.kinerja_penetapan = { loadData, executeApproval };
+  document.kinerja_penetapan = { loadData };
+
+  initModule();
+</script>
+
+<template>
+  <div class="container-fluid py-3 kinerja-penetapan">
+    <!-- Header -->
+    <div class="row align-items-center mb-3">
+      <div class="col-md-7">
+        <div class="d-flex align-items-center">
+          <div class="avatar bg-soft-info text-info p-3 rounded-circle me-3">
+            <i class="fas fa-check-double fa-2x"></i>
+          </div>
+          <div>
+            <h4 class="mb-0 fw-bold">Penetapan & Approval Target SKP</h4>
+            <p class="text-muted small mb-0">Verifikasi dan penetapan resmi Sasaran Kerja Pegawai oleh Atasan Langsung / Pejabat Penilai</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-5 text-md-end mt-2 mt-md-0">
+        <span class="badge bg-info px-3 py-2 me-2" id="badge-total-penetapan">Memuat...</span>
+        <button class="btn btn-outline-secondary btn-sm me-2" id="btn-refresh-penetapan" title="Segarkan Data">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+        <button class="btn btn-success btn-sm" id="btn-bulk-approve" disabled>
+          <i class="fas fa-check-circle me-1"></i>Tetapkan Terpilih (<span id="selected-count-penetapan">0</span>)
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-warning">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Menunggu Verifikasi</div>
+              <h4 class="mb-0 fw-bold text-warning" id="card-stat-pen-pending">0</h4>
+            </div>
+            <i class="fas fa-clock fa-2x text-warning opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-success">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Telah Ditetapkan</div>
+              <h4 class="mb-0 fw-bold text-success" id="card-stat-pen-approved">0</h4>
+            </div>
+            <i class="fas fa-check-circle fa-2x text-success opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-danger">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Target Ditolak</div>
+              <h4 class="mb-0 fw-bold text-danger" id="card-stat-pen-rejected">0</h4>
+            </div>
+            <i class="fas fa-times-circle fa-2x text-danger opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-primary">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Total Pengajuan SKP</div>
+              <h4 class="mb-0 fw-bold text-primary" id="card-stat-pen-total">0</h4>
+            </div>
+            <i class="fas fa-clipboard-check fa-2x text-primary opacity-25"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card p-3 mb-3">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-4">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+            <input type="text" class="form-control" id="search-penetapan" placeholder="Cari nama pegawai, NIP, atau uraian...">
+          </div>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select form-select-sm" id="filter-bagian-penetapan">
+            <option value="">-- Semua Unit / Bagian --</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select form-select-sm" id="filter-status-penetapan">
+            <option value="" selected>-- Semua Status --</option>
+            <option value="0">Menunggu Approval / Verifikasi</option>
+            <option value="1">Telah Ditetapkan / Disetujui</option>
+            <option value="2">Ditolak</option>
+          </select>
+        </div>
+        <div class="col-md-2 text-end">
+          <button class="btn btn-outline-info btn-sm w-100" id="btn-filter-penetapan">
+            <i class="fas fa-filter me-1"></i>Filter
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Table Card -->
+    <div class="card">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-tasks me-2 text-info"></i>Antrean Penetapan Sasaran Kerja Pegawai</h6>
+        <div class="spinner-border spinner-border-sm text-info d-none" id="loading-penetapan"></div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 40px;">
+                <input type="checkbox" class="form-check-input" id="check-all-penetapan" title="Pilih Semua di Halaman Ini">
+              </th>
+              <th class="text-center" style="width: 45px;">No</th>
+              <th style="width: 220px;">Pegawai & Unit</th>
+              <th>Uraian Target Kerja</th>
+              <th class="text-center" style="width: 60px;">AK</th>
+              <th style="width: 120px;">Target Output</th>
+              <th style="width: 110px;">Target Waktu</th>
+              <th class="text-center" style="width: 160px;">Status</th>
+              <th class="text-center" style="width: 110px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-penetapan">
+            <tr>
+              <td colspan="9" class="text-center py-4 text-muted">
+                <span class="spinner-border spinner-border-sm me-2"></span>Memuat data...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer bg-white d-flex flex-column flex-md-row justify-content-between align-items-center py-2">
+        <div class="text-muted small mb-2 mb-md-0" id="pagination-info-penetapan">Menampilkan 0 data</div>
+        <ul class="pagination pagination-sm mb-0" id="pagination-penetapan"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Tolak Target SKP -->
+  <div class="modal fade" id="modal-reject-penetapan" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title"><i class="fas fa-times-circle me-2"></i>Tolak Sasaran Kerja Pegawai</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="modal-reject-ids">
+          <div class="mb-3">
+            <label class="form-label fw-bold small">Alasan Penolakan / Catatan Perbaikan <span class="text-danger">*</span></label>
+            <textarea class="form-control" id="modal-reject-notes" rows="4" placeholder="Masukkan alasan penolakan dan poin revisi yang harus diperbaiki oleh pegawai bersangkutan..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-danger btn-sm" id="btn-confirm-reject">
+            <i class="fas fa-ban me-1"></i>Tolak Target SKP
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

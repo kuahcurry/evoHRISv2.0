@@ -1,0 +1,631 @@
+<style>
+  .kinerja-realisasi .card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem;
+  }
+  .kinerja-realisasi .table th {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+  }
+  .kinerja-realisasi .table td {
+    vertical-align: middle;
+    font-size: 0.85rem;
+  }
+</style>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+
+  let rawRealisasiData = [];
+  let filteredRealisasiData = [];
+  let masterBagian = [];
+  let masterTargetSkp = [];
+  let currentPage = 1;
+  const pageSize = 15;
+
+  const tag = 'kinerja_realisasi';
+
+  const initModule = async () => {
+    await loadMaster();
+    await loadData();
+    bindEvents();
+  };
+
+  const loadMaster = async () => {
+    try {
+      const res = await httpGet(`${config.api_url}/kinerja/master`);
+      if (res && res.code === 200 && res.data) {
+        masterBagian = res.data.bagian || [];
+        populateBagianSelect();
+      }
+
+      const resTarget = await httpGet(`${config.api_url}/kinerja/target-skp?limit=500`);
+      if (resTarget && resTarget.code === 200 && resTarget.data) {
+        masterTargetSkp = Array.isArray(resTarget.data) ? resTarget.data : (resTarget.data.data || []);
+        populateTargetSelect();
+      }
+    } catch (e) {
+      console.warn('Master load error:', e);
+    }
+  };
+
+  const populateBagianSelect = () => {
+    const sel = document.getElementById('filter-bagian-realisasi');
+    if (!sel) return;
+    let html = '<option value="">-- Semua Unit / Bagian --</option>';
+    masterBagian.forEach(b => {
+      html += `<option value="${b.KD_BAGIAN}">${b.BAGIAN}</option>`;
+    });
+    sel.innerHTML = html;
+  };
+
+  const populateTargetSelect = () => {
+    const sel = document.getElementById('modal-real-target');
+    if (!sel) return;
+    let html = '<option value="">-- Pilih Target SKP Pegawai --</option>';
+    masterTargetSkp.forEach(t => {
+      html += `<option value="${t.id_targetskp}">${t.uraian} (${t.nama_pegawai || 'Pegawai'})</option>`;
+    });
+    sel.innerHTML = html;
+  };
+
+  const loadData = async () => {
+    const tbody = document.getElementById('tbody-realisasi');
+    const spinner = document.getElementById('loading-realisasi');
+
+    if (spinner) spinner.classList.remove('d-none');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data Capaian Realisasi SKP...</td></tr>';
+
+    try {
+      const tahun = document.getElementById('filter-tahun-realisasi')?.value || '';
+      const bagian = document.getElementById('filter-bagian-realisasi')?.value || '';
+      const search = document.getElementById('search-realisasi')?.value || '';
+
+      let url = `${config.api_url}/kinerja/realisasi-skp?limit=500`;
+      if (tahun) url += `&tahun=${encodeURIComponent(tahun)}`;
+      if (bagian) url += `&bagian=${encodeURIComponent(bagian)}`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+
+      const res = await httpGet(url);
+      if (res && res.code === 200) {
+        const dataObj = res.data;
+        rawRealisasiData = Array.isArray(dataObj) ? dataObj : (dataObj.data || []);
+        filteredRealisasiData = [...rawRealisasiData];
+
+        updateSummaryCards(dataObj.summary, dataObj.total || rawRealisasiData.length);
+        currentPage = 1;
+        renderTable();
+      } else {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Gagal memuat realisasi SKP</td></tr>';
+      }
+    } catch (err) {
+      console.error('Error load realisasi:', err);
+      if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-danger">Terjadi kesalahan: ${err.message}</td></tr>`;
+    } finally {
+      if (spinner) spinner.classList.add('d-none');
+    }
+  };
+
+  const updateSummaryCards = (summary, totalCount) => {
+    const elAvg = document.getElementById('card-stat-real-avg');
+    const elTotal = document.getElementById('card-stat-real-total');
+    const elGood = document.getElementById('card-stat-real-good');
+    const elPending = document.getElementById('card-stat-real-pending');
+
+    const total = (summary && summary.total_realisasi) ? summary.total_realisasi : (totalCount || rawRealisasiData.length);
+    const avg = (summary && summary.avg_capaian) ? summary.avg_capaian : 0;
+    const good = rawRealisasiData.filter(x => (x.capaian_skp || 0) >= 76).length;
+    const pending = rawRealisasiData.filter(x => !x.realisasi_status || x.realisasi_status === '0').length;
+
+    if (elAvg) elAvg.textContent = `${parseFloat(avg).toFixed(1)}%`;
+    if (elTotal) elTotal.textContent = parseInt(total).toLocaleString();
+    if (elGood) elGood.textContent = good.toLocaleString();
+    if (elPending) elPending.textContent = pending.toLocaleString();
+
+    const badge = document.getElementById('badge-total-realisasi');
+    if (badge) badge.textContent = `${total} Realisasi SKP`;
+  };
+
+  const renderTable = () => {
+    const tbody = document.getElementById('tbody-realisasi');
+    if (!tbody) return;
+
+    if (filteredRealisasiData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted"><i class="fas fa-folder-open me-2"></i>Tidak ada data realisasi SKP yang cocok</td></tr>';
+      renderPagination(0);
+      return;
+    }
+
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    const pageRows = filteredRealisasiData.slice(start, end);
+
+    let html = '';
+    pageRows.forEach((row, idx) => {
+      const num = start + idx + 1;
+      const idReal = row.id_realisasiskp || '';
+      const namaPegawai = row.nama_pegawai || row.id_pegawai || '-';
+      const nip = row.NIP || '-';
+      const bagian = row.nama_bagian || '-';
+      const targetSkp = row.nama_target_skp || 'Target SKP #' + (row.id_target || '-');
+      
+      const targetOut = `${row.target_output || '0'} / ${row.target_mutu || '100'}% / ${row.target_waktu || '0'}`;
+      const realOut = `${row.realisasi_output || '0'} / ${row.realisasi_mutu || '0'}% / ${row.realisasi_waktu || '0'}`;
+      
+      const capaian = parseFloat(row.capaian_skp || 0).toFixed(1);
+      const kat = row.kategori_capaian || (capaian >= 91 ? 'Sangat Baik' : (capaian >= 76 ? 'Baik' : (capaian >= 61 ? 'Cukup' : 'Kurang')));
+      const badgeClass = capaian >= 91 ? 'bg-soft-success text-success' : (capaian >= 76 ? 'bg-soft-primary text-primary' : (capaian >= 61 ? 'bg-soft-warning text-warning' : 'bg-soft-danger text-danger'));
+
+      html += `
+        <tr>
+          <td class="text-center text-muted fw-bold">${num}</td>
+          <td>
+            <div class="fw-bold text-dark">${namaPegawai}</div>
+            <div class="text-muted small">NIP: ${nip}</div>
+            <div class="text-primary small">${bagian}</div>
+          </td>
+          <td>
+            <div class="fw-semibold text-dark">${targetSkp}</div>
+            <div class="text-muted small">Tgl Lapor: ${(row.tgl_entri || '').split(' ')[0]}</div>
+          </td>
+          <td class="small">
+            <span class="badge bg-light text-dark border">${targetOut}</span>
+            <div class="text-muted" style="font-size: 0.72rem;">Output / Mutu / Waktu</div>
+          </td>
+          <td class="small">
+            <span class="badge bg-light text-primary border">${realOut}</span>
+            <div class="text-muted" style="font-size: 0.72rem;">Output / Mutu / Waktu</div>
+          </td>
+          <td class="text-center">
+            <div class="fw-bold fs-6 text-dark">${capaian}%</div>
+            <div class="progress" style="height: 5px;">
+              <div class="progress-bar ${capaian >= 76 ? 'bg-success' : 'bg-warning'}" style="width: ${Math.min(100, capaian)}%"></div>
+            </div>
+          </td>
+          <td class="text-center">
+            <span class="badge ${badgeClass} px-2 py-1">${kat}</span>
+          </td>
+          <td class="text-center">
+            ${row.realisasi_status === '1' || row.realisasi_status === 1 
+              ? '<span class="badge bg-soft-success text-success"><i class="fas fa-check-circle me-1"></i>Disetujui</span>' 
+              : '<span class="badge bg-soft-warning text-warning"><i class="fas fa-clock me-1"></i>Draft</span>'}
+          </td>
+          <td class="text-center">
+            <button class="btn btn-outline-primary btn-sm btn-detail-real" data-id="${idReal}" title="Rincian Perhitungan">
+              <i class="fas fa-calculator"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    renderPagination(filteredRealisasiData.length);
+
+    tbody.querySelectorAll('.btn-detail-real').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        showDetailModal(id);
+      });
+    });
+  };
+
+  const renderPagination = (totalRows) => {
+    const el = document.getElementById('pagination-realisasi');
+    const info = document.getElementById('pagination-info-realisasi');
+    if (!el) return;
+
+    const totalPages = Math.ceil(totalRows / pageSize) || 1;
+    const start = totalRows === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    const end = Math.min(currentPage * pageSize, totalRows);
+
+    if (info) info.textContent = `Menampilkan ${start} - ${end} dari ${totalRows} data`;
+
+    let html = `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage - 1}">«</a></li>`;
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) {
+        html += `<li class="page-item ${p === currentPage ? 'active' : ''}"><a class="page-link" href="#" data-page="${p}">${p}</a></li>`;
+      } else if (p === currentPage - 3 || p === currentPage + 3) {
+        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      }
+    }
+    html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage + 1}">»</a></li>`;
+    el.innerHTML = html;
+
+    el.querySelectorAll('.page-link').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const p = parseInt(btn.getAttribute('data-page'));
+        if (p && p !== currentPage && p >= 1 && p <= totalPages) {
+          currentPage = p;
+          renderTable();
+        }
+      });
+    });
+  };
+
+  const showDetailModal = (id) => {
+    const item = rawRealisasiData.find(x => x.id_realisasiskp == id);
+    if (!item) return;
+
+    const modalEl = document.getElementById('modal-realisasi-detail');
+    if (!modalEl || !window.bootstrap) return;
+
+    document.getElementById('modal-detail-real-nama').textContent = item.nama_pegawai || item.id_pegawai || '-';
+    document.getElementById('modal-detail-real-nip').textContent = item.NIP || '-';
+    document.getElementById('modal-detail-real-bagian').textContent = item.nama_bagian || '-';
+    document.getElementById('modal-detail-real-target').textContent = item.nama_target_skp || '-';
+
+    document.getElementById('modal-detail-real-tgt-out').textContent = item.target_output || '0';
+    document.getElementById('modal-detail-real-act-out').textContent = item.realisasi_output || '0';
+    document.getElementById('modal-detail-real-calc-out').textContent = `${parseFloat(item.hitung_output || 0).toFixed(1)}%`;
+
+    document.getElementById('modal-detail-real-tgt-mutu').textContent = `${item.target_mutu || '100'}%`;
+    document.getElementById('modal-detail-real-act-mutu').textContent = `${item.realisasi_mutu || '0'}%`;
+    document.getElementById('modal-detail-real-calc-mutu').textContent = `${parseFloat(item.hitung_mutu || 0).toFixed(1)}%`;
+
+    document.getElementById('modal-detail-real-tgt-waktu').textContent = item.target_waktu || '0';
+    document.getElementById('modal-detail-real-act-waktu').textContent = item.realisasi_waktu || '0';
+    document.getElementById('modal-detail-real-calc-waktu').textContent = `${parseFloat(item.hitung_waktu || 0).toFixed(1)}%`;
+
+    const capaian = parseFloat(item.capaian_skp || 0).toFixed(1);
+    document.getElementById('modal-detail-real-score').textContent = `${capaian}%`;
+    document.getElementById('modal-detail-real-predikat').textContent = item.kategori_capaian || (capaian >= 76 ? 'Baik' : 'Kurang');
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  };
+
+  const showModalForm = () => {
+    const modalEl = document.getElementById('modal-realisasi-form');
+    if (!modalEl || !window.bootstrap) return;
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  };
+
+  const saveRealisasi = async () => {
+    const targetId = document.getElementById('modal-real-target')?.value;
+    if (!targetId) {
+      alert('Pilih Target SKP yang hendak dilaporkan realisasinya.');
+      return;
+    }
+
+    const payload = {
+      id_target: targetId,
+      realisasi_output: document.getElementById('modal-real-output')?.value || '1',
+      realisasi_mutu: document.getElementById('modal-real-mutu')?.value || '100',
+      realisasi_waktu: document.getElementById('modal-real-waktu')?.value || '1',
+      realisasi_biaya: document.getElementById('modal-real-biaya')?.value || '0'
+    };
+
+    const btn = document.getElementById('btn-save-realisasi');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan...';
+    }
+
+    try {
+      const res = await httpPost(`${config.api_url}/kinerja/realisasi-skp/save`, payload);
+      if (res && res.code === 200) {
+        const modalEl = document.getElementById('modal-realisasi-form');
+        if (modalEl && window.bootstrap) {
+          bootstrap.Modal.getInstance(modalEl)?.hide();
+        }
+        await loadData();
+      } else {
+        alert(res?.message || 'Gagal menyimpan Realisasi SKP.');
+      }
+    } catch (e) {
+      alert('Terjadi kesalahan: ' + e.message);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save me-1"></i>Simpan Realisasi SKP';
+      }
+    }
+  };
+
+  const bindEvents = () => {
+    document.getElementById('btn-filter-realisasi')?.addEventListener('click', () => loadData());
+    document.getElementById('btn-refresh-realisasi')?.addEventListener('click', () => loadData());
+    document.getElementById('btn-tambah-realisasi')?.addEventListener('click', () => showModalForm());
+    document.getElementById('btn-save-realisasi')?.addEventListener('click', () => saveRealisasi());
+
+    document.getElementById('search-realisasi')?.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        filteredRealisasiData = [...rawRealisasiData];
+      } else {
+        filteredRealisasiData = rawRealisasiData.filter(r => 
+          (r.nama_target_skp && r.nama_target_skp.toLowerCase().includes(q)) ||
+          (r.nama_pegawai && r.nama_pegawai.toLowerCase().includes(q)) ||
+          (r.NIP && r.NIP.toLowerCase().includes(q)) ||
+          (r.nama_bagian && r.nama_bagian.toLowerCase().includes(q))
+        );
+      }
+      currentPage = 1;
+      renderTable();
+    });
+  };
+
+  window.kinerja_realisasi = { loadData, showDetailModal, showModalForm };
+  document.kinerja_realisasi = { loadData };
+
+  initModule();
+</script>
+
+<template>
+  <div class="container-fluid py-3 kinerja-realisasi">
+    <!-- Header -->
+    <div class="row align-items-center mb-3">
+      <div class="col-md-7">
+        <div class="d-flex align-items-center">
+          <div class="avatar bg-soft-primary text-primary p-3 rounded-circle me-3">
+            <i class="fas fa-chart-line fa-2x"></i>
+          </div>
+          <div>
+            <h4 class="mb-0 fw-bold">Capaian & Realisasi SKP</h4>
+            <p class="text-muted small mb-0">Evaluasi pencapaian target kerja pegawai, perhitungan efisiensi output, kualitas mutu, dan waktu</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-5 text-md-end mt-2 mt-md-0">
+        <span class="badge bg-primary px-3 py-2 me-2" id="badge-total-realisasi">Memuat...</span>
+        <button class="btn btn-outline-secondary btn-sm me-2" id="btn-refresh-realisasi" title="Segarkan Data">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+        <button class="btn btn-primary btn-sm" id="btn-tambah-realisasi">
+          <i class="fas fa-plus me-1"></i>Input Realisasi Baru
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-primary">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Rata-rata Capaian SKP</div>
+              <h4 class="mb-0 fw-bold text-primary" id="card-stat-real-avg">0%</h4>
+            </div>
+            <i class="fas fa-percentage fa-2x text-primary opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-info">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Total Realisasi Terlapor</div>
+              <h4 class="mb-0 fw-bold text-info" id="card-stat-real-total">0</h4>
+            </div>
+            <i class="fas fa-tasks fa-2x text-info opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-success">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Predikat Baik / Sangat Baik</div>
+              <h4 class="mb-0 fw-bold text-success" id="card-stat-real-good">0</h4>
+            </div>
+            <i class="fas fa-medal fa-2x text-success opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-warning">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Menunggu Review</div>
+              <h4 class="mb-0 fw-bold text-warning" id="card-stat-real-pending">0</h4>
+            </div>
+            <i class="fas fa-hourglass-half fa-2x text-warning opacity-25"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card p-3 mb-3">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-4">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+            <input type="text" class="form-control" id="search-realisasi" placeholder="Cari nama, NIP, atau target SKP...">
+          </div>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select form-select-sm" id="filter-tahun-realisasi">
+            <option value="">-- Semua Tahun --</option>
+            <option value="2026">Tahun 2026</option>
+            <option value="2025">Tahun 2025</option>
+            <option value="2024">Tahun 2024</option>
+            <option value="2023">Tahun 2023</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select form-select-sm" id="filter-bagian-realisasi">
+            <option value="">-- Semua Unit / Bagian --</option>
+          </select>
+        </div>
+        <div class="col-md-2 text-end">
+          <button class="btn btn-outline-primary btn-sm w-100" id="btn-filter-realisasi">
+            <i class="fas fa-filter me-1"></i>Filter
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Table Card -->
+    <div class="card">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-chart-bar me-2 text-primary"></i>Laporan Capaian Realisasi Sasaran Kerja Pegawai</h6>
+        <div class="spinner-border spinner-border-sm text-primary d-none" id="loading-realisasi"></div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 45px;">No</th>
+              <th style="width: 210px;">Pegawai & Unit</th>
+              <th>Target SKP</th>
+              <th style="width: 140px;">Target (Out/Mutu/Wkt)</th>
+              <th style="width: 140px;">Realisasi</th>
+              <th class="text-center" style="width: 110px;">Capaian SKP</th>
+              <th class="text-center" style="width: 110px;">Predikat</th>
+              <th class="text-center" style="width: 100px;">Status</th>
+              <th class="text-center" style="width: 70px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-realisasi">
+            <tr>
+              <td colspan="9" class="text-center py-4 text-muted">
+                <span class="spinner-border spinner-border-sm me-2"></span>Memuat data...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer bg-white d-flex flex-column flex-md-row justify-content-between align-items-center py-2">
+        <div class="text-muted small mb-2 mb-md-0" id="pagination-info-realisasi">Menampilkan 0 data</div>
+        <ul class="pagination pagination-sm mb-0" id="pagination-realisasi"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detail Realisasi SKP -->
+  <div class="modal fade" id="modal-realisasi-detail" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title"><i class="fas fa-calculator me-2"></i>Rincian & Formula Perhitungan Capaian SKP</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="text-muted small d-block">Pegawai</label>
+              <h5 class="fw-bold text-dark mb-0" id="modal-detail-real-nama">-</h5>
+              <div class="text-muted small">NIP: <span id="modal-detail-real-nip">-</span></div>
+            </div>
+            <div class="col-md-6">
+              <label class="text-muted small d-block">Unit Kerja</label>
+              <h6 class="fw-semibold text-primary mb-0" id="modal-detail-real-bagian">-</h6>
+            </div>
+          </div>
+
+          <div class="card bg-light p-3 mb-4">
+            <label class="text-muted small">Sasaran Kerja Pegawai</label>
+            <div class="fs-6 fw-bold text-dark" id="modal-detail-real-target">-</div>
+          </div>
+
+          <div class="table-responsive mb-4">
+            <table class="table table-bordered text-center align-middle">
+              <thead class="bg-light">
+                <tr>
+                  <th>Aspek Penilaian</th>
+                  <th>Target</th>
+                  <th>Realisasi</th>
+                  <th>Nilai Aspek (%)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="text-start fw-semibold"><i class="fas fa-boxes me-2 text-info"></i>Kuantitas / Output</td>
+                  <td id="modal-detail-real-tgt-out">0</td>
+                  <td id="modal-detail-real-act-out">0</td>
+                  <td class="fw-bold text-primary" id="modal-detail-real-calc-out">0%</td>
+                </tr>
+                <tr>
+                  <td class="text-start fw-semibold"><i class="fas fa-award me-2 text-success"></i>Kualitas / Mutu</td>
+                  <td id="modal-detail-real-tgt-mutu">100%</td>
+                  <td id="modal-detail-real-act-mutu">0%</td>
+                  <td class="fw-bold text-success" id="modal-detail-real-calc-mutu">0%</td>
+                </tr>
+                <tr>
+                  <td class="text-start fw-semibold"><i class="fas fa-clock me-2 text-warning"></i>Waktu Pelaksanaan</td>
+                  <td id="modal-detail-real-tgt-waktu">0</td>
+                  <td id="modal-detail-real-act-waktu">0</td>
+                  <td class="fw-bold text-warning" id="modal-detail-real-calc-waktu">0%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card bg-soft-primary p-3 text-center border-0">
+            <div class="row align-items-center">
+              <div class="col-6 border-end">
+                <div class="text-muted small">Nilai Akhir Capaian SKP</div>
+                <h2 class="fw-bold text-primary mb-0" id="modal-detail-real-score">0%</h2>
+              </div>
+              <div class="col-6">
+                <div class="text-muted small">Predikat Hasil Kinerja</div>
+                <h3 class="fw-bold text-dark mb-0" id="modal-detail-real-predikat">-</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Form Input Realisasi -->
+  <div class="modal fade" id="modal-realisasi-form" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Input Capaian Realisasi SKP</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="mb-3">
+            <label class="form-label fw-bold small">Pilih Sasaran Kerja Pegawai (SKP) <span class="text-danger">*</span></label>
+            <select class="form-select form-select-sm" id="modal-real-target">
+              <option value="">-- Pilih Target SKP Pegawai --</option>
+            </select>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold small">Realisasi Output / Volume <span class="text-danger">*</span></label>
+              <input type="number" class="form-control form-control-sm" id="modal-real-output" value="1">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold small">Realisasi Kualitas / Mutu (%) <span class="text-danger">*</span></label>
+              <input type="number" class="form-control form-control-sm" id="modal-real-mutu" value="100">
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold small">Realisasi Waktu Pelaksanaan <span class="text-danger">*</span></label>
+              <input type="number" class="form-control form-control-sm" id="modal-real-waktu" value="1">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold small">Realisasi Anggaran Biaya (Rp)</label>
+              <input type="number" class="form-control form-control-sm" id="modal-real-biaya" value="0">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-save-realisasi">
+            <i class="fas fa-save me-1"></i>Simpan Realisasi SKP
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

@@ -1,0 +1,356 @@
+<style>
+  .payroll-potongan .card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem;
+  }
+  .payroll-potongan .table th {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+  }
+  .payroll-potongan .table td {
+    vertical-align: middle;
+    font-size: 0.85rem;
+  }
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+    #potongan-print-area, #potongan-print-area * {
+      visibility: visible;
+    }
+    #potongan-print-area {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      background: white !important;
+      color: black !important;
+      padding: 15px;
+    }
+    .no-print {
+      display: none !important;
+    }
+  }
+</style>
+
+<template>
+  <div class="payroll-potongan container-fluid py-3">
+    <!-- Header -->
+    <div class="row mb-3 align-items-center">
+      <div class="col-md-6">
+        <h4 class="mb-1 text-danger fw-bold">
+          <i class="fas fa-user-clock me-2"></i>Rekap Potongan Absensi & Keterlambatan
+        </h4>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0 small">
+            <li class="breadcrumb-item"><a href="#">Payroll</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Potongan Kehadiran</li>
+          </ol>
+        </nav>
+      </div>
+      <div class="col-md-6 text-md-end mt-2 mt-md-0">
+        <button class="btn btn-outline-secondary btn-sm me-1" id="btn-print-potongan">
+          <i class="fas fa-print me-1"></i>Cetak Rekap
+        </button>
+        <button class="btn btn-outline-primary btn-sm" id="btn-refresh-potongan">
+          <i class="fas fa-sync-alt me-1"></i>Muat Ulang
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card shadow-sm mb-3">
+      <div class="card-body p-3">
+        <div class="row g-2 align-items-center">
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label small fw-semibold mb-1">Tanggal Mulai</label>
+            <input type="date" class="form-control form-control-sm" id="pot-start-date">
+          </div>
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label small fw-semibold mb-1">Tanggal Selesai</label>
+            <input type="date" class="form-control form-control-sm" id="pot-end-date">
+          </div>
+          <div class="col-md-4 col-sm-8">
+            <label class="form-label small fw-semibold mb-1">Unit / Bagian</label>
+            <select class="form-select form-select-sm" id="pot-filter-bagian">
+              <option value="">-- Seluruh Bagian / Unit Kerja --</option>
+            </select>
+          </div>
+          <div class="col-md-2 col-sm-4 text-md-start mt-auto pt-2">
+            <button class="btn btn-danger btn-sm w-100" id="btn-filter-potongan">
+              <i class="fas fa-search me-1"></i>Hitung Potongan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="potongan-print-area">
+      <!-- Kop Cetak -->
+      <div class="d-none d-print-block text-center border-bottom pb-2 mb-3">
+        <h4 class="fw-bold mb-0">RUMAH SAKIT UMUM DAERAH</h4>
+        <div class="small text-muted">LAPORAN REKAPITULASI PEMOTONGAN GAJI KETERLAMBATAN & ABSENSI</div>
+        <div class="small fw-semibold mt-1">RENTANG TANGGAL: <span class="print-range-label">-</span></div>
+      </div>
+
+      <!-- Summary KPI Cards -->
+      <div class="row g-3 mb-3">
+        <div class="col-sm-6 col-xl-3">
+          <div class="card border-start border-warning border-4 shadow-sm h-100">
+            <div class="card-body p-3">
+              <div class="text-uppercase text-muted small fw-semibold">Pegawai Terkena Denda</div>
+              <h4 class="mb-0 fw-bold text-dark mt-1" id="kpi-pot-pegawai">0</h4>
+              <div class="small text-muted mt-1">Karyawan tidak disiplin</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="card border-start border-danger border-4 shadow-sm h-100">
+            <div class="card-body p-3">
+              <div class="text-uppercase text-muted small fw-semibold">Total Keterlambatan</div>
+              <h4 class="mb-0 fw-bold text-danger mt-1" id="kpi-pot-menit">0 Menit</h4>
+              <div class="small text-muted mt-1">Akumulasi THPJK</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="card border-start border-dark border-4 shadow-sm h-100">
+            <div class="card-body p-3">
+              <div class="text-uppercase text-muted small fw-semibold">Total Alpa / Mangkir</div>
+              <h4 class="mb-0 fw-bold text-dark mt-1" id="kpi-pot-alpa">0 Hari</h4>
+              <div class="small text-muted mt-1">Tanpa keterangan absensi</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="card border-start border-danger border-4 shadow-sm h-100">
+            <div class="card-body p-3">
+              <div class="text-uppercase text-muted small fw-semibold">Total Nominal Denda</div>
+              <h4 class="mb-0 fw-bold text-danger mt-1" id="kpi-pot-nominal">Rp 0</h4>
+              <div class="small text-muted mt-1">Diproses ke slip gaji</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table Potongan -->
+      <div class="card shadow-sm mb-3">
+        <div class="card-header bg-light py-2 px-3 fw-bold small text-dark d-flex justify-content-between align-items-center">
+          <span><i class="fas fa-table me-2"></i>Daftar Potongan Disiplin Kehadiran Pegawai</span>
+          <span class="badge bg-danger" id="badge-range">Rentang: -</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover table-striped align-middle mb-0" id="table-potongan">
+              <thead>
+                <tr>
+                  <th style="width: 40px;" class="text-center">No</th>
+                  <th>Pegawai</th>
+                  <th>Unit / Bagian</th>
+                  <th class="text-center">Terlambat (Menit)</th>
+                  <th class="text-center">Pulang Cepat (PSW)</th>
+                  <th class="text-center">Alpa (Hari)</th>
+                  <th class="text-end text-danger">Denda Terlambat</th>
+                  <th class="text-end text-danger">Denda Alpa</th>
+                  <th class="text-end text-danger fw-bold">Total Potongan</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-potongan">
+                <tr>
+                  <td colspan="9" class="text-center py-4 text-muted">
+                    <i class="fas fa-spinner fa-spin fa-2x mb-2 d-block text-danger"></i>Mengkalkulasi potongan kehadiran...
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot class="table-light fw-bold">
+                <tr>
+                  <td colspan="3" class="text-center">TOTAL KESELURUHAN</td>
+                  <td class="text-center font-monospace" id="foot-pot-menit">0 mnt</td>
+                  <td class="text-center font-monospace" id="foot-pot-psw">0 mnt</td>
+                  <td class="text-center font-monospace" id="foot-pot-alpa">0 hari</td>
+                  <td class="text-end font-monospace text-danger" id="foot-denda-terlambat">Rp 0</td>
+                  <td class="text-end font-monospace text-danger" id="foot-denda-alpa">Rp 0</td>
+                  <td class="text-end font-monospace text-danger fw-bold" id="foot-total-potongan">Rp 0</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script type="module" defer>
+  import { httpGet } from './assets/js/core/http.js';
+
+  const formatRupiah = (val) => {
+    const num = parseFloat(val) || 0;
+    return 'Rp ' + num.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  };
+
+  const initModule = () => {
+    const sDate = document.getElementById('pot-start-date');
+    const eDate = document.getElementById('pot-end-date');
+    if (sDate) sDate.value = '2024-09-01';
+    if (eDate) eDate.value = '2024-09-30';
+
+    bindEvents();
+    loadBagianMaster();
+    loadPotonganData();
+  };
+
+  const loadBagianMaster = async () => {
+    try {
+      const res = await httpGet(`${config.api_url}/payroll/master`);
+      if (res && res.code === 200 && res.data) {
+        const sel = document.getElementById('pot-filter-bagian');
+        if (sel) {
+          sel.innerHTML = '<option value="">-- Seluruh Bagian / Unit Kerja --</option>';
+          (res.data.bagian || []).forEach(b => {
+            sel.innerHTML += `<option value="${b.KD_BAGIAN}">${b.BAGIAN}</option>`;
+          });
+        }
+      }
+    } catch (e) {
+      console.error('Error loading bagian master:', e);
+    }
+  };
+
+  const loadPotonganData = async () => {
+    const startDate = document.getElementById('pot-start-date')?.value || '2024-09-01';
+    const endDate = document.getElementById('pot-end-date')?.value || '2024-09-30';
+    const kdBagian = document.getElementById('pot-filter-bagian')?.value || '';
+
+    const tbody = document.getElementById('tbody-potongan');
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="9" class="text-center py-4 text-muted">
+            <i class="fas fa-spinner fa-spin fa-2x mb-2 d-block text-danger"></i>Mengkalkulasi potongan kehadiran...
+          </td>
+        </tr>`;
+    }
+
+    const rangeLabel = `${startDate} s/d ${endDate}`;
+    document.querySelectorAll('.print-range-label').forEach(el => el.textContent = rangeLabel);
+    const badge = document.getElementById('badge-range');
+    if (badge) badge.textContent = `Rentang: ${rangeLabel}`;
+
+    let url = `${config.api_url}/payroll/potongan-absensi?start_date=${startDate}&end_date=${endDate}`;
+    if (kdBagian) url += `&kd_bagian=${kdBagian}`;
+
+    try {
+      const res = await httpGet(url);
+      if (res && res.code === 200 && res.data) {
+        renderTable(res.data.rows || []);
+      } else {
+        renderTable([]);
+      }
+    } catch (e) {
+      console.error('Error fetching potongan data:', e);
+      if (tbody) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" class="text-center py-4 text-danger">
+              <i class="fas fa-exclamation-triangle fa-2x mb-2 d-block"></i>Gagal memuat potongan absensi.
+            </td>
+          </tr>`;
+      }
+    }
+  };
+
+  const renderTable = (rows) => {
+    const tbody = document.getElementById('tbody-potongan');
+    if (!tbody) return;
+
+    if (!rows || rows.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="9" class="text-center py-4 text-success">
+            <i class="fas fa-check-circle fa-2x mb-2 d-block"></i>
+            Tidak ada catatan keterlambatan atau pemotongan absensi pada periode ini. Tingkat disiplin 100%!
+          </td>
+        </tr>`;
+      resetKPI();
+      return;
+    }
+
+    let totMenit = 0;
+    let totPsw = 0;
+    let totAlpa = 0;
+    let totDendaTerlambat = 0;
+    let totDendaAlpa = 0;
+    let totPotongan = 0;
+
+    let html = '';
+    rows.forEach((r, idx) => {
+      const menit = parseInt(r.total_menit_terlambat) || 0;
+      const psw = parseInt(r.total_menit_psw) || 0;
+      const alpa = parseInt(r.total_hari_mangkir) || 0;
+      const dendaTerlambat = parseFloat(r.potongan_keterlambatan) || 0;
+      const dendaAlpa = parseFloat(r.potongan_alpa) || 0;
+      const totalPot = parseFloat(r.total_potongan_absensi) || 0;
+
+      totMenit += menit;
+      totPsw += psw;
+      totAlpa += alpa;
+      totDendaTerlambat += dendaTerlambat;
+      totDendaAlpa += dendaAlpa;
+      totPotongan += totalPot;
+
+      html += `
+        <tr>
+          <td class="text-center font-monospace">${idx + 1}</td>
+          <td>
+            <div class="fw-bold text-dark">${r.nama_pegawai || '-'}</div>
+            <div class="small text-muted font-monospace">${r.NIP || '-'}</div>
+          </td>
+          <td><span class="badge bg-light text-dark border">${r.nama_bagian || 'Umum'}</span></td>
+          <td class="text-center font-monospace">${menit > 0 ? `<span class="badge bg-warning text-dark">${menit} mnt</span>` : '0'}</td>
+          <td class="text-center font-monospace">${psw > 0 ? `<span class="badge bg-light text-dark border">${psw} mnt</span>` : '0'}</td>
+          <td class="text-center font-monospace">${alpa > 0 ? `<span class="badge bg-danger">${alpa} hari</span>` : '0'}</td>
+          <td class="text-end font-monospace text-danger">${formatRupiah(dendaTerlambat)}</td>
+          <td class="text-end font-monospace text-danger">${formatRupiah(dendaAlpa)}</td>
+          <td class="text-end font-monospace text-danger fw-bold">${formatRupiah(totalPot)}</td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+
+    // Update KPIs
+    document.getElementById('kpi-pot-pegawai').textContent = rows.length;
+    document.getElementById('kpi-pot-menit').textContent = `${totMenit} Menit`;
+    document.getElementById('kpi-pot-alpa').textContent = `${totAlpa} Hari`;
+    document.getElementById('kpi-pot-nominal').textContent = formatRupiah(totPotongan);
+
+    // Update Footers
+    document.getElementById('foot-pot-menit').textContent = `${totMenit} mnt`;
+    document.getElementById('foot-pot-psw').textContent = `${totPsw} mnt`;
+    document.getElementById('foot-pot-alpa').textContent = `${totAlpa} hari`;
+    document.getElementById('foot-denda-terlambat').textContent = formatRupiah(totDendaTerlambat);
+    document.getElementById('foot-denda-alpa').textContent = formatRupiah(totDendaAlpa);
+    document.getElementById('foot-total-potongan').textContent = formatRupiah(totPotongan);
+  };
+
+  const resetKPI = () => {
+    document.getElementById('kpi-pot-pegawai').textContent = '0';
+    document.getElementById('kpi-pot-menit').textContent = '0 Menit';
+    document.getElementById('kpi-pot-alpa').textContent = '0 Hari';
+    document.getElementById('kpi-pot-nominal').textContent = 'Rp 0';
+  };
+
+  const bindEvents = () => {
+    document.getElementById('btn-filter-potongan')?.addEventListener('click', loadPotonganData);
+    document.getElementById('btn-refresh-potongan')?.addEventListener('click', loadPotonganData);
+    document.getElementById('btn-print-potongan')?.addEventListener('click', () => window.print());
+  };
+
+  initModule();
+</script>

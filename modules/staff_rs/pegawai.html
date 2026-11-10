@@ -1,0 +1,896 @@
+<style>
+  #modal-form-pegawai .modal-dialog {
+    max-width: 680px;
+    margin: 1.5rem auto;
+  }
+  #modal-form-pegawai .modal-content {
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    box-shadow: 0 20px 35px -8px rgba(15, 23, 42, 0.18);
+    overflow: hidden;
+    background: #ffffff;
+  }
+  #modal-form-pegawai .modal-body {
+    max-height: calc(88vh - 120px);
+    overflow-y: auto;
+    padding: 1.15rem 1.25rem;
+  }
+  #modal-form-pegawai .modal-body::-webkit-scrollbar {
+    width: 6px;
+  }
+  #modal-form-pegawai .modal-body::-webkit-scrollbar-track {
+    background: #f8fafc;
+  }
+  #modal-form-pegawai .modal-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+  #modal-form-pegawai .modal-body::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+  #modal-form-pegawai .modal-footer {
+    border-top: 1px solid #edf2f7;
+    box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.03);
+    z-index: 10;
+  }
+  #modal-form-pegawai .form-section-card {
+    background: #f8fafc;
+    border: 1px solid #edf2f7;
+    border-radius: 10px;
+    padding: 0.9rem 1.1rem;
+    margin-bottom: 0.85rem;
+  }
+  #modal-form-pegawai .form-section-card:last-child {
+    margin-bottom: 0;
+  }
+  #modal-form-pegawai .form-label {
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 0.25rem;
+    letter-spacing: -0.01em;
+  }
+  #modal-form-pegawai .form-control,
+  #modal-form-pegawai .form-select {
+    font-size: 0.82rem;
+    border-radius: 6px;
+    border: 1px solid #d8e2ef;
+    padding: 0.38rem 0.65rem;
+    color: #1e293b;
+    background-color: #ffffff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  #modal-form-pegawai .form-control:focus,
+  #modal-form-pegawai .form-select:focus {
+    border-color: #2c7be5;
+    box-shadow: 0 0 0 3px rgba(44, 123, 229, 0.12);
+    outline: none;
+  }
+  #modal-form-pegawai .form-control.is-invalid,
+  #modal-form-pegawai .form-select.is-invalid {
+    border-color: #e63757;
+    box-shadow: 0 0 0 3px rgba(230, 55, 87, 0.15);
+  }
+  #modal-form-pegawai .form-control::placeholder {
+    color: #94a3b8;
+    font-size: 0.8rem;
+  }
+  #modal-form-pegawai textarea.form-control {
+    resize: none;
+  }
+  #modal-form-pegawai .section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.35rem;
+    margin-bottom: 0.65rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  #modal-form-pegawai .section-badge {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    background: rgba(44, 123, 229, 0.12);
+    font-size: 11px;
+    font-weight: 700;
+    color: #2c7be5;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #modal-form-pegawai .section-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #334155;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  .table-pegawai-wrapper th {
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    background-color: #f8fafc !important;
+  }
+</style>
+
+<script type="module" defer>
+  import { httpPost, httpGet } from './assets/js/core/http.js';
+  import { getFormEntries } from './assets/js/core/helpers.js';
+
+  let allPegawai = [];
+  let currentPage = 1;
+  const pageSize = 25;
+
+  const genderMap = { '1': 'Laki-laki', '2': 'Perempuan' };
+  const formatTanpaData = (val) => (!val || val === '-' || val === '0000-00-00') ? '<span class="text-muted">-</span>' : val;
+
+  // --- CLIENT-SIDE LOCATION CACHE ---
+  const locationCache = { kabupaten: {}, kecamatan: {}, kelurahan: {} };
+
+  const getCachedKabupaten = async (kdProv) => {
+    if (!kdProv) return [];
+    if (!locationCache.kabupaten[kdProv]) {
+      const rs = await httpGet(`${config.api_url}/pegawai/kabupaten?kd_provinsi=${kdProv}`);
+      locationCache.kabupaten[kdProv] = (rs && rs.code === 200 && Array.isArray(rs.data)) ? rs.data : [];
+    }
+    return locationCache.kabupaten[kdProv];
+  };
+
+  const getCachedKecamatan = async (kdKab) => {
+    if (!kdKab) return [];
+    if (!locationCache.kecamatan[kdKab]) {
+      const rs = await httpGet(`${config.api_url}/pegawai/kecamatan?kd_kabupaten=${kdKab}`);
+      locationCache.kecamatan[kdKab] = (rs && rs.code === 200 && Array.isArray(rs.data)) ? rs.data : [];
+    }
+    return locationCache.kecamatan[kdKab];
+  };
+
+  const getCachedKelurahan = async (kdKec) => {
+    if (!kdKec) return [];
+    if (!locationCache.kelurahan[kdKec]) {
+      const rs = await httpGet(`${config.api_url}/pegawai/kelurahan?kd_kecamatan=${kdKec}`);
+      locationCache.kelurahan[kdKec] = (rs && rs.code === 200 && Array.isArray(rs.data)) ? rs.data : [];
+    }
+    return locationCache.kelurahan[kdKec];
+  };
+
+  // --- MODAL HELPER (Bootstrap 5) ---
+  const getModal = () => {
+    const el = document.getElementById('modal-form-pegawai');
+    return bootstrap.Modal.getOrCreateInstance(el);
+  };
+
+  // --- 1. LOAD LIST (BACK-END SEARCH via ?keyword=) ---
+  const getKeyword = () => document.getElementById('input-search-pegawai')?.value.trim() || '';
+
+  const loadData = async (keyword = getKeyword()) => {
+    const tbody = document.getElementById('table-pegawai');
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2 text-primary"></span>Memuat data pegawai...</td></tr>';
+    }
+
+    const url = keyword
+      ? `${config.api_url}/pegawai/list?keyword=${encodeURIComponent(keyword)}`
+      : `${config.api_url}/pegawai/list`;
+    const rs = await httpGet(url);
+
+    if (rs && (rs.code === 200 || rs.code === '200') && Array.isArray(rs.data)) {
+      allPegawai = rs.data;
+    } else {
+      allPegawai = [];
+    }
+    renderTablePage(1);
+  };
+
+  // Helper format tanggal dari YYYY-MM-DD ke DD-MM-YYYY untuk antarmuka
+  const formatTglIndo = (tgl) => {
+    if (!tgl || tgl === '0000-00-00' || tgl === '-' || tgl === 'null') return '-';
+    const parts = String(tgl).trim().split('-');
+    if (parts.length === 3 && parts[0].length === 4) {
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return tgl;
+  };
+
+  // --- 2. RENDER TABLE ---
+  const renderTablePage = (page) => {
+    currentPage = page;
+    const tbody = document.getElementById('table-pegawai');
+    if (!tbody) return;
+
+    const total = allPegawai.length;
+    const totalBadge = document.getElementById('total-badge');
+    if (totalBadge) totalBadge.innerText = `${total} pegawai aktif`;
+
+    if (total === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4"><span class="fas fa-info-circle me-1 text-secondary"></span>Data pegawai tidak ditemukan.</td></tr>';
+      const nav = document.getElementById('pagination-nav');
+      if (nav) nav.innerHTML = '';
+      return;
+    }
+
+    const start = (page - 1) * pageSize;
+    const pageItems = allPegawai.slice(start, start + pageSize);
+
+    let rowsHtml = '';
+    pageItems.forEach((p, index) => {
+      const itemNo = start + index + 1;
+      const cleanNama = (p.NAMA || '').replace(/"/g, '&quot;');
+      const hpText = p.HANDPHONE ? `<div><span class="fas fa-phone-alt text-primary me-1" style="font-size:0.7rem;"></span><span class="fw-medium">${p.HANDPHONE}</span></div>` : '<div class="text-muted fs--2">No. HP: -</div>';
+      const emailText = p.EMAIL ? `<div><span class="fas fa-envelope text-info me-1" style="font-size:0.7rem;"></span><span class="text-muted" style="font-size:0.78rem;">${p.EMAIL}</span></div>` : '<div class="text-muted fs--2">Email: -</div>';
+      const nikBadge = p.NO_IDENTITAS ? `<span class="badge badge-subtle-success ms-1" style="font-size:0.7rem;">NIK: ${p.NO_IDENTITAS}</span>` : '';
+
+      rowsHtml += `
+        <tr>
+          <td class="text-center text-muted fs--1">${itemNo}</td>
+          <td>
+            <div class="fw-semibold text-dark">${p.NAMA}</div>
+            <div class="text-muted fs--1 mt-1 d-flex align-items-center flex-wrap gap-1">
+              <span>NIP: ${p.NIP || '-'}</span>
+              ${nikBadge}
+            </div>
+          </td>
+          <td>${genderMap[p.JENIS_KELAMIN] || '-'}</td>
+          <td>
+            <div class="fw-medium">${p.TEMPAT_LAHIR || '-'}</div>
+            <div class="text-muted fs--1">${formatTglIndo(p.TANGGAL_LAHIR)}</div>
+          </td>
+          <td><small class="text-dark d-inline-block text-truncate" style="max-width: 220px;" title="${p.ALAMAT || ''}">${p.ALAMAT || '-'}</small></td>
+          <td>
+            ${hpText}
+            ${emailText}
+          </td>
+          <td class="text-center text-nowrap">
+            <button type="button" class="btn btn-sm btn-falcon-warning px-2 py-1 me-1" title="Ubah Data Pegawai (Edit)" onclick="editPegawai('${p.ID_PEGAWAI}')">
+              <span class="fas fa-edit"></span>
+            </button>
+            <button type="button" class="btn btn-sm btn-falcon-danger px-2 py-1" title="Hapus / Nonaktifkan Data Pegawai (Soft Delete)" onclick="hapusPegawai('${p.ID_PEGAWAI}', '${cleanNama}')">
+              <span class="fas fa-trash"></span>
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = rowsHtml;
+    renderPaginationNav();
+  };
+
+  const renderPaginationNav = () => {
+    const nav = document.getElementById('pagination-nav');
+    if (!nav) return;
+    const totalPages = Math.ceil(allPegawai.length / pageSize);
+    if (totalPages <= 1) { nav.innerHTML = ''; return; }
+
+    let html = `<ul class="pagination pagination-sm mb-0">`;
+    html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><button class="page-link" onclick="goToPage(${currentPage - 1})">&laquo;</button></li>`;
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+        html += `<li class="page-item ${i === currentPage ? 'active' : ''}"><button class="page-link" onclick="goToPage(${i})">${i}</button></li>`;
+      } else if (i === currentPage - 3 || i === currentPage + 3) {
+        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      }
+    }
+    html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><button class="page-link" onclick="goToPage(${currentPage + 1})">&raquo;</button></li></ul>`;
+    nav.innerHTML = html;
+  };
+
+  window.goToPage = (page) => renderTablePage(page);
+
+  // --- SEARCH (debounce 350ms) ---
+  let searchTimer = null;
+  window.onSearchInput = () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => loadData(getKeyword()), 350);
+  };
+  window.handleSearch = () => {
+    clearTimeout(searchTimer);
+    loadData(getKeyword());
+  };
+
+  // --- 3. MASTER DROPDOWNS ---
+  const loadMasterDropdowns = async () => {
+    try {
+      const resAgama = await httpGet(`${config.api_url}/pegawai/agama`);
+      if (resAgama && resAgama.code === 200 && Array.isArray(resAgama.data)) {
+        const el = document.getElementById('select-agama');
+        if (el) {
+          el.innerHTML = '<option value="">Pilih agama</option>' +
+            resAgama.data.map(a => `<option value="${a.KD_AGAMA}">${a.AGAMA}</option>`).join('');
+        }
+      }
+      const resProv = await httpGet(`${config.api_url}/pegawai/provinsi`);
+      if (resProv && resProv.code === 200 && Array.isArray(resProv.data)) {
+        const el = document.getElementById('select-provinsi');
+        if (el) {
+          el.innerHTML = '<option value="">Pilih provinsi</option>' +
+            resProv.data.map(p => `<option value="${p.KD_PROVINSI}">${p.PROVINSI}</option>`).join('');
+        }
+      }
+    } catch (e) {
+      console.error('Error loading master dropdowns:', e);
+    }
+  };
+
+  const fillSelect = (id, list, kdKey, namaKey, placeholder) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = `<option value="">${placeholder}</option>` +
+      list.map(x => `<option value="${x[kdKey]}">${x[namaKey]}</option>`).join('');
+  };
+
+  window.onProvinsiChange = async (kdProvinsi) => {
+    fillSelect('select-kecamatan', [], '', '', 'Pilih kabupaten dahulu');
+    fillSelect('select-kelurahan', [], '', '', 'Pilih kecamatan dahulu');
+    if (!kdProvinsi) {
+      fillSelect('select-kabupaten', [], '', '', 'Pilih provinsi dahulu');
+      return;
+    }
+    fillSelect('select-kabupaten', [], '', '', 'Memuat kabupaten...');
+    const listKab = await getCachedKabupaten(kdProvinsi);
+    fillSelect('select-kabupaten', listKab, 'KD_KABUPATEN', 'KABUPATEN', 'Pilih kabupaten / kota');
+  };
+
+  window.onKabupatenChange = async (kdKabupaten) => {
+    fillSelect('select-kelurahan', [], '', '', 'Pilih kecamatan dahulu');
+    if (!kdKabupaten) {
+      fillSelect('select-kecamatan', [], '', '', 'Pilih kabupaten dahulu');
+      return;
+    }
+    fillSelect('select-kecamatan', [], '', '', 'Memuat kecamatan...');
+    const listKec = await getCachedKecamatan(kdKabupaten);
+    fillSelect('select-kecamatan', listKec, 'KD_KECAMATAN', 'KECAMATAN', 'Pilih kecamatan');
+  };
+
+  window.onKecamatanChange = async (kdKecamatan) => {
+    if (!kdKecamatan) {
+      fillSelect('select-kelurahan', [], '', '', 'Pilih kecamatan dahulu');
+      return;
+    }
+    fillSelect('select-kelurahan', [], '', '', 'Memuat kelurahan...');
+    const listKel = await getCachedKelurahan(kdKecamatan);
+    fillSelect('select-kelurahan', listKel, 'KD_KELURAHAN', 'KELURAHAN', 'Pilih kelurahan / desa');
+  };
+
+  // --- 4. MODAL: TAMBAH & UBAH ---
+  window.showModalTambah = () => {
+    const formEl = document.getElementById('form-pegawai');
+    if (formEl) {
+      formEl.reset();
+      formEl.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    }
+    document.getElementById('input-id-pegawai').value = '';
+    document.getElementById('modal-title').innerText = 'Tambah Data Pegawai';
+    document.getElementById('modal-subtitle').innerText = 'Lengkapi formulir di bawah ini untuk mendaftarkan pegawai baru ke sistem RS.';
+    document.getElementById('btn-simpan-pegawai').innerHTML = '<span class="fas fa-save me-1"></span> Simpan Data';
+    
+    const inputTgl = document.getElementById('input-tanggal-lahir');
+    if (inputTgl) inputTgl.value = '';
+    const hiddenDate = document.getElementById('native-date-picker-hidden');
+    if (hiddenDate) hiddenDate.value = '';
+    if (typeof setupTanggalLahirInput === 'function') setupTanggalLahirInput();
+
+    fillSelect('select-kabupaten', [], '', '', 'Pilih provinsi dahulu');
+    fillSelect('select-kecamatan', [], '', '', 'Pilih kabupaten dahulu');
+    fillSelect('select-kelurahan', [], '', '', 'Pilih kecamatan dahulu');
+    getModal().show();
+  };
+
+  window.closeModalForm = () => getModal().hide();
+
+  window.editPegawai = async (id) => {
+    const p = allPegawai.find(item => String(item.ID_PEGAWAI) === String(id));
+    if (!p) {
+      alert('Data pegawai tidak ditemukan.');
+      return;
+    }
+
+    const formEl = document.getElementById('form-pegawai');
+    if (formEl) {
+      formEl.reset();
+      formEl.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    }
+
+    document.getElementById('modal-title').innerText = 'Ubah Data Pegawai';
+    document.getElementById('modal-subtitle').innerText = `Perbarui rincian informasi untuk: ${p.NAMA || ''} (ID: ${p.ID_PEGAWAI})`;
+    document.getElementById('btn-simpan-pegawai').innerHTML = '<span class="fas fa-check me-1"></span> Perbarui Data';
+
+    const setVal = (field, val) => {
+      const el = document.querySelector(`[data-field="${field}"]`);
+      if (el) el.value = val ?? '';
+    };
+
+    document.getElementById('input-id-pegawai').value = p.ID_PEGAWAI;
+    setVal('NAMA', p.NAMA);
+    setVal('NO_IDENTITAS', p.NO_IDENTITAS);
+    setVal('NIP', p.NIP);
+    setVal('JENIS_KELAMIN', p.JENIS_KELAMIN);
+    setVal('TEMPAT_LAHIR', p.TEMPAT_LAHIR);
+
+    const tglDisplay = (p.TANGGAL_LAHIR && p.TANGGAL_LAHIR !== '0000-00-00') ? formatTglIndo(p.TANGGAL_LAHIR) : '';
+    setVal('TANGGAL_LAHIR', tglDisplay);
+    const hiddenDate = document.getElementById('native-date-picker-hidden');
+    if (hiddenDate) {
+      hiddenDate.value = (p.TANGGAL_LAHIR && p.TANGGAL_LAHIR !== '0000-00-00') ? p.TANGGAL_LAHIR : '';
+    }
+    if (typeof setupTanggalLahirInput === 'function') setupTanggalLahirInput();
+
+    setVal('KD_AGAMA', p.KD_AGAMA);
+    setVal('HANDPHONE', p.HANDPHONE);
+    setVal('EMAIL', p.EMAIL);
+    setVal('ALAMAT', p.ALAMAT);
+
+    getModal().show();
+
+    // Cascading lokasi dari data pegawai
+    const selProv = document.getElementById('select-provinsi');
+    if (selProv) selProv.value = p.KD_PROVINSI || '';
+
+    if (p.KD_PROVINSI) {
+      const listKab = await getCachedKabupaten(p.KD_PROVINSI);
+      fillSelect('select-kabupaten', listKab, 'KD_KABUPATEN', 'KABUPATEN', 'Pilih kabupaten / kota');
+      const selKab = document.getElementById('select-kabupaten');
+      if (selKab) selKab.value = p.KD_KABUPATEN || '';
+    } else {
+      fillSelect('select-kabupaten', [], '', '', 'Pilih provinsi dahulu');
+    }
+
+    if (p.KD_KABUPATEN) {
+      const listKec = await getCachedKecamatan(p.KD_KABUPATEN);
+      fillSelect('select-kecamatan', listKec, 'KD_KECAMATAN', 'KECAMATAN', 'Pilih kecamatan');
+      const selKec = document.getElementById('select-kecamatan');
+      if (selKec) selKec.value = p.KD_KECAMATAN || '';
+    } else {
+      fillSelect('select-kecamatan', [], '', '', 'Pilih kabupaten dahulu');
+    }
+
+    if (p.KD_KECAMATAN) {
+      const listKel = await getCachedKelurahan(p.KD_KECAMATAN);
+      fillSelect('select-kelurahan', listKel, 'KD_KELURAHAN', 'KELURAHAN', 'Pilih kelurahan / desa');
+      const selKel = document.getElementById('select-kelurahan');
+      if (selKel) selKel.value = p.KD_KELURAHAN || '';
+    } else {
+      fillSelect('select-kelurahan', [], '', '', 'Pilih kecamatan dahulu');
+    }
+  };
+
+  // --- 5. SIMPAN (INSERT / UPDATE) DENGAN VALIDASI LENGKAP & PARAMETER JELAS ---
+  window.simpanPegawai = async () => {
+    const formEl = document.getElementById('form-pegawai');
+    const data = getFormEntries(formEl);
+
+    const idPegawai = document.getElementById('input-id-pegawai').value.trim();
+    const isEdit = idPegawai !== '';
+    if (isEdit) data.ID_PEGAWAI = idPegawai;
+
+    // Pastikan nilai spesifik diambil langsung dari DOM untuk menjaga konsistensi data
+    const inputNama = formEl.querySelector('[data-field="NAMA"]');
+    const inputNik = formEl.querySelector('[data-field="NO_IDENTITAS"]');
+    const inputNip = formEl.querySelector('[data-field="NIP"]');
+    const inputHp = formEl.querySelector('[data-field="HANDPHONE"]');
+    const inputEmail = formEl.querySelector('[data-field="EMAIL"]');
+
+    const nama = inputNama?.value.trim() || '';
+    const nik = inputNik?.value.trim().replace(/[^0-9]/g, '') || '';
+    const nip = inputNip?.value.trim() || '';
+    const hp = inputHp?.value.trim() || '';
+    const email = inputEmail?.value.trim() || '';
+
+    data.NAMA = nama;
+    data.NO_IDENTITAS = nik;
+    data.NIP = nip;
+    data.HANDPHONE = hp;
+    data.EMAIL = email;
+
+    // Reset visual error state
+    formEl.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+
+    // Parameter Validasi 1: Nama Lengkap minimal 3 karakter
+    if (!nama || nama.length < 3) {
+      if (inputNama) inputNama.classList.add('is-invalid');
+      alert('Parameter Validasi:\nNama lengkap pegawai wajib diisi minimal 3 karakter!');
+      inputNama?.focus();
+      return;
+    }
+
+    // Parameter Validasi 2: Minimal dan panjang NIK (16 digit angka) jika diisi
+    if (nik && nik.length !== 16) {
+      if (inputNik) inputNik.classList.add('is-invalid');
+      alert('Parameter Validasi:\nNIK / No. KTP harus berupa 16 digit angka sesuai standar kependudukan (Panjang saat ini: ' + nik.length + ' digit)!');
+      inputNik?.focus();
+      return;
+    }
+
+    // Parameter Validasi 3: Format email valid jika diisi
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      if (inputEmail) inputEmail.classList.add('is-invalid');
+      alert('Parameter Validasi:\nFormat alamat email tidak valid (Contoh: nama@rumahsakit.com)!');
+      inputEmail?.focus();
+      return;
+    }
+
+    // Parameter Validasi 4: Nomor telepon/kontak minimal 9 digit jika diisi
+    if (hp && hp.length < 9) {
+      if (inputHp) inputHp.classList.add('is-invalid');
+      alert('Parameter Validasi:\nNomor kontak handphone minimal 9 digit angka (Contoh: 081234567890)!');
+      inputHp?.focus();
+      return;
+    }
+
+    // Parameter Validasi 5: Format Tanggal Lahir (DD-MM-YYYY) jika diisi
+    const inputTglLahir = document.getElementById('input-tanggal-lahir');
+    const rawTgl = inputTglLahir?.value.trim() || '';
+    let normalizedTgl = null;
+
+    if (rawTgl) {
+      const mDmy = rawTgl.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+      const mYmd = rawTgl.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+      if (mDmy) {
+        const d = parseInt(mDmy[1], 10);
+        const m = parseInt(mDmy[2], 10);
+        const y = parseInt(mDmy[3], 10);
+        if (d < 1 || d > 31 || m < 1 || m > 12 || y < 1900 || y > 2100) {
+          if (inputTglLahir) inputTglLahir.classList.add('is-invalid');
+          alert('Parameter Validasi:\nTanggal lahir tidak valid! Pastikan hari (01-31), bulan (01-12), dan tahun (4 digit) sesuai urutan DD-MM-YYYY (contoh: 17-08-1995).');
+          inputTglLahir?.focus();
+          return;
+        }
+        const sD = String(d).padStart(2, '0');
+        const sM = String(m).padStart(2, '0');
+        normalizedTgl = `${y}-${sM}-${sD}`;
+      } else if (mYmd) {
+        const y = parseInt(mYmd[1], 10);
+        const m = parseInt(mYmd[2], 10);
+        const d = parseInt(mYmd[3], 10);
+        if (d < 1 || d > 31 || m < 1 || m > 12 || y < 1900 || y > 2100) {
+          if (inputTglLahir) inputTglLahir.classList.add('is-invalid');
+          alert('Parameter Validasi:\nTanggal lahir tidak valid!');
+          inputTglLahir?.focus();
+          return;
+        }
+        const sD = String(d).padStart(2, '0');
+        const sM = String(m).padStart(2, '0');
+        normalizedTgl = `${y}-${sM}-${sD}`;
+      } else {
+        if (inputTglLahir) inputTglLahir.classList.add('is-invalid');
+        alert('Parameter Validasi:\nFormat tanggal lahir harus dimulai dengan urutan Hari-Bulan-Tahun (DD-MM-YYYY).\nContoh: 17-08-1995');
+        inputTglLahir?.focus();
+        return;
+      }
+    }
+
+    data.TANGGAL_LAHIR = normalizedTgl;
+
+    const endpoint = isEdit ? `${config.api_url}/pegawai/update` : `${config.api_url}/pegawai/save`;
+    const btn = document.getElementById('btn-simpan-pegawai');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Menyimpan...';
+
+    try {
+      const rs = await httpPost(endpoint, data);
+      btn.disabled = false;
+      btn.innerHTML = isEdit ? '<span class="fas fa-check me-1"></span> Perbarui Data' : '<span class="fas fa-save me-1"></span> Simpan Data';
+
+      if (rs && (rs.code === 200 || rs.code === '200')) {
+        alert(isEdit ? 'Data pegawai berhasil diperbarui!' : 'Data pegawai berhasil disimpan!');
+        window.closeModalForm();
+        await loadData();
+      } else {
+        const errMsg = rs?.message || (rs?.data && rs.data.message) || rs?.status || 'Terjadi kesalahan sistem saat menyimpan data.';
+        alert('Gagal Menyimpan Data Pegawai:\n' + errMsg);
+      }
+    } catch (err) {
+      btn.disabled = false;
+      btn.innerHTML = isEdit ? '<span class="fas fa-check me-1"></span> Perbarui Data' : '<span class="fas fa-save me-1"></span> Simpan Data';
+      alert('Terjadi kesalahan jaringan/sistem:\n' + (err.message || err));
+    }
+  };
+
+  // --- 6. SOFT DELETE (NONAKTIFKAN PEGAWAI) ---
+  window.hapusPegawai = async (id, nama) => {
+    if (!confirm(`Apakah Anda yakin ingin menonaktifkan data pegawai:\n\nNama : ${nama}\nID   : ${id}?\n\nCatatan: Pegawai akan dinonaktifkan dari daftar aktif (soft delete) tanpa menghapus rekaman riwayat.`)) {
+      return;
+    }
+
+    try {
+      const rs = await httpPost(`${config.api_url}/pegawai/delete`, { ID_PEGAWAI: id });
+      if (rs && (rs.code === 200 || rs.code === '200')) {
+        alert(`Data pegawai "${nama}" berhasil dinonaktifkan.`);
+        await loadData();
+      } else {
+        const errMsg = rs?.message || (rs?.data && rs.data.message) || rs?.status || 'Terjadi kesalahan saat menonaktifkan pegawai.';
+        alert('Gagal Menonaktifkan Data Pegawai:\n' + errMsg);
+      }
+    } catch (err) {
+      alert('Terjadi kesalahan saat menghapus pegawai:\n' + (err.message || err));
+    }
+  };
+
+  // --- 5. INITIALIZER INPUT TANGGAL LAHIR (DD-MM-YYYY) ---
+  const setupTanggalLahirInput = () => {
+    const inputTgl = document.getElementById('input-tanggal-lahir');
+    const btnPick = document.getElementById('btn-pick-tanggal-lahir');
+    const hiddenDate = document.getElementById('native-date-picker-hidden');
+
+    if (!inputTgl) return;
+    if (inputTgl._hasDateListener) return;
+    inputTgl._hasDateListener = true;
+
+    // Masker otomatis untuk format DD-MM-YYYY saat pengguna mengetik angka
+    inputTgl.addEventListener('input', (e) => {
+      let val = e.target.value.replace(/[^0-9]/g, '');
+      if (val.length > 8) val = val.substring(0, 8);
+      let formatted = '';
+      if (val.length > 4) {
+        formatted = `${val.substring(0, 2)}-${val.substring(2, 4)}-${val.substring(4)}`;
+      } else if (val.length > 2) {
+        formatted = `${val.substring(0, 2)}-${val.substring(2)}`;
+      } else {
+        formatted = val;
+      }
+      e.target.value = formatted;
+
+      // Sinkronkan ke date picker tersembunyi jika format sudah lengkap 8 digit
+      if (val.length === 8 && hiddenDate) {
+        const d = val.substring(0, 2);
+        const m = val.substring(2, 4);
+        const y = val.substring(4, 8);
+        hiddenDate.value = `${y}-${m}-${d}`;
+      }
+    });
+
+    if (btnPick && hiddenDate) {
+      btnPick.addEventListener('click', () => {
+        const cur = inputTgl.value.trim();
+        const mDmy = cur.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+        if (mDmy) {
+          hiddenDate.value = `${mDmy[3]}-${mDmy[2]}-${mDmy[1]}`;
+        }
+        if (typeof hiddenDate.showPicker === 'function') {
+          hiddenDate.showPicker();
+        } else {
+          hiddenDate.focus();
+        }
+      });
+
+      hiddenDate.addEventListener('change', () => {
+        if (hiddenDate.value) {
+          const parts = hiddenDate.value.split('-');
+          if (parts.length === 3) {
+            // YYYY-MM-DD -> DD-MM-YYYY
+            inputTgl.value = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            inputTgl.classList.remove('is-invalid');
+          }
+        }
+      });
+    }
+  };
+
+  loadMasterDropdowns();
+  loadData();
+  setupTanggalLahirInput();
+
+  document.pegawai = { loadData };
+  document.pegawai_direktori = { loadData };
+  window.pegawai_direktori = { loadData };
+  document.perawat = document.pegawai; // kompatibilitas ke belakang
+</script>
+
+<template>
+<div id="pegawai-entries" class="m-0 p-0 mt-1">
+
+  <!-- CARD DAFTAR PEGAWAI -->
+  <div class="card mb-3 border-0 shadow-sm">
+    <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center flex-wrap gap-2 border-bottom">
+      <div class="d-flex align-items-center gap-2">
+        <span class="fas fa-user-nurse text-primary fs-0"></span>
+        <h5 class="card-title mb-0 fs-0 fw-bold">Data Pegawai</h5>
+        <span id="total-badge" class="badge badge-subtle-primary ms-1">Memuat data...</span>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <div class="input-group input-group-sm" style="width: 270px;">
+          <input type="text" id="input-search-pegawai" class="form-control" placeholder="Cari nama / NIP / NIK / alamat..."
+                 oninput="onSearchInput()" onkeydown="if (event.key === 'Enter') handleSearch()">
+          <button class="btn btn-outline-secondary" type="button" onclick="handleSearch()" title="Cari Pegawai">
+            <span class="fas fa-search"></span>
+          </button>
+        </div>
+        <button class="btn btn-sm btn-primary px-3 shadow-none fw-semibold" onclick="showModalTambah()">
+          <span class="fas fa-plus me-1"></span> Tambah Pegawai
+        </button>
+      </div>
+    </div>
+
+    <div class="card-body p-0">
+      <div class="table-responsive table-pegawai-wrapper">
+        <table class="table table-hover table-striped align-middle mb-0">
+          <thead class="table-light border-bottom">
+            <tr class="fs--1 text-dark">
+              <th class="text-center" style="width: 45px;">No</th>
+              <th style="min-width: 200px;">Nama &amp; NIP / NIK</th>
+              <th style="width: 110px;">Jenis Kelamin</th>
+              <th style="min-width: 170px;">Tempat, Tanggal Lahir</th>
+              <th style="min-width: 180px;">Alamat Domisili</th>
+              <th style="min-width: 180px;">Kontak (HP &amp; Email)</th>
+              <th class="text-center" style="width: 100px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="table-pegawai">
+            <tr><td colspan="7" class="text-center py-4 text-muted">Memuat data pegawai...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- FOOTER TABEL: PAGINASI -->
+    <div class="card-footer bg-white py-2 px-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <small class="text-muted fs--1">
+        Menampilkan 25 entri per halaman.
+      </small>
+      <nav id="pagination-nav" aria-label="Navigasi Halaman Pegawai"></nav>
+    </div>
+  </div>
+
+  <!-- MODAL FORM TAMBAH / UBAH PEGAWAI -->
+  <div class="modal fade" id="modal-form-pegawai" tabindex="-1" aria-labelledby="modal-title" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+
+        <!-- HEADER MODAL -->
+        <div class="modal-header bg-light px-4 py-3 border-bottom d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2">
+            <div class="avatar avatar-m bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 34px; height: 34px;">
+              <span class="fas fa-id-card" style="font-size: 0.95rem;"></span>
+            </div>
+            <div>
+              <h6 class="modal-title fw-bold text-dark mb-0" id="modal-title" style="font-size: 0.98rem;">Tambah Data Pegawai</h6>
+              <small class="text-muted d-block" id="modal-subtitle" style="font-size: 0.78rem;">Lengkapi formulir di bawah ini untuk mendaftarkan pegawai baru ke sistem RS.</small>
+            </div>
+          </div>
+          <button type="button" class="btn-close" onclick="closeModalForm()" aria-label="Tutup"></button>
+        </div>
+
+        <!-- BODY MODAL -->
+        <div class="modal-body">
+          <form id="form-pegawai">
+            <input type="hidden" data-type="text" data-field="ID_PEGAWAI" id="input-id-pegawai">
+
+            <!-- SEKSI 1: IDENTITAS & KONTAK (ATAS) -->
+            <div class="form-section-card">
+              <div class="section-header">
+                <span class="section-badge">1</span>
+                <span class="section-title">Identitas &amp; Kontak Pegawai</span>
+              </div>
+              <div class="row g-2">
+                <div class="col-sm-6">
+                  <label class="form-label">
+                    Nama Lengkap <span class="text-danger">*</span>
+                  </label>
+                  <input type="text" data-type="text" class="form-control" data-field="NAMA" id="input-nama" placeholder="Nama lengkap &amp; gelar" required tabindex="1">
+                  <div class="form-text text-muted" style="font-size: 0.72rem;">Wajib diisi, minimal 3 karakter</div>
+                </div>
+                <div class="col-sm-6">
+                  <label class="form-label">
+                    NIK / No. KTP
+                  </label>
+                  <input type="text" data-type="text" class="form-control" data-field="NO_IDENTITAS" id="input-nik" placeholder="16 digit NIK kependudukan" maxlength="16" tabindex="2">
+                  <div class="form-text text-muted" style="font-size: 0.72rem;">16 digit angka sesuai KTP (contoh: 3201...)</div>
+                </div>
+                <div class="col-sm-6">
+                  <label class="form-label">NIP</label>
+                  <input type="text" data-type="text" class="form-control" data-field="NIP" id="input-nip" placeholder="18 digit NIP / nomor identitas pegawai" tabindex="3">
+                  <div class="form-text text-muted" style="font-size: 0.72rem;">Nomor Induk Pegawai (PNS / Non-PNS)</div>
+                </div>
+                <div class="col-sm-6">
+                  <label class="form-label">Jenis Kelamin</label>
+                  <select class="form-select" data-field="JENIS_KELAMIN" id="select-kelamin" tabindex="4">
+                    <option value="">Pilih jenis kelamin</option>
+                    <option value="1">Laki-laki</option>
+                    <option value="2">Perempuan</option>
+                  </select>
+                </div>
+                <div class="col-sm-6">
+                  <label class="form-label">Agama</label>
+                  <select class="form-select" id="select-agama" data-field="KD_AGAMA" tabindex="5">
+                    <option value="">Pilih agama</option>
+                  </select>
+                </div>
+                <div class="col-sm-6">
+                  <label class="form-label">Tempat Lahir</label>
+                  <input type="text" data-type="text" class="form-control" data-field="TEMPAT_LAHIR" placeholder="Kota lahir" tabindex="6">
+                </div>
+                <div class="col-sm-6">
+                  <label class="form-label d-flex justify-content-between align-items-center mb-1">
+                    <span>Tanggal Lahir</span>
+                    <span class="badge bg-soft-primary text-primary" style="font-size: 0.68rem; font-weight: 500;">Format: DD-MM-YYYY</span>
+                  </label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-light text-muted px-2"><i class="fas fa-calendar-day"></i></span>
+                    <input type="text" data-type="text" class="form-control" id="input-tanggal-lahir" data-field="TANGGAL_LAHIR" placeholder="DD-MM-YYYY" maxlength="10" autocomplete="off" tabindex="7">
+                    <button class="btn btn-outline-secondary px-2" type="button" id="btn-pick-tanggal-lahir" title="Buka Kalender Pemilih Tanggal">
+                      <i class="far fa-calendar-alt"></i>
+                    </button>
+                    <input type="date" id="native-date-picker-hidden" style="position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0;" tabindex="-1">
+                  </div>
+                  <div class="form-text text-muted" style="font-size: 0.72rem;">
+                    Urutan: <strong>Hari-Bulan-Tahun (DD-MM-YYYY)</strong>. Contoh: <strong>17-08-1995</strong>
+                  </div>
+                </div>
+                <div class="col-sm-6">
+                  <label class="form-label">No. Handphone / WA</label>
+                  <input type="tel" data-type="text" class="form-control" data-field="HANDPHONE" id="input-handphone" placeholder="Contoh: 081234567890" tabindex="8">
+                  <div class="form-text text-muted" style="font-size: 0.72rem;">Nomor HP / WhatsApp aktif</div>
+                </div>
+                <div class="col-sm-12">
+                  <label class="form-label">Alamat Email</label>
+                  <input type="email" data-type="text" class="form-control" data-field="EMAIL" id="input-email" placeholder="pegawai@rumahsakit.com" tabindex="9">
+                  <div class="form-text text-muted" style="font-size: 0.72rem;">Format email resmi (contoh: nama@rumahsakit.com)</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SEKSI 2: WILAYAH & ALAMAT DOMISILI (BAWAH) -->
+            <div class="form-section-card">
+              <div class="section-header">
+                <span class="section-badge">2</span>
+                <span class="section-title">Wilayah &amp; Alamat Domisili</span>
+              </div>
+              <div class="row g-2">
+                <div class="col-sm-6">
+                  <label class="form-label">Provinsi</label>
+                  <select class="form-select" id="select-provinsi" data-field="KD_PROVINSI" onchange="onProvinsiChange(this.value)" tabindex="10">
+                    <option value="">Pilih provinsi</option>
+                  </select>
+                </div>
+                <div class="col-sm-6">
+                  <label class="form-label">Kabupaten / Kota</label>
+                  <select class="form-select" id="select-kabupaten" data-field="KD_KABUPATEN" onchange="onKabupatenChange(this.value)" tabindex="11">
+                    <option value="">Pilih provinsi dahulu</option>
+                  </select>
+                </div>
+                <div class="col-sm-6">
+                  <label class="form-label">Kecamatan</label>
+                  <select class="form-select" id="select-kecamatan" data-field="KD_KECAMATAN" onchange="onKecamatanChange(this.value)" tabindex="12">
+                    <option value="">Pilih kabupaten dahulu</option>
+                  </select>
+                </div>
+                <div class="col-sm-6">
+                  <label class="form-label">Kelurahan / Desa</label>
+                  <select class="form-select" id="select-kelurahan" data-field="KD_KELURAHAN" tabindex="13">
+                    <option value="">Pilih kecamatan dahulu</option>
+                  </select>
+                </div>
+                <div class="col-12 mt-2">
+                  <label class="form-label">Alamat Lengkap</label>
+                  <textarea class="form-control" data-field="ALAMAT" rows="2" placeholder="Jalan, RT/RW, no. rumah, atau patokan lokasi..." tabindex="14"></textarea>
+                </div>
+              </div>
+              <small class="text-muted d-block mt-2" style="font-size: 0.74rem;">
+                <span class="fas fa-info-circle text-primary me-1"></span>
+                Data wilayah &amp; alamat tersimpan otomatis pada data master pegawai RS.
+              </small>
+            </div>
+
+          </form>
+        </div>
+
+        <!-- FOOTER MODAL -->
+        <div class="modal-footer bg-white px-4 py-3 border-top d-flex justify-content-between align-items-center">
+          <small class="text-muted" style="font-size: 0.77rem;">
+            <span class="text-danger fw-bold">*</span> Kolom wajib diisi
+          </small>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-link text-600 text-decoration-none px-3 fw-medium" onclick="closeModalForm()" style="font-size: 0.83rem;">
+              Batal
+            </button>
+            <button type="button" id="btn-simpan-pegawai" class="btn btn-sm btn-primary px-4 fw-semibold rounded-2 shadow-sm" onclick="simpanPegawai()" style="font-size: 0.83rem;">
+              <span class="fas fa-save me-1"></span> Simpan
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+</template>

@@ -1,0 +1,772 @@
+<style>
+  .kinerja-target-skp .card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem;
+  }
+  .kinerja-target-skp .table th {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+  }
+  .kinerja-target-skp .table td {
+    vertical-align: middle;
+    font-size: 0.85rem;
+  }
+</style>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+
+  let rawTargetData = [];
+  let filteredTargetData = [];
+  let masterBagian = [];
+  let masterSatuanOutput = [];
+  let masterSatuanWaktu = [];
+  let masterProgramKerja = [];
+  let masterPegawai = [];
+  let currentPage = 1;
+  const pageSize = 15;
+
+  const tag = 'kinerja_target_skp';
+
+  const initModule = async () => {
+    await loadMaster();
+    await loadData();
+    bindEvents();
+  };
+
+  const loadMaster = async () => {
+    try {
+      const res = await httpGet(`${config.api_url}/kinerja/master`);
+      if (res && res.code === 200 && res.data) {
+        masterBagian = res.data.bagian || [];
+        masterSatuanOutput = res.data.satuan_output || [];
+        masterSatuanWaktu = res.data.satuan_waktu || [];
+        populateFilterDropdowns();
+      }
+
+      // Load program kerja for modal dropdown
+      const resPkg = await httpGet(`${config.api_url}/kinerja/program-kerja?limit=200`);
+      if (resPkg && resPkg.code === 200 && resPkg.data) {
+        masterProgramKerja = Array.isArray(resPkg.data) ? resPkg.data : (resPkg.data.data || []);
+        populateProgramKerjaSelect();
+      }
+
+      // Load pegawai for modal dropdown
+      const resPeg = await httpGet(`${config.api_url}/pegawai/list?limit=500`);
+      if (resPeg && resPeg.code === 200 && resPeg.data) {
+        masterPegawai = Array.isArray(resPeg.data) ? resPeg.data : (resPeg.data.data || []);
+        populatePegawaiSelect();
+      }
+    } catch (e) {
+      console.warn('Master load error:', e);
+    }
+  };
+
+  const populateFilterDropdowns = () => {
+    const selBagian = document.getElementById('filter-bagian-target');
+    if (selBagian) {
+      let html = '<option value="">-- Semua Unit / Bagian --</option>';
+      masterBagian.forEach(b => {
+        html += `<option value="${b.KD_BAGIAN}">${b.BAGIAN}</option>`;
+      });
+      selBagian.innerHTML = html;
+    }
+
+    const selOutput = document.getElementById('modal-target-output-satuan');
+    if (selOutput) {
+      let html = '<option value="">-- Satuan Output --</option>';
+      masterSatuanOutput.forEach(s => {
+        html += `<option value="${s.id_output}">${s.nama_output}</option>`;
+      });
+      selOutput.innerHTML = html;
+    }
+
+    const selWaktu = document.getElementById('modal-target-waktu-satuan');
+    if (selWaktu) {
+      let html = '<option value="">-- Satuan Waktu --</option>';
+      masterSatuanWaktu.forEach(w => {
+        html += `<option value="${w.id_waktu}">${w.nama_waktu}</option>`;
+      });
+      selWaktu.innerHTML = html;
+    }
+  };
+
+  const populateProgramKerjaSelect = () => {
+    const sel = document.getElementById('modal-target-program');
+    if (!sel) return;
+    let html = '<option value="0">-- Bukan Bagian dari Program Kerja Khusus --</option>';
+    masterProgramKerja.forEach(p => {
+      html += `<option value="${p.ID_KGT}">${p.DESC_KGT} (${p.nama_bagian || 'Semua Unit'})</option>`;
+    });
+    sel.innerHTML = html;
+  };
+
+  const populatePegawaiSelect = () => {
+    const sel = document.getElementById('modal-target-pegawai');
+    if (!sel) return;
+    let html = '<option value="">-- Pilih Pegawai --</option>';
+    masterPegawai.forEach(p => {
+      const nipStr = p.NIP ? ` (${p.NIP})` : '';
+      html += `<option value="${p.ID_PEGAWAI || p.NIP}">${p.NAMA || p.nama}${nipStr}</option>`;
+    });
+    sel.innerHTML = html;
+  };
+
+  const loadData = async () => {
+    const tbody = document.getElementById('tbody-target');
+    const spinner = document.getElementById('loading-target');
+
+    if (spinner) spinner.classList.remove('d-none');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data Sasaran Kerja Pegawai...</td></tr>';
+
+    try {
+      const tahun = document.getElementById('filter-tahun-target')?.value || '';
+      const bagian = document.getElementById('filter-bagian-target')?.value || '';
+      const status = document.getElementById('filter-status-target')?.value || '';
+      const search = document.getElementById('search-target')?.value || '';
+
+      let url = `${config.api_url}/kinerja/target-skp?limit=500`;
+      if (tahun) url += `&tahun=${encodeURIComponent(tahun)}`;
+      if (bagian) url += `&bagian=${encodeURIComponent(bagian)}`;
+      if (status) url += `&status=${encodeURIComponent(status)}`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+
+      const res = await httpGet(url);
+      if (res && res.code === 200) {
+        const dataObj = res.data;
+        rawTargetData = Array.isArray(dataObj) ? dataObj : (dataObj.data || []);
+        filteredTargetData = [...rawTargetData];
+
+        updateSummaryCards(dataObj.summary, dataObj.total || rawTargetData.length);
+        currentPage = 1;
+        renderTable();
+      } else {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Gagal memuat Target SKP</td></tr>';
+      }
+    } catch (err) {
+      console.error('Error load target skp:', err);
+      if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-danger">Terjadi kesalahan: ${err.message}</td></tr>`;
+    } finally {
+      if (spinner) spinner.classList.add('d-none');
+    }
+  };
+
+  const updateSummaryCards = (summary, totalCount) => {
+    const elTotal = document.getElementById('card-stat-target-total');
+    const elApproved = document.getElementById('card-stat-target-approved');
+    const elPending = document.getElementById('card-stat-target-pending');
+    const elRejected = document.getElementById('card-stat-target-rejected');
+
+    if (summary) {
+      if (elTotal) elTotal.textContent = (summary.total_targets || totalCount || 0).toLocaleString();
+      if (elApproved) elApproved.textContent = (summary.approved || 0).toLocaleString();
+      if (elPending) elPending.textContent = (summary.pending || 0).toLocaleString();
+      if (elRejected) elRejected.textContent = (summary.rejected || 0).toLocaleString();
+    } else {
+      const total = totalCount || rawTargetData.length;
+      const approved = rawTargetData.filter(x => x.status === '1' || x.status === 1).length;
+      const rejected = rawTargetData.filter(x => x.status === '2' || x.status === 2).length;
+      const pending = total - approved - rejected;
+
+      if (elTotal) elTotal.textContent = total.toLocaleString();
+      if (elApproved) elApproved.textContent = approved.toLocaleString();
+      if (elPending) elPending.textContent = pending.toLocaleString();
+      if (elRejected) elRejected.textContent = rejected.toLocaleString();
+    }
+
+    const badge = document.getElementById('badge-total-target');
+    if (badge) badge.textContent = `${totalCount || rawTargetData.length} Target SKP`;
+  };
+
+  const getStatusBadge = (status) => {
+    if (status === '1' || status === 1) {
+      return '<span class="badge bg-soft-success text-success"><i class="fas fa-check-circle me-1"></i>Disetujui</span>';
+    } else if (status === '2' || status === 2) {
+      return '<span class="badge bg-soft-danger text-danger"><i class="fas fa-times-circle me-1"></i>Ditolak</span>';
+    } else {
+      return '<span class="badge bg-soft-warning text-warning"><i class="fas fa-clock me-1"></i>Menunggu</span>';
+    }
+  };
+
+  const renderTable = () => {
+    const tbody = document.getElementById('tbody-target');
+    if (!tbody) return;
+
+    if (filteredTargetData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted"><i class="fas fa-inbox me-2"></i>Tidak ada target SKP yang cocok dengan kriteria</td></tr>';
+      renderPagination(0);
+      return;
+    }
+
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    const pageRows = filteredTargetData.slice(start, end);
+
+    let html = '';
+    pageRows.forEach((row, idx) => {
+      const num = start + idx + 1;
+      const idTarget = row.id_targetskp || '-';
+      const namaPegawai = row.nama_pegawai || row.id_pegawai || '-';
+      const nip = row.NIP || '-';
+      const bagian = row.nama_bagian || '-';
+      const uraian = row.uraian || '-';
+      const program = row.nama_programkerja ? `<div class="text-muted small fst-italic"><i class="fas fa-project-diagram me-1"></i>${row.nama_programkerja}</div>` : '';
+      const ak = row.ak || '0';
+      const output = `${row.output || '0'} ${row.output_satuan || row.nama_output || ''}`;
+      const mutu = `${row.mutu || '0'}%`;
+      const waktu = `${row.waktu || '0'} ${row.waktu_satuan || row.nama_waktu || ''}`;
+      const biaya = row.biaya && row.biaya !== '0' ? `Rp ${parseInt(row.biaya).toLocaleString()}` : '-';
+      const badge = getStatusBadge(row.status);
+
+      html += `
+        <tr>
+          <td class="text-center text-muted fw-bold">${num}</td>
+          <td>
+            <div class="fw-bold text-dark">${namaPegawai}</div>
+            <div class="text-muted small">NIP: ${nip}</div>
+            <div class="text-primary small">${bagian}</div>
+          </td>
+          <td>
+            <div class="fw-medium text-dark">${uraian}</div>
+            ${program}
+            <div class="text-muted small">ID: #${idTarget}</div>
+          </td>
+          <td class="text-center fw-bold text-info">${ak}</td>
+          <td><span class="badge bg-light text-dark border">${output}</span></td>
+          <td class="text-center fw-semibold">${mutu}</td>
+          <td><span class="badge bg-light text-dark border">${waktu}</span></td>
+          <td class="small text-muted">${biaya}</td>
+          <td class="text-center">${badge}</td>
+          <td class="text-center">
+            <button class="btn btn-outline-info btn-sm btn-detail-target me-1" data-id="${idTarget}" title="Detail Target">
+              <i class="fas fa-eye"></i>
+            </button>
+            <button class="btn btn-outline-primary btn-sm btn-edit-target" data-id="${idTarget}" title="Edit Target">
+              <i class="fas fa-edit"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    renderPagination(filteredTargetData.length);
+
+    // Bind row action buttons
+    tbody.querySelectorAll('.btn-detail-target').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        showDetailModal(id);
+      });
+    });
+
+    tbody.querySelectorAll('.btn-edit-target').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        showModalForm(id);
+      });
+    });
+  };
+
+  const renderPagination = (totalRows) => {
+    const el = document.getElementById('pagination-target');
+    const info = document.getElementById('pagination-info-target');
+    if (!el) return;
+
+    const totalPages = Math.ceil(totalRows / pageSize) || 1;
+    const start = totalRows === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    const end = Math.min(currentPage * pageSize, totalRows);
+
+    if (info) info.textContent = `Menampilkan ${start} - ${end} dari ${totalRows} target`;
+
+    let html = `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage - 1}">«</a></li>`;
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) {
+        html += `<li class="page-item ${p === currentPage ? 'active' : ''}"><a class="page-link" href="#" data-page="${p}">${p}</a></li>`;
+      } else if (p === currentPage - 3 || p === currentPage + 3) {
+        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      }
+    }
+    html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage + 1}">»</a></li>`;
+    el.innerHTML = html;
+
+    el.querySelectorAll('.page-link').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const p = parseInt(btn.getAttribute('data-page'));
+        if (p && p !== currentPage && p >= 1 && p <= totalPages) {
+          currentPage = p;
+          renderTable();
+        }
+      });
+    });
+  };
+
+  const showDetailModal = (id) => {
+    const item = rawTargetData.find(x => x.id_targetskp == id);
+    if (!item) return;
+
+    const modalEl = document.getElementById('modal-target-detail');
+    if (!modalEl || !window.bootstrap) return;
+
+    document.getElementById('modal-detail-target-nama').textContent = item.nama_pegawai || item.id_pegawai || '-';
+    document.getElementById('modal-detail-target-nip').textContent = item.NIP || '-';
+    document.getElementById('modal-detail-target-bagian').textContent = item.nama_bagian || '-';
+    document.getElementById('modal-detail-target-program').textContent = item.nama_programkerja || 'Kegiatan Umum / Tupoksi Rutin';
+    document.getElementById('modal-detail-target-uraian').textContent = item.uraian || '-';
+    document.getElementById('modal-detail-target-ak').textContent = item.ak || '0';
+    document.getElementById('modal-detail-target-output').textContent = `${item.output || '0'} ${item.output_satuan || item.nama_output || ''}`;
+    document.getElementById('modal-detail-target-mutu').textContent = `${item.mutu || '0'}%`;
+    document.getElementById('modal-detail-target-waktu').textContent = `${item.waktu || '0'} ${item.waktu_satuan || item.nama_waktu || ''}`;
+    document.getElementById('modal-detail-target-biaya').textContent = item.biaya && item.biaya !== '0' ? `Rp ${parseInt(item.biaya).toLocaleString()}` : 'Rp 0';
+    document.getElementById('modal-detail-target-tgl').textContent = item.tgl_entri || '-';
+    document.getElementById('modal-detail-target-status').innerHTML = getStatusBadge(item.status);
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  };
+
+  const showModalForm = (id = null) => {
+    const modalEl = document.getElementById('modal-target-form');
+    if (!modalEl || !window.bootstrap) return;
+
+    const titleEl = document.getElementById('modal-target-form-title');
+    const inputId = document.getElementById('modal-target-id');
+    const selPeg = document.getElementById('modal-target-pegawai');
+    const selProg = document.getElementById('modal-target-program');
+    const inputUraian = document.getElementById('modal-target-uraian');
+    const inputAk = document.getElementById('modal-target-ak');
+    const inputOutput = document.getElementById('modal-target-output');
+    const selOutput = document.getElementById('modal-target-output-satuan');
+    const inputMutu = document.getElementById('modal-target-mutu');
+    const inputWaktu = document.getElementById('modal-target-waktu');
+    const selWaktu = document.getElementById('modal-target-waktu-satuan');
+    const inputBiaya = document.getElementById('modal-target-biaya');
+
+    if (id) {
+      const item = rawTargetData.find(x => x.id_targetskp == id);
+      if (titleEl) titleEl.textContent = 'Edit Target SKP';
+      if (inputId) inputId.value = item ? item.id_targetskp : '';
+      if (selPeg) selPeg.value = item ? (item.id_pegawai || '') : '';
+      if (selProg) selProg.value = item ? (item.kd_programkerja || '0') : '0';
+      if (inputUraian) inputUraian.value = item ? item.uraian : '';
+      if (inputAk) inputAk.value = item ? (item.ak || '0') : '0';
+      if (inputOutput) inputOutput.value = item ? (item.output || '0') : '0';
+      if (selOutput) selOutput.value = item ? (item.id_output || '') : '';
+      if (inputMutu) inputMutu.value = item ? (item.mutu || '100') : '100';
+      if (inputWaktu) inputWaktu.value = item ? (item.waktu || '12') : '12';
+      if (selWaktu) selWaktu.value = item ? (item.id_waktu || '1') : '1';
+      if (inputBiaya) inputBiaya.value = item ? (item.biaya || '0') : '0';
+    } else {
+      if (titleEl) titleEl.textContent = 'Tambah Sasaran Kerja Pegawai (SKP) Baru';
+      if (inputId) inputId.value = '';
+      if (selPeg) selPeg.value = '';
+      if (selProg) selProg.value = '0';
+      if (inputUraian) inputUraian.value = '';
+      if (inputAk) inputAk.value = '0';
+      if (inputOutput) inputOutput.value = '1';
+      if (selOutput) selOutput.value = '1';
+      if (inputMutu) inputMutu.value = '100';
+      if (inputWaktu) inputWaktu.value = '12';
+      if (selWaktu) selWaktu.value = '1';
+      if (inputBiaya) inputBiaya.value = '0';
+    }
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  };
+
+  const saveTarget = async () => {
+    const id = document.getElementById('modal-target-id')?.value || '';
+    const peg = document.getElementById('modal-target-pegawai')?.value || '';
+    const uraian = document.getElementById('modal-target-uraian')?.value || '';
+
+    if (!peg) {
+      alert('Pilih Pegawai terlebih dahulu.');
+      return;
+    }
+    if (!uraian.trim()) {
+      alert('Mohon masukkan Uraian Target SKP.');
+      return;
+    }
+
+    const payload = {
+      id_targetskp: id,
+      id_pegawai: peg,
+      kd_programkerja: document.getElementById('modal-target-program')?.value || '0',
+      uraian: uraian,
+      ak: document.getElementById('modal-target-ak')?.value || '0',
+      output: document.getElementById('modal-target-output')?.value || '1',
+      id_output: document.getElementById('modal-target-output-satuan')?.value || '1',
+      mutu: document.getElementById('modal-target-mutu')?.value || '100',
+      waktu: document.getElementById('modal-target-waktu')?.value || '12',
+      id_waktu: document.getElementById('modal-target-waktu-satuan')?.value || '1',
+      biaya: document.getElementById('modal-target-biaya')?.value || '0'
+    };
+
+    const btn = document.getElementById('btn-save-target');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan...';
+    }
+
+    try {
+      const res = await httpPost(`${config.api_url}/kinerja/target-skp/save`, payload);
+      if (res && res.code === 200) {
+        const modalEl = document.getElementById('modal-target-form');
+        if (modalEl && window.bootstrap) {
+          bootstrap.Modal.getInstance(modalEl)?.hide();
+        }
+        await loadData();
+      } else {
+        alert(res?.message || 'Gagal menyimpan Target SKP.');
+      }
+    } catch (e) {
+      alert('Terjadi kesalahan saat menyimpan: ' + e.message);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save me-1"></i>Simpan Target SKP';
+      }
+    }
+  };
+
+  const bindEvents = () => {
+    document.getElementById('btn-filter-target')?.addEventListener('click', () => loadData());
+    document.getElementById('btn-refresh-target')?.addEventListener('click', () => loadData());
+    document.getElementById('btn-tambah-target')?.addEventListener('click', () => showModalForm());
+    document.getElementById('btn-save-target')?.addEventListener('click', () => saveTarget());
+
+    document.getElementById('search-target')?.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        filteredTargetData = [...rawTargetData];
+      } else {
+        filteredTargetData = rawTargetData.filter(r => 
+          (r.uraian && r.uraian.toLowerCase().includes(q)) ||
+          (r.nama_pegawai && r.nama_pegawai.toLowerCase().includes(q)) ||
+          (r.NIP && r.NIP.toLowerCase().includes(q)) ||
+          (r.nama_bagian && r.nama_bagian.toLowerCase().includes(q))
+        );
+      }
+      currentPage = 1;
+      renderTable();
+    });
+  };
+
+  window.kinerja_target_skp = { loadData, showDetailModal, showModalForm };
+  document.kinerja_target_skp = { loadData };
+
+  initModule();
+</script>
+
+<template>
+  <div class="container-fluid py-3 kinerja-target-skp">
+    <!-- Header -->
+    <div class="row align-items-center mb-3">
+      <div class="col-md-7">
+        <div class="d-flex align-items-center">
+          <div class="avatar bg-soft-success text-success p-3 rounded-circle me-3">
+            <i class="fas fa-bullseye fa-2x"></i>
+          </div>
+          <div>
+            <h4 class="mb-0 fw-bold">Sasaran Kerja Pegawai (Target SKP)</h4>
+            <p class="text-muted small mb-0">Rencana target capaian tahunan tenaga medis, perawat, dan staf administratif rumah sakit</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-5 text-md-end mt-2 mt-md-0">
+        <span class="badge bg-success px-3 py-2 me-2" id="badge-total-target">Memuat...</span>
+        <button class="btn btn-outline-secondary btn-sm me-2" id="btn-refresh-target" title="Segarkan Data">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+        <button class="btn btn-success btn-sm" id="btn-tambah-target">
+          <i class="fas fa-plus me-1"></i>Tambah Target SKP
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-primary">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Total Target</div>
+              <h4 class="mb-0 fw-bold" id="card-stat-target-total">0</h4>
+            </div>
+            <i class="fas fa-bullseye fa-2x text-primary opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-success">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Disetujui</div>
+              <h4 class="mb-0 fw-bold text-success" id="card-stat-target-approved">0</h4>
+            </div>
+            <i class="fas fa-check-circle fa-2x text-success opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-warning">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Menunggu Approval</div>
+              <h4 class="mb-0 fw-bold text-warning" id="card-stat-target-pending">0</h4>
+            </div>
+            <i class="fas fa-hourglass-half fa-2x text-warning opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-danger">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Ditolak</div>
+              <h4 class="mb-0 fw-bold text-danger" id="card-stat-target-rejected">0</h4>
+            </div>
+            <i class="fas fa-times-circle fa-2x text-danger opacity-25"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card p-3 mb-3">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-3">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+            <input type="text" class="form-control" id="search-target" placeholder="Cari nama, NIP, atau uraian...">
+          </div>
+        </div>
+        <div class="col-md-2">
+          <select class="form-select form-select-sm" id="filter-tahun-target">
+            <option value="">-- Semua Tahun --</option>
+            <option value="2026">Tahun 2026</option>
+            <option value="2025">Tahun 2025</option>
+            <option value="2024">Tahun 2024</option>
+            <option value="2023">Tahun 2023</option>
+            <option value="2022">Tahun 2022</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select form-select-sm" id="filter-bagian-target">
+            <option value="">-- Semua Unit / Bagian --</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select class="form-select form-select-sm" id="filter-status-target">
+            <option value="">-- Semua Status --</option>
+            <option value="1">Disetujui</option>
+            <option value="0">Menunggu Approval</option>
+            <option value="2">Ditolak</option>
+          </select>
+        </div>
+        <div class="col-md-2 text-end">
+          <button class="btn btn-outline-success btn-sm w-100" id="btn-filter-target">
+            <i class="fas fa-filter me-1"></i>Filter
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Table Card -->
+    <div class="card">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-tasks me-2 text-success"></i>Daftar Sasaran Kerja Pegawai (SKP)</h6>
+        <div class="spinner-border spinner-border-sm text-success d-none" id="loading-target"></div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 45px;">No</th>
+              <th style="width: 220px;">Pegawai & Unit</th>
+              <th>Uraian Tugas / Target</th>
+              <th class="text-center" style="width: 60px;">AK</th>
+              <th style="width: 120px;">Target Output</th>
+              <th class="text-center" style="width: 70px;">Mutu</th>
+              <th style="width: 110px;">Waktu</th>
+              <th style="width: 100px;">Biaya</th>
+              <th class="text-center" style="width: 110px;">Status</th>
+              <th class="text-center" style="width: 90px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-target">
+            <tr>
+              <td colspan="10" class="text-center py-4 text-muted">
+                <span class="spinner-border spinner-border-sm me-2"></span>Memuat data target SKP...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer bg-white d-flex flex-column flex-md-row justify-content-between align-items-center py-2">
+        <div class="text-muted small mb-2 mb-md-0" id="pagination-info-target">Menampilkan 0 data</div>
+        <ul class="pagination pagination-sm mb-0" id="pagination-target"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detail Target SKP -->
+  <div class="modal fade" id="modal-target-detail" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title"><i class="fas fa-info-circle me-2"></i>Rincian Sasaran Kerja Pegawai</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="text-muted small d-block">Nama Pegawai</label>
+              <h5 class="fw-bold text-dark mb-0" id="modal-detail-target-nama">-</h5>
+              <div class="text-muted small">NIP: <span id="modal-detail-target-nip">-</span></div>
+            </div>
+            <div class="col-md-6">
+              <label class="text-muted small d-block">Unit Kerja / Ruangan</label>
+              <h6 class="fw-semibold text-primary mb-0" id="modal-detail-target-bagian">-</h6>
+              <div class="text-muted small">Tanggal Entri: <span id="modal-detail-target-tgl">-</span></div>
+            </div>
+          </div>
+
+          <div class="card bg-light p-3 mb-3">
+            <label class="text-muted small">Program Kerja Induk</label>
+            <div class="fw-semibold text-dark mb-2" id="modal-detail-target-program">-</div>
+            <label class="text-muted small">Uraian Target / Rencana Kerja</label>
+            <div class="fs-6 fw-bold text-dark" id="modal-detail-target-uraian">-</div>
+          </div>
+
+          <div class="row g-3 text-center">
+            <div class="col-3">
+              <div class="p-3 border rounded bg-white">
+                <div class="text-muted small">Angka Kredit</div>
+                <h4 class="mb-0 text-info fw-bold" id="modal-detail-target-ak">0</h4>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="p-3 border rounded bg-white">
+                <div class="text-muted small">Target Output</div>
+                <h4 class="mb-0 text-dark fw-bold" id="modal-detail-target-output">-</h4>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="p-3 border rounded bg-white">
+                <div class="text-muted small">Target Mutu</div>
+                <h4 class="mb-0 text-success fw-bold" id="modal-detail-target-mutu">100%</h4>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="p-3 border rounded bg-white">
+                <div class="text-muted small">Target Waktu</div>
+                <h4 class="mb-0 text-primary fw-bold" id="modal-detail-target-waktu">-</h4>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+            <div>
+              <span class="text-muted small">Alokasi Biaya: </span>
+              <span class="fw-bold text-dark" id="modal-detail-target-biaya">-</span>
+            </div>
+            <div>
+              <span class="text-muted small me-2">Status Persetujuan: </span>
+              <span id="modal-detail-target-status">-</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Form Input Target SKP -->
+  <div class="modal fade" id="modal-target-form" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title" id="modal-target-form-title">Sasaran Kerja Pegawai</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <input type="hidden" id="modal-target-id">
+          
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold small">Pegawai Penanggung Jawab <span class="text-danger">*</span></label>
+              <select class="form-select form-select-sm" id="modal-target-pegawai">
+                <option value="">-- Pilih Pegawai --</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold small">Program Kerja Induk</label>
+              <select class="form-select form-select-sm" id="modal-target-program">
+                <option value="0">-- Bukan Bagian dari Program Kerja Khusus --</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold small">Uraian Sasaran Kerja Pegawai (SKP) <span class="text-danger">*</span></label>
+            <textarea class="form-control" id="modal-target-uraian" rows="3" placeholder="Contoh: Memberikan pelayanan asuhan keperawatan rawat inap..."></textarea>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-3">
+              <label class="form-label fw-bold small">Angka Kredit (AK)</label>
+              <input type="number" step="0.01" class="form-control form-control-sm" id="modal-target-ak" value="0">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-bold small">Target Output</label>
+              <input type="number" class="form-control form-control-sm" id="modal-target-output" value="1">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold small">Satuan Output</label>
+              <select class="form-select form-select-sm" id="modal-target-output-satuan">
+                <option value="">-- Satuan Output --</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label fw-bold small">Target Mutu (%)</label>
+              <input type="number" class="form-control form-control-sm" id="modal-target-mutu" value="100">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-bold small">Target Waktu</label>
+              <input type="number" class="form-control form-control-sm" id="modal-target-waktu" value="12">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-bold small">Satuan Waktu</label>
+              <select class="form-select form-select-sm" id="modal-target-waktu-satuan">
+                <option value="">-- Satuan Waktu --</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-bold small">Estimasi Biaya (Rp)</label>
+              <input type="number" class="form-control form-control-sm" id="modal-target-biaya" value="0">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-success btn-sm" id="btn-save-target">
+            <i class="fas fa-save me-1"></i>Simpan Target SKP
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

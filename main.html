@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html data-bs-theme="light" lang="en-US" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>evoHRIS v2.1</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon-180.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+    <link rel="shortcut icon" type="image/x-icon" href="assets/favicon-x.png">
+    <link rel="manifest" href="assets/manifest.json">
+    <meta name="msapplication-TileImage" content="assets/mstile-150.png">
+    <meta name="theme-color" content="#ffffff">
+    <link href="assets/fonts/fonts.css" rel="stylesheet">
+    <link href="assets/css/vendor/simplebar.min.css" rel="stylesheet">
+    <link href="assets/css/vendor/choices.min.css" rel="stylesheet">
+    <link href="assets/css/vendor/flatpickr.min.css" rel="stylesheet">
+    <link href="assets/css/vendor/calendar.min.css" rel="stylesheet">
+    <link href="assets/css/vendor/theme.css" rel="stylesheet">
+    <link href="assets/css/core/styles.css" rel="stylesheet">
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/vendor/config.js"></script>
+    <script src="assets/js/vendor/pocketbase.min.js"></script>
+    <script src="assets/js/vendor/webcam-easy.min.js"></script>
+    <script src="assets/js/vendor/calendar.min.js"></script>
+    <script src="assets/js/vendor/simplebar.min.js"></script>
+    <script src="assets/js/vendor/popper.min.js"></script>
+    <script src="assets/js/vendor/bootstrap.min.js"></script>
+    <script src="assets/js/vendor/list.min.js"></script>
+    <script src="assets/js/vendor/anchor.min.js"></script>
+    <script src="assets/js/vendor/is.min.js"></script>
+    <script src="assets/js/vendor/all.min.js"></script>
+    <script src="assets/js/vendor/lodash.min.js"></script>
+    <script src="assets/js/vendor/echarts.min.js"></script>
+    <script src="assets/js/vendor/choices.min.js"></script>
+    <script src="assets/js/vendor/flatpickr.js"></script>
+    <script src="assets/js/vendor/initiator.js"></script>
+    <script src="assets/js/core/injector.js"></script>
+    <script type="module" defer>
+      import { httpGet, httpPost } from './assets/js/core/http.js';
+      import { getBodyHeight, loadSession, saveSession, clearSession, subscribe, getCurrentUser } from './assets/js/core/helpers.js';
+      import { connect, disconnect } from './assets/js/core/notifier.js';
+		  // import { isItLogin } from './modules/common.js';
+      import EvoFrame from './components/EvoFrame.js';
+      import EvoPopup from './components/EvoPopup.js';
+      import EvoDialog from './components/EvoDialog.js';
+      import EvoLoader from './components/EvoLoader.js';
+
+      EvoFrame.init();
+      let pb = null;
+
+      const onPasienChanged = async (pasien) => {
+        const collapseInfo = document.getElementById('infopasien-toggle');
+        collapseInfo.classList.remove('d-none');
+        if (Object.keys(pasien).length == 0) {
+        collapseInfo.setAttribute('inert', true);
+        }else {
+        collapseInfo.removeAttribute('inert');
+        }
+      }
+      subscribe('pasienChanged', onPasienChanged);
+      
+      let collapseInfo = document.querySelector('a[href="#!collapseInfo"]');
+        collapseInfo.addEventListener('click', (e) => {
+        const isLeft = Array.from(collapseInfo.classList).includes('left');
+        const infobox = document.getElementById('hide-card');
+        // const infobox = document.getElementById('infopasien-container');
+        const slideto = isLeft ? 'card mb-0 p-1 ps-2 d-block position-relative overflow-x-hidden collapseInfoBoxNew' : 'card mb-0 p-1 ps-2 d-block position-relative overflow-x-hidden unCollapseInfoBoxNew';
+        infobox.className = slideto;
+        const whereto = isLeft ? 'right collapseInfoToggleNew' : 'left unCollapseInfoToggleNew';
+        collapseInfo = document.querySelector('a[href="#!collapseInfo"]');
+        collapseInfo.className = `d-block ${whereto}`;
+      })
+
+      const toggleInfoBox = () => {
+        const collapseInfo = document.querySelector('a[href="#!collapseInfo"]');
+        collapseInfo.dispatchEvent(new Event('click'));
+      }
+
+      const mainLoader = new EvoLoader('mainLoader');
+
+      const showWindow = (blob, title = 'Laporan') => {
+       let content = blob;
+       if (blob.startsWith('data:application/pdf;base64,')) content = '';
+       const newWindow = window.open(content);
+       if (blob.startsWith('data:application/pdf;base64,')) {
+        newWindow.document.write(`<title>${title}</title>`);
+        newWindow.document.write("<object width='100%' height='100%' data='"+blob+"#toolbar=0&navpanes=0'></object>");
+        newWindow.document.body.style.margin=0;
+       }
+      }
+      
+      const showPopup = (params, onOpened = () => {}, onClosed = () => {}, id = 'mainPopup') => {
+        const p = new EvoPopup(id);
+        const options = {
+          size: params.options.size,
+          width: params.options.width == undefined ? '100%' : params.options.width,
+          height: params.options.height == undefined ? 'auto' : params.options.height,
+          draggable: params.options.draggable
+        };
+        const parameters = {
+          title: params.title,
+          content: params.type == undefined ? params.content :  {type: params.type, name: params.module}
+        };
+        if (params.type == 'module') {
+          parameters.content.type = params.type;
+          parameters.content.name = params.name;
+        }
+        if (params.type == 'component') {
+          parameters.content.component = params.component;
+          parameters.content.container = params.container;
+        }
+        if (params.buttons !== undefined) parameters.buttons = params.buttons;
+        p.open(options, parameters);
+        p.on('onOpened', onOpened);
+        p.on('onClosed', e => {
+          const elem = document.getElementById(id);
+          elem?.remove();
+          onClosed(e);
+        });
+        return p;
+      }
+      
+      const activateRole = async (params = {}) => {
+        const rs = await httpGet(`${config.api_url}/user/changeRole`, params);
+        if (rs.code != 200 || !rs.data) {
+          return rs;
+        }
+
+        const app = loadSession({id: 'app'});
+        const dataset = Array.isArray(rs.data) ? rs.data[0] : rs.data;
+
+        if (!app || !dataset) {
+          return {
+            code: 400,
+            message: 'Data session atau role tidak valid'
+          };
+        }
+
+        app.kd_jabatan = dataset.kd_jabatanparamedis;
+        app.jabatan = dataset.jabatan ?? dataset.nama_jabatanparamedis;
+
+        const isRmeFalse = dataset.rme === false || dataset.rme === 'f' || dataset.rme === 'false' || dataset.rme === 0;
+        
+        app.kd_instalasi = dataset.kd_instalasi;
+        app.nama_instalasi = dataset.nama_instalasi;
+        app.kd_unit = dataset.kd_unit;
+        app.nama_unit = dataset.nama_unit;
+        app.tag_instalasi = dataset.tag_instalasi;
+        app.parent_unit = dataset.kd_unit;
+        app.tag_unit = dataset.nama_unit;
+        app.simrs = isRmeFalse ? 'rumah_sakit' : app.tag_instalasi;
+        app.role_selected = true;
+
+        if (!app.tag_instalasi) {
+          return {
+            code: 400,
+            message: 'Instalasi role tidak tersedia'
+          };
+        }
+
+        saveSession({ id: 'app', data: app });
+        saveSession({ id: 'instalasi', data: app.simrs });
+        return { code: 200, data: app };
+      };
+
+      const checkPilihHakAkses = async () => {
+        const user = getCurrentUser();
+        const sessionApp = loadSession({ id: 'app' });
+        if (sessionApp?.role_selected === true && sessionApp?.kd_jabatan) return { code: 200, data: sessionApp };
+        try {
+          const frm_data = {
+            kd_user: user.kd_user,
+          };
+          const rs = await httpGet(`${config.api_url}/user/loadUserRole`, frm_data);
+          if (!Array.isArray(rs) && Number(rs?.code) !== 200) throw new Error(rs?.message || 'Gagal memuat role');
+          const data = Array.isArray(rs) ? rs : (Array.isArray(rs?.data) ? rs.data : []);
+          const roles = data.filter(r => String(r.kd_user) === String(user?.kd_user) && (r.aktif === true || String(r.aktif) === '1'));
+          if (roles.length === 0) throw new Error('User tidak memiliki role aktif');
+          if (roles.length === 1) {
+            const result = await activateRole(roles[0]);
+            if (result.code !== 200) throw new Error(result.message);
+            return roles[0];
+          }
+          return await showPilihHakAkses(roles);
+        } catch (error) {
+          console.error('Aktivasi hak akses gagal:', error);
+          await showDialog({ ui: 'interactive', type: 'warning', label: 'Gagal mengaktifkan hak akses. Silakan login kembali.' });
+          return null;
+        }
+      };
+      
+      const showPilihHakAkses = (roles, allowCancel = false) => new Promise((resolve) => {
+        let completed = false;
+        let popup = null;
+
+        const onOpened = async () => {
+          const module = document.setting_role;
+          if (!module) { console.error('View features/setting_role tidak termuat'); sendHome(); return; }
+          module.init();
+          await module.loadData('view', roles);
+          const elem = document.getElementById('popupPilihHakAkses');
+          elem.addEventListener('hide.bs.modal', e => {
+            if (!completed && !allowCancel) {
+              e.preventDefault();
+            }
+          });
+        };
+        
+        const onClosed = () => { if (!completed) { if (allowCancel) resolve(null); else sendHome(); } };
+        const params = {
+          options: { size: 'lg', draggable: false, width: '760px' },
+          title: '<span class="text-black fw-bold">Pilih Hak Akses</span>',
+          content: { type: 'module', name: 'features/setting_role' },
+          buttons: [
+            { label: allowCancel ? 'Batal' : 'Logout', class: 'btn-outline-danger', onClick: () => { if (allowCancel) popup.close(); else sendHome(); } },
+            { label: 'Masuk dengan Hak Akses Ini', class: 'btn-primary', onClick: async () => {
+              const result = await document.setting_role?.saveData();
+              if (Number(result?.code) !== 200) {
+                await showDialog({ ui: 'interactive', type: 'warning', label: result?.message || 'Pilih hak akses terlebih dahulu.' });
+                return;
+              }
+              const activated = await activateRole(result.data);
+              if (activated.code !== 200) {
+                await showDialog({ ui: 'interactive', type: 'warning', label: activated.message });
+                return;
+              }
+              completed = true;
+              popup.close();
+              resolve(result.data);
+            }}
+          ]
+        };
+
+        popup = showPopup(params, onOpened, onClosed, 'popupPilihHakAkses');
+      });
+
+      const showRoleSetting = async () => {
+        try {
+          const current = getCurrentUser();
+          const frm_data = {
+            kd_user: current.kd_user,
+          };
+          const rs = await httpGet(`${config.api_url}/user/loadUserRole`, frm_data);
+          if (!Array.isArray(rs) && Number(rs?.code) !== 200) throw new Error(rs?.message || 'Gagal memuat role');
+          const rows = Array.isArray(rs) ? rs : (Array.isArray(rs?.data) ? rs.data : []);
+          const roles = rows.filter(r => String(r.kd_user) === String(current?.kd_user) && (r.aktif === true || String(r.aktif) === '1'));
+          if (roles.length < 2) {
+            await showDialog({ ui: 'interactive', type: 'warning', label: '<span class="text-danger">Tidak ada role lain yang dapat dipilih.</span>' });
+            return;
+          }
+          const selected = await showPilihHakAkses(roles, true);
+          if (selected) window.location.reload();
+        } catch (error) {
+          console.error('Gagal mengganti role:', error);
+          await showDialog({ ui: 'interactive', type: 'warning', label: '<span class="text-danger">Gagal memuat atau mengganti hak akses.</span>' });
+        }
+      };
+
+      const showDialog = (params = {}, onClosed = () => {}, id = 'mainDialog') => {
+        let d = new EvoDialog(id);
+        let auto = {};
+        let ui = params.ui == undefined ? 'non-interactive' : params.ui;
+        if ((ui == 'non-interactive' && params.contents == undefined && (params.buttons == undefined || params.buttons.length == 0)) || (params.contents !== undefined && params.contents.buttons !== undefined && params.contents.buttons.length == 0)) {
+          auto = {
+            autoclose: true,
+            autoCloseAfter: 2000
+          }
+        }
+        let options = {};
+        if (params.options !== undefined && typeof params.options == 'object') options = params.options;
+        if (params.size !== undefined) options.size = params.size;
+        if (params.width !== undefined) options.width = params.width;
+        let style = {};
+        if (params.theme !== undefined && typeof params.theme == 'string') style.theme = params.theme;
+        let types = {info: '<span class="text-black">Informasi</span>', question: '<span class="text-black">Konfirmasi</span>', warning: '<span class="text-danger">Peringatan</span>', success: '<span class="text-black">Informasi</span>'};
+        let contents = {
+          type: params.type == undefined ? 'info' : params.type,
+          title: params.title == undefined ? types[params.type] : params.title,
+          label: params.label == undefined ? '' : params.label,
+          buttons: params.buttons == undefined ? [] : params.buttons
+        };
+        if (params.contents !== undefined && typeof params.contents == 'object') {
+          contents = {
+            type: params.contents.type,
+            title: params.contents.title == undefined ? types[params.type] : params.contents.title,
+            label: params.contents.label,
+            buttons: params.contents.buttons == undefined ? [] : params.contents.buttons 
+          }
+        }
+        let configs = {
+          ...auto,
+          ...style,
+          ...options
+        }
+        d.open(configs, contents);
+        d.on('onClosed', e => {
+          const elem = document.getElementById(id);
+          elem?.remove();
+          onClosed(e);
+        });
+        return d;
+      }
+
+      const showLoader = (tag = {}) => {
+        const component = mainLoader;
+        const params = Object.keys(tag).length == 0 ? {} : (typeof tag == 'object' ? tag : {label: tag});
+        component.show(params);
+      }
+
+      const hideLoader = () => {
+        const component = mainLoader;
+        component.hide();  
+      }
+
+      const getThisForm = (name) => {
+        const actions = document.getElementById(`${name}-actions`);
+        const entries = document.getElementById(`${name}-entries`);
+        return {actions, entries};
+      }
+
+      const notifierInit = async () => {
+        const rs = await httpGet(`${config.api_url}/application/config`);
+        if (rs.code == 200) {
+          const notifier = rs.data[0].notifier;
+          if (notifier == false) return false;
+          let otherConfig = rs.data[0];
+          delete otherConfig.notifier;
+          let app = loadSession({id: 'app'});
+          app['configs'] = otherConfig;
+          saveSession({id: 'app', data: app}); 
+          pb = await connect(notifier);
+          if (pb !== false) {
+          }
+        }
+      }
+
+      const notifierDeinit = async () => {
+        const rs = await httpGet(`${config.api_url}/application/config`);
+        if (rs.code == 200) {
+          const setting = rs.data[0].notifier;
+          if (setting == false) return false;
+          await disconnect(pb, setting);
+          pb = null;
+        }
+      }
+
+      const sendHome = () => {
+        // notifierDeinit();
+        // clearSession();
+        // window.location.replace('login.html');
+      }
+
+      let app = loadSession({id: 'app'});
+      let getUser = getCurrentUser();
+      if (app == false) sendHome();
+      const initModules = async (reload = false) => {
+        let instalasi = "rumah_sakit";
+        saveSession({ id: 'instalasi', data: instalasi });
+        // let instalasi = loadSession({id: 'instalasi'});
+        let arrInstalasi = ['rumah_sakit', 'admin'];
+        if (arrInstalasi.includes(instalasi)) {
+          await loadModule(`features/${instalasi}/navbar-menu`, '#navbarmenu-container');
+          await loadModule(`features/${instalasi}/sidebar-menu`, '#navbarVerticalNav');
+          const currentUser = document.getElementById('current-user');
+          const currentJabatan = document.getElementById('current-jabatan');
+          currentUser.innerHTML = getUser?.nama_user || 'Administrator';
+          currentJabatan.innerHTML = getUser?.jabatan || 'Staff SDM';
+          document.getElementById('infopx').classList.add('d-none');
+          document.getElementById('content').classList.remove('col-lg-8');
+          document.getElementById('content').classList.remove('col-xl-10');
+          document.getElementById('content').classList.add('col-lg-12');
+          document.getElementById('content').classList.add('col-xl-12');
+          await loadModule('modules/dashboard', '#container-isi');
+        } else {
+          await loadModule(`features/${instalasi}/navbar-menu`, '#navbarmenu-container', 'file', reload);
+          await loadModule(`features/${instalasi}/sidebar-menu`, '#navbarVerticalNav', 'file', reload);
+          if (instalasi == 'rekam_medis') {
+            await loadModule(`features/${instalasi}/list_pasien`, '#listpasien-container', 'file', reload);
+          } else {
+            await loadModule(`features/daftar_pasien`, '#listpasien-container', 'file', reload);
+            await document.daftarpasien.initTabs();
+          }
+          await loadModule(`features/${instalasi}/info_pasien`, '#infopasien-container', 'file', reload);
+          if (instalasi == 'rawat_darurat' && app.landing_page == 'skrining') {
+            await loadModule('modules/triage/skrining');
+            const selfilter = document.querySelector('select[data-tag="sel_filter"]');
+            if (selfilter.classList.contains('d-none') == false) selfilter.classList.add('d-none');
+            document.getElementById('infopx').classList.add('d-none');
+            document.getElementById('content').classList.remove('col-lg-8');
+            document.getElementById('content').classList.remove('col-xl-10');
+            document.getElementById('content').classList.add('col-lg-12');
+            document.getElementById('content').classList.add('col-xl-12');
+          }
+          if (instalasi == 'rekam_medis') await loadModule('modules/rekam_medis/verifikasi');
+          const currentUser = document.getElementById('current-user');
+          const currentJabatan = document.getElementById('current-jabatan');
+          currentUser.innerHTML = getUser?.nama_user || 'Administrator';
+          currentJabatan.innerHTML = getUser?.jabatan || 'Staff SDM';
+        }
+        if (instalasi == 'rawat_darurat') {
+          let bodyHeight = getBodyHeight();
+          let moduleContainerHeight = bodyHeight - 111;
+          const moduleContainer = document.getElementById('module-container');
+          moduleContainer.style = `overflow-y: scroll; overflow-x: hidden; min-height: 100%; max-height: ${moduleContainerHeight}px;`;
+          moduleContainer.classList.remove('scrollbar');
+        }
+        await handleNavbarVerticalCollapsed();
+      }
+
+      const cari_global = document.querySelector('input[name="cari_global"]');
+      cari_global.addEventListener('keyup', async (e) => {
+        e.preventDefault();
+        if (e.keyCode == 13) {
+          let searchresult = 0;
+          const antrian = document.getElementById('antrian-data');
+          let listpasien = !antrian.classList.contains('d-none');
+          if (listpasien) {
+            if (cari_global.value == '') {
+            const closeSearch = document.querySelector('[data-bs-dismiss="search"]');
+            closeSearch.classList.add('d-none');
+            const antrian = document.getElementById('antrian-data');
+            let listpasien = !antrian.classList.contains('d-none');
+            if (listpasien) document.listpasien.resetFilter();
+            }else {
+            searchresult = await document.listpasien.filter(cari_global.value.toLowerCase());
+            closeSearch.classList.remove('d-none');
+            }
+          }
+          if (searchresult == 0) console.log('Tidak ada data yang sesuai');
+        }
+        return false;
+      })
+
+      const closeSearch = document.querySelector('[data-bs-dismiss="search"]');
+      closeSearch.addEventListener('click', (e) => {
+        closeSearch.classList.add('d-none');
+        cari_global.value = '';
+        const antrian = document.getElementById('antrian-data');
+        let listpasien = !antrian.classList.contains('d-none');
+        if (listpasien) document.listpasien.resetFilter();
+      })
+
+      // const activeRole = await checkPilihHakAkses();
+      // if (!activeRole) { sendHome(); throw new Error('Tidak ada role aktif yang dipilih'); }
+      
+      app = loadSession({id: 'app'});
+      getUser = getCurrentUser();
+      // notifierInit();
+      await initModules();
+      const aliasName = {skrining: 'skrining', rekam_medis: 'verifikasi', dashboard: 'navbar'};
+      const fnName = {skrining: 'showSkrining', rekam_medis: 'showAllDokumen', dashboard: 'showDashboard'};
+      let fn = 'dashboard';
+      if (typeof document[aliasName[fn]][fnName[fn]] == 'function') await document[aliasName[fn]][fnName[fn]]();
+      
+      let idleTimeout;
+      const idleDurationMs = 21 * 60 * 1000; //diganti depan nya saja (default: 21 menit seperti evoMedis)
+      const resetIdleTimeout = () => {
+       if (idleTimeout) clearTimeout(idleTimeout);
+       idleTimeout = setTimeout(() => {
+         sendHome(); 
+       }, idleDurationMs);
+      }
+      // resetIdleTimeout();
+      // ['click', 'mousemove', 'keydown', 'touchstart'].forEach(eventType => {
+      //  document.addEventListener(eventType, resetIdleTimeout, false);
+      // });
+
+      const checkLogin = async () => {
+        return true;
+      };
+
+      // checkLogin();
+
+      window.checkLogin = checkLogin;
+      window.showWindow = showWindow;
+      window.showDialog = showDialog;
+      window.showPopup = showPopup;
+      window.showLoader = showLoader;
+      window.hideLoader = hideLoader;
+      window.getThisForm = getThisForm;
+      document.main = { sendHome, initModules, checkLogin, showRoleSetting };
+    </script>
+  </head>
+  <body>
+    <main class="main" id="top">
+      <div class="container-fluid" data-layout="container">
+        <nav class="navbar navbar-light navbar-vertical navbar-expand-xl">
+          <script>
+            var navbarStyle = localStorage.getItem("navbarStyle");
+            if (navbarStyle && navbarStyle !== 'transparent') {
+              document.querySelector('.navbar-vertical').classList.add(`navbar-${navbarStyle}`);
+            }
+          </script>
+          <div class="d-flex align-items-center">
+            <div class="toggle-icon-wrapper">
+              <button class="btn navbar-toggler-humburger-icon navbar-vertical-toggle" data-bs-toggle="tooltip" data-bs-placement="left" title="Toggle Navigation"><span class="navbar-toggle-icon"><span class="toggle-line"></span></span></button>
+            </div>
+            <a class="navbar-brand" href="#!">
+              <div class="d-flex align-items-center py-3"><img class="me-2" src="assets/img/pic_logo.png" alt="" width="135" /></div>
+            </a>
+          </div>
+          <div class="collapse navbar-collapse" id="navbarVerticalCollapse">
+            <div class="navbar-vertical-content scrollbar">
+              <ul class="navbar-nav flex-column mb-3" id="navbarVerticalNav">Loading...</ul>
+            </div>
+          </div>
+        </nav>
+        <div class="content">
+          <nav class="navbar navbar-light navbar-glass navbar-top navbar-expand mb-1 border-bottom">
+            <button class="btn navbar-toggler-humburger-icon navbar-toggler me-1 me-sm-3" type="button" data-bs-toggle="collapse" data-bs-target="#navbarVerticalCollapse" aria-controls="navbarVerticalCollapse" aria-expanded="false" aria-label="Toggle Navigation"><span class="navbar-toggle-icon"><span class="toggle-line"></span></span></button>
+            <a class="navbar-brand me-1 me-sm-3" href="#!">
+              <div class="d-flex align-items-middle"><img class="me-2" src="assets/img/pic_logo.png" alt="" width="135" align="middle" /></div>
+            </a>
+            <ul class="navbar-nav align-items-center d-lg-block">
+              <li class="nav-item">
+                <div class="search-box">
+                  <input class="form-control search-input fuzzy-search" type="search" placeholder="Search..." aria-label="Search" name="cari_global" autocomplete="off"/>
+                  <span class="fas fa-search search-box-icon"></span>
+                  <div class="btn-close-falcon-container position-absolute end-0 top-50 translate-middle shadow-none d-none" data-bs-dismiss="search">
+                    <button class="btn btn-link btn-close-falcon p-0" aria-label="Close"></button>
+                  </div>
+                </div>
+              </li>
+            </ul>
+            <ul id="navbarmenu-container" class="navbar-nav navbar-nav-icons ms-auto flex-row align-items-center"><navbar-menu></navbar-menu></ul>
+          </nav>
+          <div class="content-container row" id="container-isi">
+            <div id="antrian-data" class="m-0 p-0 d-none">
+              <span id="daftarpasien-title" class="ps-2" style='font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";font-size: .875rem;font-weight: 500;' data-tagger="belum_terlayani">Daftar Pasien</span>
+              <div id="listpasien-container" class="list-group p-1 pe-2"><list_pasien></list_pasien></div>
+            </div>
+            
+            <div id="main-data" class="m-0 p-0 col-md-12">
+              <div class="row g-3">
+                <div class="col-lg-4 col-xl-2" id="infopx">
+                  <span id="content-title" class="ps-2" style='font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";font-size: .875rem;font-weight: 500;'>Titel</span>
+                  <span id="infopasien-toggle" class="d-block"><a href="#!collapseInfo" class="d-block left d-none"><i class="fa-solid fa-sm fa-angles-left"></i></a></span>
+                  <div class="sticky-sidebar top-navbar-height" id="hide-card">
+                    <div class="card h-300">
+                      <div class="card-body ps-2" style="overflow-y: scroll; overflow-x: hidden; min-height: 100%; max-height: 87vh;">
+                        <div id="infopasien-container" class="tab-content p-3 border-start border-bottom">
+                          <info_pasien><h6 class="p-2">Belum ada pasien</h6></info_pasien>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-lg-8 col-xl-10" id="content">
+                  <div id="module-container" class="d-block">Loading...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

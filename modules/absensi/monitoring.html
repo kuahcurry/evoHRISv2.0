@@ -1,0 +1,277 @@
+<style>
+  .absensi-monitoring .card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem;
+  }
+  .absensi-monitoring .table th {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+  }
+  .absensi-monitoring .table td {
+    vertical-align: middle;
+    font-size: 0.85rem;
+  }
+</style>
+
+<script type="module" defer>
+  import { httpGet } from './assets/js/core/http.js';
+
+  let rawMonitoringData = [];
+  let filteredMonitoringData = [];
+
+  const tag = 'absensi_monitoring';
+
+  const initModule = async () => {
+    const monthEl = document.getElementById('filter-bulan-monitoring');
+    if (monthEl && !monthEl.value) monthEl.value = '2026-04';
+
+    await loadData();
+    bindEvents();
+  };
+
+  const loadData = async () => {
+    const tbody = document.getElementById('tbody-monitoring');
+    const spinner = document.getElementById('loading-monitoring');
+    
+    if (spinner) spinner.classList.remove('d-none');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Menganalisis status jadwal unit kerja...</td></tr>';
+
+    try {
+      const bulan = document.getElementById('filter-bulan-monitoring')?.value || '2026-04';
+      const res = await httpGet(`${config.api_url}/absensi/jadwal-monitoring?bulan=${encodeURIComponent(bulan)}`);
+      
+      if (res && res.code === 200 && res.data) {
+        rawMonitoringData = res.data || [];
+        filteredMonitoringData = [...rawMonitoringData];
+        updateSummaryCards();
+        renderTable();
+      } else {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Data monitoring tidak ditemukan.</td></tr>';
+      }
+    } catch (e) {
+      console.error('Error loading monitoring jadwal:', e);
+      if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Gagal memuat monitoring: ${e.message}</td></tr>`;
+    } finally {
+      if (spinner) spinner.classList.add('d-none');
+    }
+  };
+
+  const updateSummaryCards = () => {
+    const total = rawMonitoringData.length;
+    let lengkap = 0;
+    let sebagian = 0;
+    let belum = 0;
+
+    rawMonitoringData.forEach(r => {
+      const st = r.status_keterangan || r.status || '';
+      if (st === 'TERJADWAL LENGKAP') lengkap++;
+      else if (st === 'SEBAGIAN TERJADWAL') sebagian++;
+      else belum++;
+    });
+
+    document.getElementById('card-stat-mon-total').textContent = total;
+    document.getElementById('card-stat-mon-lengkap').textContent = lengkap;
+    document.getElementById('card-stat-mon-sebagian').textContent = sebagian;
+    document.getElementById('card-stat-mon-belum').textContent = belum;
+    document.getElementById('total-badge-monitoring').textContent = `${total} Bagian / Unit`;
+  };
+
+  const renderTable = () => {
+    const tbody = document.getElementById('tbody-monitoring');
+    if (!tbody) return;
+
+    if (filteredMonitoringData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Data unit kerja tidak ditemukan.</td></tr>';
+      return;
+    }
+
+    let html = '';
+    filteredMonitoringData.forEach((row, idx) => {
+      const totPeg = parseInt(row.total_pegawai || 0);
+      const terjadwal = parseInt(row.pegawai_terjadwal || 0);
+      const pct = totPeg > 0 ? Math.min(100, Math.round((terjadwal / totPeg) * 100)) : 0;
+      const st = row.status_keterangan || row.status || 'BELUM TERJADWAL';
+      
+      let barClass = 'bg-danger';
+      let statusBadge = '<span class="badge bg-danger"><i class="fas fa-times-circle me-1"></i>Belum Terjadwal</span>';
+
+      if (st === 'TERJADWAL LENGKAP' || pct >= 95) {
+        barClass = 'bg-success';
+        statusBadge = '<span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Lengkap</span>';
+      } else if (terjadwal > 0 || pct > 0) {
+        barClass = 'bg-warning text-dark';
+        statusBadge = '<span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Sebagian</span>';
+      }
+
+      html += `
+        <tr>
+          <td class="text-center text-muted">${idx + 1}</td>
+          <td class="fw-bold text-dark">${row.BAGIAN || row.nama_bagian || '-'}</td>
+          <td class="text-center fw-bold">${totPeg}</td>
+          <td class="text-center fw-bold text-primary">${terjadwal}</td>
+          <td style="min-width: 180px;">
+            <div class="d-flex align-items-center">
+              <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                <div class="progress-bar ${barClass}" role="progressbar" style="width: ${pct}%;"></div>
+              </div>
+              <span class="small fw-bold">${pct}%</span>
+            </div>
+          </td>
+          <td class="text-center">${statusBadge}</td>
+          <td class="text-center text-muted small">${row.total_jadwal ? `${row.total_jadwal} shift` : '-'}</td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+  };
+
+  const bindEvents = () => {
+    document.getElementById('filter-bulan-monitoring')?.addEventListener('change', () => loadData());
+    document.getElementById('btn-refresh-monitoring')?.addEventListener('click', () => loadData());
+
+    document.getElementById('search-monitoring')?.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        filteredMonitoringData = [...rawMonitoringData];
+      } else {
+        filteredMonitoringData = rawMonitoringData.filter(r => {
+          const name = (r.BAGIAN || r.nama_bagian || '').toLowerCase();
+          return name.includes(q);
+        });
+      }
+      renderTable();
+    });
+  };
+
+  window.absensi_monitoring = { loadData };
+  document.absensi_monitoring = { loadData };
+
+  initModule();
+</script>
+
+<template>
+  <div class="container-fluid py-3 absensi-monitoring">
+    <!-- Header -->
+    <div class="row align-items-center mb-3">
+      <div class="col-md-7">
+        <div class="d-flex align-items-center">
+          <div class="avatar bg-soft-success text-success p-3 rounded-circle me-3">
+            <i class="fas fa-tasks fa-2x"></i>
+          </div>
+          <div>
+            <h4 class="mb-0 fw-bold">Monitoring Jadwal Unit Kerja</h4>
+            <p class="text-muted small mb-0">Audit kepatuhan penginputan jadwal dinas (roster) bulanan antar unit kerja dan instalasi RS</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-5 text-md-end mt-2 mt-md-0">
+        <span class="badge bg-primary px-3 py-2 me-2" id="total-badge-monitoring">0 Unit</span>
+        <button class="btn btn-outline-secondary btn-sm me-2" id="btn-refresh-monitoring" title="Segarkan Data">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-primary">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Total Unit / Bagian</div>
+              <h4 class="mb-0 fw-bold" id="card-stat-mon-total">0</h4>
+            </div>
+            <i class="fas fa-sitemap fa-2x text-primary opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-success">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Terjadwal Lengkap</div>
+              <h4 class="mb-0 fw-bold text-success" id="card-stat-mon-lengkap">0</h4>
+            </div>
+            <i class="fas fa-check-double fa-2x text-success opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-warning">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Sebagian Terjadwal</div>
+              <h4 class="mb-0 fw-bold text-warning" id="card-stat-mon-sebagian">0</h4>
+            </div>
+            <i class="fas fa-adjust fa-2x text-warning opacity-25"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-danger">
+          <div class="d-flex align-items-center">
+            <div class="flex-grow-1">
+              <div class="text-muted small">Belum Terjadwal</div>
+              <h4 class="mb-0 fw-bold text-danger" id="card-stat-mon-belum">0</h4>
+            </div>
+            <i class="fas fa-exclamation-circle fa-2x text-danger opacity-25"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter & Table Card -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-white py-3 border-bottom">
+        <div class="row g-2 align-items-center justify-content-between">
+          <div class="col-md-3">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-light">Bulan:</span>
+              <input type="month" class="form-control" id="filter-bulan-monitoring" value="2026-04">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
+              <input type="text" class="form-control bg-light border-start-0" id="search-monitoring" placeholder="Cari nama unit kerja...">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="d-none text-center py-2 bg-light border-bottom" id="loading-monitoring">
+          <span class="spinner-border spinner-border-sm text-primary me-2"></span>Memperbarui monitoring jadwal...
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th style="width: 40px;" class="text-center">No</th>
+                <th>Unit Kerja / Bagian</th>
+                <th style="width: 120px;" class="text-center">Total Pegawai</th>
+                <th style="width: 130px;" class="text-center">Terjadwal</th>
+                <th style="width: 220px;">Progress Kelengkapan</th>
+                <th style="width: 150px;" class="text-center">Status</th>
+                <th style="width: 130px;" class="text-center">Total Entri Shift</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-monitoring">
+              <tr>
+                <td colspan="7" class="text-center py-4 text-muted">
+                  <span class="spinner-border spinner-border-sm me-2"></span>Memuat monitoring jadwal...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

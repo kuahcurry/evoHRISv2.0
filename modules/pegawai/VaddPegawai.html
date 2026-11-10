@@ -1,0 +1,733 @@
+<style>
+  .card-form-pegawai {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  .form-section-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #2c7be5;
+    border-bottom: 2px solid #edf2f7;
+    padding-bottom: 0.4rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .avatar-upload-box {
+    width: 140px;
+    height: 140px;
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8fafc;
+    cursor: pointer;
+    overflow: hidden;
+    position: relative;
+    transition: all 0.2s ease;
+  }
+  .avatar-upload-box:hover {
+    border-color: #2c7be5;
+    background-color: #edf2f7;
+  }
+  .avatar-upload-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+</style>
+
+<script type="module">
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+
+  const apiUrl = (typeof config !== 'undefined' && config.api_url) 
+    ? config.api_url 
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  let master = {};
+  let selectedFotoFile = null;
+
+  async function initMasterData() {
+    try {
+      const res = await httpGet(`${apiUrl}/cPegawai/master`);
+      if (res && res.code === 200 && res.data) {
+        master = res.data;
+
+        fillDropdown('add-agama', master.agama, 'KD_AGAMA', 'AGAMA', 'Pilih Agama');
+        fillDropdown('add-identitas', master.identitas, 'KD_IDENTITAS', 'IDENTITAS', 'Pilih Jenis Identitas');
+        fillDropdown('add-goldar', master.gol_darah, 'KD_GOLONGAN_DARAH', 'GOLONGAN_DARAH', 'Pilih Golongan Darah');
+        fillDropdown('add-status-nikah', master.perkawinan, 'KD_STATUS_PERKAWINAN', 'STATUS_PERKAWINAN', 'Pilih Status Pernikahan');
+        fillDropdown('add-bagian', master.bagian, 'KD_BAGIAN', 'BAGIAN', 'Pilih Bagian / Unit Kerja');
+        fillDropdown('add-jabatan', master.jabatan, 'KD_JABATAN', 'JABATAN', 'Pilih Jabatan');
+        fillDropdown('add-pangkat', master.pangkat, 'KD_PANGKAT', 'PANGKAT', 'Pilih Pangkat / Golongan');
+        fillDropdown('add-status-pegawai', master.status_pegawai, 'KD_STATUS_PEGAWAI', 'STATUS_PEGAWAI', 'Pilih Status Kepegawaian');
+        fillDropdown('add-jenis-pegawai', master.jenis_pegawai, 'KD_JENIS_PEGAWAI', 'JENIS_PEGAWAI', 'Pilih Jenis Pegawai');
+        fillDropdown('add-pendidikan', master.jenjang_pendidikan, 'KD_JENJANG', 'JENJANG_PENDIDIKAN', 'Pilih Pendidikan Terakhir');
+        fillDropdown('add-provinsi', master.provinsi, 'KD_PROVINSI', 'PROVINSI', 'Pilih Provinsi');
+      }
+    } catch (err) {
+      console.error('Error in initMasterData:', err);
+    }
+  }
+
+  function fillDropdown(elId, list = [], valKey, textKey, placeholder) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    let opts = `<option value="">-- ${placeholder} --</option>`;
+    list.forEach(item => {
+      opts += `<option value="${item[valKey]}">${item[textKey]}</option>`;
+    });
+    el.innerHTML = opts;
+  }
+
+  // Cascading Wilayah Events
+  async function bindWilayahEvents() {
+    const selProv = document.getElementById('add-provinsi');
+    const selKab = document.getElementById('add-kabupaten');
+    const selKec = document.getElementById('add-kecamatan');
+    const selKel = document.getElementById('add-kelurahan');
+
+    selProv?.addEventListener('change', async (e) => {
+      const kdProv = e.target.value;
+      fillDropdown('add-kabupaten', [], '', '', 'Memuat Kabupaten / Kota...');
+      fillDropdown('add-kecamatan', [], '', '', 'Pilih Kabupaten Dahulu');
+      fillDropdown('add-kelurahan', [], '', '', 'Pilih Kecamatan Dahulu');
+      if (!kdProv) {
+        fillDropdown('add-kabupaten', [], '', '', 'Pilih Provinsi Dahulu');
+        return;
+      }
+      try {
+        const res = await httpGet(`${apiUrl}/cPegawai/get_kabupaten`, { kd_provinsi: kdProv });
+        if (res && res.code === 200) {
+          fillDropdown('add-kabupaten', res.data || [], 'KD_KABUPATEN', 'KABUPATEN', 'Pilih Kabupaten / Kota');
+        }
+      } catch (err) {
+        console.error('Error load kabupaten:', err);
+      }
+    });
+
+    selKab?.addEventListener('change', async (e) => {
+      const kdKab = e.target.value;
+      fillDropdown('add-kecamatan', [], '', '', 'Memuat Kecamatan...');
+      fillDropdown('add-kelurahan', [], '', '', 'Pilih Kecamatan Dahulu');
+      if (!kdKab) {
+        fillDropdown('add-kecamatan', [], '', '', 'Pilih Kabupaten Dahulu');
+        return;
+      }
+      try {
+        const res = await httpGet(`${apiUrl}/cPegawai/get_kecamatan`, { kd_kabupaten: kdKab });
+        if (res && res.code === 200) {
+          fillDropdown('add-kecamatan', res.data || [], 'KD_KECAMATAN', 'KECAMATAN', 'Pilih Kecamatan');
+        }
+      } catch (err) {
+        console.error('Error load kecamatan:', err);
+      }
+    });
+
+    selKec?.addEventListener('change', async (e) => {
+      const kdKec = e.target.value;
+      fillDropdown('add-kelurahan', [], '', '', 'Memuat Kelurahan / Desa...');
+      if (!kdKec) {
+        fillDropdown('add-kelurahan', [], '', '', 'Pilih Kecamatan Dahulu');
+        return;
+      }
+      try {
+        const res = await httpGet(`${apiUrl}/cPegawai/get_kelurahan`, { kd_kecamatan: kdKec });
+        if (res && res.code === 200) {
+          fillDropdown('add-kelurahan', res.data || [], 'KD_KELURAHAN', 'KELURAHAN', 'Pilih Kelurahan / Desa');
+        }
+      } catch (err) {
+        console.error('Error load kelurahan:', err);
+      }
+    });
+  }
+
+  // Preview Foto Profil
+  function bindFotoPreview() {
+    const box = document.getElementById('box-foto-profil');
+    const inputFoto = document.getElementById('input-file-foto');
+    const imgPreview = document.getElementById('img-preview-foto');
+    const iconPlaceholder = document.getElementById('placeholder-icon-foto');
+
+    box?.addEventListener('click', () => {
+      inputFoto?.click();
+    });
+
+    inputFoto?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (!file.type.match('image.*')) {
+        alert('File yang dipilih harus berupa gambar (JPG, PNG, GIF)!');
+        return;
+      }
+
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Ukuran foto profil maksimal 2MB!');
+        return;
+      }
+
+      selectedFotoFile = file;
+      const reader = new FileReader();
+      reader.onload = (re) => {
+        if (imgPreview) {
+          imgPreview.src = re.target.result;
+          imgPreview.classList.remove('d-none');
+        }
+        if (iconPlaceholder) {
+          iconPlaceholder.classList.add('d-none');
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Handle Form Submit
+  async function submitFormPegawai(e) {
+    if (e) e.preventDefault();
+
+    const form = document.getElementById('form-tambah-pegawai');
+    if (!form) return;
+
+    // Reset validation visual
+    form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+
+    const nama = document.getElementById('add-nama')?.value.trim();
+    const nik = document.getElementById('add-nik')?.value.trim().replace(/[^0-9]/g, '');
+    const nip = document.getElementById('add-nip')?.value.trim();
+    const tglLahir = document.getElementById('add-tgl-lahir')?.value;
+    const bagian = document.getElementById('add-bagian')?.value;
+    const jabatan = document.getElementById('add-jabatan')?.value;
+    const statusPegawai = document.getElementById('add-status-pegawai')?.value;
+
+    // Validasi esensial
+    if (!nama || nama.length < 3) {
+      const el = document.getElementById('add-nama');
+      if (el) el.classList.add('is-invalid');
+      alert('Nama lengkap pegawai wajib diisi minimal 3 karakter!');
+      el?.focus();
+      return;
+    }
+
+    if (nik && nik.length !== 16) {
+      const el = document.getElementById('add-nik');
+      if (el) el.classList.add('is-invalid');
+      alert(`Nomor Identitas (NIK KTP) harus 16 digit angka! (Saat ini: ${nik.length} digit)`);
+      el?.focus();
+      return;
+    }
+
+    const btnSimpan = document.getElementById('btn-simpan-add-pegawai');
+    const oldBtnText = btnSimpan ? btnSimpan.innerHTML : '';
+    if (btnSimpan) {
+      btnSimpan.disabled = true;
+      btnSimpan.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan Data...';
+    }
+
+    let fotoFilename = '';
+    // Upload foto profil jika ada
+    if (selectedFotoFile) {
+      try {
+        const formData = new FormData();
+        formData.append('foto', selectedFotoFile);
+        formData.append('nip', nip || 'temp');
+
+        const uploadRes = await fetch(`${apiUrl}/cPegawai/upload_foto`, {
+          method: 'POST',
+          headers: {
+            'Authorization-Key': config.auth_key
+          },
+          body: formData
+        });
+        const uploadJson = await uploadRes.json();
+        if (uploadJson && (uploadJson.code === 200 || uploadJson.status === true)) {
+          fotoFilename = uploadJson.data?.filename || uploadJson.data?.file_name || uploadJson.filename || '';
+        }
+      } catch (err) {
+        console.warn('Gagal upload foto otomatis, tetap lanjut menyimpan profil:', err);
+      }
+    }
+
+    const payload = {
+      NAMA: nama,
+      GELAR_DEPAN: document.getElementById('add-gelar-depan')?.value.trim() || '',
+      GELAR_BELAKANG: document.getElementById('add-gelar-belakang')?.value.trim() || '',
+      NIP: nip,
+      NO_IDENTITAS: nik,
+      KD_IDENTITAS: document.getElementById('add-identitas')?.value || '1',
+      NO_KK: document.getElementById('add-kk')?.value.trim() || '',
+      JENIS_KELAMIN: document.getElementById('add-jk')?.value || 'L',
+      TEMPAT_LAHIR: document.getElementById('add-tempat-lahir')?.value.trim() || '',
+      TANGGAL_LAHIR: tglLahir || '',
+      KD_AGAMA: document.getElementById('add-agama')?.value || '',
+      KD_GOLONGAN_DARAH: document.getElementById('add-goldar')?.value || '',
+      RHESUS: document.getElementById('add-rhesus')?.value || '',
+      KD_STATUS_PERKAWINAN: document.getElementById('add-status-nikah')?.value || '',
+      KD_JENJANG: document.getElementById('add-pendidikan')?.value || '',
+
+      // Penempatan & Status
+      KD_BAGIAN: bagian || '',
+      KD_JABATAN: jabatan || '',
+      KD_PANGKAT: document.getElementById('add-pangkat')?.value || '',
+      KD_STATUS_PEGAWAI: statusPegawai || '',
+      KD_JENIS_PEGAWAI: document.getElementById('add-jenis-pegawai')?.value || '',
+      TGL_MASUK: document.getElementById('add-tgl-masuk')?.value || '',
+      STATUS_AKTIF: document.getElementById('add-status-aktif')?.value || '1',
+
+      // Kontak & Alamat
+      HANDPHONE: document.getElementById('add-hp')?.value.trim() || '',
+      EMAIL: document.getElementById('add-email')?.value.trim() || '',
+      ALAMAT: document.getElementById('add-alamat')?.value.trim() || '',
+      KD_PROVINSI: document.getElementById('add-provinsi')?.value || '',
+      KD_KABUPATEN: document.getElementById('add-kabupaten')?.value || '',
+      KD_KECAMATAN: document.getElementById('add-kecamatan')?.value || '',
+      KD_KELURAHAN: document.getElementById('add-kelurahan')?.value || '',
+      KODE_POS: document.getElementById('add-kodepos')?.value.trim() || '',
+
+      // Tambahan Asuransi / Pajak
+      NO_BPJS_KES: document.getElementById('add-bpjs-kes')?.value.trim() || '',
+      NO_BPJS_TK: document.getElementById('add-bpjs-tk')?.value.trim() || '',
+      NPWP: document.getElementById('add-npwp')?.value.trim() || '',
+
+      // Akun User Login
+      BUAT_USER: document.getElementById('add-buat-user')?.checked ? '1' : '0',
+      USERNAME: document.getElementById('add-username')?.value.trim() || nip,
+      PASSWORD: document.getElementById('add-password')?.value || ''
+    };
+
+    if (fotoFilename) {
+      payload.FOTO = fotoFilename;
+    }
+
+    try {
+      const res = await httpPost(`${apiUrl}/cPegawai/save_data`, payload);
+      if (btnSimpan) {
+        btnSimpan.disabled = false;
+        btnSimpan.innerHTML = oldBtnText;
+      }
+
+      if (res && res.code === 200) {
+        const newId = res.data?.id_pegawai || res.data?.ID_PEGAWAI || res.data?.no_auto || '';
+        
+        if (typeof Swal !== 'undefined') {
+          await Swal.fire({
+            icon: 'success',
+            title: 'Berhasil Terdaftar',
+            text: 'Data pegawai baru berhasil disimpan ke sistem.',
+            timer: 1600,
+            showConfirmButton: false
+          });
+        } else {
+          alert('Data pegawai baru berhasil didaftarkan ke sistem!');
+        }
+
+        // Jika form dibuka di dalam modal/popup EvoPopup, tutup popup-nya
+        if (window.popupTambahPegawai && typeof window.popupTambahPegawai.close === 'function') {
+          window.popupTambahPegawai.close();
+        } else {
+          const activeModal = document.querySelector('#modalTambahPegawai, .modal.show');
+          if (activeModal && typeof bootstrap !== 'undefined') {
+            const bsModal = bootstrap.Modal.getInstance(activeModal);
+            if (bsModal) bsModal.hide();
+          }
+        }
+
+        // Refresh tabel pegawai jika modul list pegawai aktif
+        if (window.vpegawai && typeof window.vpegawai.loadData === 'function') {
+          window.vpegawai.loadData();
+        } else if (typeof loadModule === 'function') {
+          loadModule('modules/pegawai/Vpegawai', '#container-isi');
+        }
+      } else {
+        const errMsg = res?.data?.message || res?.message || 'Gagal menyimpan data pegawai.';
+        if (typeof Swal !== 'undefined') {
+          Swal.fire('Gagal Simpan', errMsg, 'error');
+        } else {
+          alert(errMsg);
+        }
+      }
+    } catch (err) {
+      console.error('Error saat simpan pegawai:', err);
+      if (btnSimpan) {
+        btnSimpan.disabled = false;
+        btnSimpan.innerHTML = oldBtnText;
+      }
+      if (typeof Swal !== 'undefined') {
+        Swal.fire('Error', 'Terjadi kesalahan saat menyimpan data pegawai ke server.', 'error');
+      } else {
+        alert('Terjadi kesalahan saat menyimpan data pegawai ke server.');
+      }
+    }
+  }
+
+  function handleTutupForm() {
+    if (window.popupTambahPegawai && typeof window.popupTambahPegawai.close === 'function') {
+      window.popupTambahPegawai.close();
+      return;
+    }
+    const activeModal = document.querySelector('#modalTambahPegawai, .modal.show');
+    if (activeModal && typeof bootstrap !== 'undefined') {
+      const bsModal = bootstrap.Modal.getInstance(activeModal);
+      if (bsModal) {
+        bsModal.hide();
+        return;
+      }
+    }
+    if (typeof loadModule === 'function') {
+      loadModule('modules/pegawai/Vpegawai', '#container-isi');
+    }
+  }
+
+  function bindEvents() {
+    document.getElementById('btn-kembali-direktori')?.addEventListener('click', handleTutupForm);
+    document.getElementById('btn-batal-tambah')?.addEventListener('click', handleTutupForm);
+
+    document.getElementById('form-tambah-pegawai')?.addEventListener('submit', submitFormPegawai);
+
+    document.getElementById('add-nip')?.addEventListener('input', (e) => {
+      const unameInput = document.getElementById('add-username');
+      if (unameInput && !unameInput.dataset.manualEdited) {
+        unameInput.value = e.target.value.trim();
+      }
+    });
+
+    document.getElementById('add-username')?.addEventListener('input', (e) => {
+      e.target.dataset.manualEdited = 'true';
+    });
+
+    document.getElementById('add-buat-user')?.addEventListener('change', (e) => {
+      const sec = document.getElementById('section-kredensial-user');
+      if (sec) {
+        if (e.target.checked) {
+          sec.classList.remove('d-none');
+        } else {
+          sec.classList.add('d-none');
+        }
+      }
+    });
+  }
+
+  // Global namespace hooks
+  window.vaddpegawai = {
+    initMasterData,
+    submitFormPegawai
+  };
+  document.vaddpegawai = window.vaddpegawai;
+
+  // Initialize
+  initMasterData();
+  bindWilayahEvents();
+  bindFotoPreview();
+  bindEvents();
+</script>
+
+<template>
+  <div class="container-fluid px-3 py-3">
+    <!-- Header Page -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+      <div>
+        <h4 class="mb-1 text-primary fw-bold">
+          <i class="fas fa-user-plus me-2"></i>Tambah Pegawai Baru
+        </h4>
+        <p class="text-muted mb-0 small">
+          Pendaftaran identitas, data kepegawaian, kontak domisili, dan pembuatan akun pegawai RS.
+        </p>
+      </div>
+      <div>
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-kembali-direktori">
+          <i class="fas fa-arrow-left me-1"></i> Kembali ke Direktori
+        </button>
+      </div>
+    </div>
+
+    <!-- Form Container -->
+    <form id="form-tambah-pegawai">
+      <div class="row g-3">
+        <!-- Kolom Kiri: Foto & Identitas Pribadi -->
+        <div class="col-lg-4">
+          <div class="card card-form-pegawai mb-3">
+            <div class="card-body text-center">
+              <label class="form-label small fw-bold text-muted d-block mb-2">Foto Profil Pegawai</label>
+              <div class="d-flex justify-content-center mb-2">
+                <div class="avatar-upload-box" id="box-foto-profil" title="Klik untuk mengunggah foto profil">
+                  <div id="placeholder-icon-foto" class="text-muted text-center p-2">
+                    <i class="fas fa-camera fa-2x mb-1 text-secondary opacity-75"></i>
+                    <div class="small fw-semibold">Pilih Foto</div>
+                    <div class="fs--2 text-muted">Maks. 2MB</div>
+                  </div>
+                  <img id="img-preview-foto" src="" class="d-none" alt="Preview Foto">
+                </div>
+              </div>
+              <input type="file" id="input-file-foto" class="d-none" accept="image/jpeg,image/png,image/jpg">
+              <small class="text-muted d-block">Format didukung: JPG, PNG, JPEG</small>
+            </div>
+          </div>
+
+          <div class="card card-form-pegawai mb-3">
+            <div class="card-header bg-light py-2">
+              <div class="form-section-title mb-0">
+                <i class="fas fa-shield-alt text-primary"></i> Asuransi & Pajak
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="mb-2">
+                <label class="form-label small fw-semibold text-muted mb-1">Nomor BPJS Kesehatan</label>
+                <input type="text" class="form-control form-control-sm" id="add-bpjs-kes" placeholder="13 digit No BPJS Kesehatan">
+              </div>
+              <div class="mb-2">
+                <label class="form-label small fw-semibold text-muted mb-1">Nomor BPJS Ketenagakerjaan</label>
+                <input type="text" class="form-control form-control-sm" id="add-bpjs-tk" placeholder="No BPJS TK / Jamsostek">
+              </div>
+              <div>
+                <label class="form-label small fw-semibold text-muted mb-1">NPWP</label>
+                <input type="text" class="form-control form-control-sm" id="add-npwp" placeholder="Nomor Pokok Wajib Pajak">
+              </div>
+            </div>
+          </div>
+
+          <!-- Kredensial User Account -->
+          <div class="card card-form-pegawai">
+            <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+              <div class="form-section-title mb-0">
+                <i class="fas fa-user-lock text-primary"></i> Akun Pengguna
+              </div>
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="add-buat-user" checked>
+              </div>
+            </div>
+            <div class="card-body" id="section-kredensial-user">
+              <div class="mb-2">
+                <label class="form-label small fw-semibold text-muted mb-1">Username Login</label>
+                <input type="text" class="form-control form-control-sm" id="add-username" placeholder="Username (default: NIP)">
+              </div>
+              <div>
+                <label class="form-label small fw-semibold text-muted mb-1">Password Awal</label>
+                <input type="password" class="form-control form-control-sm" id="add-password" placeholder="Password akun sistem">
+                <small class="text-muted">Biarkan kosong jika default password menggunakan tanggal lahir.</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kolom Kanan: Rincian Lengkap Profil Pegawai -->
+        <div class="col-lg-8">
+          <!-- Card Identitas & Biodata -->
+          <div class="card card-form-pegawai mb-3">
+            <div class="card-header bg-light py-2">
+              <div class="form-section-title mb-0">
+                <i class="fas fa-id-card text-primary"></i> Biodata Lengkap Pegawai
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="row g-2 mb-2">
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold text-muted mb-1">Gelar Depan</label>
+                  <input type="text" class="form-control form-control-sm" id="add-gelar-depan" placeholder="dr. / Ns. / Drs.">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Nama Lengkap <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control form-control-sm" id="add-nama" required placeholder="Nama lengkap tanpa gelar">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold text-muted mb-1">Gelar Belakang</label>
+                  <input type="text" class="form-control form-control-sm" id="add-gelar-belakang" placeholder="Sp.A / S.Kep / S.Kom">
+                </div>
+              </div>
+
+              <div class="row g-2 mb-2">
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold text-muted mb-1">NIP Pegawai</label>
+                  <input type="text" class="form-control form-control-sm" id="add-nip" placeholder="Nomor Induk Pegawai">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold text-muted mb-1">NIK (KTP 16 Digit)</label>
+                  <input type="text" class="form-control form-control-sm" id="add-nik" maxlength="16" placeholder="16 digit angka KTP">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold text-muted mb-1">Nomor Kartu Keluarga (KK)</label>
+                  <input type="text" class="form-control form-control-sm" id="add-kk" maxlength="16" placeholder="16 digit No KK">
+                </div>
+              </div>
+
+              <div class="row g-2 mb-2">
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold text-muted mb-1">Jenis Kelamin</label>
+                  <select class="form-select form-select-sm" id="add-jk">
+                    <option value="L">Laki-laki</option>
+                    <option value="P">Perempuan</option>
+                  </select>
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label small fw-semibold text-muted mb-1">Tempat Lahir</label>
+                  <input type="text" class="form-control form-control-sm" id="add-tempat-lahir" placeholder="Kota / Kabupaten Lahir">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold text-muted mb-1">Tanggal Lahir</label>
+                  <input type="date" class="form-control form-control-sm" id="add-tgl-lahir">
+                </div>
+              </div>
+
+              <div class="row g-2">
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold text-muted mb-1">Agama</label>
+                  <select class="form-select form-select-sm" id="add-agama">
+                    <option value="">Pilih Agama</option>
+                  </select>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small fw-semibold text-muted mb-1">Gol. Darah</label>
+                  <select class="form-select form-select-sm" id="add-goldar">
+                    <option value="">-</option>
+                  </select>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small fw-semibold text-muted mb-1">Rhesus</label>
+                  <select class="form-select form-select-sm" id="add-rhesus">
+                    <option value="">-</option>
+                    <option value="+">+</option>
+                    <option value="-">-</option>
+                  </select>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small fw-semibold text-muted mb-1">Status Nikah</label>
+                  <select class="form-select form-select-sm" id="add-status-nikah">
+                    <option value="">-</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold text-muted mb-1">Pendidikan Terakhir</label>
+                  <select class="form-select form-select-sm" id="add-pendidikan">
+                    <option value="">Pilih Pendidikan</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card Penempatan & Status Kerja -->
+          <div class="card card-form-pegawai mb-3">
+            <div class="card-header bg-light py-2">
+              <div class="form-section-title mb-0">
+                <i class="fas fa-briefcase text-primary"></i> Penempatan & Status Kerja
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Bagian / Unit Kerja</label>
+                  <select class="form-select form-select-sm" id="add-bagian">
+                    <option value="">Pilih Bagian</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Jabatan Pegawai</label>
+                  <select class="form-select form-select-sm" id="add-jabatan">
+                    <option value="">Pilih Jabatan</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row g-2">
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold text-muted mb-1">Pangkat / Golongan</label>
+                  <select class="form-select form-select-sm" id="add-pangkat">
+                    <option value="">Pilih Pangkat</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold text-muted mb-1">Status Kepegawaian</label>
+                  <select class="form-select form-select-sm" id="add-status-pegawai">
+                    <option value="">Pilih Status</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold text-muted mb-1">Jenis Pegawai</label>
+                  <select class="form-select form-select-sm" id="add-jenis-pegawai">
+                    <option value="">Pilih Jenis</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold text-muted mb-1">TMT Mulai Bekerja</label>
+                  <input type="date" class="form-control form-control-sm" id="add-tgl-masuk">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card Kontak & Domisili -->
+          <div class="card card-form-pegawai mb-3">
+            <div class="card-header bg-light py-2">
+              <div class="form-section-title mb-0">
+                <i class="fas fa-map-marker-alt text-primary"></i> Kontak & Domisili
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">No. Handphone / WhatsApp</label>
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="fas fa-phone text-muted"></i></span>
+                    <input type="text" class="form-control" id="add-hp" placeholder="Contoh: 081234567890">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Email Aktif</label>
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="fas fa-envelope text-muted"></i></span>
+                    <input type="email" class="form-control" id="add-email" placeholder="nama@email.com">
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label small fw-semibold text-muted mb-1">Alamat Domisili Lengkap (Jalan, RT/RW)</label>
+                <textarea class="form-control form-control-sm" id="add-alamat" rows="2" placeholder="Nama Jalan, No. Rumah, RT/RW"></textarea>
+              </div>
+
+              <div class="row g-2">
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold text-muted mb-1">Provinsi</label>
+                  <select class="form-select form-select-sm" id="add-provinsi">
+                    <option value="">Pilih Provinsi</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold text-muted mb-1">Kabupaten / Kota</label>
+                  <select class="form-select form-select-sm" id="add-kabupaten">
+                    <option value="">Pilih Provinsi Dahulu</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold text-muted mb-1">Kecamatan</label>
+                  <select class="form-select form-select-sm" id="add-kecamatan">
+                    <option value="">Pilih Kabupaten Dahulu</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold text-muted mb-1">Kelurahan / Desa</label>
+                  <select class="form-select form-select-sm" id="add-kelurahan">
+                    <option value="">Pilih Kecamatan Dahulu</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="d-flex justify-content-end gap-2 pb-4">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-batal-add" onclick="loadModule('modules/pegawai/Vpegawai', '#container-isi')">
+              <i class="fas fa-times me-1"></i> Batal
+            </button>
+            <button type="submit" class="btn btn-primary btn-sm" id="btn-simpan-add-pegawai">
+              <i class="fas fa-save me-1"></i> Simpan Pegawai Baru
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</template>

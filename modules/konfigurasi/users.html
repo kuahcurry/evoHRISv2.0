@@ -1,0 +1,817 @@
+<style>
+  .user-badge-valid { background-color: rgba(40, 167, 69, 0.15); color: #28a745; font-weight: 600; }
+  .user-badge-invalid { background-color: rgba(220, 53, 69, 0.15); color: #dc3545; font-weight: 600; }
+  .avatar-user {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, #2c7be5 0%, #1a5bb8 100%);
+  }
+</style>
+
+<template id="template-konfig-users">
+  <div class="row mb-3">
+    <div class="col">
+      <div class="card bg-100 shadow-none border">
+        <div class="card-body py-3">
+          <div class="row justify-content-between align-items-center">
+            <div class="col-auto">
+              <h5 class="mb-1 text-primary fw-bold"><i class="fas fa-users-cog me-2"></i>Manajemen Akun & Pengguna Sistem</h5>
+              <div class="text-secondary small">Kelola otentikasi login, peran hak akses, dan status akun pengguna SIMRS / HRIS.</div>
+            </div>
+            <div class="col-auto">
+              <button class="btn btn-sm btn-falcon-default me-1" id="btn-refresh-users">
+                <i class="fas fa-sync-alt me-1"></i>Refresh
+              </button>
+              <button class="btn btn-sm btn-primary" id="btn-add-user">
+                <i class="fas fa-user-plus me-1"></i>Tambah Akun Pengguna
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="row g-3 mb-3">
+    <div class="col-sm-6 col-md-3">
+      <div class="card overflow-hidden">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="avatar-user me-3 bg-primary"><i class="fas fa-users"></i></div>
+            <div>
+              <h6 class="text-secondary mb-1">Total Akun</h6>
+              <h4 class="mb-0 text-primary fw-bold" id="stat-total-users">0</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-md-3">
+      <div class="card overflow-hidden">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="avatar-user me-3 bg-success" style="background: linear-gradient(135deg, #00d27a 0%, #00864e 100%);"><i class="fas fa-user-check"></i></div>
+            <div>
+              <h6 class="text-secondary mb-1">Akun Valid / Aktif</h6>
+              <h4 class="mb-0 text-success fw-bold" id="stat-active-users">0</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-md-3">
+      <div class="card overflow-hidden">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="avatar-user me-3 bg-danger" style="background: linear-gradient(135deg, #e63757 0%, #a61b34 100%);"><i class="fas fa-user-slash"></i></div>
+            <div>
+              <h6 class="text-secondary mb-1">Akun Diblokir</h6>
+              <h4 class="mb-0 text-danger fw-bold" id="stat-blocked-users">0</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-md-3">
+      <div class="card overflow-hidden">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="avatar-user me-3 bg-warning" style="background: linear-gradient(135deg, #f5803e 0%, #bf5215 100%);"><i class="fas fa-shield-alt"></i></div>
+            <div>
+              <h6 class="text-secondary mb-1">Peran / Level Sistem</h6>
+              <h4 class="mb-0 text-warning fw-bold" id="stat-total-roles">0</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter & Main Card -->
+  <div class="card mb-3">
+    <div class="card-header bg-light">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-5 col-sm-12">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white"><i class="fas fa-search text-secondary"></i></span>
+            <input type="text" class="form-control" id="user-filter-search" placeholder="Cari NIP atau Nama Pengguna...">
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <select class="form-select form-select-sm" id="user-filter-role">
+            <option value="">-- Semua Peran / Level --</option>
+          </select>
+        </div>
+        <div class="col-md-2 col-sm-6">
+          <select class="form-select form-select-sm" id="user-filter-status">
+            <option value="">-- Semua Status --</option>
+            <option value="valid">Aktif / Valid</option>
+            <option value="non-aktif">Diblokir / Non-Aktif</option>
+          </select>
+        </div>
+        <div class="col-md-2 col-sm-12 text-end">
+          <button class="btn btn-sm btn-falcon-default w-100" id="btn-reset-filters">
+            <i class="fas fa-undo me-1"></i>Reset Filter
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped table-hover mb-0 fs--1">
+          <thead class="bg-200 text-900">
+            <tr>
+              <th class="text-center py-2" style="width: 50px;">#</th>
+              <th class="py-2">Pegawai & Kredensial</th>
+              <th class="py-2">Peran / Level Akses</th>
+              <th class="py-2">Terakhir Login</th>
+              <th class="text-center py-2">Status Akun</th>
+              <th class="text-center py-2">Koneksi</th>
+              <th class="text-end py-2 pe-3" style="width: 140px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="user-table-body">
+            <tr>
+              <td colspan="7" class="text-center py-4 text-muted">
+                <div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat data akun pengguna...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pagination & Summary Footer -->
+    <div class="card-footer bg-light py-2">
+      <div class="row align-items-center justify-content-between">
+        <div class="col-auto text-secondary small" id="user-page-info">Menampilkan 0 - 0 dari 0 data</div>
+        <div class="col-auto">
+          <ul class="pagination pagination-sm mb-0" id="user-pagination"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Tambah / Edit Pengguna -->
+  <div class="modal fade" id="modal-user-form" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-light">
+          <h5 class="modal-title" id="modal-user-title"><i class="fas fa-user-plus me-2 text-primary"></i>Tambah Akun Pengguna</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="form-user">
+          <input type="hidden" id="form-user-id" name="id">
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-12">
+                <label class="form-label fw-bold">Pilih Pegawai <span class="text-danger">*</span></label>
+                <select class="form-select" id="form-user-pegawai" required>
+                  <option value="">-- Pilih Pegawai --</option>
+                </select>
+                <div class="form-text">Pilih pegawai terdaftar untuk dijadikan akun pengguna sistem.</div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-bold">NIP Pegawai <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="form-user-nip" name="nip" readonly required>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Nama Lengkap <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="form-user-nama" name="nama_lengkap" readonly required>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Peran / Level Akses <span class="text-danger">*</span></label>
+                <select class="form-select" id="form-user-role" name="kd_userlevel" required>
+                  <option value="">-- Pilih Peran Akses --</option>
+                </select>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Status Akun</label>
+                <select class="form-select" id="form-user-status" name="status_user">
+                  <option value="valid">Aktif / Valid</option>
+                  <option value="non-aktif">Diblokir / Non-Aktif</option>
+                </select>
+              </div>
+
+              <div class="col-md-12" id="password-container">
+                <label class="form-label fw-bold">Password Login <span class="text-danger" id="pwd-required-marker">*</span></label>
+                <div class="input-group">
+                  <input type="password" class="form-control" id="form-user-password" name="password" placeholder="Masukkan password (min. 6 karakter)">
+                  <button class="btn btn-outline-secondary" type="button" id="btn-toggle-pwd"><i class="fas fa-eye"></i></button>
+                </div>
+                <div class="form-text text-muted">Untuk akun baru default adalah <code>123456</code>. Jika mengedit, biarkan kosong bila tidak ingin mengganti password.</div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary" id="btn-submit-user">
+              <i class="fas fa-save me-1"></i>Simpan Akun
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Reset Password -->
+  <div class="modal fade" id="modal-reset-pwd" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-light">
+          <h5 class="modal-title"><i class="fas fa-key me-2 text-warning"></i>Reset Password Akun</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="form-reset-pwd">
+          <input type="hidden" id="reset-pwd-id">
+          <div class="modal-body">
+            <div class="alert alert-info py-2 small mb-3">
+              Mereset kata sandi untuk akun <b id="reset-pwd-name">-</b> (NIP: <span id="reset-pwd-nip">-</span>).
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Password Baru <span class="text-danger">*</span></label>
+              <input type="password" class="form-control" id="reset-pwd-val" required placeholder="Minimal 6 karakter" minlength="6">
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Konfirmasi Password Baru <span class="text-danger">*</span></label>
+              <input type="password" class="form-control" id="reset-pwd-confirm" required placeholder="Ulangi password baru">
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="check-default-pwd">
+              <label class="form-check-label small" for="check-default-pwd">
+                Gunakan password default SIMRS (<code>123456</code>)
+              </label>
+            </div>
+          </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-warning" id="btn-submit-reset-pwd">
+              <i class="fas fa-key me-1"></i>Reset Password
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+
+  let state = {
+    users: [],
+    roles: [],
+    pegawaiList: [],
+    search: '',
+    roleId: '',
+    status: '',
+    page: 1,
+    perPage: 10,
+    total: 0,
+    stats: { total: 0, valid: 0, non_aktif: 0 }
+  };
+
+  const getInitials = (name) => {
+    if (!name) return 'U';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  };
+
+  const loadMasterData = async () => {
+    try {
+      const resp = await httpGet(`${config.api_url}/konfigurasi/master`);
+      if (resp && resp.data) {
+        state.roles = resp.data.roles || [];
+        state.pegawaiList = resp.data.pegawai || [];
+        
+        // Populate Role dropdown in filters
+        const filterRoleEl = document.getElementById('user-filter-role');
+        const formRoleEl = document.getElementById('form-user-role');
+        if (filterRoleEl) {
+          filterRoleEl.innerHTML = '<option value="">-- Semua Peran / Level --</option>' +
+            state.roles.map(r => `<option value="${r.ID}">${r.LEVEL} (${r.KD_LEVEL})</option>`).join('');
+        }
+        if (formRoleEl) {
+          formRoleEl.innerHTML = '<option value="">-- Pilih Peran Akses --</option>' +
+            state.roles.map(r => `<option value="${r.ID}">${r.LEVEL}</option>`).join('');
+        }
+
+        // Populate Pegawai dropdown in modal
+        const formPegawaiEl = document.getElementById('form-user-pegawai');
+        if (formPegawaiEl) {
+          formPegawaiEl.innerHTML = '<option value="">-- Pilih Pegawai --</option>' +
+            state.pegawaiList.map(p => `<option value="${p.NIP}" data-nama="${p.NAMA_LENGKAP}">${p.NIP} - ${p.NAMA_LENGKAP}</option>`).join('');
+        }
+
+        const statRolesEl = document.getElementById('stat-total-roles');
+        if (statRolesEl) statRolesEl.textContent = state.roles.length;
+      }
+    } catch (err) {
+      console.error('Error loading master data for users:', err);
+    }
+  };
+
+  const loadUsers = async () => {
+    const tbody = document.getElementById('user-table-body');
+    if (!tbody) return;
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="text-center py-4 text-muted">
+          <div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat data akun pengguna...
+        </td>
+      </tr>
+    `;
+
+    try {
+      const params = new URLSearchParams({
+        search: state.search,
+        role_id: state.roleId,
+        status: state.status,
+        page: state.page,
+        per_page: state.perPage
+      });
+
+      const resp = await httpGet(`${config.api_url}/konfigurasi/users/list?${params.toString()}`);
+      if (resp && resp.data) {
+        state.users = resp.data || [];
+        state.total = resp.rows || 0;
+        if (resp.details && resp.details.stats) {
+          state.stats = resp.details.stats;
+        }
+
+        renderStats();
+        renderTable();
+        renderPagination();
+      }
+    } catch (err) {
+      console.error('Error loading users:', err);
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="text-center py-4 text-danger">
+            <i class="fas fa-exclamation-triangle me-2"></i>Gagal memuat data pengguna: ${err.message || 'Terjadi kesalahan sistem'}
+          </td>
+        </tr>
+      `;
+    }
+  };
+
+  const renderStats = () => {
+    const totalEl = document.getElementById('stat-total-users');
+    const validEl = document.getElementById('stat-active-users');
+    const blockedEl = document.getElementById('stat-blocked-users');
+
+    if (totalEl) totalEl.textContent = state.stats.total || state.total || 0;
+    if (validEl) validEl.textContent = state.stats.valid || 0;
+    if (blockedEl) blockedEl.textContent = state.stats.non_aktif || 0;
+  };
+
+  const renderTable = () => {
+    const tbody = document.getElementById('user-table-body');
+    if (!tbody) return;
+
+    if (!state.users || state.users.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="text-center py-4 text-muted">
+            <i class="fas fa-info-circle me-2"></i>Tidak ada data akun pengguna yang sesuai dengan filter.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    const startIdx = (state.page - 1) * state.perPage;
+    let html = '';
+
+    state.users.forEach((u, idx) => {
+      const rowNum = startIdx + idx + 1;
+      const initials = getInitials(u.nama_lengkap);
+      const isOnline = (u.status === 'online');
+      const isValid = (u.status_user === 'valid');
+      const badgeStatus = isValid 
+        ? `<span class="badge user-badge-valid"><i class="fas fa-check-circle me-1"></i>Valid</span>`
+        : `<span class="badge user-badge-invalid"><i class="fas fa-ban me-1"></i>Non-Aktif</span>`;
+      
+      const badgeOnline = isOnline
+        ? `<span class="badge bg-success"><i class="fas fa-circle me-1" style="font-size: 8px;"></i>Online</span>`
+        : `<span class="badge bg-secondary"><i class="far fa-circle me-1" style="font-size: 8px;"></i>Offline</span>`;
+
+      const lastLogin = u.login_terakhir ? u.login_terakhir : '<span class="text-muted fst-italic">Belum pernah</span>';
+
+      html += `
+        <tr>
+          <td class="text-center align-middle">${rowNum}</td>
+          <td class="align-middle">
+            <div class="d-flex align-items-center">
+              <div class="avatar-user me-2" style="font-size: 13px;">${initials}</div>
+              <div>
+                <div class="fw-bold text-dark">${u.nama_lengkap || '-'}</div>
+                <div class="text-muted small">NIP: <code>${u.nip || '-'}</code></div>
+              </div>
+            </div>
+          </td>
+          <td class="align-middle">
+            <span class="badge bg-100 text-primary border border-200">${u.role_name || 'Tidak ada'}</span>
+          </td>
+          <td class="align-middle small">${lastLogin}</td>
+          <td class="text-center align-middle">${badgeStatus}</td>
+          <td class="text-center align-middle">${badgeOnline}</td>
+          <td class="text-end align-middle pe-3">
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-falcon-default btn-edit-user" data-id="${u.id}" title="Edit User">
+                <i class="fas fa-edit text-primary"></i>
+              </button>
+              <button class="btn btn-falcon-default btn-reset-user-pwd" data-id="${u.id}" data-name="${u.nama_lengkap}" data-nip="${u.nip}" title="Reset Password">
+                <i class="fas fa-key text-warning"></i>
+              </button>
+              <button class="btn btn-falcon-default btn-toggle-status" data-id="${u.id}" data-status="${u.status_user}" title="${isValid ? 'Blokir Akun' : 'Aktifkan Akun'}">
+                <i class="fas ${isValid ? 'fa-ban text-danger' : 'fa-check text-success'}"></i>
+              </button>
+              <button class="btn btn-falcon-default btn-delete-user" data-id="${u.id}" data-name="${u.nama_lengkap}" title="Hapus Akun">
+                <i class="fas fa-trash-alt text-danger"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    bindTableEvents();
+  };
+
+  const renderPagination = () => {
+    const pageInfo = document.getElementById('user-page-info');
+    const pagination = document.getElementById('user-pagination');
+    if (!pagination) return;
+
+    const totalPages = Math.ceil(state.total / state.perPage) || 1;
+    const from = state.total === 0 ? 0 : (state.page - 1) * state.perPage + 1;
+    const to = Math.min(state.page * state.perPage, state.total);
+
+    if (pageInfo) {
+      pageInfo.textContent = `Menampilkan ${from} - ${to} dari ${state.total} akun`;
+    }
+
+    let html = '';
+    html += `
+      <li class="page-item ${state.page <= 1 ? 'disabled' : ''}">
+        <a class="page-link" href="#" data-page="${state.page - 1}"><i class="fas fa-chevron-left"></i></a>
+      </li>
+    `;
+
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || (p >= state.page - 2 && p <= state.page + 2)) {
+        html += `
+          <li class="page-item ${p === state.page ? 'active' : ''}">
+            <a class="page-link" href="#" data-page="${p}">${p}</a>
+          </li>
+        `;
+      } else if (p === state.page - 3 || p === state.page + 3) {
+        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      }
+    }
+
+    html += `
+      <li class="page-item ${state.page >= totalPages ? 'disabled' : ''}">
+        <a class="page-link" href="#" data-page="${state.page + 1}"><i class="fas fa-chevron-right"></i></a>
+      </li>
+    `;
+
+    pagination.innerHTML = html;
+
+    pagination.querySelectorAll('.page-link').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const p = parseInt(link.getAttribute('data-page'));
+        if (p && p >= 1 && p <= totalPages && p !== state.page) {
+          state.page = p;
+          loadUsers();
+        }
+      });
+    });
+  };
+
+  const bindTableEvents = () => {
+    // Edit user
+    document.querySelectorAll('.btn-edit-user').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        openEditModal(id);
+      });
+    });
+
+    // Reset password
+    document.querySelectorAll('.btn-reset-user-pwd').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const name = btn.getAttribute('data-name');
+        const nip = btn.getAttribute('data-nip');
+        openResetModal(id, name, nip);
+      });
+    });
+
+    // Toggle status
+    document.querySelectorAll('.btn-toggle-status').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const curStatus = btn.getAttribute('data-status');
+        const newStatus = curStatus === 'valid' ? 'non-aktif' : 'valid';
+        
+        if (confirm(`Apakah Anda yakin ingin mengubah status akun ini menjadi "${newStatus}"?`)) {
+          try {
+            await httpPost(`${config.api_url}/konfigurasi/users/status`, { id, status_user: newStatus });
+            loadUsers();
+          } catch (err) {
+            alert('Gagal mengubah status: ' + err.message);
+          }
+        }
+      });
+    });
+
+    // Delete user
+    document.querySelectorAll('.btn-delete-user').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const name = btn.getAttribute('data-name');
+        if (confirm(`PERINGATAN: Apakah Anda yakin ingin menghapus akun "${name}" secara permanen?`)) {
+          try {
+            await httpPost(`${config.api_url}/konfigurasi/users/delete/${id}`, {});
+            loadUsers();
+          } catch (err) {
+            alert('Gagal menghapus user: ' + err.message);
+          }
+        }
+      });
+    });
+  };
+
+  const openEditModal = async (id) => {
+    try {
+      const resp = await httpGet(`${config.api_url}/konfigurasi/users/detail/${id}`);
+      if (!resp || !resp.data) return;
+
+      const u = resp.data;
+      document.getElementById('modal-user-title').innerHTML = '<i class="fas fa-user-edit me-2 text-primary"></i>Edit Akun Pengguna';
+      document.getElementById('form-user-id').value = u.id;
+      document.getElementById('form-user-nip').value = u.nip;
+      document.getElementById('form-user-nama').value = u.nama_lengkap;
+      document.getElementById('form-user-role').value = u.kd_userlevel || '';
+      document.getElementById('form-user-status').value = u.status_user || 'valid';
+      
+      const pwdContainer = document.getElementById('password-container');
+      const pwdReq = document.getElementById('pwd-required-marker');
+      const pwdInput = document.getElementById('form-user-password');
+      if (pwdReq) pwdReq.classList.add('d-none');
+      if (pwdInput) {
+        pwdInput.removeAttribute('required');
+        pwdInput.value = '';
+      }
+
+      // Hide pegawai picker when editing to avoid changing employee binding accidentally
+      const formPegawaiEl = document.getElementById('form-user-pegawai');
+      if (formPegawaiEl) {
+        formPegawaiEl.value = u.nip;
+        formPegawaiEl.disabled = true;
+      }
+
+      const modalEl = document.getElementById('modal-user-form');
+      if (modalEl && window.bootstrap) {
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+      }
+    } catch (err) {
+      alert('Gagal memuat detail akun: ' + err.message);
+    }
+  };
+
+  const openResetModal = (id, name, nip) => {
+    document.getElementById('reset-pwd-id').value = id;
+    document.getElementById('reset-pwd-name').textContent = name;
+    document.getElementById('reset-pwd-nip').textContent = nip;
+    document.getElementById('reset-pwd-val').value = '';
+    document.getElementById('reset-pwd-confirm').value = '';
+    document.getElementById('check-default-pwd').checked = false;
+
+    const modalEl = document.getElementById('modal-reset-pwd');
+    if (modalEl && window.bootstrap) {
+      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modal.show();
+    }
+  };
+
+  const bindEvents = () => {
+    // Search input debounced
+    let searchTimer = null;
+    const searchInput = document.getElementById('user-filter-search');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+          state.search = e.target.value.trim();
+          state.page = 1;
+          loadUsers();
+        }, 300);
+      });
+    }
+
+    // Role filter
+    const roleSelect = document.getElementById('user-filter-role');
+    if (roleSelect) {
+      roleSelect.addEventListener('change', (e) => {
+        state.roleId = e.target.value;
+        state.page = 1;
+        loadUsers();
+      });
+    }
+
+    // Status filter
+    const statusSelect = document.getElementById('user-filter-status');
+    if (statusSelect) {
+      statusSelect.addEventListener('change', (e) => {
+        state.status = e.target.value;
+        state.page = 1;
+        loadUsers();
+      });
+    }
+
+    // Reset filters
+    const resetBtn = document.getElementById('btn-reset-filters');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        state.search = '';
+        state.roleId = '';
+        state.status = '';
+        state.page = 1;
+        if (searchInput) searchInput.value = '';
+        if (roleSelect) roleSelect.value = '';
+        if (statusSelect) statusSelect.value = '';
+        loadUsers();
+      });
+    }
+
+    // Refresh button
+    const refreshBtn = document.getElementById('btn-refresh-users');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => {
+        loadUsers();
+      });
+    }
+
+    // Add user button
+    const addBtn = document.getElementById('btn-add-user');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        document.getElementById('modal-user-title').innerHTML = '<i class="fas fa-user-plus me-2 text-primary"></i>Tambah Akun Pengguna';
+        document.getElementById('form-user-id').value = '';
+        document.getElementById('form-user-nip').value = '';
+        document.getElementById('form-user-nama').value = '';
+        document.getElementById('form-user-role').value = '';
+        document.getElementById('form-user-status').value = 'valid';
+        
+        const pwdReq = document.getElementById('pwd-required-marker');
+        const pwdInput = document.getElementById('form-user-password');
+        if (pwdReq) pwdReq.classList.remove('d-none');
+        if (pwdInput) {
+          pwdInput.setAttribute('required', 'required');
+          pwdInput.value = '123456';
+        }
+
+        const formPegawaiEl = document.getElementById('form-user-pegawai');
+        if (formPegawaiEl) {
+          formPegawaiEl.value = '';
+          formPegawaiEl.disabled = false;
+        }
+
+        const modalEl = document.getElementById('modal-user-form');
+        if (modalEl && window.bootstrap) {
+          const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+          modal.show();
+        }
+      });
+    }
+
+    // Pegawai select change event
+    const selectPegawai = document.getElementById('form-user-pegawai');
+    if (selectPegawai) {
+      selectPegawai.addEventListener('change', (e) => {
+        const nip = e.target.value;
+        const selectedOpt = e.target.options[e.target.selectedIndex];
+        const nama = selectedOpt ? selectedOpt.getAttribute('data-nama') : '';
+        document.getElementById('form-user-nip').value = nip;
+        document.getElementById('form-user-nama').value = nama;
+      });
+    }
+
+    // Toggle password visibility
+    const btnTogglePwd = document.getElementById('btn-toggle-pwd');
+    if (btnTogglePwd) {
+      btnTogglePwd.addEventListener('click', () => {
+        const pwdInput = document.getElementById('form-user-password');
+        if (pwdInput.type === 'password') {
+          pwdInput.type = 'text';
+          btnTogglePwd.innerHTML = '<i class="fas fa-eye-slash"></i>';
+        } else {
+          pwdInput.type = 'password';
+          btnTogglePwd.innerHTML = '<i class="fas fa-eye"></i>';
+        }
+      });
+    }
+
+    // User Form Submit
+    const userForm = document.getElementById('form-user');
+    if (userForm) {
+      userForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('form-user-id').value;
+        const nip = document.getElementById('form-user-nip').value;
+        const nama_lengkap = document.getElementById('form-user-nama').value;
+        const kd_userlevel = document.getElementById('form-user-role').value;
+        const status_user = document.getElementById('form-user-status').value;
+        const password = document.getElementById('form-user-password').value;
+
+        if (!nip || !nama_lengkap || !kd_userlevel) {
+          alert('Mohon lengkapi NIP, nama pegawai, dan peran akses.');
+          return;
+        }
+
+        const payload = { id, nip, nama_lengkap, kd_userlevel, status_user };
+        if (password) payload.password = password;
+
+        try {
+          await httpPost(`${config.api_url}/konfigurasi/users/save`, payload);
+          const modalEl = document.getElementById('modal-user-form');
+          if (modalEl && window.bootstrap) {
+            bootstrap.Modal.getInstance(modalEl).hide();
+          }
+          loadUsers();
+        } catch (err) {
+          alert('Gagal menyimpan akun pengguna: ' + err.message);
+        }
+      });
+    }
+
+    // Check default password checkbox
+    const checkDefPwd = document.getElementById('check-default-pwd');
+    if (checkDefPwd) {
+      checkDefPwd.addEventListener('change', (e) => {
+        if (e.target.checked) {
+          document.getElementById('reset-pwd-val').value = '123456';
+          document.getElementById('reset-pwd-confirm').value = '123456';
+        } else {
+          document.getElementById('reset-pwd-val').value = '';
+          document.getElementById('reset-pwd-confirm').value = '';
+        }
+      });
+    }
+
+    // Reset Password Form Submit
+    const resetForm = document.getElementById('form-reset-pwd');
+    if (resetForm) {
+      resetForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('reset-pwd-id').value;
+        const pwd = document.getElementById('reset-pwd-val').value;
+        const confirmPwd = document.getElementById('reset-pwd-confirm').value;
+
+        if (pwd !== confirmPwd) {
+          alert('Konfirmasi password tidak cocok dengan password baru!');
+          return;
+        }
+
+        try {
+          await httpPost(`${config.api_url}/konfigurasi/users/reset-password`, { id, password: pwd });
+          const modalEl = document.getElementById('modal-reset-pwd');
+          if (modalEl && window.bootstrap) {
+            bootstrap.Modal.getInstance(modalEl).hide();
+          }
+          alert('Password pengguna berhasil direset.');
+        } catch (err) {
+          alert('Gagal mereset password: ' + err.message);
+        }
+      });
+    }
+  };
+
+  const initModule = async () => {
+    bindEvents();
+    await loadMasterData();
+    await loadUsers();
+  };
+
+  initModule();
+</script>

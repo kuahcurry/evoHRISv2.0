@@ -1,0 +1,608 @@
+<template id="template-konfig-manajemen">
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="mb-1 text-primary fw-bold"><i class="fas fa-sliders-h me-2"></i>Manajemen Sistem & Hierarki Approval</h5>
+          <p class="text-muted small mb-0">Konfigurasi pejabat penandatangan dokumen dan alur routing approval berjenjang e-Kinerja.</p>
+        </div>
+        <div>
+          <button class="btn btn-sm btn-outline-secondary" id="btn-refresh-all">
+            <i class="fas fa-sync-alt me-1"></i>Refresh Data
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <ul class="nav nav-tabs mb-3" id="manajemenTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="tab-profile-link" data-bs-toggle="tab" data-bs-target="#tab-profile" type="button" role="tab">
+        <i class="fas fa-stamp me-2"></i>Pejabat Penandatangan
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-route-link" data-bs-toggle="tab" data-bs-target="#tab-route" type="button" role="tab">
+        <i class="fas fa-network-wired me-2"></i>Routing Hierarki Approval (<span id="badge-total-route" class="badge bg-primary">0</span>)
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content" id="manajemenTabContent">
+    <!-- TAB 1: PEJABAT PENANDATANGAN -->
+    <div class="tab-pane fade show active" id="tab-profile" role="tabpanel">
+      <div class="row g-3">
+        <div class="col-lg-8 col-md-12">
+          <div class="card mb-3">
+            <div class="card-header bg-light py-2">
+              <h6 class="mb-0 text-dark fw-bold"><i class="fas fa-stamp me-2 text-primary"></i>Profil Pejabat Penandatangan Dokumen & SK</h6>
+            </div>
+            <div class="card-body">
+              <form id="form-pejabat-profile">
+                <!-- Kepala Bidang SDM -->
+                <div class="border rounded p-3 mb-3 bg-white">
+                  <h6 class="fw-bold text-primary mb-3"><i class="fas fa-user-tie me-2"></i>Kepala Bidang SDM (KA_BID_SDM)</h6>
+                  <div class="row g-2">
+                    <div class="col-md-7">
+                      <label class="form-label small fw-bold">Nama Lengkap & Gelar</label>
+                      <input type="text" class="form-control form-control-sm" id="set-kabid-nama" name="kabid_nama" placeholder="Nama Lengkap Pejabat">
+                    </div>
+                    <div class="col-md-5">
+                      <label class="form-label small fw-bold">NIP</label>
+                      <input type="text" class="form-control form-control-sm" id="set-kabid-nip" name="kabid_nip" placeholder="19XXXXXXXXXXXXXX">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Kepala Instalasi -->
+                <div class="border rounded p-3 mb-3 bg-white">
+                  <h6 class="fw-bold text-primary mb-3"><i class="fas fa-hospital-user me-2"></i>Kepala Instalasi (KA_INST)</h6>
+                  <div class="row g-2">
+                    <div class="col-md-7">
+                      <label class="form-label small fw-bold">Nama Lengkap & Gelar</label>
+                      <input type="text" class="form-control form-control-sm" id="set-kainst-nama" name="kainst_nama" placeholder="Nama Lengkap Pejabat">
+                    </div>
+                    <div class="col-md-5">
+                      <label class="form-label small fw-bold">NIP</label>
+                      <input type="text" class="form-control form-control-sm" id="set-kainst-nip" name="kainst_nip" placeholder="19XXXXXXXXXXXXXX">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Pejabat Penilai Kinerja -->
+                <div class="border rounded p-3 mb-3 bg-white">
+                  <h6 class="fw-bold text-primary mb-3"><i class="fas fa-user-check me-2"></i>Pejabat Penilai Kinerja (PEJABAT_PENILAI)</h6>
+                  <div class="row g-2">
+                    <div class="col-md-7">
+                      <label class="form-label small fw-bold">Nama Lengkap & Gelar</label>
+                      <input type="text" class="form-control form-control-sm" id="set-penilai-nama" name="penilai_nama" placeholder="Nama Lengkap Pejabat">
+                    </div>
+                    <div class="col-md-5">
+                      <label class="form-label small fw-bold">NIP</label>
+                      <input type="text" class="form-control form-control-sm" id="set-penilai-nip" name="penilai_nip" placeholder="19XXXXXXXXXXXXXX">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Kepala Ruang -->
+                <div class="border rounded p-3 mb-3 bg-white">
+                  <h6 class="fw-bold text-primary mb-3"><i class="fas fa-door-open me-2"></i>Kepala Ruangan (KA_RUANG)</h6>
+                  <div class="row g-2">
+                    <div class="col-md-7">
+                      <label class="form-label small fw-bold">Nama Lengkap & Gelar</label>
+                      <input type="text" class="form-control form-control-sm" id="set-karuang-nama" name="karuang_nama" placeholder="Nama Lengkap Pejabat">
+                    </div>
+                    <div class="col-md-5">
+                      <label class="form-label small fw-bold">NIP</label>
+                      <input type="text" class="form-control form-control-sm" id="set-karuang-nip" name="karuang_nip" placeholder="19XXXXXXXXXXXXXX">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="text-end">
+                  <button type="submit" class="btn btn-primary" id="btn-save-profile">
+                    <i class="fas fa-save me-1"></i>Simpan Konfigurasi Pejabat
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-4 col-md-12">
+          <!-- Information Card -->
+          <div class="card mb-3">
+            <div class="card-header bg-light py-2">
+              <h6 class="mb-0 text-dark fw-bold"><i class="fas fa-info-circle me-2 text-info"></i>Pedoman Pejabat</h6>
+            </div>
+            <div class="card-body small">
+              <p class="text-muted">Data penandatangan di samping digunakan sebagai pencetak default pada:</p>
+              <ul class="ps-3 text-muted mb-3">
+                <li>Slip Gaji & Rekapitulasi Penggajian Bulanan</li>
+                <li>Lembar Sasaran Kinerja Pegawai (SKP) Tahunan</li>
+                <li>Formulir Penilaian Capaian Bulanan</li>
+                <li>Laporan Rekapitulasi Presensi & Disiplin</li>
+              </ul>
+              <div class="alert alert-info py-2 px-3 small mb-0">
+                <i class="fas fa-lightbulb me-1"></i> Perubahan data pejabat langsung diterapkan saat mencetak dokumen PDF.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: ROUTING APPROVAL HIERARCHY -->
+    <div class="tab-pane fade" id="tab-route" role="tabpanel">
+      <div class="card">
+        <div class="card-header bg-light py-2">
+          <div class="row align-items-center">
+            <div class="col">
+              <h6 class="mb-0 text-dark fw-bold"><i class="fas fa-network-wired me-2 text-primary"></i>Hierarki Alur Persetujuan Sasaran & Aktifitas Kinerja</h6>
+            </div>
+            <div class="col-auto">
+              <button class="btn btn-sm btn-primary" id="btn-add-route">
+                <i class="fas fa-plus me-1"></i>Tambah Routing Approval
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <!-- Filter & Search Toolbar -->
+          <div class="p-3 border-bottom bg-light">
+            <div class="row g-2 align-items-center">
+              <div class="col-md-5">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-white"><i class="fas fa-search"></i></span>
+                  <input type="text" class="form-control" id="search-approval" placeholder="Cari NIP atau nama pemohon / atasan...">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table Routing -->
+          <div class="table-responsive">
+            <table class="table table-sm table-striped table-hover mb-0 align-middle">
+              <thead class="bg-200 text-800">
+                <tr>
+                  <th style="width: 50px;" class="text-center">#</th>
+                  <th>Pegawai Pemohon</th>
+                  <th>Atasan Langsung (Penilai)</th>
+                  <th style="width: 150px;">Tingkat Approval</th>
+                  <th style="width: 120px;" class="text-end pe-3">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="approval-table-body">
+                <tr>
+                  <td colspan="5" class="text-center py-4 text-muted">
+                    <div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat routing approval...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="d-flex justify-content-between align-items-center p-3 border-top">
+            <div class="small text-muted" id="approval-page-info">Menampilkan 0 dari 0 data</div>
+            <nav>
+              <ul class="pagination pagination-sm mb-0" id="approval-pagination"></ul>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT ROUTING APPROVAL -->
+  <div class="modal fade" id="modal-approval-form" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="form-approval">
+          <div class="modal-header bg-light py-2">
+            <h6 class="modal-title fw-bold" id="modal-approval-title">
+              <i class="fas fa-network-wired me-2 text-primary"></i>Tambah Routing Approval
+            </h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="form-approval-id" name="id_route">
+
+            <!-- Pegawai Pemohon -->
+            <div class="mb-3">
+              <label class="form-label small fw-bold">Pegawai Pemohon <span class="text-danger">*</span></label>
+              <select class="form-select form-select-sm" id="form-appr-pemohon" name="nip" required>
+                <option value="">-- Pilih Pegawai Pemohon --</option>
+              </select>
+              <div class="form-text small">Pegawai yang mengajukan target SKP / realisasi kegiatan.</div>
+            </div>
+
+            <!-- Atasan Langsung (Penilai) -->
+            <div class="mb-3">
+              <label class="form-label small fw-bold">Atasan Langsung (Penilai) <span class="text-danger">*</span></label>
+              <select class="form-select form-select-sm" id="form-appr-atasan1" name="nip_atasan" required>
+                <option value="">-- Pilih Atasan Langsung --</option>
+              </select>
+              <div class="form-text small">Pejabat atau atasan yang berwenang menyetujui.</div>
+            </div>
+
+            <!-- Tingkat Level Approval -->
+            <div class="mb-3">
+              <label class="form-label small fw-bold">Tingkat Level Approval</label>
+              <select class="form-select form-select-sm" id="form-appr-level" name="level_atasan">
+                <option value="1">Level 1 (Atasan Langsung)</option>
+                <option value="2">Level 2 (Pejabat Penilai / Kasie)</option>
+                <option value="3">Level 3 (Kepala Bidang / Direktur)</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer bg-light py-2">
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-sm btn-primary" id="btn-save-route">
+              <i class="fas fa-save me-1"></i>Simpan Routing
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+
+  let masterPegawai = [];
+  let settingsList = [];
+  let routeState = {
+    data: [],
+    total: 0,
+    page: 1,
+    perPage: 15,
+    search: ''
+  };
+
+  const loadPegawaiDropdowns = async () => {
+    try {
+      const resp = await httpGet(`${config.api_url}/konfigurasi/master`);
+      if (resp && resp.data && resp.data.pegawai) {
+        masterPegawai = resp.data.pegawai;
+        const opts = masterPegawai.map(p => `<option value="${p.NIP}">${p.NAMA} (NIP: ${p.NIP})</option>`).join('');
+
+        const pemohonEl = document.getElementById('form-appr-pemohon');
+        const atasan1El = document.getElementById('form-appr-atasan1');
+
+        if (pemohonEl) pemohonEl.innerHTML = '<option value="">-- Pilih Pegawai Pemohon --</option>' + opts;
+        if (atasan1El) atasan1El.innerHTML = '<option value="">-- Pilih Atasan Langsung --</option>' + opts;
+      }
+    } catch (err) {
+      console.error('Error loading pegawai options:', err);
+    }
+  };
+
+  const loadSettings = async () => {
+    try {
+      const resp = await httpGet(`${config.api_url}/konfigurasi/settings/list`);
+      if (resp && resp.data) {
+        settingsList = resp.data;
+        const sMap = {};
+        if (Array.isArray(resp.data)) {
+          resp.data.forEach(item => {
+            sMap[item.komponen] = item;
+          });
+        }
+
+        const setVal = (id, val) => {
+          const el = document.getElementById(id);
+          if (el && val !== undefined) el.value = val;
+        };
+
+        if (sMap['KA_BID_SDM']) {
+          setVal('set-kabid-nama', sMap['KA_BID_SDM'].setting || '');
+          setVal('set-kabid-nip', sMap['KA_BID_SDM'].setting2 || '');
+        }
+        if (sMap['KA_INST']) {
+          setVal('set-kainst-nama', sMap['KA_INST'].setting || '');
+          setVal('set-kainst-nip', sMap['KA_INST'].setting2 || '');
+        }
+        if (sMap['PEJABAT_PENILAI']) {
+          setVal('set-penilai-nama', sMap['PEJABAT_PENILAI'].setting || '');
+          setVal('set-penilai-nip', sMap['PEJABAT_PENILAI'].setting2 || '');
+        }
+        if (sMap['KA_RUANG']) {
+          setVal('set-karuang-nama', sMap['KA_RUANG'].setting || '');
+          setVal('set-karuang-nip', sMap['KA_RUANG'].setting2 || '');
+        }
+      }
+    } catch (err) {
+      console.error('Error loading settings:', err);
+    }
+  };
+
+  const loadRoutes = async () => {
+    const tbody = document.getElementById('approval-table-body');
+    if (!tbody) return;
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" class="text-center py-4 text-muted">
+          <div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat routing approval...
+        </td>
+      </tr>
+    `;
+
+    try {
+      const params = new URLSearchParams({
+        search: routeState.search,
+        page: routeState.page,
+        per_page: routeState.perPage
+      });
+
+      const resp = await httpGet(`${config.api_url}/konfigurasi/approval/list?${params.toString()}`);
+      if (resp && resp.data) {
+        routeState.data = resp.data || [];
+        routeState.total = resp.rows || 0;
+
+        const badgeEl = document.getElementById('badge-total-route');
+        if (badgeEl) badgeEl.textContent = routeState.total;
+
+        renderRoutes();
+        renderRoutePagination();
+      }
+    } catch (err) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" class="text-center py-4 text-danger">
+            <i class="fas fa-exclamation-triangle me-2"></i>Gagal memuat routing: ${err.message}
+          </td>
+        </tr>
+      `;
+    }
+  };
+
+  const renderRoutes = () => {
+    const tbody = document.getElementById('approval-table-body');
+    if (!tbody) return;
+
+    if (routeState.data.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" class="text-center py-4 text-muted">
+            <i class="fas fa-info-circle me-2"></i>Tidak ada routing approval yang sesuai pencarian.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    const startIdx = (routeState.page - 1) * routeState.perPage;
+    let html = '';
+
+    routeState.data.forEach((r, idx) => {
+      const atasanLevelHtml = `<span class="badge bg-100 text-primary border">Level ${r.level_atasan || 1}</span>`;
+
+      html += `
+        <tr>
+          <td class="text-center align-middle">${startIdx + idx + 1}</td>
+          <td class="align-middle">
+            <div class="fw-bold text-primary">${r.nama_pegawai || 'NIP: ' + r.nip}</div>
+            <div class="text-muted small">NIP: <code>${r.nip}</code></div>
+          </td>
+          <td class="align-middle">
+            <div class="fw-bold text-dark">${r.nama_atasan || 'NIP: ' + r.nip_atasan}</div>
+            <div class="text-muted small">NIP: <code>${r.nip_atasan}</code></div>
+          </td>
+          <td class="align-middle">${atasanLevelHtml}</td>
+          <td class="text-end align-middle pe-3">
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-falcon-default btn-edit-route" data-idx="${idx}" title="Edit Routing">
+                <i class="fas fa-edit text-primary"></i>
+              </button>
+              <button class="btn btn-falcon-default btn-delete-route" data-id="${r.id_route}" data-name="${r.nama_pegawai || r.nip}" title="Hapus Routing">
+                <i class="fas fa-trash-alt text-danger"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    bindRouteActions();
+  };
+
+  const renderRoutePagination = () => {
+    const pageInfo = document.getElementById('approval-page-info');
+    const pagination = document.getElementById('approval-pagination');
+    if (!pagination) return;
+
+    const totalPages = Math.ceil(routeState.total / routeState.perPage) || 1;
+    const from = routeState.total === 0 ? 0 : (routeState.page - 1) * routeState.perPage + 1;
+    const to = Math.min(routeState.page * routeState.perPage, routeState.total);
+
+    if (pageInfo) {
+      pageInfo.textContent = `Menampilkan ${from} - ${to} dari ${routeState.total} routing`;
+    }
+
+    let html = '';
+    html += `
+      <li class="page-item ${routeState.page <= 1 ? 'disabled' : ''}">
+        <a class="page-link" href="#" data-page="${routeState.page - 1}"><i class="fas fa-chevron-left"></i></a>
+      </li>
+    `;
+
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || (p >= routeState.page - 2 && p <= routeState.page + 2)) {
+        html += `
+          <li class="page-item ${p === routeState.page ? 'active' : ''}">
+            <a class="page-link" href="#" data-page="${p}">${p}</a>
+          </li>
+        `;
+      } else if (p === routeState.page - 3 || p === routeState.page + 3) {
+        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      }
+    }
+
+    html += `
+      <li class="page-item ${routeState.page >= totalPages ? 'disabled' : ''}">
+        <a class="page-link" href="#" data-page="${routeState.page + 1}"><i class="fas fa-chevron-right"></i></a>
+      </li>
+    `;
+
+    pagination.innerHTML = html;
+    pagination.querySelectorAll('.page-link').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const p = parseInt(link.getAttribute('data-page'));
+        if (p && p >= 1 && p <= totalPages && p !== routeState.page) {
+          routeState.page = p;
+          loadRoutes();
+        }
+      });
+    });
+  };
+
+  const bindRouteActions = () => {
+    document.querySelectorAll('.btn-edit-route').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = btn.getAttribute('data-idx');
+        const r = routeState.data[idx];
+        if (!r) return;
+
+        document.getElementById('modal-approval-title').innerHTML = '<i class="fas fa-edit me-2 text-primary"></i>Edit Routing Approval';
+        document.getElementById('form-approval-id').value = r.id_route;
+        document.getElementById('form-appr-pemohon').value = r.nip;
+        document.getElementById('form-appr-atasan1').value = r.nip_atasan;
+        document.getElementById('form-appr-level').value = r.level_atasan || 1;
+
+        const modalEl = document.getElementById('modal-approval-form');
+        if (modalEl && window.bootstrap) {
+          bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+      });
+    });
+
+    document.querySelectorAll('.btn-delete-route').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const name = btn.getAttribute('data-name');
+        if (confirm(`Apakah Anda yakin ingin menghapus routing approval untuk "${name}"?`)) {
+          try {
+            await httpPost(`${config.api_url}/konfigurasi/approval/delete/${id}`, {});
+            loadRoutes();
+          } catch (err) {
+            alert('Gagal menghapus routing: ' + err.message);
+          }
+        }
+      });
+    });
+  };
+
+  const bindEvents = () => {
+    // Refresh
+    const refreshBtn = document.getElementById('btn-refresh-all');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => {
+        loadSettings();
+        loadRoutes();
+      });
+    }
+
+    // Search approval
+    let searchTimer = null;
+    const searchInput = document.getElementById('search-approval');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+          routeState.search = e.target.value.trim();
+          routeState.page = 1;
+          loadRoutes();
+        }, 400);
+      });
+    }
+
+    // Add Route Button
+    const addBtn = document.getElementById('btn-add-route');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        document.getElementById('modal-approval-title').innerHTML = '<i class="fas fa-network-wired me-2 text-primary"></i>Tambah Routing Approval';
+        document.getElementById('form-approval-id').value = '';
+        document.getElementById('form-approval').reset();
+        const modalEl = document.getElementById('modal-approval-form');
+        if (modalEl && window.bootstrap) {
+          bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+      });
+    }
+
+    // Form Save Route
+    const routeForm = document.getElementById('form-approval');
+    if (routeForm) {
+      routeForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+          id_route: document.getElementById('form-approval-id').value,
+          nip: document.getElementById('form-appr-pemohon').value,
+          nip_atasan: document.getElementById('form-appr-atasan1').value,
+          level_atasan: document.getElementById('form-appr-level').value
+        };
+
+        try {
+          await httpPost(`${config.api_url}/konfigurasi/approval/save`, payload);
+          const modalEl = document.getElementById('modal-approval-form');
+          if (modalEl && window.bootstrap) {
+            bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+          }
+          loadRoutes();
+        } catch (err) {
+          alert('Gagal menyimpan routing: ' + err.message);
+        }
+      });
+    }
+
+    // Form Save Pejabat Profile
+    const profileForm = document.getElementById('form-pejabat-profile');
+    if (profileForm) {
+      profileForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+          // Save each component
+          await httpPost(`${config.api_url}/konfigurasi/settings/save`, {
+            komponen: 'KA_BID_SDM',
+            setting: document.getElementById('set-kabid-nama').value,
+            setting2: document.getElementById('set-kabid-nip').value
+          });
+          await httpPost(`${config.api_url}/konfigurasi/settings/save`, {
+            komponen: 'KA_INST',
+            setting: document.getElementById('set-kainst-nama').value,
+            setting2: document.getElementById('set-kainst-nip').value
+          });
+          await httpPost(`${config.api_url}/konfigurasi/settings/save`, {
+            komponen: 'PEJABAT_PENILAI',
+            setting: document.getElementById('set-penilai-nama').value,
+            setting2: document.getElementById('set-penilai-nip').value
+          });
+          await httpPost(`${config.api_url}/konfigurasi/settings/save`, {
+            komponen: 'KA_RUANG',
+            setting: document.getElementById('set-karuang-nama').value,
+            setting2: document.getElementById('set-karuang-nip').value
+          });
+
+          alert('Profil pejabat berhasil diperbarui!');
+          loadSettings();
+        } catch (err) {
+          alert('Gagal menyimpan profil pejabat: ' + err.message);
+        }
+      });
+    }
+  };
+
+  // Lifecycle Initialize
+  setTimeout(() => {
+    loadPegawaiDropdowns();
+    loadSettings();
+    loadRoutes();
+    bindEvents();
+  }, 100);
+</script>

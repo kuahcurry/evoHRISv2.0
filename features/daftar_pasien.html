@@ -1,0 +1,97 @@
+<script type="module" defer>
+  import { httpGet } from './assets/js/core/http.js';
+  import { getCurrentUser, loadSession, saveSession, htmlElement, getSelectedPasien, publish } from './assets/js/core/helpers.js';
+  import EvoTabs from './components/EvoTabs.js';
+
+  const loadDefaultModules = async () => {
+    const user = getCurrentUser();
+    const kd_instalasi = user.kd_instalasi;
+    const kd_unit = user.kd_unit;
+    const kd_jabatan = user.kd_jabatan;
+    const kd_user = user.kd_user;
+    const rs = await httpGet(`${config.api_url}/user/defaultModules`, {kd_instalasi: kd_instalasi, kd_unit: kd_unit, kd_jabatan: kd_jabatan, kd_user: kd_user});
+    if (rs.code == 200) {
+      const listpasien = document.getElementById('daftarpasien-title');
+      const selectedpasien = getSelectedPasien(`pasien-${listpasien.dataset.tagger}`);
+      user['defaults'] = rs.data;
+    }
+    saveSession({id: 'app', data: user});
+  }
+  
+  const tabsPasien = new EvoTabs('tabs-pasien');
+  tabsPasien.on('tabChange', async (e) => {
+    const selfilter = document.querySelector('select[data-tag="sel_filter"]');
+    const context = e.detail.children.target.dataset.bsContainer;
+    if (context == '<list_konsul>') {
+    if (selfilter !== null) htmlElement.hide(selfilter);
+    } else {
+      if (selfilter !== null) htmlElement.show(selfilter);
+    }
+  })
+
+  tabsPasien.on('tabChanged', async (e) => {
+    saveSession({ id: 'module', data: 'landing_page#no_defaulttab' });
+    await loadModule('modules/landing_page#no_defaulttab', '#module-container', 'part');
+    delete document.loader_module;
+    const instalasi = e.detail.children.target.dataset.bsTag;
+    const context = e.detail.children.target.dataset.bsContainer;
+    saveSession({id: 'instalasi', data: instalasi});
+    const app = loadSession({id: 'app'});
+    const whichone = app.units.filter(u => u.tag_instalasi == instalasi);
+    if (whichone.length > 0) {
+      app.kd_instalasi = whichone[0].kd_instalasi;
+      app.nama_instalasi = whichone[0].nama_instalasi;
+      app.tag_instalasi = whichone[0].tag_instalasi;
+      app.kd_unit = whichone[0].kd_unit;
+      app.nama_unit = whichone[0].nama_unit;
+      app.tag_unit = whichone[0].tag_unit;
+      app.parent_unit = whichone[0].kd_unit;
+    } else {
+      console.log('data tidak ditemukan');
+    }
+    saveSession({id: 'app', data: app});
+    await loadModule(`features/${instalasi}/sidebar-menu`, '#navbarVerticalNav', 'file', true);
+    await loadModule(`features/${instalasi}/info_pasien`, '#infopasien-container', 'file', true);
+    await loadModule(`features/${instalasi}/navbar-menu`, '#navbarmenu-container', 'file', true);
+    if(document.navbar !== undefined) {
+      if (typeof document.navbar.setInfoUser == 'function') {
+        document.navbar.setInfoUser();
+      }
+    }
+    await loadDefaultModules();
+    if (document.loader_module !== undefined) {
+      await document.loader_module.setDefaults();
+    }
+    if (context !== '<list_konsul>' && document.listpasien !== undefined) await document.listpasien.setUnits();
+  }) 
+
+  const initTabs = async () => {
+    const instalasi = loadSession({id: 'instalasi'});
+    const currentUser = getCurrentUser();
+    let alltabs = [];
+    if(instalasi.toLowerCase().includes('non_rs')) {
+      let label = currentUser.nama_unit.toUpperCase();
+      let id = instalasi;
+      if(label != '' && id != '') {
+        alltabs = [{id: `pasien-${id}`, tag: 'non_rs', label: label, type: 'module', content: {name: 'features/non_rs/list_pasien', container: `<list_${id}>`}}];
+      } else {
+        console.log('DATA INSTALASI TIDAK SESUAI');
+      }
+    } else {
+      alltabs = [
+        {id: 'pasien-darurat', tag: 'rawat_darurat', label: 'IGD', type: 'module', content: {name: 'features/rawat_darurat/list_pasien', container: '<list_darurat>'}},
+        {id: 'pasien-jalan', tag: 'rawat_jalan', label: 'RJ', type: 'module', content: {name: 'features/rawat_jalan/list_pasien', container: '<list_jalan>'}},
+        {id: 'pasien-inap', tag: 'rawat_inap', label: 'RI', type: 'module', content: {name: 'features/rawat_inap/list_pasien', container: '<list_inap>'}},
+        {id: 'pasien-penunjang', tag: 'penunjang', label: 'PENUNJANG', type: 'module', content: {name: 'features/penunjang/list_pasien', container: '<penunjang>'}}
+      ];
+    }
+    const found = alltabs.findIndex(t => t.tag == instalasi);
+    await tabsPasien.addTabs(alltabs, found > -1 ? found : 0);
+    return true;
+  }
+  document.daftarpasien = { initTabs, loadDefaultModules };
+</script>
+
+<template>
+  <nav id="tabs-pasien" data-role="tabs" minheight="500px" height="85vh" class="p-0"></nav>
+</template>

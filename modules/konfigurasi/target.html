@@ -1,0 +1,360 @@
+<template id="template-konfig-target">
+  <div class="row mb-3">
+    <div class="col">
+      <div class="card bg-100 shadow-none border">
+        <div class="card-body py-3">
+          <div class="row justify-content-between align-items-center">
+            <div class="col-auto">
+              <h5 class="mb-1 text-primary fw-bold"><i class="fas fa-bullseye me-2"></i>Konfigurasi Target Kinerja SKP</h5>
+              <div class="text-secondary small">Pengaturan kuota target jam kerja efektif bulanan per jenjang eselon dan jabatan fungsional RS.</div>
+            </div>
+            <div class="col-auto">
+              <button class="btn btn-sm btn-falcon-default me-1" id="btn-refresh-target">
+                <i class="fas fa-sync-alt me-1"></i>Refresh
+              </button>
+              <button class="btn btn-sm btn-primary" id="btn-add-target">
+                <i class="fas fa-plus me-1"></i>Tambah Target Eselon
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="row g-3 mb-3">
+    <div class="col-md-4 col-sm-12">
+      <div class="card overflow-hidden">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="badge bg-primary p-3 rounded-circle me-3"><i class="fas fa-sitemap fs-2"></i></div>
+            <div>
+              <h6 class="text-secondary mb-1">Total Jenjang Terdaftar</h6>
+              <h4 class="mb-0 text-primary fw-bold" id="stat-total-target">0</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 col-sm-6">
+      <div class="card overflow-hidden">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="badge bg-success p-3 rounded-circle me-3"><i class="fas fa-hourglass-half fs-2"></i></div>
+            <div>
+              <h6 class="text-secondary mb-1">Target Maksimal</h6>
+              <h4 class="mb-0 text-success fw-bold" id="stat-max-target">0 Jam</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 col-sm-6">
+      <div class="card overflow-hidden">
+        <div class="card-body">
+          <div class="badge bg-info p-3 rounded-circle me-3"><i class="fas fa-calculator fs-2"></i></div>
+          <div>
+            <h6 class="text-secondary mb-1">Rata-Rata Target</h6>
+            <h4 class="mb-0 text-info fw-bold" id="stat-avg-target">0 Jam</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Table Card -->
+  <div class="card mb-3">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+      <h6 class="mb-0 text-dark fw-bold"><i class="fas fa-table me-2 text-primary"></i>Ketentuan Beban Kerja Efektif Bulanan</h6>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped table-hover mb-0 fs--1">
+          <thead class="bg-200 text-900">
+            <tr>
+              <th class="text-center py-2" style="width: 50px;">#</th>
+              <th class="py-2" style="width: 25%;">Jenjang Eselon / Jabatan</th>
+              <th class="text-center py-2" style="width: 18%;">Target Jam / Bulan</th>
+              <th class="text-center py-2" style="width: 18%;">Target Menit / Bulan</th>
+              <th class="py-2">Dasar Aturan / Keterangan</th>
+              <th class="text-end py-2 pe-3" style="width: 110px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="target-table-body">
+            <tr>
+              <td colspan="6" class="text-center py-4 text-muted">
+                <div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat data target SKP...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Tambah / Edit Target -->
+  <div class="modal fade" id="modal-target-form" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-light">
+          <h5 class="modal-title" id="modal-target-title"><i class="fas fa-bullseye me-2 text-primary"></i>Tambah Target Eselon</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="form-target">
+          <input type="hidden" id="form-target-id" name="id_target">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label fw-bold">Jenjang Eselon / Jabatan <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="form-target-eselon" name="eselon" required placeholder="Contoh: Eselon II, Eselon III, Pelaksana, Dokter">
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-bold">Target Jam / Bulan <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <input type="number" step="1" class="form-control" id="form-target-jam" name="target_jam" required min="1" value="100">
+                  <span class="input-group-text bg-white">Jam</span>
+                </div>
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-bold">Target Menit / Bulan <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <input type="number" step="1" class="form-control" id="form-target-menit" name="target_menit" required min="60" value="6000">
+                  <span class="input-group-text bg-white">Mnt</span>
+                </div>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold">Keterangan / Regulasi Acuan</label>
+              <textarea class="form-control" id="form-target-keterangan" name="keterangan" rows="2" placeholder="Dasar peraturan bupati / standar MenPAN-RB..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer bg-light">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary" id="btn-save-target">
+              <i class="fas fa-save me-1"></i>Simpan Target
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+
+  let targetsData = [];
+
+  const loadTargets = async () => {
+    const tbody = document.getElementById('target-table-body');
+    if (!tbody) return;
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="text-center py-4 text-muted">
+          <div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat data target SKP...
+        </td>
+      </tr>
+    `;
+
+    try {
+      const resp = await httpGet(`${config.api_url}/konfigurasi/target/list`);
+      if (resp && resp.data) {
+        targetsData = resp.data || [];
+        renderStats();
+        renderTable();
+      }
+    } catch (err) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="text-center py-4 text-danger">
+            <i class="fas fa-exclamation-triangle me-2"></i>Gagal memuat target: ${err.message}
+          </td>
+        </tr>
+      `;
+    }
+  };
+
+  const renderStats = () => {
+    const totalEl = document.getElementById('stat-total-target');
+    const maxEl = document.getElementById('stat-max-target');
+    const avgEl = document.getElementById('stat-avg-target');
+
+    if (totalEl) totalEl.textContent = targetsData.length;
+
+    if (targetsData.length > 0) {
+      let maxJam = 0;
+      let sumJam = 0;
+      targetsData.forEach(t => {
+        const j = parseFloat(t.target_jam) || (parseFloat(t.target_menit) / 60) || 0;
+        if (j > maxJam) maxJam = j;
+        sumJam += j;
+      });
+
+      const avg = (sumJam / targetsData.length).toFixed(1);
+      if (maxEl) maxEl.textContent = `${maxJam} Jam`;
+      if (avgEl) avgEl.textContent = `${avg} Jam`;
+    }
+  };
+
+  const renderTable = () => {
+    const tbody = document.getElementById('target-table-body');
+    if (!tbody) return;
+
+    if (targetsData.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="text-center py-4 text-muted">Belum ada target SKP eselon terdaftar.</td>
+        </tr>
+      `;
+      return;
+    }
+
+    let html = '';
+    targetsData.forEach((t, idx) => {
+      const jam = t.target_jam ? t.target_jam : (t.target_menit ? Math.round(t.target_menit / 60) : '-');
+      const menit = t.target_menit ? Number(t.target_menit).toLocaleString('id-ID') : '-';
+
+      html += `
+        <tr>
+          <td class="text-center align-middle">${idx + 1}</td>
+          <td class="align-middle fw-bold text-dark">
+            <span class="badge bg-100 text-primary border border-200 me-2"><i class="fas fa-award"></i></span>
+            ${t.eselon}
+          </td>
+          <td class="text-center align-middle">
+            <span class="badge bg-primary fs-0 px-3 py-1">${jam} Jam</span>
+          </td>
+          <td class="text-center align-middle font-monospace text-secondary">${menit} Menit</td>
+          <td class="align-middle text-muted small">${t.keterangan || '-'}</td>
+          <td class="text-end align-middle pe-3">
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-falcon-default btn-edit-target" data-idx="${idx}" title="Edit Target">
+                <i class="fas fa-edit text-primary"></i>
+              </button>
+              <button class="btn btn-falcon-default btn-delete-target" data-id="${t.id_target}" data-eselon="${t.eselon}" title="Hapus Target">
+                <i class="fas fa-trash-alt text-danger"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    bindTableEvents();
+  };
+
+  const bindTableEvents = () => {
+    document.querySelectorAll('.btn-edit-target').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = btn.getAttribute('data-idx');
+        const t = targetsData[idx];
+        if (!t) return;
+
+        document.getElementById('modal-target-title').innerHTML = '<i class="fas fa-edit me-2 text-primary"></i>Edit Target Eselon';
+        document.getElementById('form-target-id').value = t.id_target;
+        document.getElementById('form-target-eselon').value = t.eselon;
+        document.getElementById('form-target-jam').value = t.target_jam || Math.round((t.target_menit || 0) / 60);
+        document.getElementById('form-target-menit').value = t.target_menit || ((t.target_jam || 0) * 60);
+        document.getElementById('form-target-keterangan').value = t.keterangan || '';
+
+        const modalEl = document.getElementById('modal-target-form');
+        if (modalEl && window.bootstrap) {
+          bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+      });
+    });
+
+    document.querySelectorAll('.btn-delete-target').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const eselon = btn.getAttribute('data-eselon');
+        if (confirm(`Apakah Anda yakin ingin menghapus konfigurasi target untuk "${eselon}"?`)) {
+          try {
+            await httpPost(`${config.api_url}/konfigurasi/target/delete/${id}`, {});
+            loadTargets();
+          } catch (err) {
+            alert('Gagal menghapus target: ' + err.message);
+          }
+        }
+      });
+    });
+  };
+
+  const bindGlobalEvents = () => {
+    // Refresh
+    const refreshBtn = document.getElementById('btn-refresh-target');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => {
+        loadTargets();
+      });
+    }
+
+    // Add target button
+    const addBtn = document.getElementById('btn-add-target');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        document.getElementById('modal-target-title').innerHTML = '<i class="fas fa-plus me-2 text-primary"></i>Tambah Target Eselon';
+        document.getElementById('form-target-id').value = '';
+        document.getElementById('form-target-eselon').value = '';
+        document.getElementById('form-target-jam').value = '100';
+        document.getElementById('form-target-menit').value = '6000';
+        document.getElementById('form-target-keterangan').value = '';
+
+        const modalEl = document.getElementById('modal-target-form');
+        if (modalEl && window.bootstrap) {
+          bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+      });
+    }
+
+    // Auto calculate hours to minutes
+    const jamInput = document.getElementById('form-target-jam');
+    const menitInput = document.getElementById('form-target-menit');
+    if (jamInput && menitInput) {
+      jamInput.addEventListener('input', () => {
+        const j = parseFloat(jamInput.value) || 0;
+        menitInput.value = Math.round(j * 60);
+      });
+      menitInput.addEventListener('input', () => {
+        const m = parseFloat(menitInput.value) || 0;
+        jamInput.value = (m / 60).toFixed(1);
+      });
+    }
+
+    // Submit form
+    const formTarget = document.getElementById('form-target');
+    if (formTarget) {
+      formTarget.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id_target = document.getElementById('form-target-id').value;
+        const eselon = document.getElementById('form-target-eselon').value;
+        const target_jam = document.getElementById('form-target-jam').value;
+        const target_menit = document.getElementById('form-target-menit').value;
+        const keterangan = document.getElementById('form-target-keterangan').value;
+
+        try {
+          await httpPost(`${config.api_url}/konfigurasi/target/save`, {
+            id_target, eselon, target_jam, target_menit, keterangan
+          });
+          const modalEl = document.getElementById('modal-target-form');
+          if (modalEl && window.bootstrap) {
+            bootstrap.Modal.getInstance(modalEl).hide();
+          }
+          loadTargets();
+        } catch (err) {
+          alert('Gagal menyimpan target: ' + err.message);
+        }
+      });
+    }
+  };
+
+  const initModule = () => {
+    bindGlobalEvents();
+    loadTargets();
+  };
+
+  initModule();
+</script>

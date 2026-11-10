@@ -1,0 +1,665 @@
+<script type="module" defer>
+  import { httpGet } from "./assets/js/core/http.js";
+  import { loadSession, saveSession, getCurrentUser, subscribe } from "./assets/js/core/helpers.js";
+
+  const loadAvailableModules = async (kd_instalasi, kd_unit, kd_jabatan, kd_user, token) => {
+    let frm_data = { kd_instalasi, kd_unit, kd_jabatan, kd_user, token };
+    let rs = await httpGet(`${config.api_url}/login/privileges`, frm_data);
+    return rs.code == 200 ? rs.data : [];
+  }
+
+  const showOnProgress = async (submenuItem) => {
+    const title = submenuItem.getAttribute('data-title') + ' ' || '';
+    const dialog = await showDialog({
+      type: 'info',
+      label: `<span class="text-black">Fitur ${title}dalam pengembangan</span>`,
+      buttons: [
+        {
+          label: 'Ok',
+          class: 'btn-primary',
+          onClick: () => dialog.close()
+        }
+      ]
+    });
+    return dialog;
+  }
+
+  const updateActiveState = (clickedElement) => {
+    const allLinks = document.querySelectorAll('#sidebar-menu .nav-link');
+    allLinks.forEach(link => link.classList.remove('active'));
+    clickedElement.classList.add('active');
+  };
+
+  const doMenuItems = async (e, item) => {
+    e.preventDefault();
+    if (typeof window.checkLogin === 'function') await window.checkLogin();
+
+    if (item.classList.contains('dropdown-indicator')) {
+      return true;
+    }
+
+    updateActiveState(item);
+
+    const targetModule = item.getAttribute('data-target');
+    const title = item.getAttribute('data-title') || '';
+
+    if (targetModule) {
+      document.getElementById('container-isi').style.cssText = 'overflow-y: scroll; overflow-x: hidden; min-height: 100%; max-height: 87vh;';
+      const rs = await loadModule(`modules${targetModule}`, "#container-isi");
+      saveSession({ id: 'page', data: { name: targetModule, path: `modules${targetModule}`, title: title } });
+      if (!rs) {
+        showOnProgress(item);
+        return false;
+      }
+    } else {
+      showOnProgress(item);
+    }
+    return true;
+  };
+
+  const doSubmenuItems = async (e, item) => {
+    e.preventDefault();
+    // if (typeof checkLogin === 'function') await checkLogin();
+
+    updateActiveState(item);
+
+    const targetModule = item.getAttribute('data-target');
+    const title = item.getAttribute('data-title') || '';
+    const subtitle = item.getAttribute('data-subtitle') || '';
+    const tag = item.getAttribute('data-tag') || '';
+
+    if (targetModule) {
+      document.getElementById('container-isi').style.cssText = 'overflow-y: scroll; overflow-x: hidden; min-height: 100%; max-height: 87vh;';
+      const rs = await loadModule(`modules${targetModule}`, "#container-isi");
+      saveSession({ id: 'page', data: { name: targetModule, path: `modules${targetModule}`, title: title, subtitle: subtitle, tag: tag } });
+      if (!rs) {
+        showOnProgress(item);
+        return false;
+      }
+      if (document[tag] && typeof document[tag].loadData === 'function') {
+        await document[tag].loadData();
+      } else if (window[tag] && typeof window[tag].loadData === 'function') {
+        await window[tag].loadData();
+      }
+    } else {
+      showOnProgress(item);
+    }
+    return true;
+  };
+
+  const renderMenu = async (reload = '') => {
+    document.querySelector('.search-box').classList.add('d-none');
+    let app = loadSession({ id: "app" });
+    if (reload) {
+      let newHakAkses = await loadAvailableModules(app.kd_instalasi, app.kd_unit, app.kd_jabatan, app.kd_user, app.token);
+      app.hak_akses = newHakAkses;
+    }
+    saveSession({ id: "app", data: app });
+
+    const allmenus = app.hak_akses;
+    if (allmenus == undefined || allmenus.length === 0) return false;
+
+    let html = `<ul class="navbar-nav flex-column mb-3" id="navbarVerticalNav">`;
+
+    let evoMedis = allmenus.filter(v => parseInt(v.evo) == 1);
+    evoMedis.forEach((group, index) => {
+      const collapseId = `collapse_group_${index}`;
+      const hasModules = group.modules && group.modules.length > 0;
+
+      if (hasModules) {
+        html += `
+          <li class="nav-item">
+            <a class="nav-link dropdown-indicator" href="#${collapseId}" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="${collapseId}">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="${group.icon || 'fas fa-building'}"></span></span>
+                <span class="nav-link-text ps-1">${group.title}</span>
+              </div>
+            </a>
+            <div class="parent-wrapper label-1">
+              <ul class="nav collapse parent" id="${collapseId}" data-bs-parent="#navbarVerticalNav">
+                ${group.modules.map(m => `
+                  <li class="nav-item">
+                    <a class="nav-link submenu-item" href="#menu" data-tag="${m.tag || ''}" data-target="${m.filename}" data-title="${m.title}" data-icon="${m.icon || ''}" data-group="${group.title}">
+                      <div class="d-flex align-items-center">
+                        <span class="nav-link-icon"><span class="${m.icon || 'fas fa-file-alt'}"></span></span>
+                        <span class="nav-link-text ps-1">${m.title}</span>
+                      </div>
+                    </a>
+                  </li>
+                `).join('')}
+              </ul>
+            </div>
+          </li>
+        `;
+      }
+    });
+
+    html += `</ul>`;
+
+    const sidebarEl = document.getElementById('sidebar-menu');
+    if (sidebarEl) {
+      sidebarEl.innerHTML = html;
+
+      sidebarEl.querySelectorAll('.menu-item').forEach((item) => {
+        item.addEventListener('click', (e) => doMenuItems(e, item));
+      });
+
+      sidebarEl.querySelectorAll('.submenu-item').forEach((item) => {
+        item.addEventListener('click', (e) => doSubmenuItems(e, item));
+      });
+    }
+  };
+
+  const sidebarEl = document.getElementById('sidebar-menu');
+  if (sidebarEl) {
+    // sidebarEl.innerHTML = html;
+
+    sidebarEl.querySelectorAll('.menu-item').forEach((item) => {
+      item.addEventListener('click', (e) => doMenuItems(e, item));
+    });
+
+    sidebarEl.querySelectorAll('.submenu-item').forEach((item) => {
+      item.addEventListener('click', (e) => doSubmenuItems(e, item));
+    });
+
+    sidebarEl.querySelectorAll('.dropdown-indicator').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetId = btn.getAttribute('href') || btn.getAttribute('data-bs-target');
+        if (targetId && targetId.startsWith('#')) {
+          const targetEl = document.querySelector(targetId);
+          if (targetEl && window.bootstrap) {
+            const collapseInstance = bootstrap.Collapse.getOrCreateInstance(targetEl);
+            collapseInstance.toggle();
+          }
+        }
+      });
+    });
+  }
+
+  // await renderMenu(true);
+
+  document.sidebar = { renderMenu };
+</script>
+<template>
+  <nav class="sidebar-menu flex-grow-1 mb-4" id="sidebar-menu">
+    <li class="nav-item">
+      <a class="nav-link submenu-item active" href="#menu" data-tag="dashboard" data-target="/dashboard" data-title="Dashboard" data-icon="fas fa-chart-pie" data-group="Dashboard">
+        <div class="d-flex align-items-center">
+          <span class="nav-link-icon"><span class="fas fa-chart-pie"></span></span>
+          <span class="nav-link-text ps-1">Dashboard</span>
+        </div>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link dropdown-indicator" href="#collapse_master" role="button" data-bs-toggle="collapse" aria-expanded="true" aria-controls="collapse_master">
+        <div class="d-flex align-items-center">
+          <span class="nav-link-icon"><span class="fas fa-database"></span></span>
+          <span class="nav-link-text ps-1">Master Data</span>
+        </div>
+      </a>
+      <div class="parent-wrapper label-1">
+        <ul class="nav collapse parent show" id="collapse_master">
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="agama" data-target="/master/agama" data-title="Agama" data-icon="fas fa-pray" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-pray"></span></span>
+                <span class="nav-link-text ps-1">Agama</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="golongan_darah" data-target="/master/golongan_darah" data-title="Golongan Darah" data-icon="fas fa-tint" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-tint"></span></span>
+                <span class="nav-link-text ps-1">Golongan Darah</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="status_pegawai" data-target="/master/status_pegawai" data-title="Status Pegawai" data-icon="fas fa-user-tag" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-user-tag"></span></span>
+                <span class="nav-link-text ps-1">Status Pegawai</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="jenis_pegawai" data-target="/master/jenis_pegawai" data-title="Jenis Pegawai" data-icon="fas fa-user-tie" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-user-tie"></span></span>
+                <span class="nav-link-text ps-1">Jenis Pegawai</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="pekerjaan" data-target="/master/pekerjaan" data-title="Pekerjaan" data-icon="fas fa-briefcase" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-briefcase"></span></span>
+                <span class="nav-link-text ps-1">Pekerjaan</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="hubungan" data-target="/master/hubungan" data-title="Hubungan Keluarga" data-icon="fas fa-users" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-users"></span></span>
+                <span class="nav-link-text ps-1">Hubungan Keluarga</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="pangkat" data-target="/master/pangkat" data-title="Pangkat" data-icon="fas fa-medal" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-medal"></span></span>
+                <span class="nav-link-text ps-1">Pangkat</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="golongan" data-target="/master/golongan" data-title="Golongan" data-icon="fas fa-layer-group" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-layer-group"></span></span>
+                <span class="nav-link-text ps-1">Golongan</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="ekselon" data-target="/master/ekselon" data-title="Ekselon" data-icon="fas fa-sitemap" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-sitemap"></span></span>
+                <span class="nav-link-text ps-1">Ekselon</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="status_keahlian" data-target="/master/status_keahlian" data-title="Status Keahlian" data-icon="fas fa-star" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-star"></span></span>
+                <span class="nav-link-text ps-1">Status Keahlian</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="status_lulus" data-target="/master/status_lulus" data-title="Status Kelulusan" data-icon="fas fa-user-graduate" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-user-graduate"></span></span>
+                <span class="nav-link-text ps-1">Status Kelulusan</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="jenis_kontrak" data-target="/master/jenis_kontrak" data-title="Jenis Kontrak" data-icon="fas fa-file-contract" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-file-contract"></span></span>
+                <span class="nav-link-text ps-1">Jenis Kontrak</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="jenis_pendidikan" data-target="/master/jenis_pendidikan" data-title="Jenis Pendidikan" data-icon="fas fa-graduation-cap" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-graduation-cap"></span></span>
+                <span class="nav-link-text ps-1">Jenis Pendidikan</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="jenjang_pendidikan" data-target="/master/jenjang_pendidikan" data-title="Jenjang Pendidikan" data-icon="fas fa-school" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-school"></span></span>
+                <span class="nav-link-text ps-1">Jenjang Pendidikan</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="provinsi" data-target="/master/provinsi" data-title="Provinsi" data-icon="fas fa-map-marked-alt" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-map-marked-alt"></span></span>
+                <span class="nav-link-text ps-1">Provinsi</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="lokasi" data-target="/master/lokasi" data-title="Lokasi Kerja" data-icon="fas fa-map-marker-alt" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-map-marker-alt"></span></span>
+                <span class="nav-link-text ps-1">Lokasi Kerja</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="nama_asuransi" data-target="/master/nama_asuransi" data-title="Nama Asuransi" data-icon="fas fa-shield-alt" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-shield-alt"></span></span>
+                <span class="nav-link-text ps-1">Nama Asuransi</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="status_asuransi" data-target="/master/status_asuransi" data-title="Status Asuransi" data-icon="fas fa-notes-medical" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-notes-medical"></span></span>
+                <span class="nav-link-text ps-1">Status Asuransi</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="jenis_pengalaman" data-target="/master/jenis_pengalaman" data-title="Jenis Pengalaman" data-icon="fas fa-history" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-history"></span></span>
+                <span class="nav-link-text ps-1">Jenis Pengalaman</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="jenis_sanksi" data-target="/master/jenis_sanksi" data-title="Jenis Sanksi" data-icon="fas fa-exclamation-triangle" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-exclamation-triangle"></span></span>
+                <span class="nav-link-text ps-1">Jenis Sanksi</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="jenis_penghargaan" data-target="/master/jenis_penghargaan" data-title="Jenis Penghargaan" data-icon="fas fa-award" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-award"></span></span>
+                <span class="nav-link-text ps-1">Jenis Penghargaan</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="jenis_qualifikasi" data-target="/master/jenis_qualifikasi" data-title="Jenis Kualifikasi" data-icon="fas fa-certificate" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-certificate"></span></span>
+                <span class="nav-link-text ps-1">Jenis Kualifikasi</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="jenis_syarat" data-target="/master/jenis_syarat" data-title="Jenis Persyaratan" data-icon="fas fa-tasks" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-tasks"></span></span>
+                <span class="nav-link-text ps-1">Jenis Persyaratan</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="jenis_catatan" data-target="/master/jenis_catatan" data-title="Jenis Catatan" data-icon="fas fa-clipboard-list" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-clipboard-list"></span></span>
+                <span class="nav-link-text ps-1">Jenis Catatan</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="jenis_phk" data-target="/master/jenis_phk" data-title="Jenis PHK" data-icon="fas fa-user-times" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-user-times"></span></span>
+                <span class="nav-link-text ps-1">Jenis PHK</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="identitas" data-target="/master/identitas" data-title="Jenis Identitas" data-icon="fas fa-id-card" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-id-card"></span></span>
+                <span class="nav-link-text ps-1">Jenis Identitas</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="jenis_sip" data-target="/master/jenis_sip" data-title="Jenis SIP" data-icon="fas fa-file-medical" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-file-medical"></span></span>
+                <span class="nav-link-text ps-1">Jenis SIP</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="jenis_tahap" data-target="/master/jenis_tahap" data-title="Jenis Tahap Seleksi" data-icon="fas fa-shoe-prints" data-group="Master Data">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-shoe-prints"></span></span>
+                <span class="nav-link-text ps-1">Jenis Tahap Seleksi</span>
+              </div>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link dropdown-indicator" href="#collapse_pegawai" role="button" data-bs-toggle="collapse" aria-expanded="true" aria-controls="collapse_pegawai">
+        <div class="d-flex align-items-center">
+          <span class="nav-link-icon"><span class="fas fa-user-tie"></span></span>
+          <span class="nav-link-text ps-1">Data Pegawai</span>
+        </div>
+      </a>
+      <div class="parent-wrapper label-1">
+        <ul class="nav collapse parent show" id="collapse_pegawai">
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="pegawai_data" data-target="/pegawai/Vpegawai" data-title="Data Pegawai" data-icon="fas fa-users" data-group="Kepegawaian">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-users"></span></span>
+                <span class="nav-link-text ps-1">Data Pegawai</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="pegawai_laporan" data-target="/pegawai/laporan" data-title="Laporan Kepegawaian" data-icon="fas fa-file-invoice" data-group="Kepegawaian">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-file-invoice"></span></span>
+                <span class="nav-link-text ps-1">Laporan</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="pegawai_perubahan_status" data-target="/pegawai/status_karyawan" data-title="Perubahan Status Karyawan" data-icon="fas fa-user-clock" data-group="Kepegawaian">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-user-clock"></span></span>
+                <span class="nav-link-text ps-1">Perubahan Status Karyawan</span>
+              </div>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link dropdown-indicator" href="#collapse_absensi" role="button" data-bs-toggle="collapse" aria-expanded="true" aria-controls="collapse_absensi">
+        <div class="d-flex align-items-center">
+          <span class="nav-link-icon"><span class="fas fa-calendar-check"></span></span>
+          <span class="nav-link-text ps-1">eAbsensi</span>
+        </div>
+      </a>
+      <div class="parent-wrapper label-1">
+        <ul class="nav collapse parent show" id="collapse_absensi">
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="absensi_rekap" data-target="/absensi/rekap" data-title="Rekap Kehadiran Bulanan" data-icon="fas fa-calendar-alt" data-group="Kehadiran">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-calendar-alt"></span></span>
+                <span class="nav-link-text ps-1">Rekap Bulanan</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="absensi_status" data-target="/absensi/status" data-title="Rekap Status Kehadiran" data-icon="fas fa-user-clock" data-group="Kehadiran">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-user-clock"></span></span>
+                <span class="nav-link-text ps-1">Status Kehadiran</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="absensi_lembur" data-target="/absensi/lembur" data-title="Rekap Lembur Pegawai" data-icon="fas fa-business-time" data-group="Kehadiran">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-business-time"></span></span>
+                <span class="nav-link-text ps-1">Lembur Pegawai</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="absensi_monitoring" data-target="/absensi/monitoring" data-title="Monitoring Jadwal Unit" data-icon="fas fa-tasks" data-group="Kehadiran">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-tasks"></span></span>
+                <span class="nav-link-text ps-1">Monitoring Roster</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="absensi_apel" data-target="/absensi/apel" data-title="Konfigurasi & Rekap Apel" data-icon="fas fa-flag" data-group="Kehadiran">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-flag"></span></span>
+                <span class="nav-link-text ps-1">Apel Pagi</span>
+              </div>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link dropdown-indicator" href="#collapse_kinerja" role="button" data-bs-toggle="collapse" aria-expanded="true" aria-controls="collapse_kinerja">
+        <div class="d-flex align-items-center">
+          <span class="nav-link-icon"><span class="fas fa-medal"></span></span>
+          <span class="nav-link-text ps-1">eKinerja</span>
+        </div>
+      </a>
+      <div class="parent-wrapper label-1">
+        <ul class="nav collapse parent show" id="collapse_kinerja">
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="kinerja_kegiatan" data-target="/kinerja/kegiatan" data-title="Program Kerja Rumah Sakit" data-icon="fas fa-bullseye" data-group="eKinerja">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-bullseye"></span></span>
+                <span class="nav-link-text ps-1">Program Kerja</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="kinerja_target_skp" data-target="/kinerja/target_skp" data-title="Target Sasaran Kerja Pegawai" data-icon="fas fa-clipboard-list" data-group="eKinerja">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-clipboard-list"></span></span>
+                <span class="nav-link-text ps-1">Target SKP</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="kinerja_penetapan" data-target="/kinerja/penetapan" data-title="Penetapan & Approval Target SKP" data-icon="fas fa-check-double" data-group="eKinerja">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-check-double"></span></span>
+                <span class="nav-link-text ps-1">Penetapan Target</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="kinerja_aktifitas" data-target="/kinerja/aktifitas" data-title="Catatan Aktifitas Harian Pegawai" data-icon="fas fa-calendar-day" data-group="eKinerja">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-calendar-day"></span></span>
+                <span class="nav-link-text ps-1">Aktifitas Harian</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="kinerja_realisasi" data-target="/kinerja/realisasi" data-title="Capaian & Realisasi SKP" data-icon="fas fa-chart-line" data-group="eKinerja">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-chart-line"></span></span>
+                <span class="nav-link-text ps-1">Realisasi SKP</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="kinerja_penilaian" data-target="/kinerja/penilaian" data-title="Penilaian Kinerja & Evaluasi Perilaku" data-icon="fas fa-star-half-alt" data-group="eKinerja">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-star-half-alt"></span></span>
+                <span class="nav-link-text ps-1">Penilaian Kinerja</span>
+              </div>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link dropdown-indicator" href="#collapse_payroll" role="button" data-bs-toggle="collapse" aria-expanded="true" aria-controls="collapse_payroll">
+        <div class="d-flex align-items-center">
+          <span class="nav-link-icon"><span class="fas fa-money-bill-wave"></span></span>
+          <span class="nav-link-text ps-1">Penggajian</span>
+        </div>
+      </a>
+      <div class="parent-wrapper label-1">
+        <ul class="nav collapse parent show" id="collapse_payroll">
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="payroll_gaji" data-target="/payroll/gaji" data-title="Kelola & Rekap Gaji Karyawan" data-icon="fas fa-coins" data-group="Payroll">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-coins"></span></span>
+                <span class="nav-link-text ps-1">Data Gaji Pegawai</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="payroll_rekap" data-target="/payroll/rekap_gaji" data-title="Rekapitulasi Gaji per Unit Kerja" data-icon="fas fa-chart-pie" data-group="Payroll">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-chart-pie"></span></span>
+                <span class="nav-link-text ps-1">Rekap Gaji per Unit</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="payroll_potongan" data-target="/payroll/potongan" data-title="Rekap Potongan Disiplin & Absensi" data-icon="fas fa-user-clock" data-group="Payroll">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-user-clock"></span></span>
+                <span class="nav-link-text ps-1">Potongan Absensi</span>
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="payroll_tarif" data-target="/payroll/master_tarif" data-title="Master Tarif & Standar Gaji" data-icon="fas fa-sliders-h" data-group="Payroll">
+              <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><span class="fas fa-sliders-h"></span></span>
+                <span class="nav-link-text ps-1">Tarif & Ketentuan</span>
+              </div>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link dropdown-indicator" href="#collapse_konfigurasi" role="button" data-bs-toggle="collapse" aria-expanded="true" aria-controls="collapse_konfigurasi">
+        <div class="d-flex align-items-center">
+          <span class="nav-link-icon"><span class="fas fa-cogs"></span></span>
+          <span class="nav-link-text ps-1">Konfigurasi</span>
+        </div>
+      </a>
+      <div class="parent-wrapper label-1">
+        <ul class="nav collapse parent show" id="collapse_konfigurasi">
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="konfig_users" data-target="/konfigurasi/users" data-title="Manajemen Akun User" data-icon="fas fa-users-cog" data-group="Konfigurasi">
+              <div class="d-flex align-items-center"><span class="nav-link-icon"><span class="fas fa-users-cog"></span></span><span class="nav-link-text ps-1">Manajemen User</span></div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="konfig_kelompok" data-target="/konfigurasi/kelompok" data-title="Kelompok Kerja & Role" data-icon="fas fa-users" data-group="Konfigurasi">
+              <div class="d-flex align-items-center"><span class="nav-link-icon"><span class="fas fa-users"></span></span><span class="nav-link-text ps-1">Kelompok & Role</span></div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="konfig_hakakses" data-target="/konfigurasi/hak_akses" data-title="Matriks Hak Akses" data-icon="fas fa-user-shield" data-group="Konfigurasi">
+              <div class="d-flex align-items-center"><span class="nav-link-icon"><span class="fas fa-user-shield"></span></span><span class="nav-link-text ps-1">Hak Akses</span></div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="konfig_standarisasi" data-target="/konfigurasi/standarisasi" data-title="Standarisasi Jadwal Kerja" data-icon="fas fa-business-time" data-group="Konfigurasi">
+              <div class="d-flex align-items-center"><span class="nav-link-icon"><span class="fas fa-business-time"></span></span><span class="nav-link-text ps-1">Standarisasi Jam</span></div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="konfig_target" data-target="/konfigurasi/target" data-title="Target Kinerja Eselon" data-icon="fas fa-bullseye" data-group="Konfigurasi">
+              <div class="d-flex align-items-center"><span class="nav-link-icon"><span class="fas fa-bullseye"></span></span><span class="nav-link-text ps-1">Target SKP</span></div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link submenu-item" href="#menu" data-tag="konfig_manajemen" data-target="/konfigurasi/manajemen" data-title="Manajemen Sistem & Approval" data-icon="fas fa-sliders-h" data-group="Konfigurasi">
+              <div class="d-flex align-items-center"><span class="nav-link-icon"><span class="fas fa-sliders-h"></span></span><span class="nav-link-text ps-1">Manajemen & Approval</span></div>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </li>
+  </nav>
+</template>
