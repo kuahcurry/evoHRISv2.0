@@ -1,4 +1,8 @@
 <style>
+  body {
+    overflow: hidden !important;
+  }
+
   .card-pegawai {
     border-radius: 0.5rem;
     box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
@@ -227,9 +231,9 @@
           </td>
           <td class="align-middle">${tempatLahir}</td>
           <td class="align-middle">${tglLahir}</td>
-          <td class="align-middle text-break">${alamat}</td>
+          <td class="align-middle text-wrap" style="max-width: 250px;">${alamat}</td>
           <td class="text-end align-middle">
-            <div class="btn-group btn-action-group" role="group">
+            <div class="btn-group btn-action-group text-nowrap" role="group">
               <button type="button" class="btn btn-outline-primary btn-edit-pegawai" data-id="${idPeg}" data-nama="${namaLengkap}" title="Edit Data & Rekam Jejak Pegawai">
                 <i class="fas fa-edit me-1"></i> Edit
               </button>
@@ -574,34 +578,40 @@
 </script>
 
 <template>
-  <div class="container-fluid px-3 py-3">
+  <!-- 1. Jarak aman diubah ke 115px untuk menyerap bug pembulatan pixel di Chrome saat zoom 67% -->
+  <div class="container-fluid px-3 py-3 d-flex flex-column" style="height: calc(100vh - 115px) !important; max-height: calc(100vh - 115px) !important; overflow: hidden !important;">
+    
     <!-- SECTION 1: DIREKTORI LIST PEGAWAI -->
-    <div id="section-list-pegawai">
-      <!-- Header Page -->
-      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div id="section-list-pegawai" class="d-flex flex-column flex-grow-1" style="min-height: 0 !important; max-height: 100% !important; overflow: hidden !important;">
+      
+      <!-- Header Page Utama -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2 flex-shrink-0">
         <div>
-          <h4 class="mb-1 text-primary fw-bold">
+          <h4 class="mb-0 text-primary fw-bold">
             <i class="fas fa-users me-2"></i>Data Pegawai
           </h4>
-          <p class="text-muted mb-0 small">
+          <p class="text-muted mb-0 small" style="font-size: 13px;">
             Direktori profil kepegawaian terintegrasi, unit penempatan, dan manajemen rekam jejak karyawan.
           </p>
-        </div>
-        <div class="d-flex align-items-center gap-2">
-          <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-refresh-pegawai">
-            <i class="fas fa-sync-alt me-1"></i> Segarkan
-          </button>
-          <button type="button" class="btn btn-primary btn-sm shadow-sm" id="btn-nav-tambah-pegawai">
-            <i class="fas fa-user-plus me-1"></i> Tambah Pegawai
-          </button>
         </div>
       </div>
 
       <!-- Main Card -->
-      <div class="card card-pegawai">
+      <div class="card card-pegawai d-flex flex-column flex-grow-1 shadow-sm mb-0 border-0" style="min-height: 0 !important; max-height: 100% !important; overflow: hidden !important;">
+        
+        <!-- Baris Tombol Aksi di Atas Card -->
+        <div class="card-header bg-white border-bottom py-2 px-3 d-flex justify-content-end align-items-center gap-2 flex-shrink-0">
+          <button type="button" class="btn btn-sm btn-light border border-secondary-subtle px-3 py-1 fs-7 d-inline-flex align-items-center gap-2 shadow-sm rounded-2 text-dark" id="btn-refresh-pegawai">
+            <i class="fas fa-sync-alt text-secondary fs-7"></i> Segarkan
+          </button>
+          <button type="button" class="btn btn-sm btn-primary px-3 py-1 fs-7 d-inline-flex align-items-center gap-2 shadow-sm rounded-2 text-white" id="btn-nav-tambah-pegawai">
+            <i class="fas fa-user-plus text-white fs-7"></i> Tambah Pegawai
+          </button>
+        </div>
+
         <!-- Filter Toolbar -->
-        <div class="filter-panel">
-          <div class="row g-2 align-items-center">
+        <div class="filter-panel p-3 bg-light border-bottom flex-shrink-0">
+          <div class="row g-2 align-items-end">
             <div class="col-lg-3 col-md-6">
               <label class="form-label small fw-semibold text-muted mb-1">Pencarian Pegawai</label>
               <div class="input-group input-group-sm">
@@ -633,7 +643,7 @@
               </select>
             </div>
 
-            <div class="col-lg-1 col-md-3 col-6 d-flex align-items-end gap-1 mt-auto">
+            <div class="col-lg-1 col-md-3 col-6">
               <button type="button" class="btn btn-outline-secondary btn-sm w-100" id="btn-reset-filter" title="Reset Filter">
                 <i class="fas fa-undo me-1"></i> Reset
               </button>
@@ -641,10 +651,10 @@
           </div>
         </div>
 
-        <!-- Table Responsive -->
-        <div class="table-responsive">
-          <table class="table table-hover table-striped align-middle table-pegawai mb-0">
-            <thead>
+        <!-- Table Responsive (HANYA AREA INI YANG AKAN ADA SCROLL BAR) -->
+        <div class="table-responsive bg-white mb-0 flex-grow-1" style="min-height: 0 !important; overflow-y: auto !important; overflow-x: auto !important;">
+          <table class="table table-hover table-striped align-middle table-pegawai mb-0 text-nowrap">
+            <thead class="table-light sticky-top" style="z-index: 1;">
               <tr>
                 <th class="text-center" style="width: 50px;">No</th>
                 <th style="width: 110px;">ID Pegawai</th>
@@ -663,7 +673,7 @@
         </div>
 
         <!-- Loading State -->
-        <div id="table-pegawai-loading" class="text-center py-5 d-none">
+        <div id="table-pegawai-loading" class="text-center py-5 d-none flex-grow-1">
           <div class="spinner-border text-primary" role="status">
             <span class="visually-hidden">Memuat data...</span>
           </div>
@@ -671,7 +681,7 @@
         </div>
 
         <!-- Empty State -->
-        <div id="table-pegawai-empty" class="text-center py-5 d-none">
+        <div id="table-pegawai-empty" class="text-center py-5 d-none flex-grow-1">
           <div class="text-muted mb-2">
             <i class="fas fa-user-slash fa-3x"></i>
           </div>
@@ -680,7 +690,7 @@
         </div>
 
         <!-- Footer Card: Pagination & Info -->
-        <div class="card-footer bg-white border-top py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="card-footer bg-white border-top py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2 flex-shrink-0">
           <div class="d-flex align-items-center gap-2">
             <span class="text-muted small" id="pegawai-total-info">Menyiapkan data...</span>
             <div class="d-flex align-items-center ms-2">
@@ -701,9 +711,8 @@
     </div>
 
     <!-- SECTION 2: EXPANDABLE DETAIL / EDIT PEGAWAI INLINE -->
-    <div id="section-detail-pegawai" class="d-none">
-      <!-- Top Action Navigation Bar -->
-      <div class="card border-0 shadow-sm mb-3">
+    <div id="section-detail-pegawai" class="d-none flex-column flex-grow-1" style="min-height: 0; overflow: hidden;">
+      <div class="card border-0 shadow-sm mb-3 flex-shrink-0">
         <div class="card-body py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2 bg-white rounded-3 border">
           <div class="d-flex align-items-center">
             <button type="button" class="btn btn-sm btn-outline-secondary me-3 shadow-sm" id="btn-tutup-detail-inline">
@@ -722,8 +731,7 @@
         </div>
       </div>
 
-      <!-- Detail/Edit Module Injected Container -->
-      <div id="container-detail-inline">
+      <div id="container-detail-inline" class="flex-grow-1" style="min-height: 0; overflow-y: auto;">
         <!-- VdetailPegawai will be injected here -->
       </div>
     </div>
