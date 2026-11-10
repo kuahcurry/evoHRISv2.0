@@ -446,10 +446,14 @@
 
     <!-- Form Container -->
     <form id="form-tambah-pegawai">
-      <div class="row g-3">
-        <!-- Kolom Kiri: Foto & Identitas Pribadi -->
-        <div class="col-lg-4">
+      <div class="d-flex flex-column gap-3 w-100">
+          <!-- Card Identitas & Biodata -->
           <div class="card card-form-pegawai mb-3">
+            <div class="card-header bg-light py-2">
+              <div class="form-section-title mb-0">
+                <i class="fas fa-id-card text-primary"></i> Informasi Identitas & Biodata
+              </div>
+            </div>
             <div class="card-body text-center">
               <label class="form-label small fw-bold text-muted d-block mb-2">Foto Profil Pegawai</label>
               <div class="d-flex justify-content-center mb-2">
@@ -465,32 +469,141 @@
               <input type="file" id="input-file-foto" class="d-none" accept="image/jpeg,image/png,image/jpg">
               <small class="text-muted d-block">Format didukung: JPG, PNG, JPEG</small>
             </div>
-          </div>
-
-          <div class="card card-form-pegawai mb-3">
-            <div class="card-header bg-light py-2">
-              <div class="form-section-title mb-0">
-                <i class="fas fa-shield-alt text-primary"></i> Asuransi & Pajak
-              </div>
-            </div>
             <div class="card-body">
-              <div class="mb-2">
-                <label class="form-label small fw-semibold text-muted mb-1">Nomor BPJS Kesehatan</label>
-                <input type="text" class="form-control form-control-sm" id="add-bpjs-kes" placeholder="13 digit No BPJS Kesehatan">
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">NIP Pegawai</label>
+                  <input type="text" class="form-control form-control-sm" id="add-nip" placeholder="Nomor Induk Pegawai">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Agama</label>
+                  <select class="form-select form-select-sm" id="add-agama">
+                    <option value="">Pilih Agama</option>
+                  </select>
+                </div>
               </div>
-              <div class="mb-2">
-                <label class="form-label small fw-semibold text-muted mb-1">Nomor BPJS Ketenagakerjaan</label>
-                <input type="text" class="form-control form-control-sm" id="add-bpjs-tk" placeholder="No BPJS TK / Jamsostek">
-              </div>
-              <div>
-                <label class="form-label small fw-semibold text-muted mb-1">NPWP</label>
-                <input type="text" class="form-control form-control-sm" id="add-npwp" placeholder="Nomor Pokok Wajib Pajak">
-              </div>
-            </div>
-          </div>
 
-          <!-- Kredensial User Account -->
-          <div class="card card-form-pegawai">
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Nama Lengkap <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control form-control-sm" id="add-nama" required placeholder="Nama lengkap tanpa gelar">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Gol. Darah</label>
+                  <select class="form-select form-select-sm" id="add-goldar">
+                    <option value="">-</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Tempat Lahir</label>
+                  <input type="text" class="form-control form-control-sm" id="add-tempat-lahir" placeholder="Kota / Kabupaten Lahir">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">No. Handphone / WhatsApp</label>
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="fas fa-phone text-muted"></i></span>
+                    <input type="text" class="form-control" id="add-hp" placeholder="Contoh: 081234567890">
+                  </div>
+                </div>
+              </div>
+
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Tanggal Lahir</label>
+                  <input type="date" class="form-control form-control-sm" id="add-tgl-lahir">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Status Nikah</label>
+                  <select class="form-select form-select-sm" id="add-status-nikah">
+                    <option value="">-</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row g-3 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Jenis Kelamin</label>
+                  <select class="form-select form-select-sm" id="add-jk">
+                    <option value="L">Laki-laki</option>
+                    <option value="P">Perempuan</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Email Aktif</label>
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="fas fa-envelope text-muted"></i></span>
+                    <input type="email" class="form-control" id="add-email" placeholder="nama@email.com">
+                  </div>
+                </div>
+              </div>
+
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Provinsi</label>
+                  <select class="form-select form-select-sm" id="add-provinsi">
+                    <option value="">Pilih Provinsi</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Kabupaten / Kota</label>
+                  <select class="form-select form-select-sm" id="add-kabupaten">
+                    <option value="">Pilih Provinsi Dahulu</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Kecamatan</label>
+                  <select class="form-select form-select-sm" id="add-kecamatan">
+                    <option value="">Pilih Kabupaten Dahulu</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Kelurahan / Desa</label>
+                  <select class="form-select form-select-sm" id="add-kelurahan">
+                    <option value="">Pilih Kecamatan Dahulu</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="row g-2 mb-2">
+                <div class="col-md-6 mb-2">
+                  <label class="form-label small fw-semibold text-muted mb-1">Alamat Domisili Lengkap (Jalan, RT/RW)</label>
+                  <textarea class="form-control form-control-sm" id="add-alamat" rows="2" placeholder="Nama Jalan, No. Rumah, RT/RW"></textarea>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Kode Pos</label>
+                  <input type="text" class="form-control form-control-sm" id="add-kodepos" placeholder="Kode Pos">
+                </div>
+              </div>
+
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Jenis Identitas</label>
+                  <select class="form-select form-select-sm" id="add-identitas">
+                    <option value="">Pilih Jenis Identitas</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">NPWP</label>
+                  <input type="text" class="form-control form-control-sm" id="add-npwp" placeholder="16 digit No KK">
+                </div>
+              </div>
+
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Nomor Identitas</label>
+                  <input type="text" class="form-control form-control-sm" id="add-nik" placeholder="Masukkan digit Nomer Identitas...git ad">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Tanggal Masuk</label>
+                  <input type="date" class="form-control form-control-sm" id="add-tgl-masuk">
+                </div>
+            </div>
+            </div>
             <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
               <div class="form-section-title mb-0">
                 <i class="fas fa-user-lock text-primary"></i> Akun Pengguna
@@ -508,102 +621,6 @@
                 <label class="form-label small fw-semibold text-muted mb-1">Password Awal</label>
                 <input type="password" class="form-control form-control-sm" id="add-password" placeholder="Password akun sistem">
                 <small class="text-muted">Biarkan kosong jika default password menggunakan tanggal lahir.</small>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Kolom Kanan: Rincian Lengkap Profil Pegawai -->
-        <div class="col-lg-8">
-          <!-- Card Identitas & Biodata -->
-          <div class="card card-form-pegawai mb-3">
-            <div class="card-header bg-light py-2">
-              <div class="form-section-title mb-0">
-                <i class="fas fa-id-card text-primary"></i> Biodata Lengkap Pegawai
-              </div>
-            </div>
-            <div class="card-body">
-              <div class="row g-2 mb-2">
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold text-muted mb-1">Gelar Depan</label>
-                  <input type="text" class="form-control form-control-sm" id="add-gelar-depan" placeholder="dr. / Ns. / Drs.">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold text-muted mb-1">Nama Lengkap <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control form-control-sm" id="add-nama" required placeholder="Nama lengkap tanpa gelar">
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold text-muted mb-1">Gelar Belakang</label>
-                  <input type="text" class="form-control form-control-sm" id="add-gelar-belakang" placeholder="Sp.A / S.Kep / S.Kom">
-                </div>
-              </div>
-
-              <div class="row g-2 mb-2">
-                <div class="col-md-4">
-                  <label class="form-label small fw-semibold text-muted mb-1">NIP Pegawai</label>
-                  <input type="text" class="form-control form-control-sm" id="add-nip" placeholder="Nomor Induk Pegawai">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label small fw-semibold text-muted mb-1">NIK (KTP 16 Digit)</label>
-                  <input type="text" class="form-control form-control-sm" id="add-nik" maxlength="16" placeholder="16 digit angka KTP">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label small fw-semibold text-muted mb-1">Nomor Kartu Keluarga (KK)</label>
-                  <input type="text" class="form-control form-control-sm" id="add-kk" maxlength="16" placeholder="16 digit No KK">
-                </div>
-              </div>
-
-              <div class="row g-2 mb-2">
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold text-muted mb-1">Jenis Kelamin</label>
-                  <select class="form-select form-select-sm" id="add-jk">
-                    <option value="L">Laki-laki</option>
-                    <option value="P">Perempuan</option>
-                  </select>
-                </div>
-                <div class="col-md-5">
-                  <label class="form-label small fw-semibold text-muted mb-1">Tempat Lahir</label>
-                  <input type="text" class="form-control form-control-sm" id="add-tempat-lahir" placeholder="Kota / Kabupaten Lahir">
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label small fw-semibold text-muted mb-1">Tanggal Lahir</label>
-                  <input type="date" class="form-control form-control-sm" id="add-tgl-lahir">
-                </div>
-              </div>
-
-              <div class="row g-2">
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold text-muted mb-1">Agama</label>
-                  <select class="form-select form-select-sm" id="add-agama">
-                    <option value="">Pilih Agama</option>
-                  </select>
-                </div>
-                <div class="col-md-2">
-                  <label class="form-label small fw-semibold text-muted mb-1">Gol. Darah</label>
-                  <select class="form-select form-select-sm" id="add-goldar">
-                    <option value="">-</option>
-                  </select>
-                </div>
-                <div class="col-md-2">
-                  <label class="form-label small fw-semibold text-muted mb-1">Rhesus</label>
-                  <select class="form-select form-select-sm" id="add-rhesus">
-                    <option value="">-</option>
-                    <option value="+">+</option>
-                    <option value="-">-</option>
-                  </select>
-                </div>
-                <div class="col-md-2">
-                  <label class="form-label small fw-semibold text-muted mb-1">Status Nikah</label>
-                  <select class="form-select form-select-sm" id="add-status-nikah">
-                    <option value="">-</option>
-                  </select>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold text-muted mb-1">Pendidikan Terakhir</label>
-                  <select class="form-select form-select-sm" id="add-pendidikan">
-                    <option value="">Pilih Pendidikan</option>
-                  </select>
-                </div>
               </div>
             </div>
           </div>
@@ -660,54 +677,20 @@
               </div>
             </div>
             <div class="card-body">
-              <div class="row g-2 mb-2">
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold text-muted mb-1">No. Handphone / WhatsApp</label>
-                  <div class="input-group input-group-sm">
-                    <span class="input-group-text"><i class="fas fa-phone text-muted"></i></span>
-                    <input type="text" class="form-control" id="add-hp" placeholder="Contoh: 081234567890">
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold text-muted mb-1">Email Aktif</label>
-                  <div class="input-group input-group-sm">
-                    <span class="input-group-text"><i class="fas fa-envelope text-muted"></i></span>
-                    <input type="email" class="form-control" id="add-email" placeholder="nama@email.com">
-                  </div>
-                </div>
-              </div>
-
               <div class="mb-2">
-                <label class="form-label small fw-semibold text-muted mb-1">Alamat Domisili Lengkap (Jalan, RT/RW)</label>
-                <textarea class="form-control form-control-sm" id="add-alamat" rows="2" placeholder="Nama Jalan, No. Rumah, RT/RW"></textarea>
+                <label class="form-label small fw-semibold text-muted mb-1">Nomor BPJS Kesehatan</label>
+                <input type="text" class="form-control form-control-sm" id="add-bpjs-kes" placeholder="13 digit No BPJS Kesehatan">
               </div>
-
-              <div class="row g-2">
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold text-muted mb-1">Provinsi</label>
-                  <select class="form-select form-select-sm" id="add-provinsi">
-                    <option value="">Pilih Provinsi</option>
-                  </select>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold text-muted mb-1">Kabupaten / Kota</label>
-                  <select class="form-select form-select-sm" id="add-kabupaten">
-                    <option value="">Pilih Provinsi Dahulu</option>
-                  </select>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold text-muted mb-1">Kecamatan</label>
-                  <select class="form-select form-select-sm" id="add-kecamatan">
-                    <option value="">Pilih Kabupaten Dahulu</option>
-                  </select>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold text-muted mb-1">Kelurahan / Desa</label>
-                  <select class="form-select form-select-sm" id="add-kelurahan">
-                    <option value="">Pilih Kecamatan Dahulu</option>
-                  </select>
-                </div>
+              <div class="mb-2">
+                <label class="form-label small fw-semibold text-muted mb-1">Nomor BPJS Ketenagakerjaan</label>
+                <input type="text" class="form-control form-control-sm" id="add-bpjs-tk" placeholder="No BPJS TK / Jamsostek">
               </div>
+              <div>
+                <label class="form-label small fw-semibold text-muted mb-1">NPWP</label>
+                <input type="text" class="form-control form-control-sm" id="add-npwp" placeholder="Nomor Pokok Wajib Pajak">
+              </div>
+               
+              
             </div>
           </div>
 
@@ -720,7 +703,6 @@
               <i class="fas fa-save me-1"></i> Simpan Pegawai Baru
             </button>
           </div>
-        </div>
       </div>
     </form>
   </div>
