@@ -57,6 +57,25 @@ body::before {
   }
 }
 
+/* Responsive adjustments for mobile navbar */
+.search-box {
+  max-width: 100% !important;
+}
+.search-box .search-input {
+  max-width: 100% !important;
+}
+
+@media (max-width: 575.98px) {
+  .navbar-top.navbar-glass {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+  .navbar-top .navbar-brand img {
+    max-width: 115px !important;
+    height: auto;
+  }
+}
+
 /* Layout & Content Container*/
 #container-isi.content-container,
 .content-container {
