@@ -184,7 +184,7 @@
   document.sidebar = { renderMenu };
 </script>
 <template>
-  <nav class="sidebar-menu flex-grow-1 mb-4" id="sidebar-menu">
+  <nav class="sidebar-menu flex-grow-1 mb-4 px-4" id="sidebar-menu">
     <li class="nav-item">
       <a class="nav-link submenu-item active" href="#menu" data-tag="dashboard" data-target="/dashboard" data-title="Dashboard" data-icon="fas fa-chart-pie" data-group="Dashboard">
         <div class="d-flex align-items-center">
@@ -433,7 +433,7 @@
         <ul class="nav collapse parent show" id="collapse_pegawai">
           <li class="nav-item">
             <a class="nav-link submenu-item" href="#menu" data-tag="pegawai_data" data-target="/pegawai/Vpegawai" data-title="Data Pegawai" data-icon="fas fa-users" data-group="Kepegawaian">
-              <div class="d-flex align-items-center">
+              <div class="d-flex align-items-center mb-1">
                 <span class="nav-link-icon"><span class="fas fa-users"></span></span>
                 <span class="nav-link-text ps-1">Data Pegawai</span>
               </div>
@@ -441,7 +441,7 @@
           </li>
           <li class="nav-item">
             <a class="nav-link dropdown-indicator" href="#collapse_pegawai_laporan" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="collapse_pegawai_laporan">
-              <div class="d-flex align-items-center">
+              <div class="d-flex align-items-center mb-1">
                 <span class="nav-link-icon"><span class="fas fa-file-invoice"></span></span>
                 <span class="nav-link-text ps-1">Laporan</span>
               </div>
@@ -501,7 +501,7 @@
           </li>
           <li class="nav-item">
             <a class="nav-link dropdown-indicator" href="#collapse_pegawai_status" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="collapse_pegawai_status">
-              <div class="d-flex align-items-center">
+              <div class="d-flex align-items-center mb-1">
                 <span class="nav-link-icon"><span class="fas fa-user-clock"></span></span>
                 <span class="nav-link-text ps-1">Perubahan Status Karyawan</span>
               </div>
