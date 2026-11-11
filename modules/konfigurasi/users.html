@@ -1,6 +1,16 @@
 <style>
-  .user-badge-valid { background-color: rgba(40, 167, 69, 0.15); color: #28a745; font-weight: 600; }
-  .user-badge-invalid { background-color: rgba(220, 53, 69, 0.15); color: #dc3545; font-weight: 600; }
+  .user-badge-valid {
+    background-color: rgba(40, 167, 69, 0.15);
+    color: #28a745;
+    font-weight: 600;
+  }
+
+  .user-badge-invalid {
+    background-color: rgba(220, 53, 69, 0.15);
+    color: #dc3545;
+    font-weight: 600;
+  }
+
   .avatar-user {
     width: 38px;
     height: 38px;
@@ -21,8 +31,10 @@
         <div class="card-body py-3">
           <div class="row justify-content-between align-items-center">
             <div class="col-auto">
-              <h5 class="mb-1 text-primary fw-bold"><i class="fas fa-users-cog me-2"></i>Manajemen Akun & Pengguna Sistem</h5>
-              <div class="text-secondary small">Kelola otentikasi login, peran hak akses, dan status akun pengguna SIMRS / HRIS.</div>
+              <h5 class="mb-1 text-primary fw-bold"><i class="fas fa-users-cog me-2"></i>Manajemen Akun & Pengguna
+                Sistem</h5>
+              <div class="text-secondary small">Kelola otentikasi login, peran hak akses, dan status akun pengguna SIMRS
+                / HRIS.</div>
             </div>
             <div class="col-auto">
               <button class="btn btn-sm btn-falcon-default me-1" id="btn-refresh-users">
@@ -57,7 +69,9 @@
       <div class="card overflow-hidden">
         <div class="card-body">
           <div class="d-flex align-items-center">
-            <div class="avatar-user me-3 bg-success" style="background: linear-gradient(135deg, #00d27a 0%, #00864e 100%);"><i class="fas fa-user-check"></i></div>
+            <div class="avatar-user me-3 bg-success"
+              style="background: linear-gradient(135deg, #00d27a 0%, #00864e 100%);"><i class="fas fa-user-check"></i>
+            </div>
             <div>
               <h6 class="text-secondary mb-1">Akun Valid / Aktif</h6>
               <h4 class="mb-0 text-success fw-bold" id="stat-active-users">0</h4>
@@ -70,7 +84,9 @@
       <div class="card overflow-hidden">
         <div class="card-body">
           <div class="d-flex align-items-center">
-            <div class="avatar-user me-3 bg-danger" style="background: linear-gradient(135deg, #e63757 0%, #a61b34 100%);"><i class="fas fa-user-slash"></i></div>
+            <div class="avatar-user me-3 bg-danger"
+              style="background: linear-gradient(135deg, #e63757 0%, #a61b34 100%);"><i class="fas fa-user-slash"></i>
+            </div>
             <div>
               <h6 class="text-secondary mb-1">Akun Diblokir</h6>
               <h4 class="mb-0 text-danger fw-bold" id="stat-blocked-users">0</h4>
@@ -83,7 +99,9 @@
       <div class="card overflow-hidden">
         <div class="card-body">
           <div class="d-flex align-items-center">
-            <div class="avatar-user me-3 bg-warning" style="background: linear-gradient(135deg, #f5803e 0%, #bf5215 100%);"><i class="fas fa-shield-alt"></i></div>
+            <div class="avatar-user me-3 bg-warning"
+              style="background: linear-gradient(135deg, #f5803e 0%, #bf5215 100%);"><i class="fas fa-shield-alt"></i>
+            </div>
             <div>
               <h6 class="text-secondary mb-1">Peran / Level Sistem</h6>
               <h4 class="mb-0 text-warning fw-bold" id="stat-total-roles">0</h4>
@@ -101,7 +119,8 @@
         <div class="col-md-5 col-sm-12">
           <div class="input-group input-group-sm">
             <span class="input-group-text bg-white"><i class="fas fa-search text-secondary"></i></span>
-            <input type="text" class="form-control" id="user-filter-search" placeholder="Cari NIP atau Nama Pengguna...">
+            <input type="text" class="form-control" id="user-filter-search"
+              placeholder="Cari NIP atau Nama Pengguna...">
           </div>
         </div>
         <div class="col-md-3 col-sm-6">
@@ -165,7 +184,8 @@
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content">
         <div class="modal-header bg-light">
-          <h5 class="modal-title" id="modal-user-title"><i class="fas fa-user-plus me-2 text-primary"></i>Tambah Akun Pengguna</h5>
+          <h5 class="modal-title" id="modal-user-title"><i class="fas fa-user-plus me-2 text-primary"></i>Tambah Akun
+            Pengguna</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <form id="form-user">
@@ -206,12 +226,16 @@
               </div>
 
               <div class="col-md-12" id="password-container">
-                <label class="form-label fw-bold">Password Login <span class="text-danger" id="pwd-required-marker">*</span></label>
+                <label class="form-label fw-bold">Password Login <span class="text-danger"
+                    id="pwd-required-marker">*</span></label>
                 <div class="input-group">
-                  <input type="password" class="form-control" id="form-user-password" name="password" placeholder="Masukkan password (min. 6 karakter)">
-                  <button class="btn btn-outline-secondary" type="button" id="btn-toggle-pwd"><i class="fas fa-eye"></i></button>
+                  <input type="password" class="form-control" id="form-user-password" name="password"
+                    placeholder="Masukkan password (min. 6 karakter)">
+                  <button class="btn btn-outline-secondary" type="button" id="btn-toggle-pwd"><i
+                      class="fas fa-eye"></i></button>
                 </div>
-                <div class="form-text text-muted">Untuk akun baru default adalah <code>123456</code>. Jika mengedit, biarkan kosong bila tidak ingin mengganti password.</div>
+                <div class="form-text text-muted">Untuk akun baru default adalah <code>123456</code>. Jika mengedit,
+                  biarkan kosong bila tidak ingin mengganti password.</div>
               </div>
             </div>
           </div>
@@ -242,11 +266,13 @@
             </div>
             <div class="mb-3">
               <label class="form-label fw-bold">Password Baru <span class="text-danger">*</span></label>
-              <input type="password" class="form-control" id="reset-pwd-val" required placeholder="Minimal 6 karakter" minlength="6">
+              <input type="password" class="form-control" id="reset-pwd-val" required placeholder="Minimal 6 karakter"
+                minlength="6">
             </div>
             <div class="mb-3">
               <label class="form-label fw-bold">Konfirmasi Password Baru <span class="text-danger">*</span></label>
-              <input type="password" class="form-control" id="reset-pwd-confirm" required placeholder="Ulangi password baru">
+              <input type="password" class="form-control" id="reset-pwd-confirm" required
+                placeholder="Ulangi password baru">
             </div>
             <div class="form-check">
               <input class="form-check-input" type="checkbox" id="check-default-pwd">
@@ -296,7 +322,7 @@
       if (resp && resp.data) {
         state.roles = resp.data.roles || [];
         state.pegawaiList = resp.data.pegawai || [];
-        
+
         // Populate Role dropdown in filters
         const filterRoleEl = document.getElementById('user-filter-role');
         const formRoleEl = document.getElementById('form-user-role');
@@ -313,7 +339,11 @@
         const formPegawaiEl = document.getElementById('form-user-pegawai');
         if (formPegawaiEl) {
           formPegawaiEl.innerHTML = '<option value="">-- Pilih Pegawai --</option>' +
-            state.pegawaiList.map(p => `<option value="${p.NIP}" data-nama="${p.NAMA_LENGKAP}">${p.NIP} - ${p.NAMA_LENGKAP}</option>`).join('');
+            state.pegawaiList.map(p => {
+              const nip = p.NIP ?? p.nip ?? '';
+              const nama = p.NAMA_LENGKAP ?? p.nama_lengkap ?? p.NAMA ?? p.nama ?? p.NAMA_PEGAWAI ?? '';
+              return `<option value="${nip}" data-nama="${nama}">${nip} - ${nama}</option>`;
+            }).join('');
         }
 
         const statRolesEl = document.getElementById('stat-total-roles');
@@ -402,10 +432,10 @@
       const initials = getInitials(u.nama_lengkap);
       const isOnline = (u.status === 'online');
       const isValid = (u.status_user === 'valid');
-      const badgeStatus = isValid 
+      const badgeStatus = isValid
         ? `<span class="badge user-badge-valid"><i class="fas fa-check-circle me-1"></i>Valid</span>`
         : `<span class="badge user-badge-invalid"><i class="fas fa-ban me-1"></i>Non-Aktif</span>`;
-      
+
       const badgeOnline = isOnline
         ? `<span class="badge bg-success"><i class="fas fa-circle me-1" style="font-size: 8px;"></i>Online</span>`
         : `<span class="badge bg-secondary"><i class="far fa-circle me-1" style="font-size: 8px;"></i>Offline</span>`;
@@ -531,7 +561,7 @@
         const id = btn.getAttribute('data-id');
         const curStatus = btn.getAttribute('data-status');
         const newStatus = curStatus === 'valid' ? 'non-aktif' : 'valid';
-        
+
         if (confirm(`Apakah Anda yakin ingin mengubah status akun ini menjadi "${newStatus}"?`)) {
           try {
             await httpPost(`${config.api_url}/konfigurasi/users/status`, { id, status_user: newStatus });
@@ -572,7 +602,7 @@
       document.getElementById('form-user-nama').value = u.nama_lengkap;
       document.getElementById('form-user-role').value = u.kd_userlevel || '';
       document.getElementById('form-user-status').value = u.status_user || 'valid';
-      
+
       const pwdContainer = document.getElementById('password-container');
       const pwdReq = document.getElementById('pwd-required-marker');
       const pwdInput = document.getElementById('form-user-password');
@@ -682,7 +712,7 @@
         document.getElementById('form-user-nama').value = '';
         document.getElementById('form-user-role').value = '';
         document.getElementById('form-user-status').value = 'valid';
-        
+
         const pwdReq = document.getElementById('pwd-required-marker');
         const pwdInput = document.getElementById('form-user-password');
         if (pwdReq) pwdReq.classList.remove('d-none');
