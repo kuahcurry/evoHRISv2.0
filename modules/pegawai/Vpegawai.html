@@ -613,47 +613,51 @@
         </div>
 
         <!-- Filter Toolbar -->
-        <div class="filter-panel p-3 bg-light border-bottom flex-shrink-0">
-          <div class="row g-2 align-items-end">
-            <div class="col-lg-3 col-md-6">
-            <div class="col-lg-4 col-md-5">
-              <label class="form-label small fw-semibold text-muted mb-1">Pencarian Pegawai</label>
-              <div class="input-group input-group-sm">
-                <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
-                <input type="text" class="form-control" id="search-pegawai" placeholder="Cari NIP, NIK, atau Nama...">
-              </div>
-            </div>
+<div class="filter-panel p-3 bg-light border-bottom flex-shrink-0">
+  <div class="row g-2 align-items-end">
+    <!-- 1. Pencarian Pegawai (col-lg-4) -->
+    <div class="col-lg-4 col-md-6">
+      <label class="form-label small fw-semibold text-muted mb-1">Pencarian Pegawai</label>
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+        <input type="text" class="form-control" id="search-pegawai" placeholder="Cari NIP, NIK, atau Nama...">
+      </div>
+    </div>
 
-            <div class="col-lg-3 col-md-4 col-6">
-              <label class="form-label small fw-semibold text-muted mb-1">Unit / Bagian</label>
-              <select class="form-select form-select-sm" id="filter-bagian">
-                <option value="">Semua Bagian</option>
-              </select>
-            </div>
+    <!-- 2. Unit / Bagian (col-lg-3) -->
+    <div class="col-lg-3 col-md-6 col-sm-6">
+      <label class="form-label small fw-semibold text-muted mb-1">Unit / Bagian</label>
+      <select class="form-select form-select-sm" id="filter-bagian">
+        <option value="">Semua Bagian</option>
+      </select>
+    </div>
 
-            <div class="col-lg-3 col-md-3 col-6">
-              <label class="form-label small fw-semibold text-muted mb-1">Jabatan</label>
-              <select class="form-select form-select-sm" id="filter-jabatan">
-                <option value="">Semua Jabatan</option>
-              </select>
-            </div>
-            <div class="col-lg-2 col-md-3 col-6">
-              <label class="form-label small fw-semibold text-muted mb-1">Status Kerja</label>
-              <select class="form-select form-select-sm" id="filter-aktif">
-                <option value="">Semua</option>
-                <option value="1">Aktif</option>
-                <option value="0">Nonaktif</option>
-              </select>
-            </div>
+    <!-- 3. Jabatan (col-lg-2) -->
+    <div class="col-lg-2 col-md-4 col-sm-6">
+      <label class="form-label small fw-semibold text-muted mb-1">Jabatan</label>
+      <select class="form-select form-select-sm" id="filter-jabatan">
+        <option value="">Semua Jabatan</option>
+      </select>
+    </div>
 
-            <div class="col-lg-1 col-md-3 col-6">
-            <div class="col-lg-2 col-md-12 col-12">
-              <button type="button" class="btn btn-outline-secondary btn-sm w-100" id="btn-reset-filter" title="Reset Filter">
-                <i class="fas fa-undo me-1"></i> Reset
-              </button>
-            </div>
-          </div>
-        </div>
+    <!-- 4. Status Kerja (col-lg-2) -->
+    <div class="col-lg-2 col-md-4 col-sm-6">
+      <label class="form-label small fw-semibold text-muted mb-1">Status Kerja</label>
+      <select class="form-select form-select-sm" id="filter-aktif">
+        <option value="">Semua</option>
+        <option value="1">Aktif</option>
+        <option value="0">Nonaktif</option>
+      </select>
+    </div>
+
+    <!-- 5. Tombol Reset (col-lg-1) -->
+    <div class="col-lg-1 col-md-4 col-sm-6">
+      <button type="button" class="btn btn-outline-secondary btn-sm w-100" id="btn-reset-filter" title="Reset Filter">
+        <i class="fas fa-undo me-1"></i> Reset
+      </button>
+    </div>
+  </div>
+</div>
 
         <!-- Table Responsive (HANYA AREA INI YANG AKAN ADA SCROLL BAR) -->
         <div class="table-responsive bg-white mb-0 flex-grow-1" style="min-height: 0 !important; overflow-y: auto !important; overflow-x: auto !important;">
