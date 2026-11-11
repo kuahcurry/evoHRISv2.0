@@ -283,6 +283,17 @@ class Konfigurasi extends BaseController
             $idUserLevel = $input['id_user_level'] ?? null;
             $items = $input['items'] ?? [];
 
+            if (is_string($items)) {
+                $decodedItems = json_decode($items, true);
+                if (!is_array($decodedItems)) {
+                    $decodedItemsBase64 = base64_decode($items, true);
+                    $decodedItems = $decodedItemsBase64 === false
+                        ? null
+                        : json_decode($decodedItemsBase64, true);
+                }
+                $items = $decodedItems;
+            }
+
             if (!$idUserLevel || !is_array($items)) {
                 return sendResponse(400, null, false, 'Data batch hak akses tidak valid');
             }

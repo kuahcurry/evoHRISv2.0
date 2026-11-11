@@ -481,10 +481,14 @@
           btnBatchSave.disabled = true;
           btnBatchSave.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...';
 
-          await httpPost(`${config.api_url}/konfigurasi/hak-akses/save-batch`, {
+          const response = await httpPost(`${config.api_url}/konfigurasi/hak-akses/save-batch`, {
             id_user_level: currentRoleId,
             items: items
           });
+
+          if (!response || Number(response.code) !== 200) {
+            throw new Error(response?.message || response?.status || 'Respons server tidak valid');
+          }
 
           alert('Matriks hak akses peran berhasil disimpan.');
           dirtyChanges.clear();
