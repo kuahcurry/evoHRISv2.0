@@ -119,27 +119,43 @@ $routes->post('/pegawai/pelatihan/delete/(:segment)', 'Pegawai::delete_pelatihan
 
 $routes->get('/pegawai/mutasi', 'Pegawai::mutasi');
 $routes->post('/pegawai/mutasi/save', 'Pegawai::save_mutasi');
-$routes->post('/pegawai/mutasi/delete/(:segment)', 'Pegawai::delete_mutasi/$1');
+$routes->match(['post', 'delete'], '/pegawai/mutasi/delete', 'Pegawai::delete_mutasi');
+$routes->match(['post', 'delete'], '/pegawai/mutasi/delete/(:segment)', 'Pegawai::delete_mutasi/$1');
 
 $routes->get('/pegawai/promosi', 'Pegawai::promosi');
 $routes->post('/pegawai/promosi/save', 'Pegawai::save_promosi');
-$routes->post('/pegawai/promosi/delete/(:segment)', 'Pegawai::delete_promosi/$1');
+$routes->match(['post', 'delete'], '/pegawai/promosi/delete', 'Pegawai::delete_promosi');
+$routes->match(['post', 'delete'], '/pegawai/promosi/delete/(:segment)', 'Pegawai::delete_promosi/$1');
 
 $routes->get('/pegawai/kontrak', 'Pegawai::kontrak');
 $routes->post('/pegawai/kontrak/save', 'Pegawai::save_kontrak');
-$routes->post('/pegawai/kontrak/delete/(:segment)', 'Pegawai::delete_kontrak/$1');
+$routes->match(['post', 'delete'], '/pegawai/kontrak/delete', 'Pegawai::delete_kontrak');
+$routes->match(['post', 'delete'], '/pegawai/kontrak/delete/(:segment)', 'Pegawai::delete_kontrak/$1');
 
 $routes->get('/pegawai/phk', 'Pegawai::phk');
 $routes->post('/pegawai/phk/save', 'Pegawai::save_phk');
-$routes->post('/pegawai/phk/delete/(:segment)', 'Pegawai::delete_phk/$1');
+$routes->match(['post', 'delete'], '/pegawai/phk/delete', 'Pegawai::delete_phk');
+$routes->match(['post', 'delete'], '/pegawai/phk/delete/(:segment)', 'Pegawai::delete_phk/$1');
 
 $routes->get('/pegawai/penghargaan', 'Pegawai::penghargaan');
 $routes->post('/pegawai/penghargaan/save', 'Pegawai::save_penghargaan');
-$routes->post('/pegawai/penghargaan/delete/(:segment)', 'Pegawai::delete_penghargaan/$1');
+$routes->match(['post', 'delete'], '/pegawai/penghargaan/delete', 'Pegawai::delete_penghargaan');
+$routes->match(['post', 'delete'], '/pegawai/penghargaan/delete/(:segment)', 'Pegawai::delete_penghargaan/$1');
 
 $routes->get('/pegawai/sanksi', 'Pegawai::sanksi');
 $routes->post('/pegawai/sanksi/save', 'Pegawai::save_sanksi');
-$routes->post('/pegawai/sanksi/delete/(:segment)', 'Pegawai::delete_sanksi/$1');
+$routes->match(['post', 'delete'], '/pegawai/sanksi/delete', 'Pegawai::delete_sanksi');
+$routes->match(['post', 'delete'], '/pegawai/sanksi/delete/(:segment)', 'Pegawai::delete_sanksi/$1');
+
+$routes->get('/pegawai/demosi', 'Pegawai::demosi');
+$routes->post('/pegawai/demosi/save', 'Pegawai::save_demosi');
+$routes->match(['post', 'delete'], '/pegawai/demosi/delete', 'Pegawai::delete_demosi');
+$routes->match(['post', 'delete'], '/pegawai/demosi/delete/(:segment)', 'Pegawai::delete_demosi/$1');
+
+$routes->get('/pegawai/catatan', 'Pegawai::catatan');
+$routes->post('/pegawai/catatan/save', 'Pegawai::save_catatan');
+$routes->match(['post', 'delete'], '/pegawai/catatan/delete', 'Pegawai::delete_catatan');
+$routes->match(['post', 'delete'], '/pegawai/catatan/delete/(:segment)', 'Pegawai::delete_catatan/$1');
 
 $routes->get('/pegawai/cuti', 'Pegawai::cuti');
 $routes->post('/pegawai/cuti/save', 'Pegawai::save_cuti');
@@ -171,6 +187,8 @@ $routes->match(['get', 'post'], '/cPegawai/cek_pass', 'cPegawai::cek_pass');
 $routes->match(['get', 'post'], '/cPegawai/update_pass', 'cPegawai::update_pass');
 $routes->post('/cPegawai/save_data', 'cPegawai::save_data');
 $routes->match(['get', 'post'], '/cPegawai/simpan_data_pegawai', 'cPegawai::save_data');
+$routes->match(['get', 'post'], '/cPegawai/import_excel', 'cPegawai::import_excel');
+$routes->match(['get', 'post'], '/cPegawai/download_template', 'cPegawai::download_template');
 $routes->get('/cPegawai/edit_detail', 'cPegawai::edit_detail');
 $routes->get('/cPegawai/edit_detail/(:segment)', 'cPegawai::edit_detail/$1');
 $routes->post('/cPegawai/update_data_pegawai', 'cPegawai::update_data_pegawai');

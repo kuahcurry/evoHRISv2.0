@@ -630,12 +630,12 @@
         return;
       }
       if (typeof loadModule === 'function') {
-        loadModule('modules/pegawai/Vpegawai', '#container-isi');
+        loadModule('modules/pegawai/pegawai/Vpegawai', '#container-isi');
       }
     });
 
     document.getElementById('btn-cetak-riwayat-a4')?.addEventListener('click', () => {
-      window.open(`./modules/pegawai/VcetakRiwayat.html?id=${currentPegawaiId}`, '_blank');
+      window.open(`./modules/pegawai/pegawai/VcetakRiwayat.html?id=${currentPegawaiId}`, '_blank');
     });
 
     document.getElementById('form-edit-profil-pegawai')?.addEventListener('submit', submitUpdateProfil);

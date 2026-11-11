@@ -46,44 +46,41 @@ var utils = {
  removeClass: removeClass
 } 
 var handleNavbarVerticalCollapsed = function handleNavbarVerticalCollapsed() {
- var Selector = {
-   HTML: 'html',
-   NAVBAR_VERTICAL_TOGGLE: '.navbar-vertical-toggle',
-   NAVBAR_VERTICAL_COLLAPSE: '.navbar-vertical .navbar-collapse',
-   ECHART_RESPONSIVE: '[data-echart-responsive]'
- };
- var Events = {
-   CLICK: 'click',
-   MOUSE_OVER: 'mouseover',
-   MOUSE_LEAVE: 'mouseleave',
-   NAVBAR_VERTICAL_TOGGLE: 'navbar.vertical.toggle'
- };
- var ClassNames = {
-   NAVBAR_VERTICAL_COLLAPSED: 'navbar-vertical-collapsed',
-   NAVBAR_VERTICAL_COLLAPSED_HOVER: 'navbar-vertical-collapsed-hover'
- };
- var navbarVerticalToggle = document.querySelector(Selector.NAVBAR_VERTICAL_TOGGLE);
- var html = document.querySelector(Selector.HTML);
- var navbarVerticalCollapse = document.querySelector(Selector.NAVBAR_VERTICAL_COLLAPSE);
- var toggled = false;
- if (navbarVerticalToggle) {
-  navbarVerticalToggle.addEventListener(Events.CLICK, function (e) {
-   toggled = !toggled;
-   document.sidebar.toggleListPasien(toggled);
+  var html = document.documentElement;
+  var navbarVerticalCollapse = document.getElementById('navbarVerticalCollapse');
+
+  var toggleSidebar = function () {
+    var isCurrentlyCollapsed = html.classList.contains('navbar-vertical-collapsed');
+    if (isCurrentlyCollapsed) {
+      html.classList.remove('navbar-vertical-collapsed');
+      localStorage.setItem('isNavbarVerticalCollapsed', false);
+    } else {
+      html.classList.add('navbar-vertical-collapsed');
+      localStorage.setItem('isNavbarVerticalCollapsed', true);
+    }
+    html.classList.remove('navbar-vertical-collapsed-hover');
+    sessionStorage.setItem('sidebar_manually_toggled', 'true');
+
+    window.dispatchEvent(new Event('resize'));
+    window.dispatchEvent(new CustomEvent('navbar.vertical.toggle'));
+  };
+
+  var toggleButtons = document.querySelectorAll('.navbar-vertical-toggle, .navbar-top .navbar-toggler');
+  toggleButtons.forEach(function (btn) {
+    if (!btn._hasSidebarToggle) {
+      btn._hasSidebarToggle = true;
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleSidebar();
+      });
+    }
   });
- }
- if (navbarVerticalCollapse) {
-   navbarVerticalCollapse.addEventListener(Events.MOUSE_OVER, function () {
-     if (utils.hasClass(html, ClassNames.NAVBAR_VERTICAL_COLLAPSED)) {
-       html.classList.add(ClassNames.NAVBAR_VERTICAL_COLLAPSED_HOVER);
-     }
-   });
-   navbarVerticalCollapse.addEventListener(Events.MOUSE_LEAVE, function () {
-     if (utils.hasClass(html, ClassNames.NAVBAR_VERTICAL_COLLAPSED_HOVER)) {
-       html.classList.remove(ClassNames.NAVBAR_VERTICAL_COLLAPSED_HOVER);
-     }
-   });
- }
+
+  // Pastikan tidak ada class hover yang tertinggal agar sidebar tetap diam di posisinya (tidak membuka saat kursor lewat)
+  if (navbarVerticalCollapse) {
+    html.classList.remove('navbar-vertical-collapsed-hover');
+  }
 };
 var togglePaginationButtonDisable = function togglePaginationButtonDisable(button, disabled) {
  button.disabled = disabled;

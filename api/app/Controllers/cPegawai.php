@@ -382,48 +382,122 @@ class cPegawai extends BaseController
             $this->db->table('detail_pendidikan_pegawai')->insert($dataPendidikan);
         }
 
-        // 4. Insert Pengalaman Pegawai (Opsional jika ada input)
-        $namaPerusahaan = $val(['nama_perusahaan', 'NAMA_PERUSAHAAN', 'txt_perusahaan', 'pengalaman_perusahaan', 'add-pengalaman-perusahaan']);
-        if (!empty($namaPerusahaan) || !empty($filePengalaman)) {
-            $resPeng = $this->db->query("SELECT COALESCE(MAX(KD_PENGALAMAN), 0) + 1 AS new_id FROM detail_pengalaman_pegawai")->getRowArray();
-            $kdPengalaman = (int)($resPeng['new_id'] ?? 1);
-
-            $dataPengalaman = [
-                'KD_PENGALAMAN'       => $kdPengalaman,
-                'ID_PEGAWAI'          => $idPegawai,
-                'NAMA_PERUSAHAAN'     => $namaPerusahaan ?: '-',
-                'KD_JABATAN'          => $valInt(['pengalaman_jabatan', 'add-pengalaman-jabatan'], 1),
-                'JABATAN'             => $val(['pengalaman_nama_jabatan', 'add-pengalaman-nama-jabatan'], '-'),
-                'ALAMAT'              => $val(['pengalaman_alamat', 'add-pengalaman-alamat'], '-'),
-                'KD_JENIS_PENGALAMAN' => $valInt(['pengalaman_jenis', 'add-pengalaman-jenis'], 1),
-                'KD_PROVINSI'         => $valInt(['pengalaman_provinsi', 'add-pengalaman-provinsi'], 0),
-                'KD_KABUPATEN'        => $valInt(['pengalaman_kabupaten', 'add-pengalaman-kabupaten'], 0),
-                'KD_KECAMATAN'        => $valInt(['pengalaman_kecamatan', 'add-pengalaman-kecamatan'], 0),
-                'KD_KELURAHAN'        => $valInt(['pengalaman_kelurahan', 'add-pengalaman-kelurahan'], 0),
-                'TANGGAL_MULAI'       => $val(['pengalaman_periode_mulai', 'add-pengalaman-periode-mulai'], '2020-01-01'),
-                'TANGGAL_SAMPAI'      => $val(['pengalaman_periode_selesai', 'add-pengalaman-periode-selesai'], '2022-01-01'),
-                'IMAGE_SK'            => $filePengalaman ?: ''
-            ];
-            $this->db->table('detail_pengalaman_pegawai')->insert($dataPengalaman);
+        // 4. Insert Pengalaman Pegawai (Multi-entry repeater & legacy fallback)
+        $pengalamanListRaw = $this->request->getPost('pengalaman_list') ?: $this->request->getPost('pengalaman');
+        $pengalamanItems = [];
+        if (!empty($pengalamanListRaw)) {
+            if (is_string($pengalamanListRaw)) {
+                $pengalamanItems = json_decode($pengalamanListRaw, true) ?: [];
+            } elseif (is_array($pengalamanListRaw)) {
+                $pengalamanItems = $pengalamanListRaw;
+            }
         }
 
-        // 5. Insert Keahlian Pegawai (Opsional jika ada input)
-        $namaKeahlian = $val(['nama_keahlian', 'NAMA_KEAHLIAN', 'keahlian_nama', 'add-keahlian-nama']);
-        if (!empty($namaKeahlian) || !empty($fileKeahlian)) {
-            $resKhl = $this->db->query("SELECT COALESCE(MAX(KD_KEAHLIAN), 0) + 1 AS new_id FROM detail_keahlian_pegawai")->getRowArray();
-            $kdKeahlian = (int)($resKhl['new_id'] ?? 1);
+        if (!empty($pengalamanItems) && is_array($pengalamanItems)) {
+            $resPeng = $this->db->query("SELECT COALESCE(MAX(KD_PENGALAMAN), 0) AS max_id FROM detail_pengalaman_pegawai")->getRowArray();
+            $nextKdPengalaman = (int)($resPeng['max_id'] ?? 0) + 1;
 
-            $dataKeahlian = [
-                'KD_KEAHLIAN'         => $kdKeahlian,
-                'ID_PEGAWAI'          => $idPegawai,
-                'NAMA_KEAHLIAN'       => $namaKeahlian ?: '-',
-                'KD_STATUS_KEAHLIAN'  => $valInt(['keahlian_status', 'add-keahlian-status'], 1),
-                'KETERANGAN'          => $val(['keahlian_keterangan', 'add-keahlian-keterangan'], '-'),
-                'MULAI'               => date('Y-m-d'),
-                'SAMPAI'              => date('Y-m-d', strtotime('+5 years')),
-                'IMAGE'               => $fileKeahlian ?: ''
-            ];
-            $this->db->table('detail_keahlian_pegawai')->insert($dataKeahlian);
+            foreach ($pengalamanItems as $idx => $item) {
+                $namaPerusahaan = trim($item['nama_perusahaan'] ?? $item['perusahaan'] ?? '');
+                $fileItem = $handleUpload("file_pengalaman_{$idx}") ?: ($idx === 0 ? $filePengalaman : '');
+                if (!empty($namaPerusahaan) || !empty($fileItem)) {
+                    $dataPeng = [
+                        'KD_PENGALAMAN'       => $nextKdPengalaman++,
+                        'ID_PEGAWAI'          => $idPegawai,
+                        'NAMA_PERUSAHAAN'     => $namaPerusahaan ?: '-',
+                        'KD_JABATAN'          => !empty($item['kd_jabatan']) ? (int)$item['kd_jabatan'] : 1,
+                        'JABATAN'             => !empty($item['jabatan']) ? $item['jabatan'] : '-',
+                        'ALAMAT'              => !empty($item['alamat']) ? $item['alamat'] : '-',
+                        'KD_JENIS_PENGALAMAN' => !empty($item['kd_jenis_pengalaman']) ? (int)$item['kd_jenis_pengalaman'] : 1,
+                        'KD_PROVINSI'         => !empty($item['kd_provinsi']) ? (int)$item['kd_provinsi'] : 0,
+                        'KD_KABUPATEN'        => !empty($item['kd_kabupaten']) ? (int)$item['kd_kabupaten'] : 0,
+                        'KD_KECAMATAN'        => !empty($item['kd_kecamatan']) ? (int)$item['kd_kecamatan'] : 0,
+                        'KD_KELURAHAN'        => !empty($item['kd_kelurahan']) ? (int)$item['kd_kelurahan'] : 0,
+                        'TANGGAL_MULAI'       => !empty($item['periode_mulai']) ? $item['periode_mulai'] : '2020-01-01',
+                        'TANGGAL_SAMPAI'      => !empty($item['periode_selesai']) ? $item['periode_selesai'] : '2022-01-01',
+                        'IMAGE_SK'            => $fileItem ?: ''
+                    ];
+                    $this->db->table('detail_pengalaman_pegawai')->insert($dataPeng);
+                }
+            }
+        } else {
+            // Fallback single entry jika data bukan array
+            $namaPerusahaan = $val(['nama_perusahaan', 'NAMA_PERUSAHAAN', 'txt_perusahaan', 'pengalaman_perusahaan', 'add-pengalaman-perusahaan']);
+            if (!empty($namaPerusahaan) || !empty($filePengalaman)) {
+                $resPeng = $this->db->query("SELECT COALESCE(MAX(KD_PENGALAMAN), 0) + 1 AS new_id FROM detail_pengalaman_pegawai")->getRowArray();
+                $kdPengalaman = (int)($resPeng['new_id'] ?? 1);
+
+                $dataPengalaman = [
+                    'KD_PENGALAMAN'       => $kdPengalaman,
+                    'ID_PEGAWAI'          => $idPegawai,
+                    'NAMA_PERUSAHAAN'     => $namaPerusahaan ?: '-',
+                    'KD_JABATAN'          => $valInt(['pengalaman_jabatan', 'add-pengalaman-jabatan'], 1),
+                    'JABATAN'             => $val(['pengalaman_nama_jabatan', 'add-pengalaman-nama-jabatan'], '-'),
+                    'ALAMAT'              => $val(['pengalaman_alamat', 'add-pengalaman-alamat'], '-'),
+                    'KD_JENIS_PENGALAMAN' => $valInt(['pengalaman_jenis', 'add-pengalaman-jenis'], 1),
+                    'KD_PROVINSI'         => $valInt(['pengalaman_provinsi', 'add-pengalaman-provinsi'], 0),
+                    'KD_KABUPATEN'        => $valInt(['pengalaman_kabupaten', 'add-pengalaman-kabupaten'], 0),
+                    'KD_KECAMATAN'        => $valInt(['pengalaman_kecamatan', 'add-pengalaman-kecamatan'], 0),
+                    'KD_KELURAHAN'        => $valInt(['pengalaman_kelurahan', 'add-pengalaman-kelurahan'], 0),
+                    'TANGGAL_MULAI'       => $val(['pengalaman_periode_mulai', 'add-pengalaman-periode-mulai'], '2020-01-01'),
+                    'TANGGAL_SAMPAI'      => $val(['pengalaman_periode_selesai', 'add-pengalaman-periode-selesai'], '2022-01-01'),
+                    'IMAGE_SK'            => $filePengalaman ?: ''
+                ];
+                $this->db->table('detail_pengalaman_pegawai')->insert($dataPengalaman);
+            }
+        }
+
+        // 5. Insert Keahlian Pegawai (Multi-entry repeater & legacy fallback)
+        $keahlianListRaw = $this->request->getPost('keahlian_list') ?: $this->request->getPost('keahlian');
+        $keahlianItems = [];
+        if (!empty($keahlianListRaw)) {
+            if (is_string($keahlianListRaw)) {
+                $keahlianItems = json_decode($keahlianListRaw, true) ?: [];
+            } elseif (is_array($keahlianListRaw)) {
+                $keahlianItems = $keahlianListRaw;
+            }
+        }
+
+        if (!empty($keahlianItems) && is_array($keahlianItems)) {
+            $resKhl = $this->db->query("SELECT COALESCE(MAX(KD_KEAHLIAN), 0) AS max_id FROM detail_keahlian_pegawai")->getRowArray();
+            $nextKdKeahlian = (int)($resKhl['max_id'] ?? 0) + 1;
+
+            foreach ($keahlianItems as $idx => $item) {
+                $namaKhl = trim($item['nama_keahlian'] ?? $item['keahlian'] ?? '');
+                $fileItem = $handleUpload("file_keahlian_{$idx}") ?: ($idx === 0 ? $fileKeahlian : '');
+                if (!empty($namaKhl) || !empty($fileItem)) {
+                    $dataKhl = [
+                        'KD_KEAHLIAN'         => $nextKdKeahlian++,
+                        'ID_PEGAWAI'          => $idPegawai,
+                        'NAMA_KEAHLIAN'       => $namaKhl ?: '-',
+                        'KD_STATUS_KEAHLIAN'  => !empty($item['kd_status_keahlian']) ? (int)$item['kd_status_keahlian'] : 1,
+                        'KETERANGAN'          => !empty($item['keterangan']) ? $item['keterangan'] : '-',
+                        'MULAI'               => !empty($item['mulai']) ? $item['mulai'] : date('Y-m-d'),
+                        'SAMPAI'              => !empty($item['sampai']) ? $item['sampai'] : date('Y-m-d', strtotime('+5 years')),
+                        'IMAGE'               => $fileItem ?: ''
+                    ];
+                    $this->db->table('detail_keahlian_pegawai')->insert($dataKhl);
+                }
+            }
+        } else {
+            // Fallback single entry jika data bukan array
+            $namaKeahlian = $val(['nama_keahlian', 'NAMA_KEAHLIAN', 'keahlian_nama', 'add-keahlian-nama']);
+            if (!empty($namaKeahlian) || !empty($fileKeahlian)) {
+                $resKhl = $this->db->query("SELECT COALESCE(MAX(KD_KEAHLIAN), 0) + 1 AS new_id FROM detail_keahlian_pegawai")->getRowArray();
+                $kdKeahlian = (int)($resKhl['new_id'] ?? 1);
+
+                $dataKeahlian = [
+                    'KD_KEAHLIAN'         => $kdKeahlian,
+                    'ID_PEGAWAI'          => $idPegawai,
+                    'NAMA_KEAHLIAN'       => $namaKeahlian ?: '-',
+                    'KD_STATUS_KEAHLIAN'  => $valInt(['keahlian_status', 'add-keahlian-status'], 1),
+                    'KETERANGAN'          => $val(['keahlian_keterangan', 'add-keahlian-keterangan'], '-'),
+                    'MULAI'               => date('Y-m-d'),
+                    'SAMPAI'              => date('Y-m-d', strtotime('+5 years')),
+                    'IMAGE'               => $fileKeahlian ?: ''
+                ];
+                $this->db->table('detail_keahlian_pegawai')->insert($dataKeahlian);
+            }
         }
 
         // 6. Insert Keluarga Pegawai (Opsional jika ada input)
@@ -1658,5 +1732,514 @@ class cPegawai extends BaseController
             'page'  => $page,
             'limit' => $limit
         ], 'Data perubahan status berhasil diambil');
+    }
+
+    /**
+     * Unduh Template Excel untuk Import Pegawai
+     */
+    public function download_template()
+    {
+        $filename = 'Template_Import_Pegawai_' . date('Ymd_His') . '.xls';
+
+        $template = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta http-equiv="Content-Type" content="application/vnd.ms-excel; charset=utf-8">
+  <!--[if gte mso 9]>
+  <xml>
+    <x:ExcelWorkbook>
+      <x:ExcelWorksheets>
+        <x:ExcelWorksheet>
+          <x:Name>Template Import Pegawai</x:Name>
+          <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+        </x:ExcelWorksheet>
+      </x:ExcelWorksheets>
+    </x:ExcelWorkbook>
+  </xml>
+  <![endif]-->
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 11pt; }
+    table { border-collapse: collapse; width: 100%; }
+    th { background-color: #1f6feb; color: #ffffff; font-weight: bold; border: 1px solid #094cb0; padding: 8px; text-align: center; }
+    td { border: 1px solid #cccccc; padding: 6px; }
+    .text { mso-number-format:"\\@"; }
+    .date { mso-number-format:"yyyy-mm-dd"; text-align: center; }
+    .center { text-align: center; }
+  </style>
+</head>
+<body>
+  <table border="1">
+    <thead>
+      <tr>
+        <th style="width: 50px;">No</th>
+        <th style="width: 180px;">NIP</th>
+        <th style="width: 250px;">Nama Lengkap</th>
+        <th style="width: 150px;">Tempat Lahir</th>
+        <th style="width: 140px;">Tanggal Lahir</th>
+        <th style="width: 130px;">Jenis Kelamin</th>
+        <th style="width: 200px;">Bagian / Unit</th>
+        <th style="width: 180px;">Jabatan</th>
+        <th style="width: 150px;">Status Pegawai</th>
+        <th style="width: 160px;">No. Handphone</th>
+        <th style="width: 200px;">Email</th>
+        <th style="width: 300px;">Alamat</th>
+        <th style="width: 180px;">NIK</th>
+        <th style="width: 180px;">NPWP</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="center">1</td>
+        <td class="text center">199001012020011001</td>
+        <td>Budi Santoso, S.Kom</td>
+        <td>Surabaya</td>
+        <td class="date">1990-01-01</td>
+        <td class="center">Laki-laki</td>
+        <td>Teknologi Informasi</td>
+        <td>Staf IT</td>
+        <td class="center">Tetap</td>
+        <td class="text center">081234567890</td>
+        <td>budi.santoso@rs.co.id</td>
+        <td>Jl. Raya Darmo No. 10, Surabaya</td>
+        <td class="text center">3578010101900001</td>
+        <td class="text center">09.123.456.7-604.000</td>
+      </tr>
+      <tr>
+        <td class="center">2</td>
+        <td class="text center">199205152021022002</td>
+        <td>Siti Rahmawati, A.Md.Keb</td>
+        <td>Sidoarjo</td>
+        <td class="date">1992-05-15</td>
+        <td class="center">Perempuan</td>
+        <td>Rawat Inap</td>
+        <td>Bidan Pelaksana</td>
+        <td class="center">Kontrak</td>
+        <td class="text center">081298765432</td>
+        <td>siti.rahma@rs.co.id</td>
+        <td>Jl. Pahlawan No. 45, Sidoarjo</td>
+        <td class="text center">3515025505920003</td>
+        <td class="text center">09.234.567.8-603.000</td>
+      </tr>
+    </tbody>
+  </table>
+</body>
+</html>';
+
+        return $this->response
+            ->setHeader('Content-Type', 'application/vnd.ms-excel; charset=utf-8')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setHeader('Cache-Control', 'max-age=0')
+            ->setBody($template);
+    }
+
+    /**
+     * Import Data Pegawai dari Berkas Excel / CSV
+     */
+    public function import_excel()
+    {
+        $file = $this->request->getFile('file_excel') 
+            ?: $this->request->getFile('file') 
+            ?: $this->request->getFile('excel');
+
+        if (!$file || !$file->isValid()) {
+            // Check if uploaded via $_FILES
+            if (!empty($_FILES['file_excel']['tmp_name']) && is_uploaded_file($_FILES['file_excel']['tmp_name'])) {
+                $filePath = $_FILES['file_excel']['tmp_name'];
+                $origName = $_FILES['file_excel']['name'];
+            } elseif (!empty($_FILES['file']['tmp_name']) && is_uploaded_file($_FILES['file']['tmp_name'])) {
+                $filePath = $_FILES['file']['tmp_name'];
+                $origName = $_FILES['file']['name'];
+            } else {
+                return sendResponse(400, null, 'Tidak ada berkas Excel yang diunggah atau berkas tidak valid.');
+            }
+        } else {
+            $filePath = $file->getTempName();
+            $origName = $file->getClientName();
+        }
+
+        $updateIfExists = (bool)($this->request->getPost('update_if_exists') ?? false);
+
+        $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+        $rows = [];
+
+        try {
+            if ($ext === 'xlsx') {
+                $rows = $this->_parseXlsx($filePath);
+            } elseif ($ext === 'csv' || $ext === 'txt' || $ext === 'tsv') {
+                $rows = $this->_parseCsv($filePath);
+            } elseif ($ext === 'xls') {
+                // Bisa format HTML table atau CSV atau binary
+                $content = @file_get_contents($filePath);
+                if (stripos($content, '<table') !== false || stripos($content, '<html') !== false) {
+                    $rows = $this->_parseHtmlTable($content);
+                } else {
+                    // Coba parse CSV jika bukan HTML
+                    $rows = $this->_parseCsv($filePath);
+                }
+            } else {
+                // Fallback: coba baca sebagai HTML atau CSV
+                $content = @file_get_contents($filePath);
+                if (stripos($content, '<table') !== false) {
+                    $rows = $this->_parseHtmlTable($content);
+                } else {
+                    $rows = $this->_parseCsv($filePath);
+                }
+            }
+        } catch (\Throwable $e) {
+            return sendResponse(400, null, 'Gagal membaca berkas: ' . $e->getMessage());
+        }
+
+        if (empty($rows) || count($rows) < 2) {
+            return sendResponse(400, null, 'Berkas Excel kosong atau tidak memiliki baris data.');
+        }
+
+        // Ambil header row dan normalisasi
+        $rawHeaders = array_shift($rows);
+        $headerMap = [];
+        foreach ($rawHeaders as $idx => $h) {
+            $normalized = strtolower(trim((string)$h));
+            $normalized = preg_replace('/[^a-z0-9_]/', '', str_replace([' ', '/', '-', '.'], '_', $normalized));
+            $headerMap[$idx] = $normalized;
+        }
+
+        // Cache Master Data
+        $bagianMap = [];
+        $resBagian = $this->db->table('bagian')->select('KD_BAGIAN, BAGIAN')->get()->getResultArray();
+        foreach ($resBagian as $b) {
+            $bagianMap[strtolower(trim($b['BAGIAN']))] = (int)$b['KD_BAGIAN'];
+        }
+
+        $jabatanMap = [];
+        $resJabatan = $this->db->table('jabatan')->select('KD_JABATAN, JABATAN')->get()->getResultArray();
+        foreach ($resJabatan as $j) {
+            $jabatanMap[strtolower(trim($j['JABATAN']))] = (int)$j['KD_JABATAN'];
+        }
+
+        $statusPegawaiMap = [];
+        $resStatus = $this->db->table('status_pegawai')->select('KD_STATUS_PEGAWAI, STATUS_PEGAWAI')->get()->getResultArray();
+        foreach ($resStatus as $s) {
+            $statusPegawaiMap[strtolower(trim($s['STATUS_PEGAWAI']))] = (int)$s['KD_STATUS_PEGAWAI'];
+        }
+
+        $golonganMap = [];
+        $resGol = $this->db->table('golongan')->select('KD_GOLONGAN, GOLONGAN')->get()->getResultArray();
+        foreach ($resGol as $g) {
+            $golonganMap[strtolower(trim($g['GOLONGAN']))] = (int)$g['KD_GOLONGAN'];
+        }
+
+        $total = 0;
+        $imported = 0;
+        $updated = 0;
+        $skipped = 0;
+        $failed = 0;
+        $errors = [];
+
+        $parseDate = function($val) {
+            if (empty($val)) return null;
+            $val = trim((string)$val);
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $val)) return $val;
+            if (preg_match('/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/', $val, $m)) {
+                return sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
+            }
+            if (is_numeric($val) && (int)$val > 1000 && (int)$val < 100000) {
+                $ts = ((int)$val - 25569) * 86400;
+                if ($ts > 0) return gmdate('Y-m-d', $ts);
+            }
+            $ts = strtotime($val);
+            return ($ts && $ts > 0) ? date('Y-m-d', $ts) : null;
+        };
+
+        foreach ($rows as $rowIndex => $rowCells) {
+            // Cek apakah seluruh baris kosong
+            $allEmpty = true;
+            foreach ($rowCells as $c) {
+                if (trim((string)$c) !== '') {
+                    $allEmpty = false;
+                    break;
+                }
+            }
+            if ($allEmpty) continue;
+
+            $total++;
+            $rowNum = $rowIndex + 2; // Baris 1 adalah header, baris 2 adalah data pertama
+
+            // Petakan kolom berdasarkan header
+            $data = [];
+            foreach ($rowCells as $colIdx => $cellVal) {
+                $hName = $headerMap[$colIdx] ?? ('col_' . $colIdx);
+                $data[$hName] = trim((string)$cellVal);
+            }
+
+            // Ekstrak field penting
+            $nip = '';
+            foreach (['nip', 'no_induk', 'nrp'] as $k) {
+                if (!empty($data[$k])) { $nip = $data[$k]; break; }
+            }
+            // Bersihkan format notasi ilmiah jika ada (misal 1.99E+17)
+            if (stripos($nip, 'e+') !== false && is_numeric($nip)) {
+                $nip = sprintf('%.0f', (float)$nip);
+            }
+
+            $nama = '';
+            foreach (['nama_lengkap', 'nama', 'nama_pegawai', 'nama_karyawan'] as $k) {
+                if (!empty($data[$k])) { $nama = $data[$k]; break; }
+            }
+
+            if (empty($nip) || empty($nama)) {
+                $errors[] = "Baris $rowNum: NIP dan Nama Lengkap wajib diisi.";
+                $failed++;
+                continue;
+            }
+
+            $tempatLahir = $data['tempat_lahir'] ?? ($data['tempat'] ?? '');
+            $tglLahirRaw = $data['tanggal_lahir'] ?? ($data['tgl_lahir'] ?? ($data['tgl_lhr'] ?? ''));
+            $tglLahir = $parseDate($tglLahirRaw);
+
+            $jkRaw = $data['jenis_kelamin'] ?? ($data['jk'] ?? ($data['gender'] ?? '1'));
+            $jk = (strtoupper((string)$jkRaw) === 'P' || stripos((string)$jkRaw, 'perempuan') !== false || $jkRaw === '2') ? 2 : 1;
+
+            $alamat = $data['alamat'] ?? ($data['alamat_lengkap'] ?? '');
+            $hp = $data['no_handphone'] ?? ($data['handphone'] ?? ($data['hp'] ?? ($data['no_hp'] ?? '')));
+            if (stripos($hp, 'e+') !== false && is_numeric($hp)) {
+                $hp = sprintf('%.0f', (float)$hp);
+            }
+            $email = $data['email'] ?? '';
+            $nik = $data['nik'] ?? ($data['no_identitas'] ?? ($data['no_ktp'] ?? ''));
+            if (stripos($nik, 'e+') !== false && is_numeric($nik)) {
+                $nik = sprintf('%.0f', (float)$nik);
+            }
+            $npwp = $data['npwp'] ?? ($data['no_npwp'] ?? '');
+
+            // Resolusi Bagian
+            $bagianInput = strtolower(trim($data['bagian_unit'] ?? ($data['bagian'] ?? ($data['unit'] ?? ($data['unit_kerja'] ?? '')))));
+            $kdBagian = $bagianMap[$bagianInput] ?? (is_numeric($bagianInput) ? (int)$bagianInput : 1);
+
+            // Resolusi Jabatan
+            $jabatanInput = strtolower(trim($data['jabatan'] ?? ($data['posisi'] ?? '')));
+            $kdJabatan = $jabatanMap[$jabatanInput] ?? (is_numeric($jabatanInput) ? (int)$jabatanInput : 1);
+
+            // Resolusi Status Pegawai
+            $statusInput = strtolower(trim($data['status_pegawai'] ?? ($data['status'] ?? '')));
+            $kdStatusPegawai = $statusPegawaiMap[$statusInput] ?? (is_numeric($statusInput) ? (int)$statusInput : 1);
+
+            // Resolusi Golongan
+            $golInput = strtolower(trim($data['pangkat_golongan'] ?? ($data['golongan'] ?? '')));
+            $kdGolongan = $golonganMap[$golInput] ?? (is_numeric($golInput) ? (int)$golInput : 1);
+
+            // Cek apakah NIP sudah ada di database
+            $existing = $this->db->table('pegawai')->where('NIP', $nip)->get()->getRowArray();
+
+            if ($existing) {
+                if ($updateIfExists) {
+                    $this->db->table('pegawai')->where('ID_PEGAWAI', $existing['ID_PEGAWAI'])->update([
+                        'NAMA'         => $nama,
+                        'TEMPAT_LAHIR' => !empty($tempatLahir) ? $tempatLahir : $existing['TEMPAT_LAHIR'],
+                        'TANGGAL_LAHIR'=> !empty($tglLahir) ? $tglLahir : $existing['TANGGAL_LAHIR'],
+                        'JENIS_KELAMIN'=> $jk,
+                        'ALAMAT'       => !empty($alamat) ? $alamat : $existing['ALAMAT'],
+                        'HANDPHONE'    => !empty($hp) ? $hp : $existing['HANDPHONE'],
+                        'EMAIL'        => !empty($email) ? $email : $existing['EMAIL'],
+                        'NO_IDENTITAS' => !empty($nik) ? $nik : $existing['NO_IDENTITAS'],
+                        'NO_NPWP'      => !empty($npwp) ? $npwp : $existing['NO_NPWP'],
+                        'status_aktif' => 1
+                    ]);
+
+                    // Perbarui penempatan jika ada
+                    $pnm = $this->db->table('detail_penempatan_pegawai')->where('ID_PEGAWAI', $existing['ID_PEGAWAI'])->get()->getRowArray();
+                    if ($pnm) {
+                        $this->db->table('detail_penempatan_pegawai')->where('KD_PENEMPATAN', $pnm['KD_PENEMPATAN'])->update([
+                            'KD_BAGIAN'         => $kdBagian ?: $pnm['KD_BAGIAN'],
+                            'KD_JABATAN'        => $kdJabatan ?: $pnm['KD_JABATAN'],
+                            'KD_STATUS_PEGAWAI' => $kdStatusPegawai ?: $pnm['KD_STATUS_PEGAWAI']
+                        ]);
+                    }
+                    $updated++;
+                } else {
+                    $errors[] = "Baris $rowNum: NIP '{$nip}' sudah terdaftar atas nama '{$existing['NAMA']}' (dilewati).";
+                    $skipped++;
+                }
+            } else {
+                // Generate ID Pegawai baru secara aman
+                $resId = $this->db->query("SELECT COALESCE(MAX(CAST(ID_PEGAWAI AS UNSIGNED)), 0) + 1 AS new_id FROM pegawai")->getRowArray();
+                $newIdPegawai = (string)($resId['new_id'] ?? 1);
+
+                $insertPegawai = [
+                    'ID_PEGAWAI'   => $newIdPegawai,
+                    'NIP'          => $nip,
+                    'NAMA'         => $nama,
+                    'TEMPAT_LAHIR' => $tempatLahir,
+                    'TANGGAL_LAHIR'=> $tglLahir,
+                    'JENIS_KELAMIN'=> $jk,
+                    'ALAMAT'       => $alamat,
+                    'HANDPHONE'    => $hp,
+                    'EMAIL'        => $email,
+                    'NO_IDENTITAS' => $nik,
+                    'NO_NPWP'      => $npwp,
+                    'status_aktif' => 1,
+                    'jml_cuti'     => 12,
+                    'TANGGAL_MASUK'=> date('Y-m-d')
+                ];
+                $this->db->table('pegawai')->insert($insertPegawai);
+
+                // Insert detail penempatan
+                $resPnm = $this->db->query("SELECT COALESCE(MAX(KD_PENEMPATAN), 0) + 1 AS new_id FROM detail_penempatan_pegawai")->getRowArray();
+                $newKdPenempatan = (int)($resPnm['new_id'] ?? 1);
+
+                $insertPenempatan = [
+                    'KD_PENEMPATAN'          => $newKdPenempatan,
+                    'ID_PEGAWAI'             => $newIdPegawai,
+                    'KD_BAGIAN'              => $kdBagian ?: 1,
+                    'KD_JABATAN'             => $kdJabatan ?: 1,
+                    'KD_GOLONGAN'            => $kdGolongan ?: 1,
+                    'KD_STATUS_PEGAWAI'      => $kdStatusPegawai ?: 1,
+                    'KD_JENIS_PEGAWAI'       => 1,
+                    'KD_LOKASI'              => 1,
+                    'TANGGAL_MULAI'          => date('Y-m-d'),
+                    'TANGGAL_SK_PENGANGKATAN'=> date('Y-m-d')
+                ];
+                $this->db->table('detail_penempatan_pegawai')->insert($insertPenempatan);
+
+                $imported++;
+            }
+        }
+
+        $msg = "Impor selesai: $imported data berhasil ditambahkan, $updated diperbarui, $skipped dilewati, $failed gagal.";
+
+        return sendResponse(200, [
+            'total'    => $total,
+            'imported' => $imported,
+            'updated'  => $updated,
+            'skipped'  => $skipped,
+            'failed'   => $failed,
+            'errors'   => $errors
+        ], $msg);
+    }
+
+    /**
+     * Helper Parser XLSX via ZipArchive + SimpleXML
+     */
+    private function _parseXlsx($filePath)
+    {
+        $zip = new \ZipArchive();
+        if ($zip->open($filePath) !== true) {
+            throw new \Exception('Berkas .xlsx tidak dapat dibuka.');
+        }
+
+        $strings = [];
+        if ($zip->locateName('xl/sharedStrings.xml') !== false) {
+            $xmlStrings = simplexml_load_string($zip->getFromName('xl/sharedStrings.xml'));
+            foreach ($xmlStrings->si as $si) {
+                if (isset($si->t)) {
+                    $strings[] = (string)$si->t;
+                } elseif (isset($si->r)) {
+                    $t = '';
+                    foreach ($si->r as $r) { $t .= (string)$r->t; }
+                    $strings[] = $t;
+                } else {
+                    $strings[] = '';
+                }
+            }
+        }
+
+        $sheetName = 'xl/worksheets/sheet1.xml';
+        if ($zip->locateName($sheetName) === false) {
+            $zip->close();
+            throw new \Exception('Lembar kerja sheet1.xml tidak ditemukan dalam berkas .xlsx.');
+        }
+
+        $sheetXml = simplexml_load_string($zip->getFromName($sheetName));
+        $rows = [];
+
+        $colToIdx = function($col) {
+            $idx = 0;
+            $col = strtoupper($col);
+            for ($i = 0; $i < strlen($col); $i++) {
+                $idx = $idx * 26 + (ord($col[$i]) - ord('A') + 1);
+            }
+            return $idx - 1;
+        };
+
+        foreach ($sheetXml->sheetData->row as $row) {
+            $rowData = [];
+            foreach ($row->c as $cell) {
+                $ref = (string)$cell['r'];
+                $colLetters = preg_replace('/[0-9]/', '', $ref);
+                $colIdx = $colToIdx($colLetters);
+
+                $t = (string)$cell['t'];
+                $val = (string)$cell->v;
+
+                if ($t === 's' && isset($strings[(int)$val])) {
+                    $val = $strings[(int)$val];
+                } elseif ($t === 'inlineStr' && isset($cell->is->t)) {
+                    $val = (string)$cell->is->t;
+                }
+
+                $rowData[$colIdx] = $val;
+            }
+
+            if (!empty($rowData)) {
+                $maxIdx = max(array_keys($rowData));
+                $fullRow = [];
+                for ($i = 0; $i <= $maxIdx; $i++) {
+                    $fullRow[$i] = $rowData[$i] ?? '';
+                }
+                $rows[] = $fullRow;
+            }
+        }
+
+        $zip->close();
+        return $rows;
+    }
+
+    /**
+     * Helper Parser HTML Table (Format .xls dari evoHRIS / Excel HTML)
+     */
+    private function _parseHtmlTable($content)
+    {
+        $dom = new \DOMDocument();
+        @$dom->loadHTML(mb_convert_encoding($content, 'HTML-ENTITIES', 'UTF-8'));
+        $trElements = $dom->getElementsByTagName('tr');
+
+        $rows = [];
+        foreach ($trElements as $tr) {
+            $cells = [];
+            foreach ($tr->childNodes as $node) {
+                if (in_array(strtolower($node->nodeName), ['th', 'td'])) {
+                    $cells[] = trim($node->textContent);
+                }
+            }
+            if (!empty($cells)) {
+                $rows[] = $cells;
+            }
+        }
+        return $rows;
+    }
+
+    /**
+     * Helper Parser CSV / TSV / TXT
+     */
+    private function _parseCsv($filePath)
+    {
+        $handle = fopen($filePath, 'r');
+        if (!$handle) {
+            throw new \Exception('Tidak dapat membaca berkas CSV.');
+        }
+
+        $firstLine = fgets($handle);
+        rewind($handle);
+
+        $delimiter = ',';
+        if (substr_count($firstLine, ';') > substr_count($firstLine, ',')) {
+            $delimiter = ';';
+        } elseif (substr_count($firstLine, "\t") > substr_count($firstLine, ',')) {
+            $delimiter = "\t";
+        }
+
+        $rows = [];
+        while (($data = fgetcsv($handle, 0, $delimiter)) !== false) {
+            $rows[] = $data;
+        }
+        fclose($handle);
+        return $rows;
     }
 }

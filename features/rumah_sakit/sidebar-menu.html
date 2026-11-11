@@ -88,7 +88,8 @@
   };
 
   const renderMenu = async (reload = '') => {
-    document.querySelector('.search-box').classList.add('d-none');
+    const sb = document.querySelector('.search-box');
+    if (sb) sb.classList.add('d-none');
     let app = loadSession({ id: "app" });
     if (reload) {
       let newHakAkses = await loadAvailableModules(app.kd_instalasi, app.kd_unit, app.kd_jabatan, app.kd_user, app.token);
@@ -165,6 +166,7 @@
     sidebarEl.querySelectorAll('.dropdown-indicator').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
+        e.stopPropagation();
         const targetId = btn.getAttribute('href') || btn.getAttribute('data-bs-target');
         if (targetId && targetId.startsWith('#')) {
           const targetEl = document.querySelector(targetId);
@@ -430,7 +432,7 @@
       <div class="parent-wrapper label-1">
         <ul class="nav collapse parent show" id="collapse_pegawai">
           <li class="nav-item">
-            <a class="nav-link submenu-item" href="#menu" data-tag="pegawai_data" data-target="/pegawai/Vpegawai" data-title="Data Pegawai" data-icon="fas fa-users" data-group="Kepegawaian">
+            <a class="nav-link submenu-item" href="#menu" data-tag="pegawai_data" data-target="/pegawai/pegawai/Vpegawai" data-title="Data Pegawai" data-icon="fas fa-users" data-group="Kepegawaian">
               <div class="d-flex align-items-center">
                 <span class="nav-link-icon"><span class="fas fa-users"></span></span>
                 <span class="nav-link-text ps-1">Data Pegawai</span>
@@ -438,20 +440,140 @@
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link submenu-item" href="#menu" data-tag="pegawai_laporan" data-target="/pegawai/laporan" data-title="Laporan Kepegawaian" data-icon="fas fa-file-invoice" data-group="Kepegawaian">
+            <a class="nav-link dropdown-indicator" href="#collapse_pegawai_laporan" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="collapse_pegawai_laporan">
               <div class="d-flex align-items-center">
                 <span class="nav-link-icon"><span class="fas fa-file-invoice"></span></span>
                 <span class="nav-link-text ps-1">Laporan</span>
               </div>
             </a>
+            <div class="parent-wrapper">
+              <ul class="nav collapse parent" id="collapse_pegawai_laporan">
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="lap_in_out_sdm" data-target="/pegawai/laporan/VDataInOut" data-title="Laporan Data In and Out SDM" data-icon="fas fa-exchange-alt" data-group="Laporan Kepegawaian">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-exchange-alt"></span></span>
+                      <span class="nav-link-text ps-1">Laporan Data In and Out SDM</span>
+                    </div>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="lap_distribusi_ketenagaan" data-target="/pegawai/laporan/VDistribusi" data-title="Laporan Distribusi Ketenagaan" data-icon="fas fa-project-diagram" data-group="Laporan Kepegawaian">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-project-diagram"></span></span>
+                      <span class="nav-link-text ps-1">Laporan Distribusi Ketenagaan</span>
+                    </div>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="lap_pengelolaan_ketenagaan" data-target="/pegawai/laporan/VPengelolaan" data-title="Laporan Pengelolaan Ketenagaan" data-icon="fas fa-tasks" data-group="Laporan Kepegawaian">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-tasks"></span></span>
+                      <span class="nav-link-text ps-1">Laporan Pengelolaan Ketenagaan</span>
+                    </div>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="lap_pola_ketenagaan" data-target="/pegawai/laporan/VPolaKetenagaan" data-title="Laporan Pola Ketenagaan" data-icon="fas fa-chart-line" data-group="Laporan Kepegawaian">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-chart-line"></span></span>
+                      <span class="nav-link-text ps-1">Laporan Pola Ketenagaan</span>
+                    </div>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="lap_turn_over_rate" data-target="/pegawai/laporan/VTurnOverRate" data-title="Laporan Turn Over Rate" data-icon="fas fa-sync-alt" data-group="Laporan Kepegawaian">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-sync-alt"></span></span>
+                      <span class="nav-link-text ps-1">Laporan Turn Over Rate</span>
+                    </div>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="lap_jumlah_sdm_rs" data-target="/pegawai/laporan/VJumlahSDM" data-title="Laporan Jumlah SDM RS" data-icon="fas fa-hospital-user" data-group="Laporan Kepegawaian">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-hospital-user"></span></span>
+                      <span class="nav-link-text ps-1">Laporan Jumlah SDM RS</span>
+                    </div>
+                  </a>
+                </li>
+              </ul>
+            </div>
           </li>
           <li class="nav-item">
-            <a class="nav-link submenu-item" href="#menu" data-tag="pegawai_perubahan_status" data-target="/pegawai/status_karyawan" data-title="Perubahan Status Karyawan" data-icon="fas fa-user-clock" data-group="Kepegawaian">
+            <a class="nav-link dropdown-indicator" href="#collapse_pegawai_status" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="collapse_pegawai_status">
               <div class="d-flex align-items-center">
                 <span class="nav-link-icon"><span class="fas fa-user-clock"></span></span>
                 <span class="nav-link-text ps-1">Perubahan Status Karyawan</span>
               </div>
             </a>
+            <div class="parent-wrapper">
+              <ul class="nav collapse parent" id="collapse_pegawai_status">
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="status_promosi" data-target="/pegawai/status_karyawan/VPromosi" data-title="Promosi Pegawai" data-icon="fas fa-level-up-alt" data-group="Perubahan Status">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-level-up-alt"></span></span>
+                      <span class="nav-link-text ps-1">Promosi</span>
+                    </div>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="status_demosi" data-target="/pegawai/status_karyawan/VDemosi" data-title="Demosi Pegawai" data-icon="fas fa-level-down-alt" data-group="Perubahan Status">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-level-down-alt"></span></span>
+                      <span class="nav-link-text ps-1">Demosi</span>
+                    </div>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="status_mutasi" data-target="/pegawai/status_karyawan/VMutasi" data-title="Mutasi Pegawai" data-icon="fas fa-random" data-group="Perubahan Status">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-random"></span></span>
+                      <span class="nav-link-text ps-1">Mutasi</span>
+                    </div>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="status_sanksi" data-target="/pegawai/status_karyawan/VSanksi" data-title="Sanksi Pegawai" data-icon="fas fa-exclamation-triangle" data-group="Perubahan Status">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-exclamation-triangle"></span></span>
+                      <span class="nav-link-text ps-1">Sanksi</span>
+                    </div>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="status_kontrak" data-target="/pegawai/status_karyawan/VKontrak" data-title="Perpanjangan Kontrak" data-icon="fas fa-file-contract" data-group="Perubahan Status">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-file-contract"></span></span>
+                      <span class="nav-link-text ps-1">Kontrak</span>
+                    </div>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="status_phk" data-target="/pegawai/status_karyawan/VPHK" data-title="Pemutusan Hubungan Kerja (PHK)" data-icon="fas fa-user-slash" data-group="Perubahan Status">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-user-slash"></span></span>
+                      <span class="nav-link-text ps-1">PHK</span>
+                    </div>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="status_penghargaan" data-target="/pegawai/status_karyawan/VPenghargaan" data-title="Penghargaan Pegawai" data-icon="fas fa-award" data-group="Perubahan Status">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-award"></span></span>
+                      <span class="nav-link-text ps-1">Penghargaan</span>
+                    </div>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="status_catatan" data-target="/pegawai/status_karyawan/VCatatan" data-title="Catatan Pegawai" data-icon="fas fa-sticky-note" data-group="Perubahan Status">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-sticky-note"></span></span>
+                      <span class="nav-link-text ps-1">Catatan</span>
+                    </div>
+                  </a>
+                </li>
+              </ul>
+            </div>
           </li>
         </ul>
       </div>

@@ -1,0 +1,496 @@
+<style>
+  .table-vpromosi-card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  }
+  .btn-action-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+</style>
+
+<template id="template-vpromosi">
+  <!-- Actions Toolbar -->
+  <div id="vpromosi-actions" class="card mb-3 shadow-none border">
+    <div class="card-body p-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <h5 class="mb-0 text-primary fw-bold"><i class="fas fa-level-up-alt me-2"></i>Promosi Pegawai</h5>
+        <span class="badge bg-soft-primary text-primary ms-2" id="vpromosi-total-badge">0 Data</span>
+      </div>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <div class="input-group input-group-sm" style="width: 240px;">
+          <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+          <input type="text" class="form-control form-control-sm border-start-0" id="vpromosi-search" placeholder="Cari NIP, nama, SK, jabatan...">
+        </div>
+        <button type="button" class="btn btn-sm btn-primary" id="btn-tambah-promosi">
+          <i class="fas fa-plus me-1"></i> Tambah Promosi
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-refresh-promosi">
+          <i class="fas fa-sync-alt me-1"></i> Refresh
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-success" id="btn-export-promosi">
+          <i class="fas fa-file-excel me-1"></i> Ekspor CSV
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Entries Table -->
+  <div id="vpromosi-entries" class="card shadow-sm border table-vpromosi-card">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped table-hover fs--1 mb-0 align-middle" id="table-vpromosi">
+          <thead class="bg-200 text-800 text-uppercase">
+            <tr>
+              <th class="text-center py-2" style="width: 50px;">#</th>
+              <th class="py-2" style="min-width: 140px;">NIP / Pegawai</th>
+              <th class="text-center py-2" style="min-width: 110px;">Tgl Promosi</th>
+              <th class="py-2" style="min-width: 130px;">No. Surat / SK</th>
+              <th class="py-2" style="min-width: 130px;">Jabatan Asal</th>
+              <th class="py-2" style="min-width: 140px;">Jabatan Baru</th>
+              <th class="py-2" style="min-width: 140px;">Bagian Baru</th>
+              <th class="py-2" style="min-width: 150px;">Keterangan</th>
+              <th class="text-center py-2" style="width: 140px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="list">
+            <tr>
+              <td colspan="9" class="text-center py-4 text-muted">
+                <span class="spinner-border spinner-border-sm me-2"></span>Memuat data promosi...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card-footer d-flex justify-content-between align-items-center py-2 bg-light border-top">
+      <span class="pagination-info fs--1 text-muted" id="vpromosi-pagination-info">Menampilkan 0 data</span>
+      <ul class="pagination pagination-sm mb-0" id="vpromosi-pagination"></ul>
+    </div>
+  </div>
+
+  <!-- Container Anchor for EvoPopup -->
+  <div id="vpromosi-popup-dialog"></div>
+</template>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+  import { showDialog } from './assets/js/core/helpers.js';
+  import EvoSelector from './components/EvoSelector.js';
+  import EvoPopup from './components/EvoPopup.js';
+
+  const apiUrl = (typeof config !== 'undefined' && config.api_url) 
+    ? config.api_url 
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  let allData = [];
+  let filteredData = [];
+  let refData = { bagian: [], jabatan: [], pangkat: [] };
+  let lookupPegawai = [];
+  let currentPage = 1;
+  const rowsPerPage = 10;
+
+  // Web Components instantiations
+  let evoPopup = null;
+  let selectorPegawai = null;
+  let selectorBagian = null;
+  let selectorJabatan = null;
+  let selectorPangkat = null;
+
+  async function loadMasterData() {
+    try {
+      const [refRes, lookupRes] = await Promise.all([
+        httpGet(`${apiUrl}/pegawai/ref_data`),
+        httpGet(`${apiUrl}/pegawai/lookup`)
+      ]);
+
+      if (refRes && refRes.code === 200 && refRes.data) {
+        refData = refRes.data;
+      }
+      if (lookupRes && lookupRes.code === 200 && Array.isArray(lookupRes.data)) {
+        lookupPegawai = lookupRes.data;
+      }
+    } catch (e) {
+      console.warn('Gagal memuat master data promosi:', e);
+    }
+  }
+
+  async function loadData() {
+    const tableBody = document.querySelector('#table-vpromosi tbody.list');
+    if (tableBody) {
+      tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data promosi...</td></tr>';
+    }
+
+    try {
+      const res = await httpGet(`${apiUrl}/pegawai/promosi`);
+      if (res && res.code === 200 && Array.isArray(res.data)) {
+        allData = res.data;
+      } else {
+        allData = [];
+      }
+    } catch (err) {
+      console.error('Error loadData promosi:', err);
+      allData = [];
+    }
+
+    applyFilter();
+  }
+
+  function applyFilter() {
+    const searchInput = document.getElementById('vpromosi-search');
+    const q = (searchInput ? searchInput.value : '').toLowerCase().trim();
+
+    if (!q) {
+      filteredData = [...allData];
+    } else {
+      filteredData = allData.filter(item => {
+        return (
+          (item.NIP && item.NIP.toLowerCase().includes(q)) ||
+          (item.NAMA && item.NAMA.toLowerCase().includes(q)) ||
+          (item.NO_SURAT && item.NO_SURAT.toLowerCase().includes(q)) ||
+          (item.JABATAN_ASAL && item.JABATAN_ASAL.toLowerCase().includes(q)) ||
+          (item.JABATAN_BARU && item.JABATAN_BARU.toLowerCase().includes(q)) ||
+          (item.BAGIAN_BARU && item.BAGIAN_BARU.toLowerCase().includes(q))
+        );
+      });
+    }
+
+    currentPage = 1;
+    renderTable();
+  }
+
+  function renderTable() {
+    const tableBody = document.querySelector('#table-vpromosi tbody.list');
+    const badge = document.getElementById('vpromosi-total-badge');
+    const pagInfo = document.getElementById('vpromosi-pagination-info');
+    const pagList = document.getElementById('vpromosi-pagination');
+
+    if (badge) badge.textContent = `${filteredData.length} Data`;
+
+    if (!tableBody) return;
+
+    if (filteredData.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">Belum ada data promosi pegawai</td></tr>';
+      if (pagInfo) pagInfo.textContent = 'Menampilkan 0 data';
+      if (pagList) pagList.innerHTML = '';
+      return;
+    }
+
+    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const startIdx = (currentPage - 1) * rowsPerPage;
+    const endIdx = Math.min(startIdx + rowsPerPage, filteredData.length);
+    const pageItems = filteredData.slice(startIdx, endIdx);
+
+    let html = '';
+    pageItems.forEach((row, i) => {
+      const no = startIdx + i + 1;
+      const tgl = row.TGL_PROMOSI ? row.TGL_PROMOSI.substring(0, 10) : '-';
+      const idVal = row.KD_PROMOSI_DARI || row.ID_PROMOSI || '';
+
+      html += `
+        <tr>
+          <td class="text-center fw-semi-bold">${no}</td>
+          <td>
+            <div class="fw-bold text-dark">${row.NAMA || '-'}</div>
+            <div class="text-muted small">NIP: ${row.NIP || '-'}</div>
+          </td>
+          <td class="text-center">${tgl}</td>
+          <td><span class="badge bg-light text-dark border">${row.NO_SURAT || '-'}</span></td>
+          <td>${row.JABATAN_ASAL || '<span class="text-muted">-</span>'}</td>
+          <td class="text-primary fw-semi-bold">${row.JABATAN_BARU || '-'}</td>
+          <td>${row.BAGIAN_BARU || '-'}</td>
+          <td class="small text-muted">${row.KETERANGAN || '-'}</td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-outline-primary btn-edit-row py-1 px-2 me-1" data-id="${idVal}">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger btn-delete-row py-1 px-2" data-id="${idVal}">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    tableBody.innerHTML = html;
+
+    if (pagInfo) {
+      pagInfo.textContent = `Menampilkan ${startIdx + 1} - ${endIdx} dari ${filteredData.length} data`;
+    }
+
+    renderPagination(totalPages);
+    attachRowActions();
+  }
+
+  function renderPagination(totalPages) {
+    const pagList = document.getElementById('vpromosi-pagination');
+    if (!pagList) return;
+
+    if (totalPages <= 1) {
+      pagList.innerHTML = '';
+      return;
+    }
+
+    let pHtml = `
+      <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+        <a class="page-link" href="#" data-page="${currentPage - 1}">&laquo;</a>
+      </li>
+    `;
+
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)) {
+        pHtml += `
+          <li class="page-item ${p === currentPage ? 'active' : ''}">
+            <a class="page-link" href="#" data-page="${p}">${p}</a>
+          </li>
+        `;
+      } else if (p === currentPage - 2 || p === currentPage + 2) {
+        pHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      }
+    }
+
+    pHtml += `
+      <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+        <a class="page-link" href="#" data-page="${currentPage + 1}">&raquo;</a>
+      </li>
+    `;
+
+    pagList.innerHTML = pHtml;
+
+    pagList.querySelectorAll('a.page-link').forEach(a => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const p = parseInt(a.getAttribute('data-page'));
+        if (p && p >= 1 && p <= totalPages && p !== currentPage) {
+          currentPage = p;
+          renderTable();
+        }
+      });
+    });
+  }
+
+  function attachRowActions() {
+    document.querySelectorAll('#table-vpromosi .btn-edit-row').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idVal = btn.getAttribute('data-id');
+        const item = allData.find(d => (d.KD_PROMOSI_DARI == idVal || d.ID_PROMOSI == idVal));
+        if (item) openFormPopup('edit', item);
+      });
+    });
+
+    document.querySelectorAll('#table-vpromosi .btn-delete-row').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idVal = btn.getAttribute('data-id');
+        confirmDelete(idVal);
+      });
+    });
+  }
+
+  function openFormPopup(mode, data = null) {
+    if (!evoPopup) {
+      evoPopup = new EvoPopup('vpromosi-popup-dialog');
+    }
+
+    const title = mode === 'edit' 
+      ? '<i class="fas fa-edit text-primary me-2"></i>Edit Data Promosi' 
+      : '<i class="fas fa-level-up-alt text-primary me-2"></i>Form Registrasi Promosi Pegawai';
+
+    const formHtml = `
+      <form id="form-promosi-modal" class="p-2">
+        <input type="hidden" id="promosi_kd_promosi_dari" value="${data ? (data.KD_PROMOSI_DARI || data.ID_PROMOSI || '') : ''}">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-bold small">Pilih Pegawai <span class="text-danger">*</span></label>
+            <select id="sel_pegawai_promosi" class="form-select form-select-sm" required></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small">Tgl / TMT Promosi <span class="text-danger">*</span></label>
+            <input type="date" class="form-control form-control-sm" id="promosi_tgl" value="${data ? (data.TGL_PROMOSI ? data.TGL_PROMOSI.substring(0, 10) : '') : ''}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small">Nomor Surat / SK</label>
+            <input type="text" class="form-control form-control-sm" id="promosi_no_surat" value="${data ? (data.NO_SURAT || '') : ''}" placeholder="Nomor surat / SK">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small">Unit / Bagian Baru</label>
+            <select id="sel_bagian_promosi" class="form-select form-select-sm"></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small">Jabatan Baru</label>
+            <select id="sel_jabatan_promosi" class="form-select form-select-sm"></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small">Pangkat / Golongan Baru</label>
+            <select id="sel_pangkat_promosi" class="form-select form-select-sm"></select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-bold small">Keterangan / Pertimbangan</label>
+            <textarea class="form-control form-control-sm" id="promosi_keterangan" rows="3" placeholder="Catatan pertimbangan promosi...">${data ? (data.KETERANGAN || '') : ''}</textarea>
+          </div>
+        </div>
+      </form>
+    `;
+
+    evoPopup.open({
+      size: 'large'
+    }, {
+      title: title,
+      content: formHtml,
+      buttons: [
+        {
+          label: 'Batal',
+          class: 'btn-secondary btn-sm',
+          onClick: () => evoPopup.close()
+        },
+        {
+          label: '<i class="fas fa-save me-1"></i> Simpan',
+          class: 'btn-primary btn-sm',
+          onClick: () => savePromosi()
+        }
+      ]
+    });
+
+    // Inisialisasi EvoSelector untuk Dropdown Web Components
+    setTimeout(() => {
+      // 1. Selector Pegawai
+      selectorPegawai = new EvoSelector('sel_pegawai_promosi');
+      const optPegawai = lookupPegawai.map(p => ({
+        text: `[${p.NIP || '-'}] ${p.NAMA || '-'}`,
+        value: p.ID_PEGAWAI
+      }));
+      selectorPegawai.addOptions(optPegawai);
+      if (data && data.ID_PEGAWAI) {
+        const el = document.getElementById('sel_pegawai_promosi');
+        if (el) el.value = data.ID_PEGAWAI;
+      }
+
+      // 2. Selector Bagian
+      selectorBagian = new EvoSelector('sel_bagian_promosi');
+      const optBagian = (refData.bagian || []).map(b => ({
+        text: b.BAGIAN,
+        value: b.KD_BAGIAN
+      }));
+      selectorBagian.addOptions(optBagian);
+      if (data && data.KD_BAGIAN_BARU) {
+        const el = document.getElementById('sel_bagian_promosi');
+        if (el) el.value = data.KD_BAGIAN_BARU;
+      }
+
+      // 3. Selector Jabatan
+      selectorJabatan = new EvoSelector('sel_jabatan_promosi');
+      const optJabatan = (refData.jabatan || []).map(j => ({
+        text: j.JABATAN,
+        value: j.KD_JABATAN
+      }));
+      selectorJabatan.addOptions(optJabatan);
+      if (data && data.KD_JABATAN_BARU) {
+        const el = document.getElementById('sel_jabatan_promosi');
+        if (el) el.value = data.KD_JABATAN_BARU;
+      }
+
+      // 4. Selector Pangkat
+      selectorPangkat = new EvoSelector('sel_pangkat_promosi');
+      const optPangkat = (refData.pangkat || []).map(p => ({
+        text: p.PANGKAT,
+        value: p.KD_PANGKAT
+      }));
+      selectorPangkat.addOptions(optPangkat);
+      if (data && data.KD_PANGKAT_BARU) {
+        const el = document.getElementById('sel_pangkat_promosi');
+        if (el) el.value = data.KD_PANGKAT_BARU;
+      }
+    }, 100);
+  }
+
+  async function savePromosi() {
+    const idPegawai = document.getElementById('sel_pegawai_promosi')?.value;
+    const tgl = document.getElementById('promosi_tgl')?.value;
+    const noSurat = document.getElementById('promosi_no_surat')?.value;
+    const kdBagian = document.getElementById('sel_bagian_promosi')?.value;
+    const kdJabatan = document.getElementById('sel_jabatan_promosi')?.value;
+    const kdPangkat = document.getElementById('sel_pangkat_promosi')?.value;
+    const ket = document.getElementById('promosi_keterangan')?.value;
+    const kdPromosi = document.getElementById('promosi_kd_promosi_dari')?.value;
+
+    if (!idPegawai) {
+      alert('Pilih pegawai terlebih dahulu!');
+      return;
+    }
+    if (!tgl) {
+      alert('Tanggal promosi wajib diisi!');
+      return;
+    }
+
+    const payload = {
+      KD_PROMOSI_DARI: kdPromosi || '',
+      ID_PEGAWAI: idPegawai,
+      TGL_PROMOSI: tgl,
+      NO_SURAT: noSurat,
+      KD_BAGIAN_BARU: kdBagian,
+      KD_JABATAN_BARU: kdJabatan,
+      KD_PANGKAT_BARU: kdPangkat,
+      KETERANGAN: ket
+    };
+
+    try {
+      const res = await httpPost(`${apiUrl}/pegawai/promosi/save`, payload);
+      if (res && res.code === 200) {
+        if (evoPopup) evoPopup.close();
+        await loadData();
+      } else {
+        alert(res?.message || 'Gagal menyimpan data promosi');
+      }
+    } catch (err) {
+      console.error('Error savePromosi:', err);
+      alert('Terjadi kesalahan koneksi server');
+    }
+  }
+
+  async function confirmDelete(idVal) {
+    if (!confirm('Apakah Anda yakin ingin menghapus data promosi ini?')) return;
+
+    try {
+      const res = await httpPost(`${apiUrl}/pegawai/promosi/delete`, { KD_PROMOSI_DARI: idVal, ID: idVal });
+      if (res && res.code === 200) {
+        await loadData();
+      } else {
+        alert(res?.message || 'Gagal menghapus data promosi');
+      }
+    } catch (err) {
+      console.error('Error deletePromosi:', err);
+      alert('Terjadi kesalahan saat menghapus data');
+    }
+  }
+
+  function exportCSV() {
+    if (filteredData.length === 0) {
+      alert('Tidak ada data untuk diekspor!');
+      return;
+    }
+    let csv = 'No,NIP,Nama,Tgl Promosi,No Surat,Jabatan Asal,Jabatan Baru,Bagian Baru,Keterangan\n';
+    filteredData.forEach((r, i) => {
+      csv += `"${i+1}","${r.NIP||''}","${r.NAMA||''}","${r.TGL_PROMOSI||''}","${r.NO_SURAT||''}","${r.JABATAN_ASAL||''}","${r.JABATAN_BARU||''}","${r.BAGIAN_BARU||''}","${(r.KETERANGAN||'').replace(/"/g, '""')}"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `Promosi_Pegawai_${new Date().toISOString().substring(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // Bind Events
+  document.getElementById('btn-tambah-promosi')?.addEventListener('click', () => openFormPopup('add'));
+  document.getElementById('btn-refresh-promosi')?.addEventListener('click', () => loadData());
+  document.getElementById('btn-export-promosi')?.addEventListener('click', exportCSV);
+  document.getElementById('vpromosi-search')?.addEventListener('input', applyFilter);
+
+  // Initial Load
+  await loadMasterData();
+  await loadData();
+</script>

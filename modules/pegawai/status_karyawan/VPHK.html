@@ -1,0 +1,438 @@
+<style>
+  .table-vphk-card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  }
+</style>
+
+<template id="template-vphk">
+  <!-- Actions Toolbar -->
+  <div id="vphk-actions" class="card mb-3 shadow-none border">
+    <div class="card-body p-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <h5 class="mb-0 text-danger fw-bold"><i class="fas fa-user-slash me-2"></i>PHK & Pemberhentian Pegawai</h5>
+        <span class="badge bg-soft-danger text-danger ms-2" id="vphk-total-badge">0 Data</span>
+      </div>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <div class="input-group input-group-sm" style="width: 240px;">
+          <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+          <input type="text" class="form-control form-control-sm border-start-0" id="vphk-search" placeholder="Cari NIP, nama, jenis PHK, SK...">
+        </div>
+        <button type="button" class="btn btn-sm btn-danger" id="btn-tambah-phk">
+          <i class="fas fa-plus me-1"></i> Tambah PHK
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-refresh-phk">
+          <i class="fas fa-sync-alt me-1"></i> Refresh
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-success" id="btn-export-phk">
+          <i class="fas fa-file-excel me-1"></i> Ekspor CSV
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Entries Table -->
+  <div id="vphk-entries" class="card shadow-sm border table-vphk-card">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped table-hover fs--1 mb-0 align-middle" id="table-vphk">
+          <thead class="bg-200 text-800 text-uppercase">
+            <tr>
+              <th class="text-center py-2" style="width: 50px;">#</th>
+              <th class="py-2" style="min-width: 140px;">NIP / Pegawai</th>
+              <th class="text-center py-2" style="min-width: 110px;">Tgl Efektif</th>
+              <th class="py-2" style="min-width: 130px;">Jenis PHK</th>
+              <th class="py-2" style="min-width: 130px;">No. SK / Surat</th>
+              <th class="py-2" style="min-width: 160px;">Alasan / Uraian</th>
+              <th class="text-center py-2" style="width: 140px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="list">
+            <tr>
+              <td colspan="7" class="text-center py-4 text-muted">
+                <span class="spinner-border spinner-border-sm me-2"></span>Memuat data PHK...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card-footer d-flex justify-content-between align-items-center py-2 bg-light border-top">
+      <span class="pagination-info fs--1 text-muted" id="vphk-pagination-info">Menampilkan 0 data</span>
+      <ul class="pagination pagination-sm mb-0" id="vphk-pagination"></ul>
+    </div>
+  </div>
+
+  <!-- Container Anchor for EvoPopup -->
+  <div id="vphk-popup-dialog"></div>
+</template>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+  import { showDialog } from './assets/js/core/helpers.js';
+  import EvoSelector from './components/EvoSelector.js';
+  import EvoPopup from './components/EvoPopup.js';
+
+  const apiUrl = (typeof config !== 'undefined' && config.api_url) 
+    ? config.api_url 
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  let allData = [];
+  let filteredData = [];
+  let refData = { jenis_phk: [] };
+  let lookupPegawai = [];
+  let currentPage = 1;
+  const rowsPerPage = 10;
+
+  // Web Components
+  let evoPopup = null;
+  let selectorPegawai = null;
+  let selectorJenisPhk = null;
+
+  async function loadMasterData() {
+    try {
+      const [refRes, lookupRes] = await Promise.all([
+        httpGet(`${apiUrl}/pegawai/ref_data`),
+        httpGet(`${apiUrl}/pegawai/lookup`)
+      ]);
+
+      if (refRes && refRes.code === 200 && refRes.data) refData = refRes.data;
+      if (lookupRes && lookupRes.code === 200 && Array.isArray(lookupRes.data)) lookupPegawai = lookupRes.data;
+    } catch (e) {
+      console.warn('Gagal memuat master data PHK:', e);
+    }
+  }
+
+  async function loadData() {
+    const tableBody = document.querySelector('#table-vphk tbody.list');
+    if (tableBody) {
+      tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data PHK...</td></tr>';
+    }
+
+    try {
+      const res = await httpGet(`${apiUrl}/pegawai/phk`);
+      allData = (res && res.code === 200 && Array.isArray(res.data)) ? res.data : [];
+    } catch (err) {
+      console.error('Error loadData PHK:', err);
+      allData = [];
+    }
+
+    applyFilter();
+  }
+
+  function applyFilter() {
+    const searchInput = document.getElementById('vphk-search');
+    const q = (searchInput ? searchInput.value : '').toLowerCase().trim();
+
+    if (!q) {
+      filteredData = [...allData];
+    } else {
+      filteredData = allData.filter(item => {
+        return (
+          (item.NIP && item.NIP.toLowerCase().includes(q)) ||
+          (item.NAMA && item.NAMA.toLowerCase().includes(q)) ||
+          (item.NO_SURAT && item.NO_SURAT.toLowerCase().includes(q)) ||
+          (item.JENIS_PHK && item.JENIS_PHK.toLowerCase().includes(q)) ||
+          (item.ALASAN && item.ALASAN.toLowerCase().includes(q))
+        );
+      });
+    }
+
+    currentPage = 1;
+    renderTable();
+  }
+
+  function renderTable() {
+    const tableBody = document.querySelector('#table-vphk tbody.list');
+    const badge = document.getElementById('vphk-total-badge');
+    const pagInfo = document.getElementById('vphk-pagination-info');
+    const pagList = document.getElementById('vphk-pagination');
+
+    if (badge) badge.textContent = `${filteredData.length} Data`;
+    if (!tableBody) return;
+
+    if (filteredData.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Belum ada data PHK pegawai</td></tr>';
+      if (pagInfo) pagInfo.textContent = 'Menampilkan 0 data';
+      if (pagList) pagList.innerHTML = '';
+      return;
+    }
+
+    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const startIdx = (currentPage - 1) * rowsPerPage;
+    const endIdx = Math.min(startIdx + rowsPerPage, filteredData.length);
+    const pageItems = filteredData.slice(startIdx, endIdx);
+
+    let html = '';
+    pageItems.forEach((row, i) => {
+      const no = startIdx + i + 1;
+      const tgl = row.TGL_PHK ? row.TGL_PHK.substring(0, 10) : '-';
+      const idVal = row.KD_PHK || row.ID_PHK || '';
+
+      html += `
+        <tr>
+          <td class="text-center fw-semi-bold">${no}</td>
+          <td>
+            <div class="fw-bold text-dark">${row.NAMA || '-'}</div>
+            <div class="text-muted small">NIP: ${row.NIP || '-'}</div>
+          </td>
+          <td class="text-center">${tgl}</td>
+          <td><span class="badge bg-soft-danger text-danger border border-danger-subtle">${row.JENIS_PHK || '-'}</span></td>
+          <td><span class="badge bg-light text-dark border">${row.NO_SURAT || '-'}</span></td>
+          <td class="small text-muted">${row.ALASAN || '-'}</td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-outline-danger btn-edit-row py-1 px-2 me-1" data-id="${idVal}">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-dark btn-delete-row py-1 px-2" data-id="${idVal}">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    tableBody.innerHTML = html;
+
+    if (pagInfo) {
+      pagInfo.textContent = `Menampilkan ${startIdx + 1} - ${endIdx} dari ${filteredData.length} data`;
+    }
+
+    renderPagination(totalPages);
+    attachRowActions();
+  }
+
+  function renderPagination(totalPages) {
+    const pagList = document.getElementById('vphk-pagination');
+    if (!pagList) return;
+
+    if (totalPages <= 1) {
+      pagList.innerHTML = '';
+      return;
+    }
+
+    let pHtml = `
+      <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+        <a class="page-link" href="#" data-page="${currentPage - 1}">&laquo;</a>
+      </li>
+    `;
+
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)) {
+        pHtml += `
+          <li class="page-item ${p === currentPage ? 'active' : ''}">
+            <a class="page-link" href="#" data-page="${p}">${p}</a>
+          </li>
+        `;
+      } else if (p === currentPage - 2 || p === currentPage + 2) {
+        pHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      }
+    }
+
+    pHtml += `
+      <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+        <a class="page-link" href="#" data-page="${currentPage + 1}">&raquo;</a>
+      </li>
+    `;
+
+    pagList.innerHTML = pHtml;
+
+    pagList.querySelectorAll('a.page-link').forEach(a => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const p = parseInt(a.getAttribute('data-page'));
+        if (p && p >= 1 && p <= totalPages && p !== currentPage) {
+          currentPage = p;
+          renderTable();
+        }
+      });
+    });
+  }
+
+  function attachRowActions() {
+    document.querySelectorAll('#table-vphk .btn-edit-row').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idVal = btn.getAttribute('data-id');
+        const item = allData.find(d => (d.KD_PHK == idVal || d.ID_PHK == idVal));
+        if (item) openFormPopup('edit', item);
+      });
+    });
+
+    document.querySelectorAll('#table-vphk .btn-delete-row').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idVal = btn.getAttribute('data-id');
+        confirmDelete(idVal);
+      });
+    });
+  }
+
+  function openFormPopup(mode, data = null) {
+    if (!evoPopup) {
+      evoPopup = new EvoPopup('vphk-popup-dialog');
+    }
+
+    const title = mode === 'edit' 
+      ? '<i class="fas fa-edit text-danger me-2"></i>Edit Data PHK' 
+      : '<i class="fas fa-user-slash text-danger me-2"></i>Form Pemutusan Hubungan Kerja (PHK)';
+
+    const formHtml = `
+      <form id="form-phk-modal" class="p-2">
+        <input type="hidden" id="phk_kd_phk" value="${data ? (data.KD_PHK || data.ID_PHK || '') : ''}">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-bold small">Pilih Pegawai <span class="text-danger">*</span></label>
+            <select id="sel_pegawai_phk" class="form-select form-select-sm" required></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small">Jenis PHK <span class="text-danger">*</span></label>
+            <select id="sel_jenis_phk" class="form-select form-select-sm" required></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small">Tanggal Efektif PHK <span class="text-danger">*</span></label>
+            <input type="date" class="form-control form-control-sm" id="phk_tgl" value="${data ? (data.TGL_PHK ? data.TGL_PHK.substring(0, 10) : '') : ''}" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-bold small">Nomor SK / Surat Pemberhentian</label>
+            <input type="text" class="form-control form-control-sm" id="phk_no_surat" value="${data ? (data.NO_SURAT || '') : ''}" placeholder="Nomor surat / SK pemberhentian">
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-bold small">Alasan / Uraian Pemutusan Hubungan Kerja</label>
+            <textarea class="form-control form-control-sm" id="phk_alasan" rows="3" placeholder="Alasan pengunduran diri, pensiun, pelanggaran, habis kontrak...">${data ? (data.ALASAN || '') : ''}</textarea>
+          </div>
+        </div>
+      </form>
+    `;
+
+    evoPopup.open({
+      size: 'large'
+    }, {
+      title: title,
+      content: formHtml,
+      buttons: [
+        {
+          label: 'Batal',
+          class: 'btn-secondary btn-sm',
+          onClick: () => evoPopup.close()
+        },
+        {
+          label: '<i class="fas fa-save me-1"></i> Simpan PHK',
+          class: 'btn-danger btn-sm',
+          onClick: () => savePhk()
+        }
+      ]
+    });
+
+    setTimeout(() => {
+      selectorPegawai = new EvoSelector('sel_pegawai_phk');
+      const optPegawai = lookupPegawai.map(p => ({
+        text: `[${p.NIP || '-'}] ${p.NAMA || '-'}`,
+        value: p.ID_PEGAWAI
+      }));
+      selectorPegawai.addOptions(optPegawai);
+      if (data && data.ID_PEGAWAI) {
+        const el = document.getElementById('sel_pegawai_phk');
+        if (el) el.value = data.ID_PEGAWAI;
+      }
+
+      selectorJenisPhk = new EvoSelector('sel_jenis_phk');
+      const optPhk = (refData.jenis_phk || []).map(p => ({
+        text: p.JENIS_PHK,
+        value: p.KD_JENIS_PHK
+      }));
+      selectorJenisPhk.addOptions(optPhk);
+      if (data && data.KD_JENIS_PHK) {
+        const el = document.getElementById('sel_jenis_phk');
+        if (el) el.value = data.KD_JENIS_PHK;
+      }
+    }, 100);
+  }
+
+  async function savePhk() {
+    const idPegawai = document.getElementById('sel_pegawai_phk')?.value;
+    const kdJenis = document.getElementById('sel_jenis_phk')?.value;
+    const tgl = document.getElementById('phk_tgl')?.value;
+    const noSurat = document.getElementById('phk_no_surat')?.value;
+    const alasan = document.getElementById('phk_alasan')?.value;
+    const kdPhk = document.getElementById('phk_kd_phk')?.value;
+
+    if (!idPegawai) {
+      alert('Pilih pegawai terlebih dahulu!');
+      return;
+    }
+    if (!kdJenis) {
+      alert('Pilih jenis PHK!');
+      return;
+    }
+    if (!tgl) {
+      alert('Tanggal efektif PHK wajib diisi!');
+      return;
+    }
+
+    const payload = {
+      KD_PHK: kdPhk || '',
+      ID_PEGAWAI: idPegawai,
+      KD_JENIS_PHK: kdJenis,
+      TGL_PHK: tgl,
+      NO_SURAT: noSurat,
+      ALASAN: alasan
+    };
+
+    try {
+      const res = await httpPost(`${apiUrl}/pegawai/phk/save`, payload);
+      if (res && res.code === 200) {
+        if (evoPopup) evoPopup.close();
+        await loadData();
+      } else {
+        alert(res?.message || 'Gagal menyimpan data PHK');
+      }
+    } catch (err) {
+      console.error('Error savePhk:', err);
+      alert('Terjadi kesalahan koneksi server');
+    }
+  }
+
+  async function confirmDelete(idVal) {
+    if (!confirm('Apakah Anda yakin ingin menghapus data PHK ini?')) return;
+
+    try {
+      const res = await httpPost(`${apiUrl}/pegawai/phk/delete`, { KD_PHK: idVal, ID: idVal });
+      if (res && res.code === 200) {
+        await loadData();
+      } else {
+        alert(res?.message || 'Gagal menghapus data PHK');
+      }
+    } catch (err) {
+      console.error('Error deletePhk:', err);
+      alert('Terjadi kesalahan saat menghapus data');
+    }
+  }
+
+  function exportCSV() {
+    if (filteredData.length === 0) {
+      alert('Tidak ada data untuk diekspor!');
+      return;
+    }
+    let csv = 'No,NIP,Nama,Tgl Efektif,Jenis PHK,No Surat,Alasan\n';
+    filteredData.forEach((r, i) => {
+      csv += `"${i+1}","${r.NIP||''}","${r.NAMA||''}","${r.TGL_PHK||''}","${r.JENIS_PHK||''}","${r.NO_SURAT||''}","${(r.ALASAN||'').replace(/"/g, '""')}"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `PHK_Pegawai_${new Date().toISOString().substring(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  document.getElementById('btn-tambah-phk')?.addEventListener('click', () => openFormPopup('add'));
+  document.getElementById('btn-refresh-phk')?.addEventListener('click', () => loadData());
+  document.getElementById('btn-export-phk')?.addEventListener('click', exportCSV);
+  document.getElementById('vphk-search')?.addEventListener('input', applyFilter);
+
+  await loadMasterData();
+  await loadData();
+</script>

@@ -1,0 +1,455 @@
+<style>
+  .table-vsanksi-card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  }
+</style>
+
+<template id="template-vsanksi">
+  <!-- Actions Toolbar -->
+  <div id="vsanksi-actions" class="card mb-3 shadow-none border">
+    <div class="card-body p-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <h5 class="mb-0 text-danger fw-bold"><i class="fas fa-exclamation-triangle me-2"></i>Sanksi & Pelanggaran Pegawai</h5>
+        <span class="badge bg-soft-danger text-danger ms-2" id="vsanksi-total-badge">0 Data</span>
+      </div>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <div class="input-group input-group-sm" style="width: 240px;">
+          <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+          <input type="text" class="form-control form-control-sm border-start-0" id="vsanksi-search" placeholder="Cari NIP, nama, sanksi, SK...">
+        </div>
+        <button type="button" class="btn btn-sm btn-danger" id="btn-tambah-sanksi">
+          <i class="fas fa-plus me-1"></i> Tambah Sanksi
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-refresh-sanksi">
+          <i class="fas fa-sync-alt me-1"></i> Refresh
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-success" id="btn-export-sanksi">
+          <i class="fas fa-file-excel me-1"></i> Ekspor CSV
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Entries Table -->
+  <div id="vsanksi-entries" class="card shadow-sm border table-vsanksi-card">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped table-hover fs--1 mb-0 align-middle" id="table-vsanksi">
+          <thead class="bg-200 text-800 text-uppercase">
+            <tr>
+              <th class="text-center py-2" style="width: 50px;">#</th>
+              <th class="py-2" style="min-width: 140px;">NIP / Pegawai</th>
+              <th class="text-center py-2" style="min-width: 110px;">Tgl Sanksi</th>
+              <th class="py-2" style="min-width: 130px;">Jenis Sanksi</th>
+              <th class="py-2" style="min-width: 130px;">No. Surat / SK</th>
+              <th class="text-center py-2" style="min-width: 130px;">Masa Berlaku</th>
+              <th class="py-2" style="min-width: 160px;">Uraian Pelanggaran</th>
+              <th class="text-center py-2" style="width: 140px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="list">
+            <tr>
+              <td colspan="8" class="text-center py-4 text-muted">
+                <span class="spinner-border spinner-border-sm me-2"></span>Memuat data sanksi...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card-footer d-flex justify-content-between align-items-center py-2 bg-light border-top">
+      <span class="pagination-info fs--1 text-muted" id="vsanksi-pagination-info">Menampilkan 0 data</span>
+      <ul class="pagination pagination-sm mb-0" id="vsanksi-pagination"></ul>
+    </div>
+  </div>
+
+  <!-- Container Anchor for EvoPopup -->
+  <div id="vsanksi-popup-dialog"></div>
+</template>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+  import { showDialog } from './assets/js/core/helpers.js';
+  import EvoSelector from './components/EvoSelector.js';
+  import EvoPopup from './components/EvoPopup.js';
+
+  const apiUrl = (typeof config !== 'undefined' && config.api_url) 
+    ? config.api_url 
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  let allData = [];
+  let filteredData = [];
+  let refData = { jenis_sanksi: [] };
+  let lookupPegawai = [];
+  let currentPage = 1;
+  const rowsPerPage = 10;
+
+  // Web Components
+  let evoPopup = null;
+  let selectorPegawai = null;
+  let selectorJenisSanksi = null;
+
+  async function loadMasterData() {
+    try {
+      const [refRes, lookupRes] = await Promise.all([
+        httpGet(`${apiUrl}/pegawai/ref_data`),
+        httpGet(`${apiUrl}/pegawai/lookup`)
+      ]);
+
+      if (refRes && refRes.code === 200 && refRes.data) refData = refRes.data;
+      if (lookupRes && lookupRes.code === 200 && Array.isArray(lookupRes.data)) lookupPegawai = lookupRes.data;
+    } catch (e) {
+      console.warn('Gagal memuat master data sanksi:', e);
+    }
+  }
+
+  async function loadData() {
+    const tableBody = document.querySelector('#table-vsanksi tbody.list');
+    if (tableBody) {
+      tableBody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data sanksi...</td></tr>';
+    }
+
+    try {
+      const res = await httpGet(`${apiUrl}/pegawai/sanksi`);
+      allData = (res && res.code === 200 && Array.isArray(res.data)) ? res.data : [];
+    } catch (err) {
+      console.error('Error loadData sanksi:', err);
+      allData = [];
+    }
+
+    applyFilter();
+  }
+
+  function applyFilter() {
+    const searchInput = document.getElementById('vsanksi-search');
+    const q = (searchInput ? searchInput.value : '').toLowerCase().trim();
+
+    if (!q) {
+      filteredData = [...allData];
+    } else {
+      filteredData = allData.filter(item => {
+        return (
+          (item.NIP && item.NIP.toLowerCase().includes(q)) ||
+          (item.NAMA && item.NAMA.toLowerCase().includes(q)) ||
+          (item.NO_SURAT && item.NO_SURAT.toLowerCase().includes(q)) ||
+          (item.JENIS_SANKSI && item.JENIS_SANKSI.toLowerCase().includes(q)) ||
+          (item.KETERANGAN && item.KETERANGAN.toLowerCase().includes(q))
+        );
+      });
+    }
+
+    currentPage = 1;
+    renderTable();
+  }
+
+  function renderTable() {
+    const tableBody = document.querySelector('#table-vsanksi tbody.list');
+    const badge = document.getElementById('vsanksi-total-badge');
+    const pagInfo = document.getElementById('vsanksi-pagination-info');
+    const pagList = document.getElementById('vsanksi-pagination');
+
+    if (badge) badge.textContent = `${filteredData.length} Data`;
+    if (!tableBody) return;
+
+    if (filteredData.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">Belum ada data sanksi pegawai</td></tr>';
+      if (pagInfo) pagInfo.textContent = 'Menampilkan 0 data';
+      if (pagList) pagList.innerHTML = '';
+      return;
+    }
+
+    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const startIdx = (currentPage - 1) * rowsPerPage;
+    const endIdx = Math.min(startIdx + rowsPerPage, filteredData.length);
+    const pageItems = filteredData.slice(startIdx, endIdx);
+
+    let html = '';
+    pageItems.forEach((row, i) => {
+      const no = startIdx + i + 1;
+      const tgl = row.TGL_SANKSI ? row.TGL_SANKSI.substring(0, 10) : '-';
+      const mulai = row.MULAI ? row.MULAI.substring(0, 10) : '';
+      const sampai = row.SAMPAI ? row.SAMPAI.substring(0, 10) : '';
+      const masa = (mulai || sampai) ? `${mulai} s/d ${sampai || 'Seterusnya'}` : '-';
+      const idVal = row.KD_SANKSI || row.ID_SANKSI || '';
+
+      html += `
+        <tr>
+          <td class="text-center fw-semi-bold">${no}</td>
+          <td>
+            <div class="fw-bold text-dark">${row.NAMA || '-'}</div>
+            <div class="text-muted small">NIP: ${row.NIP || '-'}</div>
+          </td>
+          <td class="text-center">${tgl}</td>
+          <td><span class="badge bg-soft-danger text-danger border border-danger-subtle">${row.JENIS_SANKSI || '-'}</span></td>
+          <td><span class="badge bg-light text-dark border">${row.NO_SURAT || '-'}</span></td>
+          <td class="text-center small">${masa}</td>
+          <td class="small text-muted">${row.KETERANGAN || '-'}</td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-outline-danger btn-edit-row py-1 px-2 me-1" data-id="${idVal}">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-dark btn-delete-row py-1 px-2" data-id="${idVal}">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    tableBody.innerHTML = html;
+
+    if (pagInfo) {
+      pagInfo.textContent = `Menampilkan ${startIdx + 1} - ${endIdx} dari ${filteredData.length} data`;
+    }
+
+    renderPagination(totalPages);
+    attachRowActions();
+  }
+
+  function renderPagination(totalPages) {
+    const pagList = document.getElementById('vsanksi-pagination');
+    if (!pagList) return;
+
+    if (totalPages <= 1) {
+      pagList.innerHTML = '';
+      return;
+    }
+
+    let pHtml = `
+      <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+        <a class="page-link" href="#" data-page="${currentPage - 1}">&laquo;</a>
+      </li>
+    `;
+
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)) {
+        pHtml += `
+          <li class="page-item ${p === currentPage ? 'active' : ''}">
+            <a class="page-link" href="#" data-page="${p}">${p}</a>
+          </li>
+        `;
+      } else if (p === currentPage - 2 || p === currentPage + 2) {
+        pHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      }
+    }
+
+    pHtml += `
+      <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+        <a class="page-link" href="#" data-page="${currentPage + 1}">&raquo;</a>
+      </li>
+    `;
+
+    pagList.innerHTML = pHtml;
+
+    pagList.querySelectorAll('a.page-link').forEach(a => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const p = parseInt(a.getAttribute('data-page'));
+        if (p && p >= 1 && p <= totalPages && p !== currentPage) {
+          currentPage = p;
+          renderTable();
+        }
+      });
+    });
+  }
+
+  function attachRowActions() {
+    document.querySelectorAll('#table-vsanksi .btn-edit-row').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idVal = btn.getAttribute('data-id');
+        const item = allData.find(d => (d.KD_SANKSI == idVal || d.ID_SANKSI == idVal));
+        if (item) openFormPopup('edit', item);
+      });
+    });
+
+    document.querySelectorAll('#table-vsanksi .btn-delete-row').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idVal = btn.getAttribute('data-id');
+        confirmDelete(idVal);
+      });
+    });
+  }
+
+  function openFormPopup(mode, data = null) {
+    if (!evoPopup) {
+      evoPopup = new EvoPopup('vsanksi-popup-dialog');
+    }
+
+    const title = mode === 'edit' 
+      ? '<i class="fas fa-edit text-danger me-2"></i>Edit Data Sanksi' 
+      : '<i class="fas fa-exclamation-triangle text-danger me-2"></i>Form Penindakan Sanksi Pegawai';
+
+    const formHtml = `
+      <form id="form-sanksi-modal" class="p-2">
+        <input type="hidden" id="sanksi_kd_sanksi" value="${data ? (data.KD_SANKSI || data.ID_SANKSI || '') : ''}">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-bold small">Pilih Pegawai <span class="text-danger">*</span></label>
+            <select id="sel_pegawai_sanksi" class="form-select form-select-sm" required></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small">Jenis Sanksi <span class="text-danger">*</span></label>
+            <select id="sel_jenis_sanksi" class="form-select form-select-sm" required></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small">Tgl Penetapan Sanksi <span class="text-danger">*</span></label>
+            <input type="date" class="form-control form-control-sm" id="sanksi_tgl" value="${data ? (data.TGL_SANKSI ? data.TGL_SANKSI.substring(0, 10) : '') : ''}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small">Nomor Surat / SK</label>
+            <input type="text" class="form-control form-control-sm" id="sanksi_no_surat" value="${data ? (data.NO_SURAT || '') : ''}" placeholder="Nomor surat / SK peringatan">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small">Berlaku Mulai</label>
+            <input type="date" class="form-control form-control-sm" id="sanksi_mulai" value="${data ? (data.MULAI ? data.MULAI.substring(0, 10) : '') : ''}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold small">Berlaku Sampai</label>
+            <input type="date" class="form-control form-control-sm" id="sanksi_sampai" value="${data ? (data.SAMPAI ? data.SAMPAI.substring(0, 10) : '') : ''}">
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-bold small">Keterangan / Uraian Pelanggaran</label>
+            <textarea class="form-control form-control-sm" id="sanksi_keterangan" rows="3" placeholder="Uraian kronologi atau alasan penjatuhan sanksi...">${data ? (data.KETERANGAN || '') : ''}</textarea>
+          </div>
+        </div>
+      </form>
+    `;
+
+    evoPopup.open({
+      size: 'large'
+    }, {
+      title: title,
+      content: formHtml,
+      buttons: [
+        {
+          label: 'Batal',
+          class: 'btn-secondary btn-sm',
+          onClick: () => evoPopup.close()
+        },
+        {
+          label: '<i class="fas fa-save me-1"></i> Simpan Sanksi',
+          class: 'btn-danger btn-sm',
+          onClick: () => saveSanksi()
+        }
+      ]
+    });
+
+    setTimeout(() => {
+      selectorPegawai = new EvoSelector('sel_pegawai_sanksi');
+      const optPegawai = lookupPegawai.map(p => ({
+        text: `[${p.NIP || '-'}] ${p.NAMA || '-'}`,
+        value: p.ID_PEGAWAI
+      }));
+      selectorPegawai.addOptions(optPegawai);
+      if (data && data.ID_PEGAWAI) {
+        const el = document.getElementById('sel_pegawai_sanksi');
+        if (el) el.value = data.ID_PEGAWAI;
+      }
+
+      selectorJenisSanksi = new EvoSelector('sel_jenis_sanksi');
+      const optSanksi = (refData.jenis_sanksi || []).map(s => ({
+        text: s.JENIS_SANKSI,
+        value: s.KD_JENIS_SANKSI
+      }));
+      selectorJenisSanksi.addOptions(optSanksi);
+      if (data && data.KD_JENIS_SANKSI) {
+        const el = document.getElementById('sel_jenis_sanksi');
+        if (el) el.value = data.KD_JENIS_SANKSI;
+      }
+    }, 100);
+  }
+
+  async function saveSanksi() {
+    const idPegawai = document.getElementById('sel_pegawai_sanksi')?.value;
+    const kdJenis = document.getElementById('sel_jenis_sanksi')?.value;
+    const tgl = document.getElementById('sanksi_tgl')?.value;
+    const noSurat = document.getElementById('sanksi_no_surat')?.value;
+    const mulai = document.getElementById('sanksi_mulai')?.value;
+    const sampai = document.getElementById('sanksi_sampai')?.value;
+    const ket = document.getElementById('sanksi_keterangan')?.value;
+    const kdSanksi = document.getElementById('sanksi_kd_sanksi')?.value;
+
+    if (!idPegawai) {
+      alert('Pilih pegawai terlebih dahulu!');
+      return;
+    }
+    if (!kdJenis) {
+      alert('Pilih jenis sanksi!');
+      return;
+    }
+    if (!tgl) {
+      alert('Tanggal sanksi wajib diisi!');
+      return;
+    }
+
+    const payload = {
+      KD_SANKSI: kdSanksi || '',
+      ID_PEGAWAI: idPegawai,
+      KD_JENIS_SANKSI: kdJenis,
+      TGL_SANKSI: tgl,
+      NO_SURAT: noSurat,
+      MULAI: mulai,
+      SAMPAI: sampai,
+      KETERANGAN: ket
+    };
+
+    try {
+      const res = await httpPost(`${apiUrl}/pegawai/sanksi/save`, payload);
+      if (res && res.code === 200) {
+        if (evoPopup) evoPopup.close();
+        await loadData();
+      } else {
+        alert(res?.message || 'Gagal menyimpan data sanksi');
+      }
+    } catch (err) {
+      console.error('Error saveSanksi:', err);
+      alert('Terjadi kesalahan koneksi server');
+    }
+  }
+
+  async function confirmDelete(idVal) {
+    if (!confirm('Apakah Anda yakin ingin menghapus data sanksi ini?')) return;
+
+    try {
+      const res = await httpPost(`${apiUrl}/pegawai/sanksi/delete`, { KD_SANKSI: idVal, ID: idVal });
+      if (res && res.code === 200) {
+        await loadData();
+      } else {
+        alert(res?.message || 'Gagal menghapus data sanksi');
+      }
+    } catch (err) {
+      console.error('Error deleteSanksi:', err);
+      alert('Terjadi kesalahan saat menghapus data');
+    }
+  }
+
+  function exportCSV() {
+    if (filteredData.length === 0) {
+      alert('Tidak ada data untuk diekspor!');
+      return;
+    }
+    let csv = 'No,NIP,Nama,Tgl Sanksi,Jenis Sanksi,No Surat,Mulai,Sampai,Keterangan\n';
+    filteredData.forEach((r, i) => {
+      csv += `"${i+1}","${r.NIP||''}","${r.NAMA||''}","${r.TGL_SANKSI||''}","${r.JENIS_SANKSI||''}","${r.NO_SURAT||''}","${r.MULAI||''}","${r.SAMPAI||''}","${(r.KETERANGAN||'').replace(/"/g, '""')}"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `Sanksi_Pegawai_${new Date().toISOString().substring(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  document.getElementById('btn-tambah-sanksi')?.addEventListener('click', () => openFormPopup('add'));
+  document.getElementById('btn-refresh-sanksi')?.addEventListener('click', () => loadData());
+  document.getElementById('btn-export-sanksi')?.addEventListener('click', exportCSV);
+  document.getElementById('vsanksi-search')?.addEventListener('input', applyFilter);
+
+  await loadMasterData();
+  await loadData();
+</script>

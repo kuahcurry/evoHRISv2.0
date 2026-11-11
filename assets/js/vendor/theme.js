@@ -4373,32 +4373,19 @@ var handleNavbarVerticalCollapsed = function handleNavbarVerticalCollapsed() {
   var navbarVerticalCollapse = document.querySelector(Selector.NAVBAR_VERTICAL_COLLAPSE);
   var toggled = false;
   if (navbarVerticalToggle) {
-   navbarVerticalToggle.addEventListener(Events.CLICK, function (e) {
-    toggled = !toggled;
-    if (toggled) {
-     const newEvent = new Event('mouseover');
-     navbarVerticalCollapse.dispatchEvent(newEvent);
-    }else {
-     const newEvent = new Event('mouseleave');
-     navbarVerticalCollapse.dispatchEvent(newEvent);
-    }      // navbarVerticalToggle.blur();
-      // html.classList.toggle(ClassNames.NAVBAR_VERTICAL_COLLAPSED);
-      // var isNavbarVerticalCollapsed = utils.getItemFromStore('isNavbarVerticalCollapsed');
-      // utils.setItemToStore('isNavbarVerticalCollapsed', !isNavbarVerticalCollapsed);
-      // var event = new CustomEvent(Events.NAVBAR_VERTICAL_TOGGLE);
-      // e.currentTarget.dispatchEvent(event);
-    });
-  }
-  if (navbarVerticalCollapse) {
-    navbarVerticalCollapse.addEventListener(Events.MOUSE_OVER, function () {
-      if (utils.hasClass(html, ClassNames.NAVBAR_VERTICAL_COLLAPSED)) {
-        html.classList.add(ClassNames.NAVBAR_VERTICAL_COLLAPSED_HOVER);
+    navbarVerticalToggle.addEventListener(Events.CLICK, function (e) {
+      e.preventDefault();
+      var isCollapsed = html.classList.contains(ClassNames.NAVBAR_VERTICAL_COLLAPSED);
+      if (isCollapsed) {
+        html.classList.remove(ClassNames.NAVBAR_VERTICAL_COLLAPSED);
+        localStorage.setItem('isNavbarVerticalCollapsed', false);
+      } else {
+        html.classList.add(ClassNames.NAVBAR_VERTICAL_COLLAPSED);
+        localStorage.setItem('isNavbarVerticalCollapsed', true);
       }
-    });
-    navbarVerticalCollapse.addEventListener(Events.MOUSE_LEAVE, function () {
-      if (utils.hasClass(html, ClassNames.NAVBAR_VERTICAL_COLLAPSED_HOVER)) {
-        html.classList.remove(ClassNames.NAVBAR_VERTICAL_COLLAPSED_HOVER);
-      }
+      html.classList.remove(ClassNames.NAVBAR_VERTICAL_COLLAPSED_HOVER);
+      sessionStorage.setItem('sidebar_manually_toggled', 'true');
+      window.dispatchEvent(new Event('resize'));
     });
   }
 };

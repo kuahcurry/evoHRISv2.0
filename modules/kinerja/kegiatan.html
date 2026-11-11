@@ -347,15 +347,6 @@
           </div>
         </div>
       </div>
-      <div class="col-md-5 text-md-end mt-2 mt-md-0">
-        <span class="badge bg-primary px-3 py-2 me-2" id="badge-total-kegiatan">Memuat...</span>
-        <button class="btn btn-outline-secondary btn-sm me-2" id="btn-refresh-kgt" title="Segarkan Data">
-          <i class="fas fa-sync-alt"></i>
-        </button>
-        <button class="btn btn-primary btn-sm" id="btn-tambah-kgt">
-          <i class="fas fa-plus me-1"></i>Tambah Program Kerja
-        </button>
-      </div>
     </div>
 
     <!-- Summary Cards -->
@@ -396,22 +387,38 @@
     </div>
 
     <!-- Filter Card -->
-    <div class="card p-3 mb-3">
+    <div class="card shadow-sm p-3 mb-3">
       <div class="row g-2 align-items-center">
-        <div class="col-md-5">
+        <!-- 1. Pencarian -->
+        <div class="col-lg-4 col-md-4 col-12">
           <div class="input-group input-group-sm">
-            <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
-            <input type="text" class="form-control" id="search-kegiatan" placeholder="Cari uraian program kerja, unit, atau PIC...">
+            <span class="input-group-text bg-white text-muted"><i class="fas fa-search"></i></span>
+            <input type="text" class="form-control bg-white" id="search-kegiatan" placeholder="Cari uraian program kerja, unit, atau PIC...">
           </div>
         </div>
-        <div class="col-md-5">
-          <select class="form-select form-select-sm" id="filter-bagian-kgt">
+
+        <!-- 2. Unit / Bagian -->
+        <div class="col-lg-3 col-md-3 col-12">
+          <select class="form-select form-select-sm bg-white" id="filter-bagian-kgt">
             <option value="">-- Semua Unit / Bagian --</option>
           </select>
         </div>
-        <div class="col-md-2 text-end">
-          <button class="btn btn-outline-primary btn-sm w-100" id="btn-filter-kgt">
-            <i class="fas fa-filter me-1"></i>Filter
+
+        <!-- 3. Grup Tombol Aksi (Refresh, Terapkan Filter, dan Tambah sejajar) -->
+        <div class="col-lg-5 col-md-5 col-12 d-flex justify-content-md-end align-items-center gap-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm px-3 d-inline-flex align-items-center gap-1 shadow-sm text-nowrap" id="btn-refresh-kgt" title="Segarkan Data">
+            <i class="fas fa-sync-alt"></i>
+            <span>Refresh</span>
+          </button>
+
+          <button type="button" class="btn btn-outline-primary btn-sm px-3 d-inline-flex align-items-center gap-1 shadow-sm text-nowrap" id="btn-filter-kgt">
+            <i class="fas fa-filter"></i>
+            <span>Terapkan Filter</span>
+          </button>
+
+          <button type="button" class="btn btn-primary btn-sm px-3 d-inline-flex align-items-center gap-1 shadow-sm text-nowrap" id="btn-tambah-kgt">
+            <i class="fas fa-plus"></i>
+            <span>Tambah Program Kerja</span>
           </button>
         </div>
       </div>
