@@ -3,3 +3,5 @@
 /.env
 /writable/logs
 .htaccess
+.env
+.php_conf/
