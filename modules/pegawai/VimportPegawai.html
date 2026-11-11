@@ -1,0 +1,371 @@
+<style>
+  .dropzone-box {
+    border: 2px dashed #0d6efd;
+    border-radius: 8px;
+    background-color: #f8fafc;
+    padding: 30px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .dropzone-box:hover, .dropzone-box.dragover {
+    background-color: #e7f1ff;
+    border-color: #0b5ed7;
+  }
+  .file-preview-card {
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 12px 16px;
+  }
+</style>
+
+<script type="module">
+  const apiUrl = (typeof config !== 'undefined' && config.api_url) 
+    ? config.api_url 
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  function formatBytes(bytes, decimals = 2) {
+    if (!+bytes) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+  }
+
+  function handleFileSelected(file) {
+    if (!file) return;
+    const fileNameLabel = document.getElementById('file-name-label');
+    const fileSizeLabel = document.getElementById('file-size-label');
+    const fileInfoBox = document.getElementById('file-info-box');
+    const dropzoneArea = document.getElementById('dropzone-area');
+    const resultContainer = document.getElementById('import-result-container');
+
+    if (fileNameLabel) fileNameLabel.textContent = file.name;
+    if (fileSizeLabel) fileSizeLabel.textContent = formatBytes(file.size);
+    if (fileInfoBox) {
+      fileInfoBox.classList.remove('d-none');
+      fileInfoBox.classList.add('d-flex');
+    }
+    if (dropzoneArea) dropzoneArea.classList.add('d-none');
+    if (resultContainer) {
+      resultContainer.classList.add('d-none');
+      resultContainer.innerHTML = '';
+    }
+  }
+
+  function resetFile() {
+    const inputFile = document.getElementById('input-file-excel');
+    const fileInfoBox = document.getElementById('file-info-box');
+    const dropzoneArea = document.getElementById('dropzone-area');
+    if (inputFile) inputFile.value = '';
+    if (fileInfoBox) {
+      fileInfoBox.classList.add('d-none');
+      fileInfoBox.classList.remove('d-flex');
+    }
+    if (dropzoneArea) dropzoneArea.classList.remove('d-none');
+  }
+
+  function tutupPopup() {
+    if (window.popupImportPegawai && typeof window.popupImportPegawai.close === 'function') {
+      window.popupImportPegawai.close();
+      return;
+    }
+    const modalEl = document.querySelector('#modalImportPegawai, .modal.show');
+    if (modalEl && typeof bootstrap !== 'undefined') {
+      const modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+      modalInstance.hide();
+    }
+  }
+
+  function initImportPegawai() {
+    const btnDownload = document.getElementById('btn-download-template');
+    if (btnDownload) {
+      btnDownload.href = `${apiUrl}/cPegawai/download_template`;
+    }
+
+    const dropzoneArea = document.getElementById('dropzone-area');
+    const inputFile = document.getElementById('input-file-excel');
+    const btnRemoveFile = document.getElementById('btn-remove-file');
+    const formImport = document.getElementById('form-import-pegawai');
+    const btnBatal = document.getElementById('btn-batal-import');
+    const btnSubmit = document.getElementById('btn-submit-import');
+    const resultContainer = document.getElementById('import-result-container');
+
+    if (dropzoneArea && inputFile) {
+      dropzoneArea.onclick = () => inputFile.click();
+
+      dropzoneArea.ondragover = (e) => {
+        e.preventDefault();
+        dropzoneArea.classList.add('dragover');
+      };
+
+      dropzoneArea.ondragleave = () => {
+        dropzoneArea.classList.remove('dragover');
+      };
+
+      dropzoneArea.ondrop = (e) => {
+        e.preventDefault();
+        dropzoneArea.classList.remove('dragover');
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          inputFile.files = e.dataTransfer.files;
+          handleFileSelected(e.dataTransfer.files[0]);
+        }
+      };
+    }
+
+    if (inputFile) {
+      inputFile.onchange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+          handleFileSelected(e.target.files[0]);
+        }
+      };
+    }
+
+    if (btnRemoveFile) {
+      btnRemoveFile.onclick = () => {
+        resetFile();
+      };
+    }
+
+    if (btnBatal) {
+      btnBatal.onclick = () => {
+        tutupPopup();
+      };
+    }
+
+    if (formImport) {
+      formImport.onsubmit = async (e) => {
+        e.preventDefault();
+
+        if (!inputFile || !inputFile.files || !inputFile.files[0]) {
+          const msg = 'Silakan pilih berkas Excel atau CSV terlebih dahulu.';
+          if (typeof showDialog === 'function') {
+            showDialog({ type: 'warning', label: `<span class="text-danger">${msg}</span>` });
+          } else if (typeof Swal !== 'undefined') {
+            Swal.fire('Peringatan', msg, 'warning');
+          } else {
+            alert(msg);
+          }
+          return;
+        }
+
+        const formData = new FormData(formImport);
+        if (btnSubmit) {
+          btnSubmit.disabled = true;
+          btnSubmit.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span> Memproses...`;
+        }
+        if (resultContainer) {
+          resultContainer.classList.add('d-none');
+          resultContainer.innerHTML = '';
+        }
+
+        try {
+          const response = await fetch(`${apiUrl}/cPegawai/import_excel`, {
+            method: 'POST',
+            body: formData
+          });
+
+          const res = await response.json();
+
+          if (btnSubmit) {
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = `<i class="fas fa-file-import me-1"></i><span>Mulai Impor</span>`;
+          }
+
+          if (res && (res.code === 200 || res.status === true || String(res.status).includes('ok'))) {
+            const d = res.data || {};
+            const total = d.total || 0;
+            const imported = d.imported || 0;
+            const updated = d.updated || 0;
+            const skipped = d.skipped || 0;
+            const failed = d.failed || 0;
+            const errors = d.errors || [];
+
+            let errorDetailsHtml = '';
+            if (errors.length > 0) {
+              const items = errors.map(err => `<li>${err}</li>`).join('');
+              errorDetailsHtml = `
+                <div class="mt-2 text-start">
+                  <span class="small fw-bold text-danger">Catatan / Peringatan:</span>
+                  <ul class="small text-danger mb-0 ps-3" style="max-height: 120px; overflow-y: auto;">
+                    ${items}
+                  </ul>
+                </div>
+              `;
+            }
+
+            if (resultContainer) {
+              resultContainer.innerHTML = `
+                <div class="alert alert-success border-0 shadow-sm p-3">
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <i class="fas fa-check-circle fs-4 text-success"></i>
+                    <strong class="fs-7 text-success">Impor Berhasil Diselesaikan!</strong>
+                  </div>
+                  <div class="row g-2 text-center text-dark small py-1 bg-white rounded border">
+                    <div class="col-3">
+                      <span class="text-muted d-block" style="font-size: 0.75rem;">Total Data</span>
+                      <span class="fw-bold fs-6">${total}</span>
+                    </div>
+                    <div class="col-3">
+                      <span class="text-success d-block" style="font-size: 0.75rem;">Disimpan Baru</span>
+                      <span class="fw-bold fs-6 text-success">${imported}</span>
+                    </div>
+                    <div class="col-3">
+                      <span class="text-primary d-block" style="font-size: 0.75rem;">Diperbarui</span>
+                      <span class="fw-bold fs-6 text-primary">${updated}</span>
+                    </div>
+                    <div class="col-3">
+                      <span class="text-warning d-block" style="font-size: 0.75rem;">Dilewati / Gagal</span>
+                      <span class="fw-bold fs-6 text-warning">${skipped + failed}</span>
+                    </div>
+                  </div>
+                  ${errorDetailsHtml}
+                </div>
+              `;
+              resultContainer.classList.remove('d-none');
+            }
+
+            if (typeof showDialog === 'function') {
+              showDialog({
+                type: 'info',
+                label: `<span class="text-black">${res.message || 'Impor data pegawai berhasil diproses.'}</span>`
+              });
+            }
+
+            if (window.vpegawai && typeof window.vpegawai.loadData === 'function') {
+              window.vpegawai.loadData();
+            }
+
+            resetFile();
+          } else {
+            const errorMsg = res?.message || res?.data?.message || 'Gagal memproses berkas Excel.';
+            if (resultContainer) {
+              resultContainer.innerHTML = `
+                <div class="alert alert-danger border-0 shadow-sm p-3">
+                  <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-exclamation-triangle fs-4 text-danger"></i>
+                    <div>
+                      <strong class="fs-7 text-danger">Impor Gagal</strong>
+                      <p class="mb-0 small text-dark">${errorMsg}</p>
+                    </div>
+                  </div>
+                </div>
+              `;
+              resultContainer.classList.remove('d-none');
+            }
+          }
+        } catch (err) {
+          console.error('Error saat upload berkas excel:', err);
+          if (btnSubmit) {
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = `<i class="fas fa-file-import me-1"></i><span>Mulai Impor</span>`;
+          }
+          if (resultContainer) {
+            resultContainer.innerHTML = `
+              <div class="alert alert-danger border-0 shadow-sm p-3">
+                <i class="fas fa-wifi text-danger me-2"></i>
+                <span class="small text-danger">Terjadi kendala jaringan saat menghubungi server.</span>
+              </div>
+            `;
+            resultContainer.classList.remove('d-none');
+          }
+        }
+      };
+    }
+  }
+
+  window.vimportpegawai = {
+    init: initImportPegawai,
+    resetFile,
+    tutupPopup
+  };
+  document.vimportpegawai = window.vimportpegawai;
+  document['VimportPegawai'] = window.vimportpegawai;
+  document['pegawai'] = window.vimportpegawai;
+
+  initImportPegawai();
+</script>
+
+<template>
+  <div class="p-3">
+    <!-- Petunjuk Singkat & Tombol Unduh Template -->
+    <div class="alert alert-info border-0 shadow-sm d-flex align-items-start gap-3 mb-3" style="background-color: #eef6ff; color: #1e40af;">
+      <div class="fs-3 text-primary"><i class="fas fa-info-circle"></i></div>
+      <div class="flex-grow-1">
+        <h6 class="fw-bold mb-1" style="font-size: 0.95rem;">Panduan Impor Data Pegawai</h6>
+        <p class="mb-2 small" style="font-size: 0.82rem; line-height: 1.4;">
+          Pastikan berkas Excel Anda menggunakan format kolom standar sistem. Kolom wajib: <strong>NIP</strong> dan <strong>Nama Lengkap</strong>. Format berkas yang didukung: <code>.xlsx</code>, <code>.xls</code>, atau <code>.csv</code>.
+        </p>
+        <div class="d-flex flex-wrap gap-2">
+          <a id="btn-download-template" href="#" class="btn btn-sm btn-outline-primary shadow-sm bg-white d-inline-flex align-items-center gap-1">
+            <i class="fa-solid fa-file-excel text-success"></i>
+            <span>Unduh Template Resmi (.xls)</span>
+          </a>
+          <a href="assets/files/CONTOH_IMPORT_DATA.xls" download="CONTOH_IMPORT_DATA.xls" class="btn btn-sm btn-outline-secondary shadow-sm bg-white d-inline-flex align-items-center gap-1">
+            <i class="fa-regular fa-file-excel text-muted"></i>
+            <span>Unduh Format Contoh Lama (.xls)</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Import -->
+    <form id="form-import-pegawai" enctype="multipart/form-data">
+      <!-- Area Dropzone / Upload -->
+      <div class="mb-3">
+        <label class="form-label small fw-semibold text-secondary mb-1">Pilih Berkas Spreadsheet</label>
+        <div class="dropzone-box" id="dropzone-area">
+          <input type="file" id="input-file-excel" name="file_excel" accept=".xlsx, .xls, .csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, text/csv" class="d-none">
+          <div id="dropzone-content">
+            <i class="fa-solid fa-cloud-arrow-up fs-1 text-primary mb-2"></i>
+            <p class="mb-1 fw-bold text-dark fs-7">Klik untuk memilih berkas atau seret berkas ke sini</p>
+            <span class="text-muted small">Mendukung Microsoft Excel (.xlsx, .xls) atau CSV (Maks. 10MB)</span>
+          </div>
+        </div>
+
+        <!-- Preview Berkas Terpilih -->
+        <div id="file-info-box" class="file-preview-card mt-2 d-none align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-file-excel text-success fs-3"></i>
+            <div>
+              <div class="fw-bold text-dark fs-7" id="file-name-label">file.xlsx</div>
+              <div class="text-muted small" id="file-size-label">0 KB</div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-danger" id="btn-remove-file" title="Hapus Berkas">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Opsi Update Duplikat -->
+      <div class="form-check form-switch mb-3 p-2 bg-light rounded border">
+        <input class="form-check-input ms-0 me-2" type="checkbox" id="check-update-if-exists" name="update_if_exists" value="1">
+        <label class="form-check-label small fw-semibold text-dark" for="check-update-if-exists">
+          Perbarui data jika NIP pegawai sudah terdaftar di sistem (Timpa data lama)
+        </label>
+        <div class="text-muted small ps-4">
+          Jika tidak dicentang, baris dengan NIP yang sudah ada akan otomatis dilewati.
+        </div>
+      </div>
+
+      <!-- Container Hasil / Feedback -->
+      <div id="import-result-container" class="d-none mb-3">
+        <!-- Diinjeksi via JS -->
+      </div>
+
+      <!-- Modal Footer Aksi -->
+      <div class="d-flex justify-content-end align-items-center gap-2 pt-2 border-top">
+        <button type="button" class="btn btn-sm btn-light border px-3" id="btn-batal-import">
+          Tutup
+        </button>
+        <button type="submit" class="btn btn-sm btn-success px-4 d-inline-flex align-items-center gap-2" id="btn-submit-import">
+          <i class="fas fa-file-import"></i>
+          <span>Mulai Impor</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</template>

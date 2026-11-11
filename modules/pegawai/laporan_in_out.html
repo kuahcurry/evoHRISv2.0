@@ -1,0 +1,174 @@
+<style>
+  .report-page-header {
+    background: #fff;
+    border-radius: 0.5rem;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    margin-bottom: 1.25rem;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  .report-filter-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .metric-card {
+    background: #fff;
+    border-radius: 0.5rem;
+    border: 1px solid #e2e8f0;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+  .metric-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .metric-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+  }
+</style>
+
+<script type="module">
+  console.log('Laporan Data In and Out SDM module ready');
+</script>
+
+<template>
+  <div class="container-fluid p-0">
+    <div class="report-page-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div>
+        <h4 class="mb-1 text-dark fw-bold"><i class="fas fa-exchange-alt text-primary me-2"></i>Laporan Data In and Out SDM</h4>
+        <p class="text-muted small mb-0">Rekapitulasi keluar masuk tenaga kerja, mutasi, dan pertumbuhan SDM Rumah Sakit</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm" id="btn-print-lap" onclick="window.print()">
+          <i class="fas fa-print me-1"></i> Cetak
+        </button>
+        <button class="btn btn-success btn-sm" id="btn-excel-lap">
+          <i class="fas fa-file-excel me-1"></i> Export Excel
+        </button>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-md-4">
+        <div class="metric-card border-start border-4 border-success">
+          <div class="metric-label">Pegawai Masuk (In)</div>
+          <div class="metric-value text-success mt-1" id="val-in">12</div>
+          <div class="small text-muted mt-1"><i class="fas fa-arrow-up text-success me-1"></i>Rekrutmen baru periode terpilih</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="metric-card border-start border-4 border-danger">
+          <div class="metric-label">Pegawai Keluar (Out)</div>
+          <div class="metric-value text-danger mt-1" id="val-out">3</div>
+          <div class="small text-muted mt-1"><i class="fas fa-arrow-down text-danger me-1"></i>Resign / pensiun / habis kontrak</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="metric-card border-start border-4 border-primary">
+          <div class="metric-label">Net Pertumbuhan SDM</div>
+          <div class="metric-value text-primary mt-1" id="val-net">+9</div>
+          <div class="small text-muted mt-1"><i class="fas fa-user-check text-primary me-1"></i>Kenaikan bersih ketenagaan</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-white py-3 border-bottom">
+        <div class="row g-2 align-items-center">
+          <div class="col-md-3">
+            <label class="form-label small fw-bold mb-1">Periode Tahun</label>
+            <select class="form-select form-select-sm" id="filter-tahun">
+              <option value="2026" selected>2026</option>
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-bold mb-1">Status Perpindahan</label>
+            <select class="form-select form-select-sm" id="filter-status">
+              <option value="">Semua (Masuk & Keluar)</option>
+              <option value="IN">Pegawai Masuk (IN)</option>
+              <option value="OUT">Pegawai Keluar (OUT)</option>
+              <option value="MUTASI">Mutasi Internal</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-bold mb-1">Unit / Bagian</label>
+            <input type="text" class="form-control form-control-sm" id="filter-unit" placeholder="Cari nama bagian / unit...">
+          </div>
+          <div class="col-md-2 d-flex align-items-end">
+            <button class="btn btn-primary btn-sm w-100" id="btn-filter-inout">
+              <i class="fas fa-filter me-1"></i> Terapkan
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover table-striped align-middle mb-0" style="font-size: 0.85rem;">
+          <thead class="table-light">
+            <tr>
+              <th class="text-center" style="width: 50px;">No</th>
+              <th>NIP</th>
+              <th>Nama Pegawai</th>
+              <th>Tanggal Efektif</th>
+              <th>Status</th>
+              <th>Unit / Bagian Asal</th>
+              <th>Unit / Bagian Tujuan</th>
+              <th>Keterangan / Alasan</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-inout">
+            <tr>
+              <td class="text-center">1</td>
+              <td>198801152015031002</td>
+              <td><strong class="text-dark">dr. Rian Pratama, Sp.PD</strong></td>
+              <td>01-02-2026</td>
+              <td><span class="badge bg-success"><i class="fas fa-arrow-down me-1"></i>IN (Masuk)</span></td>
+              <td>-</td>
+              <td>Pelayanan Medis Spesialis</td>
+              <td>Rekrutmen Dokter Spesialis Penyakit Dalam</td>
+            </tr>
+            <tr>
+              <td class="text-center">2</td>
+              <td>199204122019022004</td>
+              <td><strong class="text-dark">Siti Aminah, S.Kep., Ns.</strong></td>
+              <td>15-02-2026</td>
+              <td><span class="badge bg-danger"><i class="fas fa-arrow-up me-1"></i>OUT (Keluar)</span></td>
+              <td>Instalasi Rawat Inap</td>
+              <td>-</td>
+              <td>Resign mandiri (Mengikuti keluarga)</td>
+            </tr>
+            <tr>
+              <td class="text-center">3</td>
+              <td>199508212021011003</td>
+              <td><strong class="text-dark">Budi Santoso, A.Md.Farm</strong></td>
+              <td>01-03-2026</td>
+              <td><span class="badge bg-info text-dark"><i class="fas fa-exchange-alt me-1"></i>MUTASI</span></td>
+              <td>Gudang Farmasi</td>
+              <td>Depo Rawat Jalan</td>
+              <td>Rotasi Penyegaran Unit Farmasi</td>
+            </tr>
+            <tr>
+              <td class="text-center">4</td>
+              <td>199811052024012001</td>
+              <td><strong class="text-dark">Dewi Anggraini, S.Kom</strong></td>
+              <td>10-03-2026</td>
+              <td><span class="badge bg-success"><i class="fas fa-arrow-down me-1"></i>IN (Masuk)</span></td>
+              <td>-</td>
+              <td>Instalasi SIM-RS / IT</td>
+              <td>Pengembangan Programmer Backend HRIS</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</template>
