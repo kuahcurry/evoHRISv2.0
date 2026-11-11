@@ -1,0 +1,461 @@
+<style>
+  .table-vmutasi-card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  }
+</style>
+
+<template id="template-vmutasi">
+  <!-- Actions Toolbar -->
+  <div id="vmutasi-actions" class="card mb-3 shadow-none border">
+    <div class="card-body p-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <h5 class="mb-0 text-info fw-bold"><i class="fas fa-random me-2"></i>Mutasi Pegawai</h5>
+        <span class="badge bg-soft-info text-info ms-2" id="vmutasi-total-badge">0 Data</span>
+      </div>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <div class="input-group input-group-sm" style="width: 240px;">
+          <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+          <input type="text" class="form-control form-control-sm border-start-0" id="vmutasi-search" placeholder="Cari NIP, nama, SK, unit...">
+        </div>
+        <button type="button" class="btn btn-sm btn-info text-white" id="btn-tambah-mutasi">
+          <i class="fas fa-plus me-1"></i> Tambah Mutasi
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-refresh-mutasi">
+          <i class="fas fa-sync-alt me-1"></i> Refresh
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-success" id="btn-export-mutasi">
+          <i class="fas fa-file-excel me-1"></i> Ekspor CSV
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Entries Table -->
+  <div id="vmutasi-entries" class="card shadow-sm border table-vmutasi-card">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped table-hover fs--1 mb-0 align-middle" id="table-vmutasi">
+          <thead class="bg-200 text-800 text-uppercase">
+            <tr>
+              <th class="text-center py-2" style="width: 50px;">#</th>
+              <th class="py-2" style="min-width: 140px;">NIP / Pegawai</th>
+              <th class="text-center py-2" style="min-width: 110px;">Tgl Mutasi</th>
+              <th class="py-2" style="min-width: 130px;">No. Surat / SK</th>
+              <th class="py-2" style="min-width: 130px;">Bagian Asal</th>
+              <th class="py-2" style="min-width: 140px;">Bagian Tujuan</th>
+              <th class="py-2" style="min-width: 140px;">Jabatan Tujuan</th>
+              <th class="py-2" style="min-width: 150px;">Keterangan</th>
+              <th class="text-center py-2" style="width: 140px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="list">
+            <tr>
+              <td colspan="9" class="text-center py-4 text-muted">
+                <span class="spinner-border spinner-border-sm me-2"></span>Memuat data mutasi...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card-footer d-flex justify-content-between align-items-center py-2 bg-light border-top">
+      <span class="pagination-info fs--1 text-muted" id="vmutasi-pagination-info">Menampilkan 0 data</span>
+      <ul class="pagination pagination-sm mb-0" id="vmutasi-pagination"></ul>
+    </div>
+  </div>
+
+  <!-- Container Anchor for EvoPopup -->
+  <div id="vmutasi-popup-dialog"></div>
+</template>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+  import { showDialog } from './assets/js/core/helpers.js';
+  import EvoSelector from './components/EvoSelector.js';
+  import EvoPopup from './components/EvoPopup.js';
+
+  const apiUrl = (typeof config !== 'undefined' && config.api_url) 
+    ? config.api_url 
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  let allData = [];
+  let filteredData = [];
+  let refData = { bagian: [], jabatan: [] };
+  let lookupPegawai = [];
+  let currentPage = 1;
+  const rowsPerPage = 10;
+
+  // Web Components
+  let evoPopup = null;
+  let selectorPegawai = null;
+  let selectorBagian = null;
+  let selectorJabatan = null;
+
+  async function loadMasterData() {
+    try {
+      const [refRes, lookupRes] = await Promise.all([
+        httpGet(`${apiUrl}/pegawai/ref_data`),
+        httpGet(`${apiUrl}/pegawai/lookup`)
+      ]);
+
+      if (refRes && refRes.code === 200 && refRes.data) refData = refRes.data;
+      if (lookupRes && lookupRes.code === 200 && Array.isArray(lookupRes.data)) lookupPegawai = lookupRes.data;
+    } catch (e) {
+      console.warn('Gagal memuat master data mutasi:', e);
+    }
+  }
+
+  async function loadData() {
+    const tableBody = document.querySelector('#table-vmutasi tbody.list');
+    if (tableBody) {
+      tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data mutasi...</td></tr>';
+    }
+
+    try {
+      const res = await httpGet(`${apiUrl}/pegawai/mutasi`);
+      allData = (res && res.code === 200 && Array.isArray(res.data)) ? res.data : [];
+    } catch (err) {
+      console.error('Error loadData mutasi:', err);
+      allData = [];
+    }
+
+    applyFilter();
+  }
+
+  function applyFilter() {
+    const searchInput = document.getElementById('vmutasi-search');
+    const q = (searchInput ? searchInput.value : '').toLowerCase().trim();
+
+    if (!q) {
+      filteredData = [...allData];
+    } else {
+      filteredData = allData.filter(item => {
+        return (
+          (item.NIP && item.NIP.toLowerCase().includes(q)) ||
+          (item.NAMA && item.NAMA.toLowerCase().includes(q)) ||
+          (item.NO_SURAT && item.NO_SURAT.toLowerCase().includes(q)) ||
+          (item.BAGIAN_ASAL && item.BAGIAN_ASAL.toLowerCase().includes(q)) ||
+          (item.BAGIAN_BARU && item.BAGIAN_BARU.toLowerCase().includes(q)) ||
+          (item.JABATAN_BARU && item.JABATAN_BARU.toLowerCase().includes(q))
+        );
+      });
+    }
+
+    currentPage = 1;
+    renderTable();
+  }
+
+  function renderTable() {
+    const tableBody = document.querySelector('#table-vmutasi tbody.list');
+    const badge = document.getElementById('vmutasi-total-badge');
+    const pagInfo = document.getElementById('vmutasi-pagination-info');
+    const pagList = document.getElementById('vmutasi-pagination');
+
+    if (badge) badge.textContent = `${filteredData.length} Data`;
+    if (!tableBody) return;
+
+    if (filteredData.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">Belum ada data mutasi pegawai</td></tr>';
+      if (pagInfo) pagInfo.textContent = 'Menampilkan 0 data';
+      if (pagList) pagList.innerHTML = '';
+      return;
+    }
+
+    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const startIdx = (currentPage - 1) * rowsPerPage;
+    const endIdx = Math.min(startIdx + rowsPerPage, filteredData.length);
+    const pageItems = filteredData.slice(startIdx, endIdx);
+
+    let html = '';
+    pageItems.forEach((row, i) => {
+      const no = startIdx + i + 1;
+      const tgl = row.TGL_MUTASI ? row.TGL_MUTASI.substring(0, 10) : '-';
+      const idVal = row.KD_MUTASI_DARI || row.ID_MUTASI || '';
+
+      html += `
+        <tr>
+          <td class="text-center fw-semi-bold">${no}</td>
+          <td>
+            <div class="fw-bold text-dark">${row.NAMA || '-'}</div>
+            <div class="text-muted small">NIP: ${row.NIP || '-'}</div>
+          </td>
+          <td class="text-center">${tgl}</td>
+          <td><span class="badge bg-light text-dark border">${row.NO_SURAT || '-'}</span></td>
+          <td>${row.BAGIAN_ASAL || '<span class="text-muted">-</span>'}</td>
+          <td class="text-info fw-semi-bold">${row.BAGIAN_BARU || '-'}</td>
+          <td>${row.JABATAN_BARU || '-'}</td>
+          <td class="small text-muted">${row.KETERANGAN || '-'}</td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-outline-info btn-edit-row py-1 px-2 me-1" data-id="${idVal}">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger btn-delete-row py-1 px-2" data-id="${idVal}">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    tableBody.innerHTML = html;
+
+    if (pagInfo) {
+      pagInfo.textContent = `Menampilkan ${startIdx + 1} - ${endIdx} dari ${filteredData.length} data`;
+    }
+
+    renderPagination(totalPages);
+    attachRowActions();
+  }
+
+  function renderPagination(totalPages) {
+    const pagList = document.getElementById('vmutasi-pagination');
+    if (!pagList) return;
+
+    if (totalPages <= 1) {
+      pagList.innerHTML = '';
+      return;
+    }
+
+    let pHtml = `
+      <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+        <a class="page-link" href="#" data-page="${currentPage - 1}">&laquo;</a>
+      </li>
+    `;
+
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)) {
+        pHtml += `
+          <li class="page-item ${p === currentPage ? 'active' : ''}">
+            <a class="page-link" href="#" data-page="${p}">${p}</a>
+          </li>
+        `;
+      } else if (p === currentPage - 2 || p === currentPage + 2) {
+        pHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      }
+    }
+
+    pHtml += `
+      <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+        <a class="page-link" href="#" data-page="${currentPage + 1}">&raquo;</a>
+      </li>
+    `;
+
+    pagList.innerHTML = pHtml;
+
+    pagList.querySelectorAll('a.page-link').forEach(a => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const p = parseInt(a.getAttribute('data-page'));
+        if (p && p >= 1 && p <= totalPages && p !== currentPage) {
+          currentPage = p;
+          renderTable();
+        }
+      });
+    });
+  }
+
+  function attachRowActions() {
+    document.querySelectorAll('#table-vmutasi .btn-edit-row').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idVal = btn.getAttribute('data-id');
+        const item = allData.find(d => (d.KD_MUTASI_DARI == idVal || d.ID_MUTASI == idVal));
+        if (item) openFormPopup('edit', item);
+      });
+    });
+
+    document.querySelectorAll('#table-vmutasi .btn-delete-row').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idVal = btn.getAttribute('data-id');
+        confirmDelete(idVal);
+      });
+    });
+  }
+
+  function openFormPopup(mode, data = null) {
+    if (!evoPopup) {
+      evoPopup = new EvoPopup('vmutasi-popup-dialog');
+    }
+
+    const title = mode === 'edit' 
+      ? '<i class="fas fa-edit text-info me-2"></i>Edit Data Mutasi' 
+      : '<i class="fas fa-random text-info me-2"></i>Form Mutasi Pegawai';
+
+    const formHtml = `
+      <form id="form-mutasi-modal" class="p-2">
+        <input type="hidden" id="mutasi_kd_mutasi_dari" value="${data ? (data.KD_MUTASI_DARI || data.ID_MUTASI || '') : ''}">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-bold small">Pilih Pegawai <span class="text-danger">*</span></label>
+            <select id="sel_pegawai_mutasi" class="form-select form-select-sm" required></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small">Tgl Mutasi <span class="text-danger">*</span></label>
+            <input type="date" class="form-control form-control-sm" id="mutasi_tgl" value="${data ? (data.TGL_MUTASI ? data.TGL_MUTASI.substring(0, 10) : '') : ''}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small">Nomor Surat / SK</label>
+            <input type="text" class="form-control form-control-sm" id="mutasi_no_surat" value="${data ? (data.NO_SURAT || '') : ''}" placeholder="Nomor surat / SK mutasi">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small">Bagian Tujuan / Baru <span class="text-danger">*</span></label>
+            <select id="sel_bagian_mutasi" class="form-select form-select-sm" required></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small">Jabatan Baru (Opsional)</label>
+            <select id="sel_jabatan_mutasi" class="form-select form-select-sm"></select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-bold small">Keterangan / Keperluan Mutasi</label>
+            <textarea class="form-control form-control-sm" id="mutasi_keterangan" rows="3" placeholder="Alasan mutasi unit kerja...">${data ? (data.KETERANGAN || '') : ''}</textarea>
+          </div>
+        </div>
+      </form>
+    `;
+
+    evoPopup.open({
+      size: 'large'
+    }, {
+      title: title,
+      content: formHtml,
+      buttons: [
+        {
+          label: 'Batal',
+          class: 'btn-secondary btn-sm',
+          onClick: () => evoPopup.close()
+        },
+        {
+          label: '<i class="fas fa-save me-1"></i> Simpan',
+          class: 'btn-info text-white btn-sm',
+          onClick: () => saveMutasi()
+        }
+      ]
+    });
+
+    setTimeout(() => {
+      selectorPegawai = new EvoSelector('sel_pegawai_mutasi');
+      const optPegawai = lookupPegawai.map(p => ({
+        text: `[${p.NIP || '-'}] ${p.NAMA || '-'}`,
+        value: p.ID_PEGAWAI
+      }));
+      selectorPegawai.addOptions(optPegawai);
+      if (data && data.ID_PEGAWAI) {
+        const el = document.getElementById('sel_pegawai_mutasi');
+        if (el) el.value = data.ID_PEGAWAI;
+      }
+
+      selectorBagian = new EvoSelector('sel_bagian_mutasi');
+      const optBagian = (refData.bagian || []).map(b => ({
+        text: b.BAGIAN,
+        value: b.KD_BAGIAN
+      }));
+      selectorBagian.addOptions(optBagian);
+      if (data && data.KD_BAGIAN_BARU) {
+        const el = document.getElementById('sel_bagian_mutasi');
+        if (el) el.value = data.KD_BAGIAN_BARU;
+      }
+
+      selectorJabatan = new EvoSelector('sel_jabatan_mutasi');
+      const optJabatan = (refData.jabatan || []).map(j => ({
+        text: j.JABATAN,
+        value: j.KD_JABATAN
+      }));
+      selectorJabatan.addOptions(optJabatan);
+      if (data && data.KD_JABATAN_BARU) {
+        const el = document.getElementById('sel_jabatan_mutasi');
+        if (el) el.value = data.KD_JABATAN_BARU;
+      }
+    }, 100);
+  }
+
+  async function saveMutasi() {
+    const idPegawai = document.getElementById('sel_pegawai_mutasi')?.value;
+    const tgl = document.getElementById('mutasi_tgl')?.value;
+    const noSurat = document.getElementById('mutasi_no_surat')?.value;
+    const kdBagian = document.getElementById('sel_bagian_mutasi')?.value;
+    const kdJabatan = document.getElementById('sel_jabatan_mutasi')?.value;
+    const ket = document.getElementById('mutasi_keterangan')?.value;
+    const kdMutasi = document.getElementById('mutasi_kd_mutasi_dari')?.value;
+
+    if (!idPegawai) {
+      alert('Pilih pegawai terlebih dahulu!');
+      return;
+    }
+    if (!tgl) {
+      alert('Tanggal mutasi wajib diisi!');
+      return;
+    }
+    if (!kdBagian) {
+      alert('Pilih bagian tujuan terlebih dahulu!');
+      return;
+    }
+
+    const payload = {
+      KD_MUTASI_DARI: kdMutasi || '',
+      ID_PEGAWAI: idPegawai,
+      TGL_MUTASI: tgl,
+      NO_SURAT: noSurat,
+      KD_BAGIAN_BARU: kdBagian,
+      KD_JABATAN_BARU: kdJabatan,
+      KETERANGAN: ket
+    };
+
+    try {
+      const res = await httpPost(`${apiUrl}/pegawai/mutasi/save`, payload);
+      if (res && res.code === 200) {
+        if (evoPopup) evoPopup.close();
+        await loadData();
+      } else {
+        alert(res?.message || 'Gagal menyimpan data mutasi');
+      }
+    } catch (err) {
+      console.error('Error saveMutasi:', err);
+      alert('Terjadi kesalahan koneksi server');
+    }
+  }
+
+  async function confirmDelete(idVal) {
+    if (!confirm('Apakah Anda yakin ingin menghapus data mutasi ini?')) return;
+
+    try {
+      const res = await httpPost(`${apiUrl}/pegawai/mutasi/delete`, { KD_MUTASI_DARI: idVal, ID: idVal });
+      if (res && res.code === 200) {
+        await loadData();
+      } else {
+        alert(res?.message || 'Gagal menghapus data mutasi');
+      }
+    } catch (err) {
+      console.error('Error deleteMutasi:', err);
+      alert('Terjadi kesalahan saat menghapus data');
+    }
+  }
+
+  function exportCSV() {
+    if (filteredData.length === 0) {
+      alert('Tidak ada data untuk diekspor!');
+      return;
+    }
+    let csv = 'No,NIP,Nama,Tgl Mutasi,No Surat,Bagian Asal,Bagian Tujuan,Jabatan Tujuan,Keterangan\n';
+    filteredData.forEach((r, i) => {
+      csv += `"${i+1}","${r.NIP||''}","${r.NAMA||''}","${r.TGL_MUTASI||''}","${r.NO_SURAT||''}","${r.BAGIAN_ASAL||''}","${r.BAGIAN_BARU||''}","${r.JABATAN_BARU||''}","${(r.KETERANGAN||'').replace(/"/g, '""')}"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `Mutasi_Pegawai_${new Date().toISOString().substring(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  document.getElementById('btn-tambah-mutasi')?.addEventListener('click', () => openFormPopup('add'));
+  document.getElementById('btn-refresh-mutasi')?.addEventListener('click', () => loadData());
+  document.getElementById('btn-export-mutasi')?.addEventListener('click', exportCSV);
+  document.getElementById('vmutasi-search')?.addEventListener('input', applyFilter);
+
+  await loadMasterData();
+  await loadData();
+</script>

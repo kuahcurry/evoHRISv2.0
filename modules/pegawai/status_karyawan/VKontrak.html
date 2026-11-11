@@ -1,0 +1,471 @@
+<style>
+  .table-vkontrak-card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  }
+</style>
+
+<template id="template-vkontrak">
+  <!-- Actions Toolbar -->
+  <div id="vkontrak-actions" class="card mb-3 shadow-none border">
+    <div class="card-body p-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <h5 class="mb-0 text-success fw-bold"><i class="fas fa-file-signature me-2"></i>Kontrak Kerja Pegawai</h5>
+        <span class="badge bg-soft-success text-success ms-2" id="vkontrak-total-badge">0 Data</span>
+      </div>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <div class="input-group input-group-sm" style="width: 240px;">
+          <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+          <input type="text" class="form-control form-control-sm border-start-0" id="vkontrak-search" placeholder="Cari NIP, nama, SK, jenis kontrak...">
+        </div>
+        <button type="button" class="btn btn-sm btn-success" id="btn-tambah-kontrak">
+          <i class="fas fa-plus me-1"></i> Tambah Kontrak
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-refresh-kontrak">
+          <i class="fas fa-sync-alt me-1"></i> Refresh
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-success" id="btn-export-kontrak">
+          <i class="fas fa-file-excel me-1"></i> Ekspor CSV
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Entries Table -->
+  <div id="vkontrak-entries" class="card shadow-sm border table-vkontrak-card">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped table-hover fs--1 mb-0 align-middle" id="table-vkontrak">
+          <thead class="bg-200 text-800 text-uppercase">
+            <tr>
+              <th class="text-center py-2" style="width: 50px;">#</th>
+              <th class="py-2" style="min-width: 140px;">NIP / Pegawai</th>
+              <th class="py-2" style="min-width: 130px;">No. Kontrak / SK</th>
+              <th class="py-2" style="min-width: 140px;">Jenis Kontrak</th>
+              <th class="text-center py-2" style="min-width: 110px;">Tgl Mulai</th>
+              <th class="text-center py-2" style="min-width: 110px;">Tgl Selesai</th>
+              <th class="text-center py-2" style="min-width: 110px;">Status Masa</th>
+              <th class="py-2" style="min-width: 150px;">Keterangan</th>
+              <th class="text-center py-2" style="width: 140px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="list">
+            <tr>
+              <td colspan="9" class="text-center py-4 text-muted">
+                <span class="spinner-border spinner-border-sm me-2"></span>Memuat data kontrak...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card-footer d-flex justify-content-between align-items-center py-2 bg-light border-top">
+      <span class="pagination-info fs--1 text-muted" id="vkontrak-pagination-info">Menampilkan 0 data</span>
+      <ul class="pagination pagination-sm mb-0" id="vkontrak-pagination"></ul>
+    </div>
+  </div>
+
+  <!-- Container Anchor for EvoPopup -->
+  <div id="vkontrak-popup-dialog"></div>
+</template>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+  import { showDialog } from './assets/js/core/helpers.js';
+  import EvoSelector from './components/EvoSelector.js';
+  import EvoPopup from './components/EvoPopup.js';
+
+  const apiUrl = (typeof config !== 'undefined' && config.api_url) 
+    ? config.api_url 
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  let allData = [];
+  let filteredData = [];
+  let refData = { jenis_kontrak: [] };
+  let lookupPegawai = [];
+  let currentPage = 1;
+  const rowsPerPage = 10;
+
+  // Web Components
+  let evoPopup = null;
+  let selectorPegawai = null;
+  let selectorJenisKontrak = null;
+
+  async function loadMasterData() {
+    try {
+      const [refRes, lookupRes] = await Promise.all([
+        httpGet(`${apiUrl}/pegawai/ref_data`),
+        httpGet(`${apiUrl}/pegawai/lookup`)
+      ]);
+
+      if (refRes && refRes.code === 200 && refRes.data) refData = refRes.data;
+      if (lookupRes && lookupRes.code === 200 && Array.isArray(lookupRes.data)) lookupPegawai = lookupRes.data;
+    } catch (e) {
+      console.warn('Gagal memuat master data kontrak:', e);
+    }
+  }
+
+  async function loadData() {
+    const tableBody = document.querySelector('#table-vkontrak tbody.list');
+    if (tableBody) {
+      tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data kontrak...</td></tr>';
+    }
+
+    try {
+      const res = await httpGet(`${apiUrl}/pegawai/kontrak`);
+      allData = (res && res.code === 200 && Array.isArray(res.data)) ? res.data : [];
+    } catch (err) {
+      console.error('Error loadData kontrak:', err);
+      allData = [];
+    }
+
+    applyFilter();
+  }
+
+  function applyFilter() {
+    const searchInput = document.getElementById('vkontrak-search');
+    const q = (searchInput ? searchInput.value : '').toLowerCase().trim();
+
+    if (!q) {
+      filteredData = [...allData];
+    } else {
+      filteredData = allData.filter(item => {
+        return (
+          (item.NIP && item.NIP.toLowerCase().includes(q)) ||
+          (item.NAMA && item.NAMA.toLowerCase().includes(q)) ||
+          (item.NO_SURAT && item.NO_SURAT.toLowerCase().includes(q)) ||
+          (item.JENIS_KONTRAK && item.JENIS_KONTRAK.toLowerCase().includes(q)) ||
+          (item.KETERANGAN && item.KETERANGAN.toLowerCase().includes(q))
+        );
+      });
+    }
+
+    currentPage = 1;
+    renderTable();
+  }
+
+  function getStatusMasa(sampaiStr) {
+    if (!sampaiStr) return '<span class="badge bg-secondary">Tidak Ditentukan</span>';
+    const now = new Date();
+    now.setHours(0,0,0,0);
+    const end = new Date(sampaiStr);
+    if (isNaN(end.getTime())) return '<span class="badge bg-light text-dark">-</span>';
+    
+    const diffDays = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+    if (diffDays < 0) {
+      return '<span class="badge bg-danger">Habis</span>';
+    } else if (diffDays <= 30) {
+      return `<span class="badge bg-warning text-dark">&le; ${diffDays} Hari</span>`;
+    } else {
+      return '<span class="badge bg-success">Aktif</span>';
+    }
+  }
+
+  function renderTable() {
+    const tableBody = document.querySelector('#table-vkontrak tbody.list');
+    const badge = document.getElementById('vkontrak-total-badge');
+    const pagInfo = document.getElementById('vkontrak-pagination-info');
+    const pagList = document.getElementById('vkontrak-pagination');
+
+    if (badge) badge.textContent = `${filteredData.length} Data`;
+    if (!tableBody) return;
+
+    if (filteredData.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">Belum ada data kontrak kerja pegawai</td></tr>';
+      if (pagInfo) pagInfo.textContent = 'Menampilkan 0 data';
+      if (pagList) pagList.innerHTML = '';
+      return;
+    }
+
+    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const startIdx = (currentPage - 1) * rowsPerPage;
+    const endIdx = Math.min(startIdx + rowsPerPage, filteredData.length);
+    const pageItems = filteredData.slice(startIdx, endIdx);
+
+    let html = '';
+    pageItems.forEach((row, i) => {
+      const no = startIdx + i + 1;
+      const mulai = row.TGL_KONTRAK_MULAI ? row.TGL_KONTRAK_MULAI.substring(0, 10) : '-';
+      const sampai = row.TGL_KONTRAK_SAMPAI ? row.TGL_KONTRAK_SAMPAI.substring(0, 10) : '-';
+      const statusBadge = getStatusMasa(row.TGL_KONTRAK_SAMPAI);
+      const idVal = row.KD_KONTRAK || row.ID_KONTRAK || '';
+
+      html += `
+        <tr>
+          <td class="text-center fw-semi-bold">${no}</td>
+          <td>
+            <div class="fw-bold text-dark">${row.NAMA || '-'}</div>
+            <div class="text-muted small">NIP: ${row.NIP || '-'}</div>
+          </td>
+          <td><span class="badge bg-light text-dark border">${row.NO_SURAT || '-'}</span></td>
+          <td class="text-success fw-semi-bold">${row.JENIS_KONTRAK || '-'}</td>
+          <td class="text-center">${mulai}</td>
+          <td class="text-center">${sampai}</td>
+          <td class="text-center">${statusBadge}</td>
+          <td class="small text-muted">${row.KETERANGAN || '-'}</td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-outline-success btn-edit-row py-1 px-2 me-1" data-id="${idVal}">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger btn-delete-row py-1 px-2" data-id="${idVal}">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    tableBody.innerHTML = html;
+
+    if (pagInfo) {
+      pagInfo.textContent = `Menampilkan ${startIdx + 1} - ${endIdx} dari ${filteredData.length} data`;
+    }
+
+    renderPagination(totalPages);
+    attachRowActions();
+  }
+
+  function renderPagination(totalPages) {
+    const pagList = document.getElementById('vkontrak-pagination');
+    if (!pagList) return;
+
+    if (totalPages <= 1) {
+      pagList.innerHTML = '';
+      return;
+    }
+
+    let pHtml = `
+      <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+        <a class="page-link" href="#" data-page="${currentPage - 1}">&laquo;</a>
+      </li>
+    `;
+
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)) {
+        pHtml += `
+          <li class="page-item ${p === currentPage ? 'active' : ''}">
+            <a class="page-link" href="#" data-page="${p}">${p}</a>
+          </li>
+        `;
+      } else if (p === currentPage - 2 || p === currentPage + 2) {
+        pHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      }
+    }
+
+    pHtml += `
+      <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+        <a class="page-link" href="#" data-page="${currentPage + 1}">&raquo;</a>
+      </li>
+    `;
+
+    pagList.innerHTML = pHtml;
+
+    pagList.querySelectorAll('a.page-link').forEach(a => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const p = parseInt(a.getAttribute('data-page'));
+        if (p && p >= 1 && p <= totalPages && p !== currentPage) {
+          currentPage = p;
+          renderTable();
+        }
+      });
+    });
+  }
+
+  function attachRowActions() {
+    document.querySelectorAll('#table-vkontrak .btn-edit-row').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idVal = btn.getAttribute('data-id');
+        const item = allData.find(d => (d.KD_KONTRAK == idVal || d.ID_KONTRAK == idVal));
+        if (item) openFormPopup('edit', item);
+      });
+    });
+
+    document.querySelectorAll('#table-vkontrak .btn-delete-row').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idVal = btn.getAttribute('data-id');
+        confirmDelete(idVal);
+      });
+    });
+  }
+
+  function openFormPopup(mode, data = null) {
+    if (!evoPopup) {
+      evoPopup = new EvoPopup('vkontrak-popup-dialog');
+    }
+
+    const title = mode === 'edit' 
+      ? '<i class="fas fa-edit text-success me-2"></i>Edit Data Kontrak' 
+      : '<i class="fas fa-file-signature text-success me-2"></i>Form Kontrak Kerja Pegawai';
+
+    const formHtml = `
+      <form id="form-kontrak-modal" class="p-2">
+        <input type="hidden" id="kontrak_kd_kontrak" value="${data ? (data.KD_KONTRAK || data.ID_KONTRAK || '') : ''}">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-bold small">Pilih Pegawai <span class="text-danger">*</span></label>
+            <select id="sel_pegawai_kontrak" class="form-select form-select-sm" required></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small">Nomor Kontrak / SK <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm" id="kontrak_no_surat" value="${data ? (data.NO_SURAT || '') : ''}" placeholder="Nomor surat / SK kontrak" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small">Jenis Kontrak <span class="text-danger">*</span></label>
+            <select id="sel_jenis_kontrak" class="form-select form-select-sm" required></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small">Tgl Mulai Kontrak <span class="text-danger">*</span></label>
+            <input type="date" class="form-control form-control-sm" id="kontrak_tgl_mulai" value="${data ? (data.TGL_KONTRAK_MULAI ? data.TGL_KONTRAK_MULAI.substring(0, 10) : '') : ''}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold small">Tgl Selesai Kontrak <span class="text-danger">*</span></label>
+            <input type="date" class="form-control form-control-sm" id="kontrak_tgl_sampai" value="${data ? (data.TGL_KONTRAK_SAMPAI ? data.TGL_KONTRAK_SAMPAI.substring(0, 10) : '') : ''}" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-bold small">Keterangan / Klausul Khusus</label>
+            <textarea class="form-control form-control-sm" id="kontrak_keterangan" rows="3" placeholder="Klausul khusus atau catatan masa evaluasi...">${data ? (data.KETERANGAN || '') : ''}</textarea>
+          </div>
+        </div>
+      </form>
+    `;
+
+    evoPopup.open({
+      size: 'large'
+    }, {
+      title: title,
+      content: formHtml,
+      buttons: [
+        {
+          label: 'Batal',
+          class: 'btn-secondary btn-sm',
+          onClick: () => evoPopup.close()
+        },
+        {
+          label: '<i class="fas fa-save me-1"></i> Simpan Kontrak',
+          class: 'btn-success btn-sm',
+          onClick: () => saveKontrak()
+        }
+      ]
+    });
+
+    setTimeout(() => {
+      selectorPegawai = new EvoSelector('sel_pegawai_kontrak');
+      const optPegawai = lookupPegawai.map(p => ({
+        text: `[${p.NIP || '-'}] ${p.NAMA || '-'}`,
+        value: p.ID_PEGAWAI
+      }));
+      selectorPegawai.addOptions(optPegawai);
+      if (data && data.ID_PEGAWAI) {
+        const el = document.getElementById('sel_pegawai_kontrak');
+        if (el) el.value = data.ID_PEGAWAI;
+      }
+
+      selectorJenisKontrak = new EvoSelector('sel_jenis_kontrak');
+      const optKontrak = (refData.jenis_kontrak || []).map(k => ({
+        text: k.JENIS_KONTRAK,
+        value: k.KD_JENIS_KONTRAK
+      }));
+      selectorJenisKontrak.addOptions(optKontrak);
+      if (data && data.KD_JENIS_KONTRAK) {
+        const el = document.getElementById('sel_jenis_kontrak');
+        if (el) el.value = data.KD_JENIS_KONTRAK;
+      }
+    }, 100);
+  }
+
+  async function saveKontrak() {
+    const idPegawai = document.getElementById('sel_pegawai_kontrak')?.value;
+    const noSurat = document.getElementById('kontrak_no_surat')?.value;
+    const kdJenis = document.getElementById('sel_jenis_kontrak')?.value;
+    const tglMulai = document.getElementById('kontrak_tgl_mulai')?.value;
+    const tglSampai = document.getElementById('kontrak_tgl_sampai')?.value;
+    const ket = document.getElementById('kontrak_keterangan')?.value;
+    const kdKontrak = document.getElementById('kontrak_kd_kontrak')?.value;
+
+    if (!idPegawai) {
+      alert('Pilih pegawai terlebih dahulu!');
+      return;
+    }
+    if (!noSurat) {
+      alert('Nomor kontrak / SK wajib diisi!');
+      return;
+    }
+    if (!kdJenis) {
+      alert('Pilih jenis kontrak!');
+      return;
+    }
+    if (!tglMulai || !tglSampai) {
+      alert('Tanggal mulai dan selesai kontrak wajib diisi!');
+      return;
+    }
+
+    const payload = {
+      KD_KONTRAK: kdKontrak || '',
+      ID_PEGAWAI: idPegawai,
+      NO_SURAT: noSurat,
+      KD_JENIS_KONTRAK: kdJenis,
+      TGL_KONTRAK_MULAI: tglMulai,
+      TGL_KONTRAK_SAMPAI: tglSampai,
+      KETERANGAN: ket
+    };
+
+    try {
+      const res = await httpPost(`${apiUrl}/pegawai/kontrak/save`, payload);
+      if (res && res.code === 200) {
+        if (evoPopup) evoPopup.close();
+        await loadData();
+      } else {
+        alert(res?.message || 'Gagal menyimpan data kontrak');
+      }
+    } catch (err) {
+      console.error('Error saveKontrak:', err);
+      alert('Terjadi kesalahan koneksi server');
+    }
+  }
+
+  async function confirmDelete(idVal) {
+    if (!confirm('Apakah Anda yakin ingin menghapus data kontrak ini?')) return;
+
+    try {
+      const res = await httpPost(`${apiUrl}/pegawai/kontrak/delete`, { KD_KONTRAK: idVal, ID: idVal });
+      if (res && res.code === 200) {
+        await loadData();
+      } else {
+        alert(res?.message || 'Gagal menghapus data kontrak');
+      }
+    } catch (err) {
+      console.error('Error deleteKontrak:', err);
+      alert('Terjadi kesalahan saat menghapus data');
+    }
+  }
+
+  function exportCSV() {
+    if (filteredData.length === 0) {
+      alert('Tidak ada data untuk diekspor!');
+      return;
+    }
+    let csv = 'No,NIP,Nama,No Surat,Jenis Kontrak,Tgl Mulai,Tgl Selesai,Keterangan\n';
+    filteredData.forEach((r, i) => {
+      csv += `"${i+1}","${r.NIP||''}","${r.NAMA||''}","${r.NO_SURAT||''}","${r.JENIS_KONTRAK||''}","${r.TGL_KONTRAK_MULAI||''}","${r.TGL_KONTRAK_SAMPAI||''}","${(r.KETERANGAN||'').replace(/"/g, '""')}"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `Kontrak_Pegawai_${new Date().toISOString().substring(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  document.getElementById('btn-tambah-kontrak')?.addEventListener('click', () => openFormPopup('add'));
+  document.getElementById('btn-refresh-kontrak')?.addEventListener('click', () => loadData());
+  document.getElementById('btn-export-kontrak')?.addEventListener('click', exportCSV);
+  document.getElementById('vkontrak-search')?.addEventListener('input', applyFilter);
+
+  await loadMasterData();
+  await loadData();
+</script>

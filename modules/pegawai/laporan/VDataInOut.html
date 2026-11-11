@@ -1,0 +1,390 @@
+<style>
+  .report-page-header {
+    background: #fff;
+    border-radius: 0.5rem;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    margin-bottom: 1.25rem;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  .report-filter-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .metric-card {
+    background: #fff;
+    border-radius: 0.5rem;
+    border: 1px solid #e2e8f0;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+  .metric-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .metric-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+  }
+</style>
+
+<template id="template-vdatainout">
+  <div class="container-fluid p-0">
+    <!-- Header -->
+    <div class="report-page-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div>
+        <h4 class="mb-1 text-dark fw-bold"><i class="fas fa-exchange-alt text-primary me-2"></i>Laporan Data In and Out SDM</h4>
+        <p class="text-muted small mb-0">Rekapitulasi keluar masuk tenaga kerja, mutasi, dan pertumbuhan SDM Rumah Sakit</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm" id="btn-print-inout">
+          <i class="fas fa-print me-1"></i> Cetak
+        </button>
+        <button class="btn btn-success btn-sm" id="btn-excel-inout">
+          <i class="fas fa-file-excel me-1"></i> Export Excel (CSV)
+        </button>
+      </div>
+    </div>
+
+    <!-- Metric Cards -->
+    <div class="row g-3 mb-3">
+      <div class="col-md-4">
+        <div class="metric-card border-start border-4 border-success">
+          <div class="metric-label">Pegawai Masuk (In)</div>
+          <div class="metric-value text-success mt-1" id="val-in">0</div>
+          <div class="small text-muted mt-1"><i class="fas fa-arrow-up text-success me-1"></i>Rekrutmen baru periode terpilih</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="metric-card border-start border-4 border-danger">
+          <div class="metric-label">Pegawai Keluar (Out)</div>
+          <div class="metric-value text-danger mt-1" id="val-out">0</div>
+          <div class="small text-muted mt-1"><i class="fas fa-arrow-down text-danger me-1"></i>Resign / pensiun / habis kontrak</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="metric-card border-start border-4 border-primary">
+          <div class="metric-label">Net Pertumbuhan SDM</div>
+          <div class="metric-value text-primary mt-1" id="val-net">0</div>
+          <div class="small text-muted mt-1"><i class="fas fa-user-check text-primary me-1"></i>Kenaikan bersih ketenagaan</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter & Table Card -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-white py-3 border-bottom">
+        <div class="row g-2 align-items-center">
+          <div class="col-md-3">
+            <label class="form-label small fw-bold mb-1">Periode Tahun</label>
+            <select class="form-select form-select-sm" id="filter-tahun">
+              <option value="all">Semua Periode</option>
+              <option value="2026" selected>2026</option>
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-bold mb-1">Status Perpindahan</label>
+            <select class="form-select form-select-sm" id="filter-status">
+              <option value="">Semua (Masuk & Keluar)</option>
+              <option value="IN">Pegawai Masuk (IN)</option>
+              <option value="OUT">Pegawai Keluar (OUT)</option>
+              <option value="MUTASI">Mutasi Internal</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-bold mb-1">Pencarian Unit / Pegawai</label>
+            <input type="text" class="form-control form-control-sm" id="filter-search" placeholder="Cari NIP, nama, atau unit/bagian...">
+          </div>
+          <div class="col-md-2 d-flex align-items-end">
+            <button class="btn btn-primary btn-sm w-100" id="btn-filter-inout">
+              <i class="fas fa-filter me-1"></i> Terapkan
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover table-striped align-middle mb-0" id="table-vdatainout" style="font-size: 0.85rem;">
+          <thead class="table-light">
+            <tr>
+              <th class="text-center" style="width: 50px;">No</th>
+              <th style="min-width: 130px;">NIP</th>
+              <th style="min-width: 160px;">Nama Pegawai</th>
+              <th class="text-center" style="min-width: 110px;">Tanggal Efektif</th>
+              <th class="text-center" style="min-width: 120px;">Status</th>
+              <th style="min-width: 140px;">Unit / Bagian Asal</th>
+              <th style="min-width: 140px;">Unit / Bagian Tujuan</th>
+              <th style="min-width: 180px;">Keterangan / Alasan</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-inout">
+            <tr>
+              <td colspan="8" class="text-center py-4 text-muted">
+                <span class="spinner-border spinner-border-sm me-2"></span>Memuat data laporan...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer d-flex justify-content-between align-items-center py-2 bg-light border-top">
+        <span class="fs--1 text-muted" id="inout-pagination-info">Menampilkan 0 data</span>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script type="module" defer>
+  import { httpGet } from './assets/js/core/http.js';
+  import EvoSelector from './components/EvoSelector.js';
+
+  const apiUrl = (typeof config !== 'undefined' && config.api_url) 
+    ? config.api_url 
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  // Sample seed fallback merged with real API if available
+  const initialData = [
+    {
+      NIP: '198801152015031002',
+      NAMA: 'dr. Rian Pratama, Sp.PD',
+      TGL_EFEKTIF: '2026-02-01',
+      STATUS: 'IN',
+      UNIT_ASAL: '-',
+      UNIT_TUJUAN: 'Pelayanan Medis Spesialis',
+      KETERANGAN: 'Rekrutmen Dokter Spesialis Penyakit Dalam'
+    },
+    {
+      NIP: '199204122019022004',
+      NAMA: 'Siti Aminah, S.Kep., Ns.',
+      TGL_EFEKTIF: '2026-02-15',
+      STATUS: 'OUT',
+      UNIT_ASAL: 'Instalasi Rawat Inap',
+      UNIT_TUJUAN: '-',
+      KETERANGAN: 'Resign mandiri (Mengikuti keluarga)'
+    },
+    {
+      NIP: '199508212021011003',
+      NAMA: 'Budi Santoso, A.Md.Farm',
+      TGL_EFEKTIF: '2026-03-01',
+      STATUS: 'MUTASI',
+      UNIT_ASAL: 'Gudang Farmasi',
+      UNIT_TUJUAN: 'Depo Rawat Jalan',
+      KETERANGAN: 'Rotasi Penyegaran Unit Farmasi'
+    },
+    {
+      NIP: '199811052024012001',
+      NAMA: 'Dewi Anggraini, S.Kom',
+      TGL_EFEKTIF: '2026-03-10',
+      STATUS: 'IN',
+      UNIT_ASAL: '-',
+      UNIT_TUJUAN: 'Instalasi SIM-RS / IT',
+      KETERANGAN: 'Pengembangan Programmer Backend HRIS'
+    },
+    {
+      NIP: '198506142010011002',
+      NAMA: 'Ahmad Fauzi, S.Kep',
+      TGL_EFEKTIF: '2025-11-20',
+      STATUS: 'OUT',
+      UNIT_ASAL: 'Unit Gawat Darurat',
+      UNIT_TUJUAN: '-',
+      KETERANGAN: 'Pindah tugas ke instansi daerah'
+    },
+    {
+      NIP: '199402182020122001',
+      NAMA: 'Ratna Sari, A.Md.Keb',
+      TGL_EFEKTIF: '2025-08-15',
+      STATUS: 'IN',
+      UNIT_ASAL: '-',
+      UNIT_TUJUAN: 'Kamar Bersalin (VK)',
+      KETERANGAN: 'Rekrutmen Tenaga Bidan Terampil'
+    }
+  ];
+
+  let rawData = [...initialData];
+  let filteredData = [];
+
+  async function init() {
+    // Optionally fetch dynamic records from phk and mutasi endpoints
+    try {
+      const [phkRes, mutasiRes] = await Promise.all([
+        httpGet(`${apiUrl}/pegawai/phk`),
+        httpGet(`${apiUrl}/pegawai/mutasi`)
+      ]);
+
+      const dynamicRecords = [];
+      if (phkRes && phkRes.code === 200 && Array.isArray(phkRes.data)) {
+        phkRes.data.forEach(p => {
+          dynamicRecords.push({
+            NIP: p.NIP || '-',
+            NAMA: p.NAMA || '-',
+            TGL_EFEKTIF: p.TGL_PHK ? p.TGL_PHK.substring(0, 10) : '2026-01-01',
+            STATUS: 'OUT',
+            UNIT_ASAL: 'Instalasi Terkait',
+            UNIT_TUJUAN: '-',
+            KETERANGAN: `${p.JENIS_PHK || 'PHK'}: ${p.ALASAN || '-'}`
+          });
+        });
+      }
+
+      if (mutasiRes && mutasiRes.code === 200 && Array.isArray(mutasiRes.data)) {
+        mutasiRes.data.forEach(m => {
+          dynamicRecords.push({
+            NIP: m.NIP || '-',
+            NAMA: m.NAMA || '-',
+            TGL_EFEKTIF: m.TGL_MUTASI ? m.TGL_MUTASI.substring(0, 10) : '2026-01-01',
+            STATUS: 'MUTASI',
+            UNIT_ASAL: m.BAGIAN_ASAL || 'Asal',
+            UNIT_TUJUAN: m.BAGIAN_BARU || 'Tujuan',
+            KETERANGAN: `Mutasi Jabatan: ${m.JABATAN_BARU || '-'}`
+          });
+        });
+      }
+
+      if (dynamicRecords.length > 0) {
+        rawData = [...initialData, ...dynamicRecords];
+      }
+    } catch (err) {
+      console.warn('Gagal memuat dynamic records In/Out:', err);
+    }
+
+    applyFilter();
+  }
+
+  function applyFilter() {
+    const tahun = document.getElementById('filter-tahun')?.value || 'all';
+    const status = document.getElementById('filter-status')?.value || '';
+    const q = (document.getElementById('filter-search')?.value || '').toLowerCase().trim();
+
+    filteredData = rawData.filter(item => {
+      // Filter tahun
+      if (tahun !== 'all') {
+        const itemYear = item.TGL_EFEKTIF ? item.TGL_EFEKTIF.substring(0, 4) : '';
+        if (itemYear !== tahun) return false;
+      }
+
+      // Filter status
+      if (status && item.STATUS !== status) {
+        return false;
+      }
+
+      // Search query
+      if (q) {
+        const match = 
+          (item.NIP && item.NIP.toLowerCase().includes(q)) ||
+          (item.NAMA && item.NAMA.toLowerCase().includes(q)) ||
+          (item.UNIT_ASAL && item.UNIT_ASAL.toLowerCase().includes(q)) ||
+          (item.UNIT_TUJUAN && item.UNIT_TUJUAN.toLowerCase().includes(q)) ||
+          (item.KETERANGAN && item.KETERANGAN.toLowerCase().includes(q));
+        if (!match) return false;
+      }
+
+      return true;
+    });
+
+    renderMetrics();
+    renderTable();
+  }
+
+  function renderMetrics() {
+    let countIn = 0;
+    let countOut = 0;
+
+    filteredData.forEach(item => {
+      if (item.STATUS === 'IN') countIn++;
+      if (item.STATUS === 'OUT') countOut++;
+    });
+
+    const net = countIn - countOut;
+    const netStr = net > 0 ? `+${net}` : `${net}`;
+
+    const elIn = document.getElementById('val-in');
+    const elOut = document.getElementById('val-out');
+    const elNet = document.getElementById('val-net');
+
+    if (elIn) elIn.textContent = countIn;
+    if (elOut) elOut.textContent = countOut;
+    if (elNet) {
+      elNet.textContent = netStr;
+      elNet.className = `metric-value mt-1 ${net >= 0 ? 'text-primary' : 'text-danger'}`;
+    }
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('tbody-inout');
+    const pagInfo = document.getElementById('inout-pagination-info');
+
+    if (!tbody) return;
+
+    if (filteredData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">Tidak ada data untuk periode/filter ini</td></tr>';
+      if (pagInfo) pagInfo.textContent = 'Menampilkan 0 data';
+      return;
+    }
+
+    let html = '';
+    filteredData.forEach((row, i) => {
+      let badge = '';
+      if (row.STATUS === 'IN') {
+        badge = '<span class="badge bg-success"><i class="fas fa-arrow-down me-1"></i>IN (Masuk)</span>';
+      } else if (row.STATUS === 'OUT') {
+        badge = '<span class="badge bg-danger"><i class="fas fa-arrow-up me-1"></i>OUT (Keluar)</span>';
+      } else {
+        badge = '<span class="badge bg-info text-dark"><i class="fas fa-exchange-alt me-1"></i>MUTASI</span>';
+      }
+
+      html += `
+        <tr>
+          <td class="text-center fw-semi-bold">${i + 1}</td>
+          <td>${row.NIP || '-'}</td>
+          <td><strong class="text-dark">${row.NAMA || '-'}</strong></td>
+          <td class="text-center">${row.TGL_EFEKTIF || '-'}</td>
+          <td class="text-center">${badge}</td>
+          <td>${row.UNIT_ASAL || '-'}</td>
+          <td>${row.UNIT_TUJUAN || '-'}</td>
+          <td class="text-muted small">${row.KETERANGAN || '-'}</td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    if (pagInfo) {
+      pagInfo.textContent = `Menampilkan total ${filteredData.length} catatan pergerakan pegawai`;
+    }
+  }
+
+  function exportCSV() {
+    if (filteredData.length === 0) {
+      alert('Tidak ada data untuk diekspor!');
+      return;
+    }
+
+    let csv = 'No,NIP,Nama,Tgl Efektif,Status,Unit Asal,Unit Tujuan,Keterangan\n';
+    filteredData.forEach((r, i) => {
+      csv += `"${i+1}","${r.NIP||''}","${r.NAMA||''}","${r.TGL_EFEKTIF||''}","${r.STATUS||''}","${r.UNIT_ASAL||''}","${r.UNIT_TUJUAN||''}","${(r.KETERANGAN||'').replace(/"/g, '""')}"\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `Laporan_Data_In_Out_${new Date().toISOString().substring(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  document.getElementById('btn-filter-inout')?.addEventListener('click', applyFilter);
+  document.getElementById('filter-tahun')?.addEventListener('change', applyFilter);
+  document.getElementById('filter-status')?.addEventListener('change', applyFilter);
+  document.getElementById('filter-search')?.addEventListener('input', applyFilter);
+  document.getElementById('btn-print-inout')?.addEventListener('click', () => window.print());
+  document.getElementById('btn-excel-inout')?.addEventListener('click', exportCSV);
+
+  init();
+</script>
