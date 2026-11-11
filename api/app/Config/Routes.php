@@ -81,6 +81,8 @@ $routes->get('/paramedis/loadPelaksana', 'Paramedis::getParamedisPelaksana');
 $routes->get('/perawat/load', 'Perawat::loadPegawai');
 $routes->get('/pegawai/list', 'Pegawai::getPegawaiUnit');
 $routes->get('/pegawai/lookup', 'Pegawai::getLookup');
+$routes->get('/pegawai/snapshot', 'Pegawai::snapshot');
+$routes->get('/pegawai/snapshot/(:segment)', 'Pegawai::snapshot/$1');
 $routes->get('/pegawai/ref_data', 'Pegawai::getRefData');
 $routes->get('/pegawai/provinsi', 'Pegawai::getProvinsi');
 $routes->get('/pegawai/kabupaten', 'Pegawai::getKabupaten');

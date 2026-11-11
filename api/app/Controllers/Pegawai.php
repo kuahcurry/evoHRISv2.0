@@ -198,6 +198,16 @@ class Pegawai extends BaseController
         return sendResponse(200, $this->mPegawai->getPegawaiLookup());
     }
 
+    public function snapshot($id = null)
+    {
+        $idPegawai = $id ?? $this->request->getGet('id') ?? $this->request->getGet('nip');
+        if (empty($idPegawai)) {
+            return sendResponse(400, null, 'ID atau NIP diperlukan');
+        }
+        $snapshot = $this->mPegawai->getPegawaiSnapshot($idPegawai);
+        return sendResponse(200, $snapshot);
+    }
+
     public function getRefData()
     {
         return sendResponse(200, $this->mPegawai->getRefData());
