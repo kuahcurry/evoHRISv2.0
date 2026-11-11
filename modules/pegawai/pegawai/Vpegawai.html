@@ -72,6 +72,7 @@
 <script type="module">
   import { httpGet, httpPost } from './assets/js/core/http.js';
   import EvoPopup from './components/EvoPopup.js';
+  import EvoSelector from './components/EvoSelector.js';
 
   const apiUrl = (typeof config !== 'undefined' && config.api_url) 
     ? config.api_url 
@@ -360,7 +361,7 @@
       title: '<i class="fas fa-user-plus text-primary me-2"></i>Registrasi Pegawai Baru',
       content: {
         type: 'module',
-        name: 'modules/pegawai/VaddPegawai'
+        name: 'modules/pegawai/pegawai/VaddPegawai'
       }
     });
   }
@@ -382,7 +383,7 @@
         title: '<i class="fa-solid fa-file-excel text-success me-2"></i>Import Data Pegawai',
         content: {
           type: 'module',
-          name: 'modules/pegawai/VimportPegawai'
+          name: 'modules/pegawai/pegawai/VimportPegawai'
         }
       });
     } catch (err) {
@@ -414,7 +415,7 @@
     if (sectionDetail) {
       sectionDetail.classList.remove('d-none');
       if (typeof loadModule === 'function') {
-        loadModule('modules/pegawai/VdetailPegawai', '#container-detail-inline');
+        loadModule('modules/pegawai/pegawai/VdetailPegawai', '#container-detail-inline');
       }
       sectionDetail.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -437,7 +438,7 @@
 
   function bukaCetakRiwayat(id) {
     if (!id) return;
-    window.open(`./modules/pegawai/VcetakRiwayat.html?id=${id}`, '_blank');
+    window.open(`./modules/pegawai/pegawai/VcetakRiwayat.html?id=${id}`, '_blank');
   }
 
   async function konfirmasiHapusPegawai(id, nama) {
