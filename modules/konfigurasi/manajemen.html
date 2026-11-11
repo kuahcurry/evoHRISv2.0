@@ -463,11 +463,17 @@
   };
 
   const bindRouteActions = () => {
-    document.querySelectorAll('.btn-edit-route').forEach(btn => {
+    document.querySelectorAll('#approval-table-body .btn-edit-route').forEach(btn => {
       btn.addEventListener('click', () => {
         const idx = btn.getAttribute('data-idx');
         const r = routeState.data[idx];
         if (!r) return;
+
+        const modalEl = document.getElementById('modal-approval-form');
+        if (!modalEl || !window.bootstrap?.Modal) {
+          alert('Form edit routing belum dapat dibuka. Muat ulang halaman dan coba lagi.');
+          return;
+        }
 
         document.getElementById('modal-approval-title').innerHTML = '<i class="fas fa-edit me-2 text-primary"></i>Edit Routing Approval';
         document.getElementById('form-approval-id').value = r.id_route;
@@ -475,10 +481,7 @@
         document.getElementById('form-appr-atasan1').value = r.nip_atasan;
         document.getElementById('form-appr-level').value = r.level_atasan || 1;
 
-        const modalEl = document.getElementById('modal-approval-form');
-        if (modalEl && window.bootstrap) {
-          bootstrap.Modal.getOrCreateInstance(modalEl).show();
-        }
+        window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
       });
     });
 
@@ -488,7 +491,10 @@
         const name = btn.getAttribute('data-name');
         if (confirm(`Apakah Anda yakin ingin menghapus routing approval untuk "${name}"?`)) {
           try {
-            await httpPost(`${config.api_url}/konfigurasi/approval/delete/${id}`, {});
+            const response = await httpPost(`${config.api_url}/konfigurasi/approval/delete/${id}`, { id });
+            if (!response || Number(response.code) !== 200) {
+              throw new Error(response?.message || response?.status || 'Respons server tidak valid');
+            }
             loadRoutes();
           } catch (err) {
             alert('Gagal menghapus routing: ' + err.message);
@@ -549,10 +555,14 @@
         };
 
         try {
-          await httpPost(`${config.api_url}/konfigurasi/approval/save`, payload);
+          const response = await httpPost(`${config.api_url}/konfigurasi/approval/save`, payload);
+          if (!response || Number(response.code) !== 200) {
+            throw new Error(response?.message || response?.status || 'Respons server tidak valid');
+          }
+
           const modalEl = document.getElementById('modal-approval-form');
-          if (modalEl && window.bootstrap) {
-            bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+          if (modalEl && window.bootstrap?.Modal) {
+            window.bootstrap.Modal.getOrCreateInstance(modalEl).hide();
           }
           loadRoutes();
         } catch (err) {

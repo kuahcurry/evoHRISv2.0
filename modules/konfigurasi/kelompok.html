@@ -279,7 +279,10 @@
         const name = btn.getAttribute('data-name');
         if (confirm(`Apakah Anda yakin ingin menghapus peran "${name}"?`)) {
           try {
-            await httpPost(`${config.api_url}/konfigurasi/roles/delete/${id}`, {});
+            const response = await httpPost(`${config.api_url}/konfigurasi/roles/delete/${id}`, { id });
+            if (!response || Number(response.code) !== 200) {
+              throw new Error(response?.message || response?.status || 'Respons server tidak valid');
+            }
             loadRoles();
           } catch (err) {
             alert('Gagal menghapus peran: ' + err.message);
@@ -379,7 +382,10 @@
         const name = btn.getAttribute('data-name');
         if (confirm(`Apakah Anda yakin ingin menghapus kelompok "${name}"?`)) {
           try {
-            await httpPost(`${config.api_url}/konfigurasi/kelompok/delete/${id}`, {});
+            const response = await httpPost(`${config.api_url}/konfigurasi/kelompok/delete/${id}`, { id });
+            if (!response || Number(response.code) !== 200) {
+              throw new Error(response?.message || response?.status || 'Respons server tidak valid');
+            }
             loadKelompok();
           } catch (err) {
             alert('Gagal menghapus kelompok: ' + err.message);
