@@ -170,6 +170,7 @@ $routes->get('/cPegawai/get_sub_bagian/(:segment)', 'cPegawai::get_sub_bagian/$1
 $routes->match(['get', 'post'], '/cPegawai/cek_pass', 'cPegawai::cek_pass');
 $routes->match(['get', 'post'], '/cPegawai/update_pass', 'cPegawai::update_pass');
 $routes->post('/cPegawai/save_data', 'cPegawai::save_data');
+$routes->match(['get', 'post'], '/cPegawai/simpan_data_pegawai', 'cPegawai::save_data');
 $routes->get('/cPegawai/edit_detail', 'cPegawai::edit_detail');
 $routes->get('/cPegawai/edit_detail/(:segment)', 'cPegawai::edit_detail/$1');
 $routes->post('/cPegawai/update_data_pegawai', 'cPegawai::update_data_pegawai');

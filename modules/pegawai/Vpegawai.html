@@ -83,7 +83,7 @@
     search: '',
     kd_bagian: '',
     kd_jabatan: '',
-    status_aktif: '',
+    status_aktif: 1,
     totalPages: 1,
     totalRecords: 0,
     isLoading: false
@@ -161,6 +161,11 @@
         }
 
         if (rows.length === 0) {
+          if (state.page > 1) {
+            state.isLoading = false;
+            loadData(state.page - 1);
+            return;
+          }
           if (emptyEl) emptyEl.classList.remove('d-none');
           renderPagination();
           return;
@@ -238,10 +243,10 @@
                 <i class="fas fa-edit me-1"></i> Edit
               </button>
               <button type="button" class="btn btn-outline-secondary btn-cetak-pegawai" data-id="${idPeg}" title="Cetak Riwayat Lengkap">
-                <i class="fas fa-print"></i>
+                <i class="fas fa-print"></i> Cetak Riwayat
               </button>
               <button type="button" class="btn btn-outline-danger btn-hapus-pegawai" data-id="${idPeg}" data-nama="${namaLengkap}" title="Hapus Pegawai">
-                <i class="fas fa-trash-alt"></i>
+                <i class="fas fa-trash-alt"></i> Hapus
               </button>
             </div>
           </td>
@@ -528,14 +533,6 @@
       });
     }
 
-    const selAktif = document.getElementById('filter-aktif');
-    if (selAktif) {
-      selAktif.addEventListener('change', (e) => {
-        state.status_aktif = e.target.value;
-        loadData(1);
-      });
-    }
-
     const selLimit = document.getElementById('filter-limit');
     if (selLimit) {
       selLimit.addEventListener('change', (e) => {
@@ -550,11 +547,10 @@
         if (inputSearch) inputSearch.value = '';
         if (selBagian) selBagian.value = '';
         if (selJabatan) selJabatan.value = '';
-        if (selAktif) selAktif.value = '';
         state.search = '';
         state.kd_bagian = '';
         state.kd_jabatan = '';
-        state.status_aktif = '';
+        state.status_aktif = 1;
         loadData(1);
       });
     }
@@ -606,6 +602,7 @@
           </button>
           <button type="button" class="btn btn-sm px-3 py-1 fs-7 d-inline-flex align-items-center gap-2 shadow-sm rounded-2 text-white" id="btn-nav-import-excel" style="background-color: #146c43; border-color: #13653f;">
             <i class="fa-solid fa-file-excel text-white fs-7"></i> Import Excel
+            <i class="fa-regular fa-file-excel text-white fs-7"></i> Import Excel
           </button>
           <button type="button" class="btn btn-sm btn-success px-3 py-1 fs-7 d-inline-flex align-items-center gap-2 shadow-sm rounded-2 text-white" id="btn-nav-export-excel">
             <i class="fa-solid fa-file-excel text-white fs-7"></i> Export Excel
@@ -619,6 +616,7 @@
         <div class="filter-panel p-3 bg-light border-bottom flex-shrink-0">
           <div class="row g-2 align-items-end">
             <div class="col-lg-3 col-md-6">
+            <div class="col-lg-4 col-md-5">
               <label class="form-label small fw-semibold text-muted mb-1">Pencarian Pegawai</label>
               <div class="input-group input-group-sm">
                 <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
@@ -626,7 +624,7 @@
               </div>
             </div>
 
-            <div class="col-lg-3 col-md-3 col-6">
+            <div class="col-lg-3 col-md-4 col-6">
               <label class="form-label small fw-semibold text-muted mb-1">Unit / Bagian</label>
               <select class="form-select form-select-sm" id="filter-bagian">
                 <option value="">Semua Bagian</option>
@@ -639,7 +637,6 @@
                 <option value="">Semua Jabatan</option>
               </select>
             </div>
-
             <div class="col-lg-2 col-md-3 col-6">
               <label class="form-label small fw-semibold text-muted mb-1">Status Kerja</label>
               <select class="form-select form-select-sm" id="filter-aktif">
@@ -650,6 +647,7 @@
             </div>
 
             <div class="col-lg-1 col-md-3 col-6">
+            <div class="col-lg-2 col-md-12 col-12">
               <button type="button" class="btn btn-outline-secondary btn-sm w-100" id="btn-reset-filter" title="Reset Filter">
                 <i class="fas fa-undo me-1"></i> Reset
               </button>
