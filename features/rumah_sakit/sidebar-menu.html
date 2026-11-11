@@ -88,7 +88,8 @@
   };
 
   const renderMenu = async (reload = '') => {
-    document.querySelector('.search-box').classList.add('d-none');
+    const sb = document.querySelector('.search-box');
+    if (sb) sb.classList.add('d-none');
     let app = loadSession({ id: "app" });
     if (reload) {
       let newHakAkses = await loadAvailableModules(app.kd_instalasi, app.kd_unit, app.kd_jabatan, app.kd_user, app.token);

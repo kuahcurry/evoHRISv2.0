@@ -480,15 +480,6 @@
           </div>
         </div>
       </div>
-      <div class="col-md-5 text-md-end mt-2 mt-md-0">
-        <span class="badge bg-success px-3 py-2 me-2" id="badge-total-target">Memuat...</span>
-        <button class="btn btn-outline-secondary btn-sm me-2" id="btn-refresh-target" title="Segarkan Data">
-          <i class="fas fa-sync-alt"></i>
-        </button>
-        <button class="btn btn-success btn-sm" id="btn-tambah-target">
-          <i class="fas fa-plus me-1"></i>Tambah Target SKP
-        </button>
-      </div>
     </div>
 
     <!-- Summary Cards -->
@@ -540,16 +531,20 @@
     </div>
 
     <!-- Filter Card -->
-    <div class="card p-3 mb-3">
+    <div class="card shadow-sm p-3 mb-3">
       <div class="row g-2 align-items-center">
-        <div class="col-md-3">
+        
+        <!-- 1. Pencarian Pegawai / Uraian -->
+        <div class="col-xxl-2 col-xl-2 col-lg-3 col-md-6 col-12">
           <div class="input-group input-group-sm">
-            <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
-            <input type="text" class="form-control" id="search-target" placeholder="Cari nama, NIP, atau uraian...">
+            <span class="input-group-text bg-white text-muted"><i class="fas fa-search"></i></span>
+            <input type="text" class="form-control bg-white" id="search-target" placeholder="Cari nama, NIP...">
           </div>
         </div>
-        <div class="col-md-2">
-          <select class="form-select form-select-sm" id="filter-tahun-target">
+
+        <!-- 2. Tahun -->
+        <div class="col-xxl-2 col-xl-2 col-lg-2 col-md-3 col-6">
+          <select class="form-select form-select-sm bg-white" id="filter-tahun-target">
             <option value="">-- Semua Tahun --</option>
             <option value="2026">Tahun 2026</option>
             <option value="2025">Tahun 2025</option>
@@ -558,33 +553,56 @@
             <option value="2022">Tahun 2022</option>
           </select>
         </div>
-        <div class="col-md-3">
-          <select class="form-select form-select-sm" id="filter-bagian-target">
+
+        <!-- 3. Unit / Bagian -->
+        <div class="col-xxl-2 col-xl-2 col-lg-2 col-md-3 col-6">
+          <select class="form-select form-select-sm bg-white" id="filter-bagian-target">
             <option value="">-- Semua Unit / Bagian --</option>
           </select>
         </div>
-        <div class="col-md-2">
-          <select class="form-select form-select-sm" id="filter-status-target">
+
+        <!-- 4. Status -->
+        <div class="col-xxl-2 col-xl-2 col-lg-2 col-md-4 col-6">
+          <select class="form-select form-select-sm bg-white" id="filter-status-target">
             <option value="">-- Semua Status --</option>
             <option value="1">Disetujui</option>
             <option value="0">Menunggu Approval</option>
             <option value="2">Ditolak</option>
           </select>
         </div>
-        <div class="col-md-2 text-end">
-          <button class="btn btn-outline-success btn-sm w-100" id="btn-filter-target">
-            <i class="fas fa-filter me-1"></i>Filter
+
+        <!-- 5. Grup Tombol Aksi (Refresh, Terapkan Filter, Tambah Target SKP) -->
+        <div class="col-xxl-4 col-xl-4 col-lg-3 col-md-8 col-12 d-flex justify-content-xl-end align-items-center gap-1">
+          <button type="button" class="btn btn-outline-secondary btn-sm px-2 px-xxl-3 d-inline-flex align-items-center gap-1 shadow-sm text-nowrap" id="btn-refresh-target" title="Segarkan Data">
+            <i class="fas fa-sync-alt"></i>
+            <span>Refresh</span>
+          </button>
+          
+          <button type="button" class="btn btn-outline-success btn-sm px-2 px-xxl-3 d-inline-flex align-items-center gap-1 shadow-sm text-nowrap" id="btn-filter-target">
+            <i class="fas fa-filter"></i>
+            <span>Terapkan Filter</span>
+          </button>
+          
+          <button type="button" class="btn btn-success btn-sm px-2 px-xxl-3 d-inline-flex align-items-center gap-1 shadow-sm text-nowrap" id="btn-tambah-target">
+            <i class="fas fa-plus"></i>
+            <span>Tambah Target SKP</span>
           </button>
         </div>
+
       </div>
     </div>
 
     <!-- Main Table Card -->
     <div class="card">
       <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-tasks me-2 text-success"></i>Daftar Sasaran Kerja Pegawai (SKP)</h6>
+        <h6 class="mb-0 fw-bold text-dark">
+          <i class="fas fa-tasks me-2 text-success"></i>Daftar Sasaran Kerja Pegawai (SKP)
+        </h6>
+      <div class="d-flex align-items-center gap-2">
         <div class="spinner-border spinner-border-sm text-success d-none" id="loading-target"></div>
+        
       </div>
+    </div>
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
           <thead>
