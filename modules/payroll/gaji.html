@@ -938,10 +938,12 @@
         if (res && res.code === 200) {
           loadData(currentPage);
         } else {
-          alert('Gagal mengapprove data');
+          const errorMessage = res?.message || (res?.status instanceof Error ? res.status.message : res?.status);
+          alert(errorMessage || 'Gagal mengapprove data');
         }
       } catch (e) {
         console.error('Error approving batch:', e);
+        alert(e.message || 'Gagal mengapprove data');
       }
     });
 
