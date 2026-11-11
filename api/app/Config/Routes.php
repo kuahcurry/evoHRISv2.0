@@ -171,6 +171,8 @@ $routes->match(['get', 'post'], '/cPegawai/cek_pass', 'cPegawai::cek_pass');
 $routes->match(['get', 'post'], '/cPegawai/update_pass', 'cPegawai::update_pass');
 $routes->post('/cPegawai/save_data', 'cPegawai::save_data');
 $routes->match(['get', 'post'], '/cPegawai/simpan_data_pegawai', 'cPegawai::save_data');
+$routes->match(['get', 'post'], '/cPegawai/import_excel', 'cPegawai::import_excel');
+$routes->match(['get', 'post'], '/cPegawai/download_template', 'cPegawai::download_template');
 $routes->get('/cPegawai/edit_detail', 'cPegawai::edit_detail');
 $routes->get('/cPegawai/edit_detail/(:segment)', 'cPegawai::edit_detail/$1');
 $routes->post('/cPegawai/update_data_pegawai', 'cPegawai::update_data_pegawai');

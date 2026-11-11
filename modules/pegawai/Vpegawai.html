@@ -95,6 +95,7 @@
   };
 
   let popupTambah = null;
+  let popupImport = null;
 
   async function initMasterFilters() {
     try {
@@ -364,6 +365,36 @@
     });
   }
 
+  // Buka Pop Up Import Excel via EvoPopup
+  async function bukaPopupImportExcel() {
+    try {
+      if (!popupImport) {
+        popupImport = new EvoPopup('modalImportPegawai');
+        window.popupImportPegawai = popupImport;
+        popupImport.on('onClosed', () => {
+          loadData(state.page);
+        });
+      }
+
+      await popupImport.open({
+        size: 'lg'
+      }, {
+        title: '<i class="fa-solid fa-file-excel text-success me-2"></i>Import Data Pegawai',
+        content: {
+          type: 'module',
+          name: 'modules/pegawai/VimportPegawai'
+        }
+      });
+    } catch (err) {
+      console.error('Error saat membuka modal import excel:', err);
+      const modalEl = document.getElementById('modalImportPegawai');
+      if (modalEl && typeof bootstrap !== 'undefined') {
+        const bsModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        bsModal.show();
+      }
+    }
+  }
+
   // Expand section Edit Pegawai
   function expandEditPegawai(id, nama) {
     if (!id) return;
@@ -467,8 +498,216 @@
     }
   }
 
+  // Export Data Pegawai ke Excel
+  async function exportExcel() {
+    try {
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          title: 'Mengekspor Data Pegawai',
+          text: 'Sedang mengambil dan menyusun data Excel...',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+      }
+
+      const params = {
+        page: 1,
+        limit: 5000,
+        search: state.search || '',
+        kd_bagian: state.kd_bagian || '',
+        kd_jabatan: state.kd_jabatan || '',
+        status_aktif: state.status_aktif ?? 1
+      };
+
+      const res = await httpGet(`${apiUrl}/cTambahPegawai/index`, params);
+      const rows = res?.data?.data || [];
+
+      if (!rows.length) {
+        if (typeof Swal !== 'undefined') {
+          Swal.fire('Informasi', 'Tidak ada data pegawai yang dapat diekspor.', 'info');
+        } else {
+          alert('Tidak ada data pegawai yang dapat diekspor.');
+        }
+        return;
+      }
+
+      const escapeXml = (str) => {
+        if (str === null || str === undefined) return '';
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&apos;');
+      };
+
+      const formatJk = (jk) => {
+        if (jk === '1' || jk === 1) return 'Laki-laki';
+        if (jk === '2' || jk === 2) return 'Perempuan';
+        return jk ? String(jk) : '-';
+      };
+
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+      const filename = `Data_Pegawai_${timestamp}.xls`;
+
+      let tableHtml = `
+        <table border="1">
+          <thead>
+            <tr>
+              <th style="background-color: #198754; color: #ffffff; font-weight: bold; text-align: center;">No</th>
+              <th style="background-color: #198754; color: #ffffff; font-weight: bold; text-align: center;">ID Pegawai</th>
+              <th style="background-color: #198754; color: #ffffff; font-weight: bold; text-align: center;">NIP</th>
+              <th style="background-color: #198754; color: #ffffff; font-weight: bold; text-align: left;">Nama Lengkap</th>
+              <th style="background-color: #198754; color: #ffffff; font-weight: bold; text-align: left;">Tempat Lahir</th>
+              <th style="background-color: #198754; color: #ffffff; font-weight: bold; text-align: center;">Tanggal Lahir</th>
+              <th style="background-color: #198754; color: #ffffff; font-weight: bold; text-align: center;">Jenis Kelamin</th>
+              <th style="background-color: #198754; color: #ffffff; font-weight: bold; text-align: left;">Bagian / Unit</th>
+              <th style="background-color: #198754; color: #ffffff; font-weight: bold; text-align: left;">Jabatan</th>
+              <th style="background-color: #198754; color: #ffffff; font-weight: bold; text-align: center;">Status Pegawai</th>
+              <th style="background-color: #198754; color: #ffffff; font-weight: bold; text-align: center;">Pangkat / Golongan</th>
+              <th style="background-color: #198754; color: #ffffff; font-weight: bold; text-align: center;">No. Handphone</th>
+              <th style="background-color: #198754; color: #ffffff; font-weight: bold; text-align: left;">Email</th>
+              <th style="background-color: #198754; color: #ffffff; font-weight: bold; text-align: left;">Alamat</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      rows.forEach((row, idx) => {
+        const no = idx + 1;
+        const idPegawai = escapeXml(row.ID_PEGAWAI || '-');
+        const nip = escapeXml(row.NIP || '-');
+        const nama = escapeXml(row.NAMA || '-');
+        const tempatLahir = escapeXml(row.TEMPAT_LAHIR || '-');
+        const tglLahir = formatTgl(row.TANGGAL_LAHIR);
+        const jk = formatJk(row.JENIS_KELAMIN);
+        const bagian = escapeXml(row.BAGIAN || '-');
+        const jabatan = escapeXml(row.JABATAN || '-');
+        const statusPegawai = escapeXml(row.STATUS_PEGAWAI || '-');
+        const pangkatGolongan = escapeXml(
+          (row.PANGKAT || row.GOLONGAN)
+            ? `${row.PANGKAT || ''}${row.PANGKAT && row.GOLONGAN ? ' - ' : ''}${row.GOLONGAN || ''}`
+            : '-'
+        );
+        const hp = escapeXml(row.HANDPHONE || '-');
+        const email = escapeXml(row.EMAIL || '-');
+        const alamat = escapeXml(row.ALAMAT || '-');
+
+        tableHtml += `
+          <tr>
+            <td style="text-align: center;">${no}</td>
+            <td style="text-align: center;">${idPegawai}</td>
+            <td class="text" style="mso-number-format:'\\@'; text-align: center;">${nip}</td>
+            <td style="text-align: left;">${nama}</td>
+            <td style="text-align: left;">${tempatLahir}</td>
+            <td class="date" style="mso-number-format:'dd\\/mm\\/yyyy'; text-align: center;">${tglLahir}</td>
+            <td style="text-align: center;">${jk}</td>
+            <td style="text-align: left;">${bagian}</td>
+            <td style="text-align: left;">${jabatan}</td>
+            <td style="text-align: center;">${statusPegawai}</td>
+            <td style="text-align: center;">${pangkatGolongan}</td>
+            <td class="text" style="mso-number-format:'\\@'; text-align: center;">${hp}</td>
+            <td style="text-align: left;">${email}</td>
+            <td style="text-align: left;">${alamat}</td>
+          </tr>
+        `;
+      });
+
+      tableHtml += `
+          </tbody>
+        </table>
+      `;
+
+      const excelTemplate = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+          <meta http-equiv="Content-Type" content="application/vnd.ms-excel; charset=utf-8">
+          <!--[if gte mso 9]>
+          <xml>
+            <x:ExcelWorkbook>
+              <x:ExcelWorksheets>
+                <x:ExcelWorksheet>
+                  <x:Name>Data Pegawai</x:Name>
+                  <x:WorksheetOptions>
+                    <x:DisplayGridlines/>
+                  </x:WorksheetOptions>
+                </x:ExcelWorksheet>
+              </x:ExcelWorksheets>
+            </x:ExcelWorkbook>
+          </xml>
+          <![endif]-->
+          <style>
+            .text { mso-number-format: "\\@"; }
+            .date { mso-number-format: "dd\\/mm\\/yyyy"; }
+            th { border: 0.5pt solid #000000; padding: 6px; }
+            td { border: 0.5pt solid #d0d0d0; padding: 4px; }
+          </style>
+        </head>
+        <body>
+          ${tableHtml}
+        </body>
+        </html>
+      `;
+
+      const blob = new Blob([excelTemplate], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          icon: 'success',
+          title: 'Ekspor Berhasil',
+          text: `Berhasil mengunduh ${rows.length} data pegawai ke dalam format Excel.`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
+    } catch (err) {
+      console.error('Error saat ekspor Excel data pegawai:', err);
+      if (typeof Swal !== 'undefined') {
+        Swal.fire('Error', 'Terjadi kesalahan saat mengekspor data ke Excel.', 'error');
+      } else {
+        alert('Terjadi kesalahan saat mengekspor data ke Excel.');
+      }
+    }
+  }
+
   // Bind UI Controls
   function bindEvents() {
+    const btnImportExcel = document.getElementById('btn-nav-import-excel');
+    if (btnImportExcel) {
+      btnImportExcel.addEventListener('click', (e) => {
+        e.preventDefault();
+        bukaPopupImportExcel();
+      });
+    }
+
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('#btn-nav-import-excel');
+      if (btn) {
+        e.preventDefault();
+        bukaPopupImportExcel();
+      }
+    });
+
+    const btnExportExcel = document.getElementById('btn-nav-export-excel');
+    if (btnExportExcel) {
+      btnExportExcel.addEventListener('click', () => {
+        exportExcel();
+      });
+    }
+
     const btnTambah = document.getElementById('btn-nav-tambah-pegawai');
     if (btnTambah) {
       btnTambah.addEventListener('click', () => {
@@ -561,10 +800,13 @@
     loadData,
     initMasterFilters,
     bukaPopupTambahPegawai,
+    bukaPopupImportExcel,
     expandEditPegawai,
     collapseDetailPegawai,
-    bukaCetakRiwayat
+    bukaCetakRiwayat,
+    exportExcel
   };
+  window.bukaPopupImportExcel = bukaPopupImportExcel;
   document.vpegawai = window.vpegawai;
 
   // Initialize
@@ -600,7 +842,7 @@
           <button type="button" class="btn btn-sm btn-light border border-secondary-subtle px-3 py-1 fs-7 d-inline-flex align-items-center gap-2 shadow-sm rounded-2 text-dark" id="btn-refresh-pegawai">
             <i class="fas fa-sync-alt text-secondary fs-7"></i> Segarkan
           </button>
-          <button type="button" class="btn btn-sm px-3 py-1 fs-7 d-inline-flex align-items-center gap-2 shadow-sm rounded-2 text-white" id="btn-nav-import-excel" style="background-color: #146c43; border-color: #13653f;">
+          <button type="button" class="btn btn-sm px-3 py-1 fs-7 d-inline-flex align-items-center gap-2 shadow-sm rounded-2 text-white" id="btn-nav-import-excel" onclick="window.vpegawai && window.vpegawai.bukaPopupImportExcel ? window.vpegawai.bukaPopupImportExcel() : (window.bukaPopupImportExcel ? window.bukaPopupImportExcel() : null)" style="background-color: #146c43; border-color: #13653f; cursor: pointer;">
             <i class="fa-regular fa-file-excel text-white fs-7"></i> Import Excel
           </button>
           <button type="button" class="btn btn-sm btn-success px-3 py-1 fs-7 d-inline-flex align-items-center gap-2 shadow-sm rounded-2 text-white" id="btn-nav-export-excel">
