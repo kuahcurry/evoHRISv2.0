@@ -382,48 +382,122 @@ class cPegawai extends BaseController
             $this->db->table('detail_pendidikan_pegawai')->insert($dataPendidikan);
         }
 
-        // 4. Insert Pengalaman Pegawai (Opsional jika ada input)
-        $namaPerusahaan = $val(['nama_perusahaan', 'NAMA_PERUSAHAAN', 'txt_perusahaan', 'pengalaman_perusahaan', 'add-pengalaman-perusahaan']);
-        if (!empty($namaPerusahaan) || !empty($filePengalaman)) {
-            $resPeng = $this->db->query("SELECT COALESCE(MAX(KD_PENGALAMAN), 0) + 1 AS new_id FROM detail_pengalaman_pegawai")->getRowArray();
-            $kdPengalaman = (int)($resPeng['new_id'] ?? 1);
-
-            $dataPengalaman = [
-                'KD_PENGALAMAN'       => $kdPengalaman,
-                'ID_PEGAWAI'          => $idPegawai,
-                'NAMA_PERUSAHAAN'     => $namaPerusahaan ?: '-',
-                'KD_JABATAN'          => $valInt(['pengalaman_jabatan', 'add-pengalaman-jabatan'], 1),
-                'JABATAN'             => $val(['pengalaman_nama_jabatan', 'add-pengalaman-nama-jabatan'], '-'),
-                'ALAMAT'              => $val(['pengalaman_alamat', 'add-pengalaman-alamat'], '-'),
-                'KD_JENIS_PENGALAMAN' => $valInt(['pengalaman_jenis', 'add-pengalaman-jenis'], 1),
-                'KD_PROVINSI'         => $valInt(['pengalaman_provinsi', 'add-pengalaman-provinsi'], 0),
-                'KD_KABUPATEN'        => $valInt(['pengalaman_kabupaten', 'add-pengalaman-kabupaten'], 0),
-                'KD_KECAMATAN'        => $valInt(['pengalaman_kecamatan', 'add-pengalaman-kecamatan'], 0),
-                'KD_KELURAHAN'        => $valInt(['pengalaman_kelurahan', 'add-pengalaman-kelurahan'], 0),
-                'TANGGAL_MULAI'       => $val(['pengalaman_periode_mulai', 'add-pengalaman-periode-mulai'], '2020-01-01'),
-                'TANGGAL_SAMPAI'      => $val(['pengalaman_periode_selesai', 'add-pengalaman-periode-selesai'], '2022-01-01'),
-                'IMAGE_SK'            => $filePengalaman ?: ''
-            ];
-            $this->db->table('detail_pengalaman_pegawai')->insert($dataPengalaman);
+        // 4. Insert Pengalaman Pegawai (Multi-entry repeater & legacy fallback)
+        $pengalamanListRaw = $this->request->getPost('pengalaman_list') ?: $this->request->getPost('pengalaman');
+        $pengalamanItems = [];
+        if (!empty($pengalamanListRaw)) {
+            if (is_string($pengalamanListRaw)) {
+                $pengalamanItems = json_decode($pengalamanListRaw, true) ?: [];
+            } elseif (is_array($pengalamanListRaw)) {
+                $pengalamanItems = $pengalamanListRaw;
+            }
         }
 
-        // 5. Insert Keahlian Pegawai (Opsional jika ada input)
-        $namaKeahlian = $val(['nama_keahlian', 'NAMA_KEAHLIAN', 'keahlian_nama', 'add-keahlian-nama']);
-        if (!empty($namaKeahlian) || !empty($fileKeahlian)) {
-            $resKhl = $this->db->query("SELECT COALESCE(MAX(KD_KEAHLIAN), 0) + 1 AS new_id FROM detail_keahlian_pegawai")->getRowArray();
-            $kdKeahlian = (int)($resKhl['new_id'] ?? 1);
+        if (!empty($pengalamanItems) && is_array($pengalamanItems)) {
+            $resPeng = $this->db->query("SELECT COALESCE(MAX(KD_PENGALAMAN), 0) AS max_id FROM detail_pengalaman_pegawai")->getRowArray();
+            $nextKdPengalaman = (int)($resPeng['max_id'] ?? 0) + 1;
 
-            $dataKeahlian = [
-                'KD_KEAHLIAN'         => $kdKeahlian,
-                'ID_PEGAWAI'          => $idPegawai,
-                'NAMA_KEAHLIAN'       => $namaKeahlian ?: '-',
-                'KD_STATUS_KEAHLIAN'  => $valInt(['keahlian_status', 'add-keahlian-status'], 1),
-                'KETERANGAN'          => $val(['keahlian_keterangan', 'add-keahlian-keterangan'], '-'),
-                'MULAI'               => date('Y-m-d'),
-                'SAMPAI'              => date('Y-m-d', strtotime('+5 years')),
-                'IMAGE'               => $fileKeahlian ?: ''
-            ];
-            $this->db->table('detail_keahlian_pegawai')->insert($dataKeahlian);
+            foreach ($pengalamanItems as $idx => $item) {
+                $namaPerusahaan = trim($item['nama_perusahaan'] ?? $item['perusahaan'] ?? '');
+                $fileItem = $handleUpload("file_pengalaman_{$idx}") ?: ($idx === 0 ? $filePengalaman : '');
+                if (!empty($namaPerusahaan) || !empty($fileItem)) {
+                    $dataPeng = [
+                        'KD_PENGALAMAN'       => $nextKdPengalaman++,
+                        'ID_PEGAWAI'          => $idPegawai,
+                        'NAMA_PERUSAHAAN'     => $namaPerusahaan ?: '-',
+                        'KD_JABATAN'          => !empty($item['kd_jabatan']) ? (int)$item['kd_jabatan'] : 1,
+                        'JABATAN'             => !empty($item['jabatan']) ? $item['jabatan'] : '-',
+                        'ALAMAT'              => !empty($item['alamat']) ? $item['alamat'] : '-',
+                        'KD_JENIS_PENGALAMAN' => !empty($item['kd_jenis_pengalaman']) ? (int)$item['kd_jenis_pengalaman'] : 1,
+                        'KD_PROVINSI'         => !empty($item['kd_provinsi']) ? (int)$item['kd_provinsi'] : 0,
+                        'KD_KABUPATEN'        => !empty($item['kd_kabupaten']) ? (int)$item['kd_kabupaten'] : 0,
+                        'KD_KECAMATAN'        => !empty($item['kd_kecamatan']) ? (int)$item['kd_kecamatan'] : 0,
+                        'KD_KELURAHAN'        => !empty($item['kd_kelurahan']) ? (int)$item['kd_kelurahan'] : 0,
+                        'TANGGAL_MULAI'       => !empty($item['periode_mulai']) ? $item['periode_mulai'] : '2020-01-01',
+                        'TANGGAL_SAMPAI'      => !empty($item['periode_selesai']) ? $item['periode_selesai'] : '2022-01-01',
+                        'IMAGE_SK'            => $fileItem ?: ''
+                    ];
+                    $this->db->table('detail_pengalaman_pegawai')->insert($dataPeng);
+                }
+            }
+        } else {
+            // Fallback single entry jika data bukan array
+            $namaPerusahaan = $val(['nama_perusahaan', 'NAMA_PERUSAHAAN', 'txt_perusahaan', 'pengalaman_perusahaan', 'add-pengalaman-perusahaan']);
+            if (!empty($namaPerusahaan) || !empty($filePengalaman)) {
+                $resPeng = $this->db->query("SELECT COALESCE(MAX(KD_PENGALAMAN), 0) + 1 AS new_id FROM detail_pengalaman_pegawai")->getRowArray();
+                $kdPengalaman = (int)($resPeng['new_id'] ?? 1);
+
+                $dataPengalaman = [
+                    'KD_PENGALAMAN'       => $kdPengalaman,
+                    'ID_PEGAWAI'          => $idPegawai,
+                    'NAMA_PERUSAHAAN'     => $namaPerusahaan ?: '-',
+                    'KD_JABATAN'          => $valInt(['pengalaman_jabatan', 'add-pengalaman-jabatan'], 1),
+                    'JABATAN'             => $val(['pengalaman_nama_jabatan', 'add-pengalaman-nama-jabatan'], '-'),
+                    'ALAMAT'              => $val(['pengalaman_alamat', 'add-pengalaman-alamat'], '-'),
+                    'KD_JENIS_PENGALAMAN' => $valInt(['pengalaman_jenis', 'add-pengalaman-jenis'], 1),
+                    'KD_PROVINSI'         => $valInt(['pengalaman_provinsi', 'add-pengalaman-provinsi'], 0),
+                    'KD_KABUPATEN'        => $valInt(['pengalaman_kabupaten', 'add-pengalaman-kabupaten'], 0),
+                    'KD_KECAMATAN'        => $valInt(['pengalaman_kecamatan', 'add-pengalaman-kecamatan'], 0),
+                    'KD_KELURAHAN'        => $valInt(['pengalaman_kelurahan', 'add-pengalaman-kelurahan'], 0),
+                    'TANGGAL_MULAI'       => $val(['pengalaman_periode_mulai', 'add-pengalaman-periode-mulai'], '2020-01-01'),
+                    'TANGGAL_SAMPAI'      => $val(['pengalaman_periode_selesai', 'add-pengalaman-periode-selesai'], '2022-01-01'),
+                    'IMAGE_SK'            => $filePengalaman ?: ''
+                ];
+                $this->db->table('detail_pengalaman_pegawai')->insert($dataPengalaman);
+            }
+        }
+
+        // 5. Insert Keahlian Pegawai (Multi-entry repeater & legacy fallback)
+        $keahlianListRaw = $this->request->getPost('keahlian_list') ?: $this->request->getPost('keahlian');
+        $keahlianItems = [];
+        if (!empty($keahlianListRaw)) {
+            if (is_string($keahlianListRaw)) {
+                $keahlianItems = json_decode($keahlianListRaw, true) ?: [];
+            } elseif (is_array($keahlianListRaw)) {
+                $keahlianItems = $keahlianListRaw;
+            }
+        }
+
+        if (!empty($keahlianItems) && is_array($keahlianItems)) {
+            $resKhl = $this->db->query("SELECT COALESCE(MAX(KD_KEAHLIAN), 0) AS max_id FROM detail_keahlian_pegawai")->getRowArray();
+            $nextKdKeahlian = (int)($resKhl['max_id'] ?? 0) + 1;
+
+            foreach ($keahlianItems as $idx => $item) {
+                $namaKhl = trim($item['nama_keahlian'] ?? $item['keahlian'] ?? '');
+                $fileItem = $handleUpload("file_keahlian_{$idx}") ?: ($idx === 0 ? $fileKeahlian : '');
+                if (!empty($namaKhl) || !empty($fileItem)) {
+                    $dataKhl = [
+                        'KD_KEAHLIAN'         => $nextKdKeahlian++,
+                        'ID_PEGAWAI'          => $idPegawai,
+                        'NAMA_KEAHLIAN'       => $namaKhl ?: '-',
+                        'KD_STATUS_KEAHLIAN'  => !empty($item['kd_status_keahlian']) ? (int)$item['kd_status_keahlian'] : 1,
+                        'KETERANGAN'          => !empty($item['keterangan']) ? $item['keterangan'] : '-',
+                        'MULAI'               => !empty($item['mulai']) ? $item['mulai'] : date('Y-m-d'),
+                        'SAMPAI'              => !empty($item['sampai']) ? $item['sampai'] : date('Y-m-d', strtotime('+5 years')),
+                        'IMAGE'               => $fileItem ?: ''
+                    ];
+                    $this->db->table('detail_keahlian_pegawai')->insert($dataKhl);
+                }
+            }
+        } else {
+            // Fallback single entry jika data bukan array
+            $namaKeahlian = $val(['nama_keahlian', 'NAMA_KEAHLIAN', 'keahlian_nama', 'add-keahlian-nama']);
+            if (!empty($namaKeahlian) || !empty($fileKeahlian)) {
+                $resKhl = $this->db->query("SELECT COALESCE(MAX(KD_KEAHLIAN), 0) + 1 AS new_id FROM detail_keahlian_pegawai")->getRowArray();
+                $kdKeahlian = (int)($resKhl['new_id'] ?? 1);
+
+                $dataKeahlian = [
+                    'KD_KEAHLIAN'         => $kdKeahlian,
+                    'ID_PEGAWAI'          => $idPegawai,
+                    'NAMA_KEAHLIAN'       => $namaKeahlian ?: '-',
+                    'KD_STATUS_KEAHLIAN'  => $valInt(['keahlian_status', 'add-keahlian-status'], 1),
+                    'KETERANGAN'          => $val(['keahlian_keterangan', 'add-keahlian-keterangan'], '-'),
+                    'MULAI'               => date('Y-m-d'),
+                    'SAMPAI'              => date('Y-m-d', strtotime('+5 years')),
+                    'IMAGE'               => $fileKeahlian ?: ''
+                ];
+                $this->db->table('detail_keahlian_pegawai')->insert($dataKeahlian);
+            }
         }
 
         // 6. Insert Keluarga Pegawai (Opsional jika ada input)

@@ -49,6 +49,7 @@
     : `${window.location.origin}/evoHRIS_v2.1/api`;
 
   let master = {};
+  let masterDataCache = null;
   let selectedFotoFile = null;
 
   async function initMasterData() {
@@ -56,6 +57,7 @@
       const res = await httpGet(`${apiUrl}/cPegawai/master`);
       if (res && res.code === 200 && res.data) {
         master = res.data;
+        masterDataCache = res.data;
 
         // Data Pribadi & Identitas
         fillDropdown('add-agama', master.agama, 'KD_AGAMA', 'AGAMA', 'Pilih Agama');
@@ -81,13 +83,8 @@
         fillDropdown('add-jenis-pendidikan', master.jenis_pendidikan, 'KD_JENIS_PENDIDIKAN', 'JENIS_PENDIDIKAN', 'Pilih Jenis Pendidikan');
         fillDropdown('add-status-lulus', master.status_lulus, 'KD_STATUS_LULUS', 'STATUS_LULUS', 'Pilih Status Lulus');
 
-        // Pengalaman
-        fillDropdown('add-pengalaman-provinsi', master.provinsi, 'KD_PROVINSI', 'PROVINSI', 'Pilih Provinsi Perusahaan');
-        fillDropdown('add-pengalaman-jabatan', master.jabatan, 'KD_JABATAN', 'JABATAN', 'Pilih Jabatan');
-        fillDropdown('add-pengalaman-jenis', master.jenis_pengalaman, 'KD_JENIS_PENGALAMAN', 'JENIS_PENGALAMAN', 'Pilih Jenis Pengalaman');
-
-        // Keahlian
-        fillDropdown('add-keahlian-status', master.status_keahlian, 'KD_STATUS_KEAHLIAN', 'STATUS_KEAHLIAN', 'Pilih Status Keahlian');
+        // Keahlian & Pengalaman (Dynamic rows)
+        populateDynamicRowsDropdowns();
 
         // Keluarga
         fillDropdown('add-keluarga-hubungan', master.hubungan, 'KD_HUBUNGAN', 'HUBUNGAN', 'Pilih Hubungan');
@@ -109,8 +106,8 @@
     }
   }
 
-  function fillDropdown(elementId, items, valKey, textKey, defaultText = 'Pilih...') {
-    const el = document.getElementById(elementId);
+  function fillDropdown(elementOrId, items, valKey, textKey, defaultText = 'Pilih...') {
+    const el = (typeof elementOrId === 'string') ? document.getElementById(elementOrId) : elementOrId;
     if (!el || !items || !Array.isArray(items)) return;
 
     el.innerHTML = `<option value="">${defaultText}</option>`;
@@ -194,60 +191,359 @@
         console.error('Error loading sub bagian:', err);
       }
     });
+  }
 
-    // Pengalaman Wilayah
-    const pengProv = document.getElementById('add-pengalaman-provinsi');
-    const pengKab = document.getElementById('add-pengalaman-kabupaten');
-    const pengKec = document.getElementById('add-pengalaman-kecamatan');
-    const pengKel = document.getElementById('add-pengalaman-kelurahan');
+  // ==========================================
+  // PENGALAMAN PEKERJAAN DINAMIS (MULTI-ROW)
+  // ==========================================
+  function tambahBarisPengalaman(initialData = {}) {
+    const container = document.getElementById('container-pengalaman-list');
+    if (!container) return;
 
-    pengProv?.addEventListener('change', async (e) => {
+    const emptyNotice = container.querySelector('.empty-pengalaman-notice');
+    if (emptyNotice) emptyNotice.remove();
+
+    const currentCount = container.querySelectorAll('.item-pengalaman').length;
+    const itemIndex = currentCount + 1;
+
+    const itemEl = document.createElement('div');
+    itemEl.className = 'item-pengalaman border rounded p-3 bg-light-subtle shadow-sm mb-2';
+    itemEl.innerHTML = `
+      <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-primary text-white fw-bold item-pengalaman-number">Pengalaman #${itemIndex}</span>
+          <span class="small text-muted fst-italic item-pengalaman-preview-title"></span>
+        </div>
+        <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2 btn-hapus-pengalaman" title="Hapus baris pengalaman ini">
+          <i class="fas fa-trash-alt me-1"></i> Hapus
+        </button>
+      </div>
+
+      <div class="row g-2 mb-2">
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Nama Perusahaan / Instansi</label>
+          <input type="text" class="form-control form-control-sm field-pengalaman-perusahaan" placeholder="Contoh: PT. Maju Bersama">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Alamat Perusahaan</label>
+          <input type="text" class="form-control form-control-sm field-pengalaman-alamat" placeholder="Alamat lengkap instansi">
+        </div>
+      </div>
+
+      <div class="row g-2 mb-2">
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Provinsi</label>
+          <select class="form-select form-select-sm field-pengalaman-provinsi">
+            <option value="">Pilih Provinsi Perusahaan</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Kabupaten / Kota</label>
+          <select class="form-select form-select-sm field-pengalaman-kabupaten">
+            <option value="">Pilih Kabupaten</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row g-2 mb-2">
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Kecamatan</label>
+          <select class="form-select form-select-sm field-pengalaman-kecamatan">
+            <option value="">Pilih Kecamatan</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Kelurahan / Desa</label>
+          <select class="form-select form-select-sm field-pengalaman-kelurahan">
+            <option value="">Pilih Kelurahan</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row g-2 mb-2">
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Periode Mulai</label>
+          <input type="date" class="form-control form-control-sm field-pengalaman-mulai">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Periode Selesai</label>
+          <input type="date" class="form-control form-control-sm field-pengalaman-selesai">
+        </div>
+      </div>
+
+      <div class="row g-2 mb-2">
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Jabatan Terakhir</label>
+          <select class="form-select form-select-sm field-pengalaman-jabatan">
+            <option value="">Pilih Jabatan</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Jenis Pengalaman</label>
+          <select class="form-select form-select-sm field-pengalaman-jenis">
+            <option value="">Pilih Jenis Pengalaman</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row g-2">
+        <div class="col-md-12">
+          <label class="form-label small fw-semibold text-muted mb-1">Upload File SK / Bukti Pengalaman</label>
+          <input type="file" class="form-control form-control-sm field-pengalaman-sk" accept=".pdf,.jpg,.jpeg,.png">
+        </div>
+      </div>
+    `;
+
+    container.appendChild(itemEl);
+
+    // Isi dropdown jika master cache sudah ada
+    if (masterDataCache) {
+      fillDropdown(itemEl.querySelector('.field-pengalaman-provinsi'), masterDataCache.provinsi, 'KD_PROVINSI', 'PROVINSI', 'Pilih Provinsi Perusahaan');
+      fillDropdown(itemEl.querySelector('.field-pengalaman-jabatan'), masterDataCache.jabatan, 'KD_JABATAN', 'JABATAN', 'Pilih Jabatan');
+      fillDropdown(itemEl.querySelector('.field-pengalaman-jenis'), masterDataCache.jenis_pengalaman, 'KD_JENIS_PENGALAMAN', 'JENIS_PENGALAMAN', 'Pilih Jenis Pengalaman');
+    }
+
+    // Cascade wilayah khusus item ini
+    setupWilayahCascadePengalaman(itemEl);
+
+    // Live preview judul nama perusahaan
+    const namaInput = itemEl.querySelector('.field-pengalaman-perusahaan');
+    const previewSpan = itemEl.querySelector('.item-pengalaman-preview-title');
+    namaInput?.addEventListener('input', () => {
+      previewSpan.textContent = namaInput.value.trim() ? `- ${namaInput.value.trim()}` : '';
+    });
+
+    // Event tombol hapus baris
+    itemEl.querySelector('.btn-hapus-pengalaman')?.addEventListener('click', () => {
+      hapusBarisPengalaman(itemEl);
+    });
+
+    // Populate initial data jika ada
+    if (initialData.nama_perusahaan) itemEl.querySelector('.field-pengalaman-perusahaan').value = initialData.nama_perusahaan;
+    if (initialData.alamat) itemEl.querySelector('.field-pengalaman-alamat').value = initialData.alamat;
+
+    updatePengalamanNumbers();
+    return itemEl;
+  }
+
+  function hapusBarisPengalaman(itemEl) {
+    const container = document.getElementById('container-pengalaman-list');
+    if (!container || !itemEl) return;
+    itemEl.remove();
+    updatePengalamanNumbers();
+
+    if (container.querySelectorAll('.item-pengalaman').length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-3 text-muted empty-pengalaman-notice border border-dashed rounded">
+          <p class="mb-2 small">Belum ada riwayat pengalaman pekerjaan.</p>
+          <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.vaddpegawai && window.vaddpegawai.tambahPengalaman ? window.vaddpegawai.tambahPengalaman() : null">
+            <i class="fas fa-plus me-1"></i> Tambah Pengalaman
+          </button>
+        </div>
+      `;
+    }
+  }
+
+  function updatePengalamanNumbers() {
+    const container = document.getElementById('container-pengalaman-list');
+    if (!container) return;
+    const items = container.querySelectorAll('.item-pengalaman');
+    items.forEach((item, index) => {
+      const badge = item.querySelector('.item-pengalaman-number');
+      if (badge) badge.textContent = `Pengalaman #${index + 1}`;
+    });
+  }
+
+  function setupWilayahCascadePengalaman(itemEl) {
+    const provEl = itemEl.querySelector('.field-pengalaman-provinsi');
+    const kabEl = itemEl.querySelector('.field-pengalaman-kabupaten');
+    const kecEl = itemEl.querySelector('.field-pengalaman-kecamatan');
+    const kelEl = itemEl.querySelector('.field-pengalaman-kelurahan');
+
+    provEl?.addEventListener('change', async (e) => {
       const kd = e.target.value;
       if (!kd) {
-        if (pengKab) pengKab.innerHTML = '<option value="">Pilih Kabupaten</option>';
-        if (pengKec) pengKec.innerHTML = '<option value="">Pilih Kecamatan</option>';
-        if (pengKel) pengKel.innerHTML = '<option value="">Pilih Kelurahan</option>';
+        if (kabEl) kabEl.innerHTML = '<option value="">Pilih Kabupaten</option>';
+        if (kecEl) kecEl.innerHTML = '<option value="">Pilih Kecamatan</option>';
+        if (kelEl) kelEl.innerHTML = '<option value="">Pilih Kelurahan</option>';
         return;
       }
       try {
         const res = await httpGet(`${apiUrl}/cPegawai/get_kabupaten?kd_provinsi=${encodeURIComponent(kd)}`);
         const list = Array.isArray(res?.data) ? res.data : [];
-        fillDropdown('add-pengalaman-kabupaten', list, 'KD_KABUPATEN', 'KABUPATEN', 'Pilih Kabupaten');
+        fillDropdown(kabEl, list, 'KD_KABUPATEN', 'KABUPATEN', 'Pilih Kabupaten');
       } catch (err) {
         console.error('Error loading pengalaman kabupaten:', err);
       }
     });
 
-    pengKab?.addEventListener('change', async (e) => {
+    kabEl?.addEventListener('change', async (e) => {
       const kd = e.target.value;
       if (!kd) {
-        if (pengKec) pengKec.innerHTML = '<option value="">Pilih Kecamatan</option>';
-        if (pengKel) pengKel.innerHTML = '<option value="">Pilih Kelurahan</option>';
+        if (kecEl) kecEl.innerHTML = '<option value="">Pilih Kecamatan</option>';
+        if (kelEl) kelEl.innerHTML = '<option value="">Pilih Kelurahan</option>';
         return;
       }
       try {
         const res = await httpGet(`${apiUrl}/cPegawai/get_kecamatan?kd_kabupaten=${encodeURIComponent(kd)}`);
         const list = Array.isArray(res?.data) ? res.data : [];
-        fillDropdown('add-pengalaman-kecamatan', list, 'KD_KECAMATAN', 'KECAMATAN', 'Pilih Kecamatan');
+        fillDropdown(kecEl, list, 'KD_KECAMATAN', 'KECAMATAN', 'Pilih Kecamatan');
       } catch (err) {
         console.error('Error loading pengalaman kecamatan:', err);
       }
     });
 
-    pengKec?.addEventListener('change', async (e) => {
+    kecEl?.addEventListener('change', async (e) => {
       const kd = e.target.value;
       if (!kd) {
-        if (pengKel) pengKel.innerHTML = '<option value="">Pilih Kelurahan</option>';
+        if (kelEl) kelEl.innerHTML = '<option value="">Pilih Kelurahan</option>';
         return;
       }
       try {
         const res = await httpGet(`${apiUrl}/cPegawai/get_kelurahan?kd_kecamatan=${encodeURIComponent(kd)}`);
         const list = Array.isArray(res?.data) ? res.data : [];
-        fillDropdown('add-pengalaman-kelurahan', list, 'KD_KELURAHAN', 'KELURAHAN', 'Pilih Kelurahan');
+        fillDropdown(kelEl, list, 'KD_KELURAHAN', 'KELURAHAN', 'Pilih Kelurahan');
       } catch (err) {
         console.error('Error loading pengalaman kelurahan:', err);
       }
     });
+  }
+
+  // ==========================================
+  // STATUS KEAHLIAN DINAMIS (MULTI-ROW)
+  // ==========================================
+  function tambahBarisKeahlian(initialData = {}) {
+    const container = document.getElementById('container-keahlian-list');
+    if (!container) return;
+
+    const emptyNotice = container.querySelector('.empty-keahlian-notice');
+    if (emptyNotice) emptyNotice.remove();
+
+    const currentCount = container.querySelectorAll('.item-keahlian').length;
+    const itemIndex = currentCount + 1;
+
+    const itemEl = document.createElement('div');
+    itemEl.className = 'item-keahlian border rounded p-3 bg-light-subtle shadow-sm mb-2';
+    itemEl.innerHTML = `
+      <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-primary text-white fw-bold item-keahlian-number">Keahlian #${itemIndex}</span>
+          <span class="small text-muted fst-italic item-keahlian-preview-title"></span>
+        </div>
+        <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2 btn-hapus-keahlian" title="Hapus baris keahlian ini">
+          <i class="fas fa-trash-alt me-1"></i> Hapus
+        </button>
+      </div>
+
+      <div class="row g-2 mb-2">
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Nama Keahlian / Kompetensi</label>
+          <input type="text" class="form-control form-control-sm field-keahlian-nama" placeholder="Contoh: PHP, UI/UX Design, Cloud Architecture">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Status Keahlian</label>
+          <select class="form-select form-select-sm field-keahlian-status">
+            <option value="">Pilih Status Keahlian</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row g-2">
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Keterangan</label>
+          <input type="text" class="form-control form-control-sm field-keahlian-keterangan" placeholder="Keterangan singkat / sertifikasi">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Upload Bukti / Sertifikat Keahlian</label>
+          <input type="file" class="form-control form-control-sm field-keahlian-upload" accept=".pdf,.jpg,.jpeg,.png">
+        </div>
+      </div>
+    `;
+
+    container.appendChild(itemEl);
+
+    // Isi dropdown status jika master cache sudah ada
+    if (masterDataCache) {
+      fillDropdown(itemEl.querySelector('.field-keahlian-status'), masterDataCache.status_keahlian, 'KD_STATUS_KEAHLIAN', 'STATUS_KEAHLIAN', 'Pilih Status Keahlian');
+    }
+
+    // Live preview judul nama keahlian
+    const namaInput = itemEl.querySelector('.field-keahlian-nama');
+    const previewSpan = itemEl.querySelector('.item-keahlian-preview-title');
+    namaInput?.addEventListener('input', () => {
+      previewSpan.textContent = namaInput.value.trim() ? `- ${namaInput.value.trim()}` : '';
+    });
+
+    // Event tombol hapus baris
+    itemEl.querySelector('.btn-hapus-keahlian')?.addEventListener('click', () => {
+      hapusBarisKeahlian(itemEl);
+    });
+
+    // Populate initial data jika ada
+    if (initialData.nama_keahlian) itemEl.querySelector('.field-keahlian-nama').value = initialData.nama_keahlian;
+    if (initialData.keterangan) itemEl.querySelector('.field-keahlian-keterangan').value = initialData.keterangan;
+
+    updateKeahlianNumbers();
+    return itemEl;
+  }
+
+  function hapusBarisKeahlian(itemEl) {
+    const container = document.getElementById('container-keahlian-list');
+    if (!container || !itemEl) return;
+    itemEl.remove();
+    updateKeahlianNumbers();
+
+    if (container.querySelectorAll('.item-keahlian').length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-3 text-muted empty-keahlian-notice border border-dashed rounded">
+          <p class="mb-2 small">Belum ada data status keahlian.</p>
+          <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.vaddpegawai && window.vaddpegawai.tambahKeahlian ? window.vaddpegawai.tambahKeahlian() : null">
+            <i class="fas fa-plus me-1"></i> Tambah Keahlian
+          </button>
+        </div>
+      `;
+    }
+  }
+
+  function updateKeahlianNumbers() {
+    const container = document.getElementById('container-keahlian-list');
+    if (!container) return;
+    const items = container.querySelectorAll('.item-keahlian');
+    items.forEach((item, index) => {
+      const badge = item.querySelector('.item-keahlian-number');
+      if (badge) badge.textContent = `Keahlian #${index + 1}`;
+    });
+  }
+
+  function populateDynamicRowsDropdowns() {
+    if (!masterDataCache) return;
+    const contPeng = document.getElementById('container-pengalaman-list');
+    if (contPeng) {
+      contPeng.querySelectorAll('.item-pengalaman').forEach(itemEl => {
+        const provEl = itemEl.querySelector('.field-pengalaman-provinsi');
+        if (provEl && provEl.options.length <= 1) {
+          fillDropdown(provEl, masterDataCache.provinsi, 'KD_PROVINSI', 'PROVINSI', 'Pilih Provinsi Perusahaan');
+        }
+        const jabEl = itemEl.querySelector('.field-pengalaman-jabatan');
+        if (jabEl && jabEl.options.length <= 1) {
+          fillDropdown(jabEl, masterDataCache.jabatan, 'KD_JABATAN', 'JABATAN', 'Pilih Jabatan');
+        }
+        const jenisEl = itemEl.querySelector('.field-pengalaman-jenis');
+        if (jenisEl && jenisEl.options.length <= 1) {
+          fillDropdown(jenisEl, masterDataCache.jenis_pengalaman, 'KD_JENIS_PENGALAMAN', 'JENIS_PENGALAMAN', 'Pilih Jenis Pengalaman');
+        }
+      });
+    }
+
+    const contKhl = document.getElementById('container-keahlian-list');
+    if (contKhl) {
+      contKhl.querySelectorAll('.item-keahlian').forEach(itemEl => {
+        const statusEl = itemEl.querySelector('.field-keahlian-status');
+        if (statusEl && statusEl.options.length <= 1) {
+          fillDropdown(statusEl, masterDataCache.status_keahlian, 'KD_STATUS_KEAHLIAN', 'STATUS_KEAHLIAN', 'Pilih Status Keahlian');
+        }
+      });
+    }
   }
 
   function bindFotoPreview() {
@@ -372,26 +668,94 @@
     const filePdk = document.getElementById('add-pendidikan-upload')?.files?.[0];
     if (filePdk) formData.append('file_pendidikan', filePdk);
 
-    // 6. Pengalaman Kerja
-    formData.append('nama_perusahaan', document.getElementById('add-nama-perusahaan')?.value.trim() || '');
-    formData.append('pengalaman_alamat', document.getElementById('add-pengalaman-alamat')?.value.trim() || '');
-    formData.append('pengalaman_provinsi', document.getElementById('add-pengalaman-provinsi')?.value || '');
-    formData.append('pengalaman_kabupaten', document.getElementById('add-pengalaman-kabupaten')?.value || '');
-    formData.append('pengalaman_kecamatan', document.getElementById('add-pengalaman-kecamatan')?.value || '');
-    formData.append('pengalaman_kelurahan', document.getElementById('add-pengalaman-kelurahan')?.value || '');
-    formData.append('pengalaman_periode_mulai', document.getElementById('add-pengalaman-mulai')?.value || '');
-    formData.append('pengalaman_periode_selesai', document.getElementById('add-pengalaman-selesai')?.value || '');
-    formData.append('pengalaman_jabatan', document.getElementById('add-pengalaman-jabatan')?.value || '');
-    formData.append('pengalaman_jenis', document.getElementById('add-pengalaman-jenis')?.value || '');
-    const filePeng = document.getElementById('add-pengalaman-upload')?.files?.[0];
-    if (filePeng) formData.append('file_pengalaman', filePeng);
+    // 6. Pengalaman Kerja (Multi-Entry / Repeater)
+    const listPengalaman = [];
+    const itemPengEls = document.querySelectorAll('#container-pengalaman-list .item-pengalaman');
+    itemPengEls.forEach((el, idx) => {
+      const perusahaan = el.querySelector('.field-pengalaman-perusahaan')?.value.trim() || '';
+      const alamat = el.querySelector('.field-pengalaman-alamat')?.value.trim() || '';
+      const kdProv = el.querySelector('.field-pengalaman-provinsi')?.value || '';
+      const kdKab = el.querySelector('.field-pengalaman-kabupaten')?.value || '';
+      const kdKec = el.querySelector('.field-pengalaman-kecamatan')?.value || '';
+      const kdKel = el.querySelector('.field-pengalaman-kelurahan')?.value || '';
+      const mulai = el.querySelector('.field-pengalaman-mulai')?.value || '';
+      const selesai = el.querySelector('.field-pengalaman-selesai')?.value || '';
+      const kdJab = el.querySelector('.field-pengalaman-jabatan')?.value || '';
+      const jabSelect = el.querySelector('.field-pengalaman-jabatan');
+      const namaJab = (jabSelect && jabSelect.selectedIndex > 0) ? jabSelect.options[jabSelect.selectedIndex].text : '';
+      const kdJenis = el.querySelector('.field-pengalaman-jenis')?.value || '';
+      const fileInput = el.querySelector('.field-pengalaman-sk');
+      const fileSk = fileInput?.files?.[0];
 
-    // 7. Keahlian
-    formData.append('nama_keahlian', document.getElementById('add-keahlian-nama')?.value.trim() || '');
-    formData.append('keahlian_status', document.getElementById('add-keahlian-status')?.value || '1');
-    formData.append('keahlian_keterangan', document.getElementById('add-keahlian-keterangan')?.value.trim() || '');
-    const fileKhl = document.getElementById('add-keahlian-upload')?.files?.[0];
-    if (fileKhl) formData.append('file_keahlian', fileKhl);
+      if (perusahaan || fileSk || kdJab) {
+        listPengalaman.push({
+          nama_perusahaan: perusahaan,
+          alamat: alamat,
+          kd_provinsi: kdProv,
+          kd_kabupaten: kdKab,
+          kd_kecamatan: kdKec,
+          kd_kelurahan: kdKel,
+          periode_mulai: mulai,
+          periode_selesai: selesai,
+          kd_jabatan: kdJab,
+          jabatan: namaJab,
+          kd_jenis_pengalaman: kdJenis
+        });
+
+        if (fileSk) {
+          formData.append(`file_pengalaman_${listPengalaman.length - 1}`, fileSk);
+        }
+      }
+    });
+
+    formData.append('pengalaman_list', JSON.stringify(listPengalaman));
+    if (listPengalaman.length > 0) {
+      formData.append('nama_perusahaan', listPengalaman[0].nama_perusahaan);
+      formData.append('pengalaman_alamat', listPengalaman[0].alamat);
+      formData.append('pengalaman_provinsi', listPengalaman[0].kd_provinsi);
+      formData.append('pengalaman_kabupaten', listPengalaman[0].kd_kabupaten);
+      formData.append('pengalaman_kecamatan', listPengalaman[0].kd_kecamatan);
+      formData.append('pengalaman_kelurahan', listPengalaman[0].kd_kelurahan);
+      formData.append('pengalaman_periode_mulai', listPengalaman[0].periode_mulai);
+      formData.append('pengalaman_periode_selesai', listPengalaman[0].periode_selesai);
+      formData.append('pengalaman_jabatan', listPengalaman[0].kd_jabatan);
+      formData.append('pengalaman_nama_jabatan', listPengalaman[0].jabatan);
+      formData.append('pengalaman_jenis', listPengalaman[0].kd_jenis_pengalaman);
+      const firstFile = itemPengEls[0]?.querySelector('.field-pengalaman-sk')?.files?.[0];
+      if (firstFile) formData.append('file_pengalaman', firstFile);
+    }
+
+    // 7. Keahlian (Multi-Entry / Repeater)
+    const listKeahlian = [];
+    const itemKhlEls = document.querySelectorAll('#container-keahlian-list .item-keahlian');
+    itemKhlEls.forEach((el, idx) => {
+      const namaKhl = el.querySelector('.field-keahlian-nama')?.value.trim() || '';
+      const kdStatus = el.querySelector('.field-keahlian-status')?.value || '1';
+      const ket = el.querySelector('.field-keahlian-keterangan')?.value.trim() || '';
+      const fileInput = el.querySelector('.field-keahlian-upload');
+      const fileKhl = fileInput?.files?.[0];
+
+      if (namaKhl || fileKhl) {
+        listKeahlian.push({
+          nama_keahlian: namaKhl,
+          kd_status_keahlian: kdStatus,
+          keterangan: ket
+        });
+
+        if (fileKhl) {
+          formData.append(`file_keahlian_${listKeahlian.length - 1}`, fileKhl);
+        }
+      }
+    });
+
+    formData.append('keahlian_list', JSON.stringify(listKeahlian));
+    if (listKeahlian.length > 0) {
+      formData.append('nama_keahlian', listKeahlian[0].nama_keahlian);
+      formData.append('keahlian_status', listKeahlian[0].kd_status_keahlian);
+      formData.append('keahlian_keterangan', listKeahlian[0].keterangan);
+      const firstFile = itemKhlEls[0]?.querySelector('.field-keahlian-upload')?.files?.[0];
+      if (firstFile) formData.append('file_keahlian', firstFile);
+    }
 
     // 8. Keluarga
     formData.append('nama_keluarga', document.getElementById('add-keluarga-nama')?.value.trim() || '');
@@ -492,10 +856,117 @@
     }
   }
 
+  function resetFormPegawai() {
+    const form = document.getElementById('form-tambah-pegawai');
+    if (form) {
+      form.reset();
+    }
+
+    // 1. Reset Foto Profil & Preview
+    selectedFotoFile = null;
+    const fileFotoInput = document.getElementById('input-file-foto');
+    if (fileFotoInput) fileFotoInput.value = '';
+    const imgPreview = document.getElementById('img-preview-foto');
+    if (imgPreview) {
+      imgPreview.src = '';
+      imgPreview.classList.add('d-none');
+    }
+    const placeholderFoto = document.getElementById('placeholder-icon-foto');
+    if (placeholderFoto) {
+      placeholderFoto.classList.remove('d-none');
+    }
+
+    // 2. Reset Dependent Dropdowns Domisili
+    const kabEl = document.getElementById('add-kabupaten');
+    if (kabEl) kabEl.innerHTML = '<option value="">Pilih Kabupaten</option>';
+    const kecEl = document.getElementById('add-kecamatan');
+    if (kecEl) kecEl.innerHTML = '<option value="">Pilih Kecamatan</option>';
+    const kelEl = document.getElementById('add-kelurahan');
+    if (kelEl) kelEl.innerHTML = '<option value="">Pilih Kelurahan</option>';
+
+    // 3. Reset Dependent Dropdown Organisasi
+    const subBagianEl = document.getElementById('add-sub-bagian');
+    if (subBagianEl) subBagianEl.innerHTML = '<option value="">Pilih Sub Bagian</option>';
+
+    // 4. Reset User Kredensial
+    const buatUserCb = document.getElementById('add-buat-user');
+    const secKredensial = document.getElementById('section-kredensial-user');
+    if (buatUserCb) buatUserCb.checked = true;
+    if (secKredensial) secKredensial.classList.remove('d-none');
+    const unameInput = document.getElementById('add-username');
+    if (unameInput) {
+      unameInput.value = '';
+      delete unameInput.dataset.manualEdited;
+    }
+
+    // 5. Reset Repeater Pengalaman: bersihkan dan render ulang tepat 1 baris awal
+    const contPeng = document.getElementById('container-pengalaman-list');
+    if (contPeng) {
+      contPeng.innerHTML = '';
+      tambahBarisPengalaman();
+    }
+
+    // 6. Reset Repeater Keahlian: bersihkan dan render ulang tepat 1 baris awal
+    const contKhl = document.getElementById('container-keahlian-list');
+    if (contKhl) {
+      contKhl.innerHTML = '';
+      tambahBarisKeahlian();
+    }
+
+    // 7. Bersihkan status validasi
+    form?.querySelectorAll('.is-invalid, .is-valid').forEach(el => {
+      el.classList.remove('is-invalid', 'is-valid');
+    });
+
+    // 8. Feedback toast
+    if (typeof Swal !== 'undefined') {
+      const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 1500,
+        timerProgressBar: true
+      });
+      Toast.fire({
+        icon: 'info',
+        title: 'Formulir telah di-reset'
+      });
+    }
+  }
+
   function bindEvents() {
     document.getElementById('btn-kembali-direktori')?.addEventListener('click', handleTutupForm);
     document.getElementById('btn-batal-tambah')?.addEventListener('click', handleTutupForm);
     document.getElementById('btn-batal-add')?.addEventListener('click', handleTutupForm);
+
+    // Tombol reset formulir
+    const btnReset = document.getElementById('btn-reset-add');
+    if (btnReset && !btnReset._hasResetListener) {
+      btnReset._hasResetListener = true;
+      btnReset.addEventListener('click', (e) => {
+        e.preventDefault();
+        resetFormPegawai();
+      });
+    }
+
+    // Tombol tambah baris dinamis Pengalaman & Keahlian (menggunakan guard idempoten)
+    const btnAddPengalaman = document.getElementById('btn-tambah-pengalaman');
+    if (btnAddPengalaman && !btnAddPengalaman._hasAddListener) {
+      btnAddPengalaman._hasAddListener = true;
+      btnAddPengalaman.addEventListener('click', (e) => {
+        e.preventDefault();
+        tambahBarisPengalaman();
+      });
+    }
+
+    const btnAddKeahlian = document.getElementById('btn-tambah-keahlian');
+    if (btnAddKeahlian && !btnAddKeahlian._hasAddListener) {
+      btnAddKeahlian._hasAddListener = true;
+      btnAddKeahlian.addEventListener('click', (e) => {
+        e.preventDefault();
+        tambahBarisKeahlian();
+      });
+    }
 
     document.getElementById('form-tambah-pegawai')?.addEventListener('submit', submitFormPegawai);
     document.getElementById('btn-simpan-add-pegawai')?.addEventListener('click', (e) => {
@@ -538,9 +1009,24 @@
       bindWilayahEvents();
       bindFotoPreview();
       bindEvents();
+
+      // Render 1 baris default awal jika container masih kosong
+      const contPeng = document.getElementById('container-pengalaman-list');
+      if (contPeng && contPeng.querySelectorAll('.item-pengalaman').length === 0) {
+        tambahBarisPengalaman();
+      }
+      const contKhl = document.getElementById('container-keahlian-list');
+      if (contKhl && contKhl.querySelectorAll('.item-keahlian').length === 0) {
+        tambahBarisKeahlian();
+      }
     },
     initMasterData,
     submitFormPegawai,
+    resetForm: resetFormPegawai,
+    tambahPengalaman: tambahBarisPengalaman,
+    hapusPengalaman: hapusBarisPengalaman,
+    tambahKeahlian: tambahBarisKeahlian,
+    hapusKeahlian: hapusBarisKeahlian,
     close: handleTutupForm
   };
   document.vaddpegawai = window.vaddpegawai;
@@ -928,118 +1414,34 @@
 
           <!-- Card Pengalaman Pekerjaan -->
           <div class="card card-form-pegawai mb-3">
-            <div class="card-header bg-light py-2">
+            <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
               <div class="form-section-title mb-0">
                 <i class="fas fa-history text-primary"></i> Pengalaman Pekerjaan
               </div>
+              <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1" id="btn-tambah-pengalaman">
+                <i class="fas fa-plus me-1"></i> Tambah Pengalaman
+              </button>
             </div>
-            <div class="card-body">
-              <div class="row g-2 mb-2">
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold text-muted mb-1">Nama Perusahaan</label>
-                  <input type="text" class="form-control form-control-sm" id="add-pengalaman-perusahaan" placeholder="Nama Perusahaan">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold text-muted mb-1">Alamat</label>
-                  <input type="text" class="form-control form-control-sm" id="add-pengalaman-alamat" placeholder="Alamat Perusahaan">
-                </div>
-              </div>
-
-              <div class="row g-2 mb-2">
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold text-muted mb-1">Provinsi</label>
-                  <select class="form-select form-select-sm" id="add-pengalaman-provinsi">
-                    <option value="">Pilih Provinsi</option>
-                  </select>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold text-muted mb-1">Kabupaten</label>
-                  <select class="form-select form-select-sm" id="add-pengalaman-kabupaten">
-                    <option value="">Pilih Kabupaten</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="row g-2 mb-2">
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold text-muted mb-1">Kecamatan</label>
-                  <select class="form-select form-select-sm" id="add-pengalaman-kecamatan">
-                    <option value="">Pilih Kecamatan</option>
-                  </select>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold text-muted mb-1">Kelurahan</label>
-                  <select class="form-select form-select-sm" id="add-pengalaman-kelurahan">
-                    <option value="">Pilih Kelurahan</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="row g-2 mb-2">
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold text-muted mb-1">Periode</label>
-                  <input type="date" class="form-control form-control-sm" id="add-pengalaman-periode-mulai" placeholder="YYYY-MM-DD">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold text-muted mb-1">S/d</label>
-                  <input type="date" class="form-control form-control-sm" id="add-pengalaman-periode-selesai" placeholder="YYYY-MM-DD">
-                </div>
-              </div>
-
-              <div class="row g-2 mb-2">
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold text-muted mb-1">Jabatan</label>
-                  <select class="form-select form-select-sm" id="add-pengalaman-jabatan">
-                    <option value="">Pilih Jabatan</option>
-                  </select>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold text-muted mb-1">Jenis Pengalaman</label>
-                  <select class="form-select form-select-sm" id="add-pengalaman-jenis">
-                    <option value="">Pilih Jenis Pengalaman</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="row g-2">
-                <div class="col-md-12">
-                  <label class="form-label small fw-semibold text-muted mb-1">Upload File SK</label>
-                  <input type="file" class="form-control form-control-sm" id="add-pengalaman-sk">
-                </div>
+            <div class="card-body p-3">
+              <div id="container-pengalaman-list" class="d-flex flex-column gap-3">
+                <!-- Baris dinamis pengalaman akan digenerate via script -->
               </div>
             </div>
           </div>
 
           <!-- Card Informasi Keahlian -->
           <div class="card card-form-pegawai mb-3">
-            <div class="card-header bg-light py-2">
+            <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
               <div class="form-section-title mb-0">
-                <i class="fas fa-certificate text-primary"></i> Informasi Keahlian
+                <i class="fas fa-certificate text-primary"></i> Status Keahlian
               </div>
+              <button type="button" class="btn btn-outline-primary btn-sm px-2 py-1" id="btn-tambah-keahlian">
+                <i class="fas fa-plus me-1"></i> Tambah Keahlian
+              </button>
             </div>
-            <div class="card-body">
-              <div class="row g-2 mb-2">
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold text-muted mb-1">Nama Keahlian</label>
-                  <input type="text" class="form-control form-control-sm" id="add-keahlian-nama" placeholder="Nama Keahlian / Kompetensi">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold text-muted mb-1">Status Keahlian</label>
-                  <select class="form-select form-select-sm" id="add-keahlian-status">
-                    <option value="">Pilih Status Keahlian</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="row g-2">
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold text-muted mb-1">Keterangan</label>
-                  <input type="text" class="form-control form-control-sm" id="add-keahlian-keterangan" placeholder="Keterangan singkat keahlian">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold text-muted mb-1">Upload</label>
-                  <input type="file" class="form-control form-control-sm" id="add-keahlian-upload">
-                </div>
+            <div class="card-body p-3">
+              <div id="container-keahlian-list" class="d-flex flex-column gap-3">
+                <!-- Baris dinamis keahlian akan digenerate via script -->
               </div>
             </div>
           </div>
@@ -1140,6 +1542,9 @@
           <div class="d-flex justify-content-end gap-2 pb-4">
             <button type="button" class="btn btn-secondary btn-sm" id="btn-batal-add">
               <i class="fas fa-times me-1"></i> Batal
+            </button>
+            <button type="button" class="btn btn-warning btn-sm" id="btn-reset-add">
+              <i class="fas fa-undo me-1"></i> Reset
             </button>
             <button type="submit" class="btn btn-primary btn-sm" id="btn-simpan-add-pegawai">
               <i class="fas fa-save me-1"></i> Simpan Pegawai Baru
