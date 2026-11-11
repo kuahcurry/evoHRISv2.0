@@ -4,7 +4,7 @@
 /*                              Config                                        */
 /* -------------------------------------------------------------------------- */
 var CONFIG = {
-  isNavbarVerticalCollapsed: false,
+  isNavbarVerticalCollapsed: true,
   theme: 'light',
   isRTL: false,
   isFluid: true,
@@ -16,6 +16,10 @@ Object.keys(CONFIG).forEach(function (key) {
     localStorage.setItem(key, CONFIG[key]);
   }
 });
+// Sidebar harus collapsed pertama kali (tidak expanded), user membuka manual via toggle
+if (!sessionStorage.getItem('sidebar_manually_toggled')) {
+  localStorage.setItem('isNavbarVerticalCollapsed', true);
+}
 if (JSON.parse(localStorage.getItem('isNavbarVerticalCollapsed'))) {
   document.documentElement.classList.add('navbar-vertical-collapsed');
 }
