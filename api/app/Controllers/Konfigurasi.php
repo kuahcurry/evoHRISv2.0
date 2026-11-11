@@ -329,7 +329,10 @@ class Konfigurasi extends BaseController
     {
         try {
             $input = $this->request->getJSON(true) ?? $this->request->getPost();
-            if (empty($input['STANDARISASI']) || empty($input['JAM_MASUK']) || empty($input['JAM_PULANG'])) {
+            $namaShift = $input['STANDARISASI'] ?? $input['nama_standarisasi'] ?? null;
+            $jamMasuk = $input['JAM_MASUK'] ?? $input['jam_mulai'] ?? null;
+            $jamPulang = $input['JAM_PULANG'] ?? $input['jam_selesai'] ?? null;
+            if (empty($namaShift) || empty($jamMasuk) || empty($jamPulang)) {
                 return sendResponse(400, null, false, 'Nama Shift, Jam Masuk, dan Jam Pulang wajib diisi');
             }
 

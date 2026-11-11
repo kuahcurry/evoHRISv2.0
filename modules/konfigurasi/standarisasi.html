@@ -455,7 +455,10 @@
         const name = btn.getAttribute('data-name');
         if (confirm(`Apakah Anda yakin ingin menghapus shift "${name}"?`)) {
           try {
-            await httpPost(`${config.api_url}/konfigurasi/standarisasi/delete/${id}`, {});
+            const response = await httpPost(`${config.api_url}/konfigurasi/standarisasi/delete/${id}`, { id });
+            if (!response || Number(response.code) !== 200) {
+              throw new Error(response?.message || response?.status || 'Respons server tidak valid');
+            }
             loadShifts();
           } catch (err) {
             alert('Gagal menghapus shift: ' + err.message);
@@ -640,9 +643,13 @@
         const is_active = document.getElementById('form-shift-status').value;
 
         try {
-          await httpPost(`${config.api_url}/konfigurasi/standarisasi/save`, {
+          const response = await httpPost(`${config.api_url}/konfigurasi/standarisasi/save`, {
             id, kd_kelompok, nama_standarisasi, jam_mulai, jam_selesai, durasi_jam, is_active
           });
+          if (!response || Number(response.code) !== 200) {
+            throw new Error(response?.message || response?.status || 'Respons server tidak valid');
+          }
+
           const modalEl = document.getElementById('modal-shift-form');
           if (modalEl && window.bootstrap) {
             bootstrap.Modal.getInstance(modalEl).hide();
