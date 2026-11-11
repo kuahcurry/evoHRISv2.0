@@ -57,167 +57,240 @@
       if (res && res.code === 200 && res.data) {
         master = res.data;
 
+        // Data Pribadi & Identitas
         fillDropdown('add-agama', master.agama, 'KD_AGAMA', 'AGAMA', 'Pilih Agama');
         fillDropdown('add-identitas', master.identitas, 'KD_IDENTITAS', 'IDENTITAS', 'Pilih Jenis Identitas');
-        fillDropdown('add-goldar', master.gol_darah, 'KD_GOLONGAN_DARAH', 'GOLONGAN_DARAH', 'Pilih Golongan Darah');
-        fillDropdown('add-status-nikah', master.perkawinan, 'KD_STATUS_PERKAWINAN', 'STATUS_PERKAWINAN', 'Pilih Status Pernikahan');
+        fillDropdown('add-goldar', master.golda, 'KD_GOLDA', 'GOLONGAN_DARAH', 'Pilih Golongan Darah');
+        fillDropdown('add-status-nikah', master.status_perkawinan, 'KD_STATUS_PERKAWINAN', 'STATUS_PERKAWINAN', 'Pilih Status Pernikahan');
+
+        // Domisili
+        fillDropdown('add-provinsi', master.provinsi, 'KD_PROVINSI', 'PROVINSI', 'Pilih Provinsi');
+
+        // Penempatan
         fillDropdown('add-bagian', master.bagian, 'KD_BAGIAN', 'BAGIAN', 'Pilih Bagian / Unit Kerja');
         fillDropdown('add-jabatan', master.jabatan, 'KD_JABATAN', 'JABATAN', 'Pilih Jabatan');
-        fillDropdown('add-pangkat', master.pangkat, 'KD_PANGKAT', 'PANGKAT', 'Pilih Pangkat / Golongan');
-        fillDropdown('add-status-pegawai', master.status_pegawai, 'KD_STATUS_PEGAWAI', 'STATUS_PEGAWAI', 'Pilih Status Kepegawaian');
+        fillDropdown('add-pangkat', master.pangkat, 'KD_PANGKAT', 'PANGKAT', 'Pilih Pangkat');
+        fillDropdown('add-golongan', master.golongan, 'KD_GOLONGAN', 'GOLONGAN', 'Pilih Golongan');
+        fillDropdown('add-eselon', master.ekselon, 'KD_EKSELON', 'EKSELON', 'Pilih Eselon');
+        fillDropdown('add-status-pegawai', master.status_pegawai, 'KD_STATUS_PEGAWAI', 'STATUS_PEGAWAI', 'Pilih Status Pegawai');
         fillDropdown('add-jenis-pegawai', master.jenis_pegawai, 'KD_JENIS_PEGAWAI', 'JENIS_PEGAWAI', 'Pilih Jenis Pegawai');
-        fillDropdown('add-pendidikan', master.jenjang_pendidikan, 'KD_JENJANG', 'JENJANG_PENDIDIKAN', 'Pilih Pendidikan Terakhir');
-        fillDropdown('add-provinsi', master.provinsi, 'KD_PROVINSI', 'PROVINSI', 'Pilih Provinsi');
+        fillDropdown('add-lokasi', master.lokasi, 'KD_LOKASI', 'LOKASI', 'Pilih Lokasi Kerja');
+
+        // Pendidikan
+        fillDropdown('add-jenjang-pendidikan', master.jenjang_pendidikan, 'KD_JENJANG', 'JENJANG_PENDIDIKAN', 'Pilih Jenjang');
+        fillDropdown('add-jenis-pendidikan', master.jenis_pendidikan, 'KD_JENIS_PENDIDIKAN', 'JENIS_PENDIDIKAN', 'Pilih Jenis Pendidikan');
+        fillDropdown('add-status-lulus', master.status_lulus, 'KD_STATUS_LULUS', 'STATUS_LULUS', 'Pilih Status Lulus');
+
+        // Pengalaman
+        fillDropdown('add-pengalaman-provinsi', master.provinsi, 'KD_PROVINSI', 'PROVINSI', 'Pilih Provinsi Perusahaan');
+        fillDropdown('add-pengalaman-jabatan', master.jabatan, 'KD_JABATAN', 'JABATAN', 'Pilih Jabatan');
+        fillDropdown('add-pengalaman-jenis', master.jenis_pengalaman, 'KD_JENIS_PENGALAMAN', 'JENIS_PENGALAMAN', 'Pilih Jenis Pengalaman');
+
+        // Keahlian
+        fillDropdown('add-keahlian-status', master.status_keahlian, 'KD_STATUS_KEAHLIAN', 'STATUS_KEAHLIAN', 'Pilih Status Keahlian');
+
+        // Keluarga
+        fillDropdown('add-keluarga-hubungan', master.hubungan, 'KD_HUBUNGAN', 'HUBUNGAN', 'Pilih Hubungan');
+        fillDropdown('add-keluarga-pekerjaan', master.pekerjaan, 'KD_PEKERJAAN', 'PEKERJAAN', 'Pilih Pekerjaan');
+        fillDropdown('add-keluarga-pendidikan', master.jenjang_pendidikan, 'KD_JENJANG', 'JENJANG_PENDIDIKAN', 'Pilih Pendidikan');
+        fillDropdown('add-keluarga-goldar', master.golda, 'KD_GOLDA', 'GOLONGAN_DARAH', 'Pilih Golongan Darah');
+        fillDropdown('add-keluarga-status-asuransi', master.status_asuransi, 'KD_STATUS_ASURANSI', 'STATUS_ASURANSI', 'Pilih Status Asuransi');
+        fillDropdown('add-keluarga-nama-asuransi', master.nama_asuransi, 'KD_ASURANSI', 'NAMA_ASURANSI', 'Pilih Asuransi');
+      }
+
+      // Load Jurusan
+      const resJurusan = await httpGet(`${apiUrl}/cPegawai/get_jurusan`);
+      if (resJurusan && (resJurusan.code === 200 || Array.isArray(resJurusan.data))) {
+        const jurusanList = Array.isArray(resJurusan.data) ? resJurusan.data : (resJurusan.data?.data || []);
+        fillDropdown('add-jurusan', jurusanList, 'KD_JURUSAN', 'JURUSAN', 'Pilih Jurusan');
       }
     } catch (err) {
       console.error('Error in initMasterData:', err);
     }
   }
 
-  function fillDropdown(elId, list = [], valKey, textKey, placeholder) {
-    const el = document.getElementById(elId);
-    if (!el) return;
-    let opts = `<option value="">-- ${placeholder} --</option>`;
-    list.forEach(item => {
-      opts += `<option value="${item[valKey]}">${item[textKey]}</option>`;
-    });
-    el.innerHTML = opts;
-  }
+  function fillDropdown(elementId, items, valKey, textKey, defaultText = 'Pilih...') {
+    const el = document.getElementById(elementId);
+    if (!el || !items || !Array.isArray(items)) return;
 
-  // Cascading Wilayah Events
-  async function bindWilayahEvents() {
-    const selProv = document.getElementById('add-provinsi');
-    const selKab = document.getElementById('add-kabupaten');
-    const selKec = document.getElementById('add-kecamatan');
-    const selKel = document.getElementById('add-kelurahan');
-
-    selProv?.addEventListener('change', async (e) => {
-      const kdProv = e.target.value;
-      fillDropdown('add-kabupaten', [], '', '', 'Memuat Kabupaten / Kota...');
-      fillDropdown('add-kecamatan', [], '', '', 'Pilih Kabupaten Dahulu');
-      fillDropdown('add-kelurahan', [], '', '', 'Pilih Kecamatan Dahulu');
-      if (!kdProv) {
-        fillDropdown('add-kabupaten', [], '', '', 'Pilih Provinsi Dahulu');
-        return;
-      }
-      try {
-        const res = await httpGet(`${apiUrl}/cPegawai/get_kabupaten`, { kd_provinsi: kdProv });
-        if (res && res.code === 200) {
-          fillDropdown('add-kabupaten', res.data || [], 'KD_KABUPATEN', 'KABUPATEN', 'Pilih Kabupaten / Kota');
-        }
-      } catch (err) {
-        console.error('Error load kabupaten:', err);
-      }
-    });
-
-    selKab?.addEventListener('change', async (e) => {
-      const kdKab = e.target.value;
-      fillDropdown('add-kecamatan', [], '', '', 'Memuat Kecamatan...');
-      fillDropdown('add-kelurahan', [], '', '', 'Pilih Kecamatan Dahulu');
-      if (!kdKab) {
-        fillDropdown('add-kecamatan', [], '', '', 'Pilih Kabupaten Dahulu');
-        return;
-      }
-      try {
-        const res = await httpGet(`${apiUrl}/cPegawai/get_kecamatan`, { kd_kabupaten: kdKab });
-        if (res && res.code === 200) {
-          fillDropdown('add-kecamatan', res.data || [], 'KD_KECAMATAN', 'KECAMATAN', 'Pilih Kecamatan');
-        }
-      } catch (err) {
-        console.error('Error load kecamatan:', err);
-      }
-    });
-
-    selKec?.addEventListener('change', async (e) => {
-      const kdKec = e.target.value;
-      fillDropdown('add-kelurahan', [], '', '', 'Memuat Kelurahan / Desa...');
-      if (!kdKec) {
-        fillDropdown('add-kelurahan', [], '', '', 'Pilih Kecamatan Dahulu');
-        return;
-      }
-      try {
-        const res = await httpGet(`${apiUrl}/cPegawai/get_kelurahan`, { kd_kecamatan: kdKec });
-        if (res && res.code === 200) {
-          fillDropdown('add-kelurahan', res.data || [], 'KD_KELURAHAN', 'KELURAHAN', 'Pilih Kelurahan / Desa');
-        }
-      } catch (err) {
-        console.error('Error load kelurahan:', err);
-      }
+    el.innerHTML = `<option value="">${defaultText}</option>`;
+    items.forEach(item => {
+      const opt = document.createElement('option');
+      opt.value = item[valKey] || '';
+      opt.textContent = item[textKey] || item['NAMA_' + valKey] || item[valKey];
+      el.appendChild(opt);
     });
   }
 
-  // Preview Foto Profil
+  function bindWilayahEvents() {
+    // Domisili Wilayah
+    const provEl = document.getElementById('add-provinsi');
+    const kabEl = document.getElementById('add-kabupaten');
+    const kecEl = document.getElementById('add-kecamatan');
+    const kelEl = document.getElementById('add-kelurahan');
+
+    provEl?.addEventListener('change', async (e) => {
+      const kd = e.target.value;
+      if (!kd) {
+        if (kabEl) kabEl.innerHTML = '<option value="">Pilih Kabupaten</option>';
+        if (kecEl) kecEl.innerHTML = '<option value="">Pilih Kecamatan</option>';
+        if (kelEl) kelEl.innerHTML = '<option value="">Pilih Kelurahan</option>';
+        return;
+      }
+      try {
+        const res = await httpGet(`${apiUrl}/cPegawai/get_kabupaten?kd_provinsi=${encodeURIComponent(kd)}`);
+        const list = Array.isArray(res?.data) ? res.data : [];
+        fillDropdown('add-kabupaten', list, 'KD_KABUPATEN', 'KABUPATEN', 'Pilih Kabupaten');
+      } catch (err) {
+        console.error('Error loading kabupaten:', err);
+      }
+    });
+
+    kabEl?.addEventListener('change', async (e) => {
+      const kd = e.target.value;
+      if (!kd) {
+        if (kecEl) kecEl.innerHTML = '<option value="">Pilih Kecamatan</option>';
+        if (kelEl) kelEl.innerHTML = '<option value="">Pilih Kelurahan</option>';
+        return;
+      }
+      try {
+        const res = await httpGet(`${apiUrl}/cPegawai/get_kecamatan?kd_kabupaten=${encodeURIComponent(kd)}`);
+        const list = Array.isArray(res?.data) ? res.data : [];
+        fillDropdown('add-kecamatan', list, 'KD_KECAMATAN', 'KECAMATAN', 'Pilih Kecamatan');
+      } catch (err) {
+        console.error('Error loading kecamatan:', err);
+      }
+    });
+
+    kecEl?.addEventListener('change', async (e) => {
+      const kd = e.target.value;
+      if (!kd) {
+        if (kelEl) kelEl.innerHTML = '<option value="">Pilih Kelurahan</option>';
+        return;
+      }
+      try {
+        const res = await httpGet(`${apiUrl}/cPegawai/get_kelurahan?kd_kecamatan=${encodeURIComponent(kd)}`);
+        const list = Array.isArray(res?.data) ? res.data : [];
+        fillDropdown('add-kelurahan', list, 'KD_KELURAHAN', 'KELURAHAN', 'Pilih Kelurahan');
+      } catch (err) {
+        console.error('Error loading kelurahan:', err);
+      }
+    });
+
+    // Bagian & Sub Bagian
+    const bagianEl = document.getElementById('add-bagian');
+    const subBagianEl = document.getElementById('add-sub-bagian');
+    bagianEl?.addEventListener('change', async (e) => {
+      const kd = e.target.value;
+      if (!kd) {
+        if (subBagianEl) subBagianEl.innerHTML = '<option value="">Pilih Sub Bagian</option>';
+        return;
+      }
+      try {
+        const res = await httpGet(`${apiUrl}/cPegawai/get_sub_bagian?kd_bagian=${encodeURIComponent(kd)}`);
+        const list = Array.isArray(res?.data) ? res.data : [];
+        fillDropdown('add-sub-bagian', list, 'KD_SUB_BAGIAN', 'SUB_BAGIAN', 'Pilih Sub Bagian');
+      } catch (err) {
+        console.error('Error loading sub bagian:', err);
+      }
+    });
+
+    // Pengalaman Wilayah
+    const pengProv = document.getElementById('add-pengalaman-provinsi');
+    const pengKab = document.getElementById('add-pengalaman-kabupaten');
+    const pengKec = document.getElementById('add-pengalaman-kecamatan');
+    const pengKel = document.getElementById('add-pengalaman-kelurahan');
+
+    pengProv?.addEventListener('change', async (e) => {
+      const kd = e.target.value;
+      if (!kd) {
+        if (pengKab) pengKab.innerHTML = '<option value="">Pilih Kabupaten</option>';
+        if (pengKec) pengKec.innerHTML = '<option value="">Pilih Kecamatan</option>';
+        if (pengKel) pengKel.innerHTML = '<option value="">Pilih Kelurahan</option>';
+        return;
+      }
+      try {
+        const res = await httpGet(`${apiUrl}/cPegawai/get_kabupaten?kd_provinsi=${encodeURIComponent(kd)}`);
+        const list = Array.isArray(res?.data) ? res.data : [];
+        fillDropdown('add-pengalaman-kabupaten', list, 'KD_KABUPATEN', 'KABUPATEN', 'Pilih Kabupaten');
+      } catch (err) {
+        console.error('Error loading pengalaman kabupaten:', err);
+      }
+    });
+
+    pengKab?.addEventListener('change', async (e) => {
+      const kd = e.target.value;
+      if (!kd) {
+        if (pengKec) pengKec.innerHTML = '<option value="">Pilih Kecamatan</option>';
+        if (pengKel) pengKel.innerHTML = '<option value="">Pilih Kelurahan</option>';
+        return;
+      }
+      try {
+        const res = await httpGet(`${apiUrl}/cPegawai/get_kecamatan?kd_kabupaten=${encodeURIComponent(kd)}`);
+        const list = Array.isArray(res?.data) ? res.data : [];
+        fillDropdown('add-pengalaman-kecamatan', list, 'KD_KECAMATAN', 'KECAMATAN', 'Pilih Kecamatan');
+      } catch (err) {
+        console.error('Error loading pengalaman kecamatan:', err);
+      }
+    });
+
+    pengKec?.addEventListener('change', async (e) => {
+      const kd = e.target.value;
+      if (!kd) {
+        if (pengKel) pengKel.innerHTML = '<option value="">Pilih Kelurahan</option>';
+        return;
+      }
+      try {
+        const res = await httpGet(`${apiUrl}/cPegawai/get_kelurahan?kd_kecamatan=${encodeURIComponent(kd)}`);
+        const list = Array.isArray(res?.data) ? res.data : [];
+        fillDropdown('add-pengalaman-kelurahan', list, 'KD_KELURAHAN', 'KELURAHAN', 'Pilih Kelurahan');
+      } catch (err) {
+        console.error('Error loading pengalaman kelurahan:', err);
+      }
+    });
+  }
+
   function bindFotoPreview() {
     const box = document.getElementById('box-foto-profil');
-    const inputFoto = document.getElementById('input-file-foto');
-    const imgPreview = document.getElementById('img-preview-foto');
-    const iconPlaceholder = document.getElementById('placeholder-icon-foto');
+    const input = document.getElementById('input-file-foto');
+    const preview = document.getElementById('img-preview-foto');
+    const placeholder = document.getElementById('placeholder-icon-foto');
 
     box?.addEventListener('click', () => {
-      inputFoto?.click();
+      input?.click();
     });
 
-    inputFoto?.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      if (!file.type.match('image.*')) {
-        alert('File yang dipilih harus berupa gambar (JPG, PNG, GIF)!');
-        return;
+    input?.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        selectedFotoFile = file;
+        const reader = new FileReader();
+        reader.onload = (re) => {
+          if (preview) {
+            preview.src = re.target.result;
+            preview.classList.remove('d-none');
+          }
+          if (placeholder) {
+            placeholder.classList.add('d-none');
+          }
+        };
+        reader.readAsDataURL(file);
       }
-
-      if (file.size > 2 * 1024 * 1024) {
-        alert('Ukuran foto profil maksimal 2MB!');
-        return;
-      }
-
-      selectedFotoFile = file;
-      const reader = new FileReader();
-      reader.onload = (re) => {
-        if (imgPreview) {
-          imgPreview.src = re.target.result;
-          imgPreview.classList.remove('d-none');
-        }
-        if (iconPlaceholder) {
-          iconPlaceholder.classList.add('d-none');
-        }
-      };
-      reader.readAsDataURL(file);
     });
   }
 
-  // Handle Form Submit
   async function submitFormPegawai(e) {
     if (e) e.preventDefault();
 
-    const form = document.getElementById('form-tambah-pegawai');
-    if (!form) return;
-
-    // Reset validation visual
-    form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-
-    const nama = document.getElementById('add-nama')?.value.trim();
-    const nik = document.getElementById('add-nik')?.value.trim().replace(/[^0-9]/g, '');
     const nip = document.getElementById('add-nip')?.value.trim();
-    const tglLahir = document.getElementById('add-tgl-lahir')?.value;
-    const bagian = document.getElementById('add-bagian')?.value;
-    const jabatan = document.getElementById('add-jabatan')?.value;
-    const statusPegawai = document.getElementById('add-status-pegawai')?.value;
+    const nama = document.getElementById('add-nama')?.value.trim();
 
-    // Validasi esensial
-    if (!nama || nama.length < 3) {
-      const el = document.getElementById('add-nama');
-      if (el) el.classList.add('is-invalid');
-      alert('Nama lengkap pegawai wajib diisi minimal 3 karakter!');
-      el?.focus();
-      return;
-    }
-
-    if (nik && nik.length !== 16) {
-      const el = document.getElementById('add-nik');
-      if (el) el.classList.add('is-invalid');
-      alert(`Nomor Identitas (NIK KTP) harus 16 digit angka! (Saat ini: ${nik.length} digit)`);
-      el?.focus();
+    if (!nip || !nama) {
+      if (typeof Swal !== 'undefined') {
+        Swal.fire('Validasi Gagal', 'NIP dan Nama Lengkap Pegawai wajib diisi!', 'warning');
+      } else {
+        alert('NIP dan Nama Lengkap Pegawai wajib diisi!');
+      }
       return;
     }
 
@@ -225,129 +298,162 @@
     const oldBtnText = btnSimpan ? btnSimpan.innerHTML : '';
     if (btnSimpan) {
       btnSimpan.disabled = true;
-      btnSimpan.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan Data...';
+      btnSimpan.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Menyimpan...';
     }
 
-    let fotoFilename = '';
-    // Upload foto profil jika ada
-    if (selectedFotoFile) {
-      try {
-        const formData = new FormData();
-        formData.append('foto', selectedFotoFile);
-        formData.append('nip', nip || 'temp');
+    const formData = new FormData();
 
-        const uploadRes = await fetch(`${apiUrl}/cPegawai/upload_foto`, {
-          method: 'POST',
-          headers: {
-            'Authorization-Key': config.auth_key
-          },
-          body: formData
-        });
-        const uploadJson = await uploadRes.json();
-        if (uploadJson && (uploadJson.code === 200 || uploadJson.status === true)) {
-          fotoFilename = uploadJson.data?.filename || uploadJson.data?.file_name || uploadJson.filename || '';
-        }
-      } catch (err) {
-        console.warn('Gagal upload foto otomatis, tetap lanjut menyimpan profil:', err);
+    // 1. Foto Profil
+    if (selectedFotoFile) {
+      formData.append('foto', selectedFotoFile);
+    } else {
+      const fotoInput = document.getElementById('input-file-foto');
+      if (fotoInput && fotoInput.files && fotoInput.files[0]) {
+        formData.append('foto', fotoInput.files[0]);
       }
     }
 
-    const payload = {
-      NAMA: nama,
-      GELAR_DEPAN: document.getElementById('add-gelar-depan')?.value.trim() || '',
-      GELAR_BELAKANG: document.getElementById('add-gelar-belakang')?.value.trim() || '',
-      NIP: nip,
-      NO_IDENTITAS: nik,
-      KD_IDENTITAS: document.getElementById('add-identitas')?.value || '1',
-      NO_KK: document.getElementById('add-kk')?.value.trim() || '',
-      JENIS_KELAMIN: document.getElementById('add-jk')?.value || 'L',
-      TEMPAT_LAHIR: document.getElementById('add-tempat-lahir')?.value.trim() || '',
-      TANGGAL_LAHIR: tglLahir || '',
-      KD_AGAMA: document.getElementById('add-agama')?.value || '',
-      KD_GOLONGAN_DARAH: document.getElementById('add-goldar')?.value || '',
-      RHESUS: document.getElementById('add-rhesus')?.value || '',
-      KD_STATUS_PERKAWINAN: document.getElementById('add-status-nikah')?.value || '',
-      KD_JENJANG: document.getElementById('add-pendidikan')?.value || '',
+    // 2. Data Pribadi
+    formData.append('nip', nip);
+    formData.append('nama', nama);
+    formData.append('gelar_depan', document.getElementById('add-gelar-depan')?.value.trim() || '');
+    formData.append('gelar_belakang', document.getElementById('add-gelar-belakang')?.value.trim() || '');
+    formData.append('no_identitas', document.getElementById('add-nik')?.value.trim() || '');
+    formData.append('kd_identitas', document.getElementById('add-identitas')?.value || '1');
+    formData.append('no_kk', document.getElementById('add-kk')?.value.trim() || '');
+    formData.append('jenis_kelamin', document.getElementById('add-jk')?.value || '1');
+    formData.append('tempat_lahir', document.getElementById('add-tempat-lahir')?.value.trim() || '');
+    formData.append('tgl_lahir', document.getElementById('add-tgl-lahir')?.value || '');
+    formData.append('kd_agama', document.getElementById('add-agama')?.value || '1');
+    formData.append('kd_golda', document.getElementById('add-goldar')?.value || '1');
+    formData.append('rhesus', document.getElementById('add-rhesus')?.value || '+');
+    formData.append('kd_status_perkawinan', document.getElementById('add-status-nikah')?.value || '1');
 
-      // Penempatan & Status
-      KD_BAGIAN: bagian || '',
-      KD_JABATAN: jabatan || '',
-      KD_PANGKAT: document.getElementById('add-pangkat')?.value || '',
-      KD_STATUS_PEGAWAI: statusPegawai || '',
-      KD_JENIS_PEGAWAI: document.getElementById('add-jenis-pegawai')?.value || '',
-      TGL_MASUK: document.getElementById('add-tgl-masuk')?.value || '',
-      STATUS_AKTIF: document.getElementById('add-status-aktif')?.value || '1',
+    // 3. Kontak & Domisili
+    formData.append('handphone', document.getElementById('add-hp')?.value.trim() || '');
+    formData.append('email', document.getElementById('add-email')?.value.trim() || '');
+    formData.append('alamat', document.getElementById('add-alamat')?.value.trim() || '');
+    formData.append('kd_provinsi', document.getElementById('add-provinsi')?.value || '');
+    formData.append('kd_kabupaten', document.getElementById('add-kabupaten')?.value || '');
+    formData.append('kd_kecamatan', document.getElementById('add-kecamatan')?.value || '');
+    formData.append('kd_kelurahan', document.getElementById('add-kelurahan')?.value || '');
+    formData.append('kodepos', document.getElementById('add-kodepos')?.value.trim() || '');
+    formData.append('npwp', document.getElementById('add-npwp')?.value.trim() || '');
+    formData.append('bpjs_kes', document.getElementById('add-bpjs-kes')?.value.trim() || '');
+    formData.append('bpjs_tk', document.getElementById('add-bpjs-tk')?.value.trim() || '');
 
-      // Kontak & Alamat
-      HANDPHONE: document.getElementById('add-hp')?.value.trim() || '',
-      EMAIL: document.getElementById('add-email')?.value.trim() || '',
-      ALAMAT: document.getElementById('add-alamat')?.value.trim() || '',
-      KD_PROVINSI: document.getElementById('add-provinsi')?.value || '',
-      KD_KABUPATEN: document.getElementById('add-kabupaten')?.value || '',
-      KD_KECAMATAN: document.getElementById('add-kecamatan')?.value || '',
-      KD_KELURAHAN: document.getElementById('add-kelurahan')?.value || '',
-      KODE_POS: document.getElementById('add-kodepos')?.value.trim() || '',
+    // 4. Penempatan
+    formData.append('kd_bagian', document.getElementById('add-bagian')?.value || '');
+    formData.append('kd_subbagian', document.getElementById('add-sub-bagian')?.value || '');
+    formData.append('kd_jabatan', document.getElementById('add-jabatan')?.value || '');
+    formData.append('kd_pangkat', document.getElementById('add-pangkat')?.value || '');
+    formData.append('kd_golongan', document.getElementById('add-golongan')?.value || '');
+    formData.append('kd_eselon', document.getElementById('add-eselon')?.value || '');
+    formData.append('kd_status_pegawai', document.getElementById('add-status-pegawai')?.value || '');
+    formData.append('kd_jenis_pegawai', document.getElementById('add-jenis-pegawai')?.value || '');
+    formData.append('kd_lokasi', document.getElementById('add-lokasi')?.value || '');
+    formData.append('jenis_penempatan', document.getElementById('add-jenis-penempatan')?.value || 'Tetap');
+    formData.append('tgl_masuk', document.getElementById('add-tgl-masuk')?.value || '');
+    const fileSk = document.getElementById('add-file-sk')?.files?.[0];
+    if (fileSk) formData.append('file_penempatan', fileSk);
 
-      // Tambahan Asuransi / Pajak
-      NO_BPJS_KES: document.getElementById('add-bpjs-kes')?.value.trim() || '',
-      NO_BPJS_TK: document.getElementById('add-bpjs-tk')?.value.trim() || '',
-      NPWP: document.getElementById('add-npwp')?.value.trim() || '',
+    // 5. Pendidikan
+    formData.append('nama_lembaga', document.getElementById('add-pendidikan')?.value.trim() || '');
+    formData.append('kd_jenjang', document.getElementById('add-jenjang-pendidikan')?.value || '');
+    formData.append('kd_jenis_pendidikan', document.getElementById('add-jenis-pendidikan')?.value || '');
+    formData.append('kd_status_lulus', document.getElementById('add-status-lulus')?.value || '');
+    formData.append('kd_jurusan', document.getElementById('add-jurusan')?.value || '');
+    formData.append('ipk', document.getElementById('add-ipk')?.value.trim() || '');
+    formData.append('periode_mulai', document.getElementById('add-pendidikan-mulai')?.value || '');
+    formData.append('periode_sampai', document.getElementById('add-pendidikan-sampai')?.value || '');
+    formData.append('alamat_lembaga', document.getElementById('add-alamat-lembaga')?.value.trim() || '');
+    formData.append('nama_pejabat', document.getElementById('add-nama-pejabat')?.value.trim() || '');
+    formData.append('no_ijazah', document.getElementById('add-no-ijazah')?.value.trim() || '');
+    const filePdk = document.getElementById('add-pendidikan-upload')?.files?.[0];
+    if (filePdk) formData.append('file_pendidikan', filePdk);
 
-      // Akun User Login
-      BUAT_USER: document.getElementById('add-buat-user')?.checked ? '1' : '0',
-      USERNAME: document.getElementById('add-username')?.value.trim() || nip,
-      PASSWORD: document.getElementById('add-password')?.value || ''
-    };
+    // 6. Pengalaman Kerja
+    formData.append('nama_perusahaan', document.getElementById('add-nama-perusahaan')?.value.trim() || '');
+    formData.append('pengalaman_alamat', document.getElementById('add-pengalaman-alamat')?.value.trim() || '');
+    formData.append('pengalaman_provinsi', document.getElementById('add-pengalaman-provinsi')?.value || '');
+    formData.append('pengalaman_kabupaten', document.getElementById('add-pengalaman-kabupaten')?.value || '');
+    formData.append('pengalaman_kecamatan', document.getElementById('add-pengalaman-kecamatan')?.value || '');
+    formData.append('pengalaman_kelurahan', document.getElementById('add-pengalaman-kelurahan')?.value || '');
+    formData.append('pengalaman_periode_mulai', document.getElementById('add-pengalaman-mulai')?.value || '');
+    formData.append('pengalaman_periode_selesai', document.getElementById('add-pengalaman-selesai')?.value || '');
+    formData.append('pengalaman_jabatan', document.getElementById('add-pengalaman-jabatan')?.value || '');
+    formData.append('pengalaman_jenis', document.getElementById('add-pengalaman-jenis')?.value || '');
+    const filePeng = document.getElementById('add-pengalaman-upload')?.files?.[0];
+    if (filePeng) formData.append('file_pengalaman', filePeng);
 
-    if (fotoFilename) {
-      payload.FOTO = fotoFilename;
-    }
+    // 7. Keahlian
+    formData.append('nama_keahlian', document.getElementById('add-keahlian-nama')?.value.trim() || '');
+    formData.append('keahlian_status', document.getElementById('add-keahlian-status')?.value || '1');
+    formData.append('keahlian_keterangan', document.getElementById('add-keahlian-keterangan')?.value.trim() || '');
+    const fileKhl = document.getElementById('add-keahlian-upload')?.files?.[0];
+    if (fileKhl) formData.append('file_keahlian', fileKhl);
+
+    // 8. Keluarga
+    formData.append('nama_keluarga', document.getElementById('add-keluarga-nama')?.value.trim() || '');
+    formData.append('keluarga_hubungan', document.getElementById('add-keluarga-hubungan')?.value || '1');
+    formData.append('keluarga_tempat_lahir', document.getElementById('add-keluarga-tempat-lahir')?.value.trim() || '');
+    formData.append('keluarga_tgl_lahir', document.getElementById('add-keluarga-tgl-lahir')?.value || '');
+    formData.append('keluarga_jk', document.getElementById('add-keluarga-jk')?.value || '1');
+    formData.append('keluarga_pekerjaan', document.getElementById('add-keluarga-pekerjaan')?.value || '1');
+    formData.append('keluarga_pendidikan', document.getElementById('add-keluarga-pendidikan')?.value || '1');
+    formData.append('keluarga_goldar', document.getElementById('add-keluarga-goldar')?.value || '1');
+    formData.append('keluarga_status_asuransi', document.getElementById('add-keluarga-status-asuransi')?.value || '1');
+    formData.append('keluarga_nama_asuransi', document.getElementById('add-keluarga-nama-asuransi')?.value || '1');
+    const fileKel = document.getElementById('add-keluarga-upload')?.files?.[0];
+    if (fileKel) formData.append('file_keluarga', fileKel);
+
+    // 9. Akun Sistem
+    const buatUser = document.getElementById('add-buat-user')?.checked ? '1' : '0';
+    formData.append('buat_user', buatUser);
+    formData.append('username', document.getElementById('add-username')?.value.trim() || nip);
+    formData.append('password', document.getElementById('add-password')?.value || '');
 
     try {
-      const res = await httpPost(`${apiUrl}/cPegawai/save_data`, payload);
+      const response = await fetch(`${apiUrl}/cPegawai/save_data`, {
+        method: 'POST',
+        headers: (typeof config !== 'undefined' && config.auth_key) ? { 'Authorization-Key': config.auth_key } : {},
+        body: formData
+      });
+      const res = await response.json();
+
       if (btnSimpan) {
         btnSimpan.disabled = false;
         btnSimpan.innerHTML = oldBtnText;
       }
 
-      if (res && res.code === 200) {
-        const newId = res.data?.id_pegawai || res.data?.ID_PEGAWAI || res.data?.no_auto || '';
-        
+      if (res && (res.code === 200 || res.status === 200 || res.status === 'OK' || res.status === 'ok')) {
         if (typeof Swal !== 'undefined') {
           await Swal.fire({
             icon: 'success',
             title: 'Berhasil Terdaftar',
-            text: 'Data pegawai baru berhasil disimpan ke sistem.',
+            text: res.message || 'Data pegawai baru berhasil disimpan ke sistem.',
             timer: 1600,
             showConfirmButton: false
           });
         } else {
-          alert('Data pegawai baru berhasil didaftarkan ke sistem!');
+          alert(res.message || 'Data pegawai baru berhasil disimpan ke sistem.');
         }
 
-        // Jika form dibuka di dalam modal/popup EvoPopup, tutup popup-nya
-        if (window.popupTambahPegawai && typeof window.popupTambahPegawai.close === 'function') {
-          window.popupTambahPegawai.close();
-        } else {
-          const activeModal = document.querySelector('#modalTambahPegawai, .modal.show');
-          if (activeModal && typeof bootstrap !== 'undefined') {
-            const bsModal = bootstrap.Modal.getInstance(activeModal);
-            if (bsModal) bsModal.hide();
-          }
-        }
+        // Tutup form / popup
+        handleTutupForm();
 
-        // Refresh tabel pegawai jika modul list pegawai aktif
+        // Refresh tabel pegawai
         if (window.vpegawai && typeof window.vpegawai.loadData === 'function') {
           window.vpegawai.loadData();
-        } else if (typeof loadModule === 'function') {
-          loadModule('modules/pegawai/Vpegawai', '#container-isi');
+        } else if (typeof memuatUlangDataPegawai === 'function') {
+          memuatUlangDataPegawai();
         }
       } else {
-        const errMsg = res?.data?.message || res?.message || 'Gagal menyimpan data pegawai.';
+        const errMsg = res?.data?.message || res?.message || res?.status || 'Gagal menyimpan data pegawai.';
         if (typeof Swal !== 'undefined') {
-          Swal.fire('Gagal Simpan', errMsg, 'error');
+          Swal.fire('Gagal Simpan', String(errMsg), 'error');
         } else {
-          alert(errMsg);
+          alert('Gagal Simpan: ' + String(errMsg));
         }
       }
     } catch (err) {
@@ -357,9 +463,9 @@
         btnSimpan.innerHTML = oldBtnText;
       }
       if (typeof Swal !== 'undefined') {
-        Swal.fire('Error', 'Terjadi kesalahan saat menyimpan data pegawai ke server.', 'error');
+        Swal.fire('Error', 'Terjadi kendala jaringan saat menghubungi server.', 'error');
       } else {
-        alert('Terjadi kesalahan saat menyimpan data pegawai ke server.');
+        alert('Terjadi kendala jaringan saat menghubungi server.');
       }
     }
   }
@@ -367,6 +473,10 @@
   function handleTutupForm() {
     if (window.popupTambahPegawai && typeof window.popupTambahPegawai.close === 'function') {
       window.popupTambahPegawai.close();
+      return;
+    }
+    if (window.popupTambah && typeof window.popupTambah.close === 'function') {
+      window.popupTambah.close();
       return;
     }
     const activeModal = document.querySelector('#modalTambahPegawai, .modal.show');
@@ -385,8 +495,18 @@
   function bindEvents() {
     document.getElementById('btn-kembali-direktori')?.addEventListener('click', handleTutupForm);
     document.getElementById('btn-batal-tambah')?.addEventListener('click', handleTutupForm);
+    document.getElementById('btn-batal-add')?.addEventListener('click', handleTutupForm);
 
     document.getElementById('form-tambah-pegawai')?.addEventListener('submit', submitFormPegawai);
+    document.getElementById('btn-simpan-add-pegawai')?.addEventListener('click', (e) => {
+      const form = document.getElementById('form-tambah-pegawai');
+      if (form && !form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+      e.preventDefault();
+      submitFormPegawai(e);
+    });
 
     document.getElementById('add-nip')?.addEventListener('input', (e) => {
       const unameInput = document.getElementById('add-username');
@@ -413,16 +533,21 @@
 
   // Global namespace hooks
   window.vaddpegawai = {
+    init: async () => {
+      await initMasterData();
+      bindWilayahEvents();
+      bindFotoPreview();
+      bindEvents();
+    },
     initMasterData,
-    submitFormPegawai
+    submitFormPegawai,
+    close: handleTutupForm
   };
   document.vaddpegawai = window.vaddpegawai;
+  document['VaddPegawai'] = window.vaddpegawai;
 
   // Initialize
-  initMasterData();
-  bindWilayahEvents();
-  bindFotoPreview();
-  bindEvents();
+  window.vaddpegawai.init();
 </script>
 
 <template>
@@ -527,8 +652,8 @@
                 <div class="col-md-6">
                   <label class="form-label small fw-semibold text-muted mb-1">Jenis Kelamin</label>
                   <select class="form-select form-select-sm" id="add-jk">
-                    <option value="L">Laki-laki</option>
-                    <option value="P">Perempuan</option>
+                    <option value="1">Laki-laki</option>
+                    <option value="2">Perempuan</option>
                   </select>
                 </div>
                 <div class="col-md-6">
@@ -641,62 +766,379 @@
                   </select>
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label small fw-semibold text-muted mb-1">Jabatan Pegawai</label>
-                  <select class="form-select form-select-sm" id="add-jabatan">
-                    <option value="">Pilih Jabatan</option>
+                  <label class="form-label small fw-semibold text-muted mb-1">Status Kepegawaian</label>
+                  <select class="form-select form-select-sm" id="add-status-pegawai">
+                    <option value="">Pilih Status</option>
+                  </select>
+              </div>
+            </div>
+
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Sub-Bagian</label>
+                  <select class="form-select form-select-sm" id="add-sub-bagian">
+                    <option value="">Pilih Sub-Bagian</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Golongan</label>
+                  <select class="form-select form-select-sm" id="add-golongan">
+                    <option value="">Pilih Golongan</option>
                   </select>
                 </div>
               </div>
 
-              <div class="row g-2">
-                <div class="col-md-4">
-                  <label class="form-label small fw-semibold text-muted mb-1">Pangkat / Golongan</label>
-                  <select class="form-select form-select-sm" id="add-pangkat">
-                    <option value="">Pilih Pangkat</option>
-                  </select>
-                </div>
-                <div class="col-md-4">
+            <div class="row g-2 mb-2">
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold text-muted mb-1">Jabatan Pegawai</label>
+                <select class="form-select form-select-sm" id="add-jabatan">
+                  <option value="">Pilih Jabatan</option>
+                </select>
+              </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-muted mb-1">Pangkat / Golongan</label>
+              <select class="form-select form-select-sm" id="add-pangkat">
+                <option value="">Pilih Pangkat</option>
+              </select>
+              </div>
+            </div>
+
+            <div class="row g-2 mb-2">
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold text-muted mb-1">Ekselon</label>
+                <select class="form-select form-select-sm" id="add-eselon">
+                  <option value="">Pilih Eselon</option>
+                </select>
+              </div>
+              <div class="col-md-6">
                   <label class="form-label small fw-semibold text-muted mb-1">Jenis Pegawai</label>
                   <select class="form-select form-select-sm" id="add-jenis-pegawai">
                     <option value="">Pilih Jenis</option>
                   </select>
                 </div>
-                <div class="col-md-4">
-                  <label class="form-label small fw-semibold text-muted mb-1">TMT Mulai Bekerja</label>
-                  <input type="date" class="form-control form-control-sm" id="add-tgl-masuk">
+            </div>
+
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Jenis Penempatan</label>
+                  <select class="form-select form-select-sm" id="add-jenis-penempatan">
+                    <option value="">Pilih Jenis Penempatan</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Lokasi</label>
+                  <select class="form-select form-select-sm" id="add-lokasi">
+                    <option value="">Pilih Lokasi</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row g-2 mb-2">
+                <div class="col-md-12">
+                  <label class="form-label small fw-semibold text-muted mb-1">Upload Dokumen</label>
+                  <input type="file" class="form-control form-control-sm" id="add-upload-dokumen">
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Card Kontak & Domisili -->
+          <!-- Card Penempatan & Status Kerja -->
           <div class="card card-form-pegawai mb-3">
             <div class="card-header bg-light py-2">
               <div class="form-section-title mb-0">
-                <i class="fas fa-map-marker-alt text-primary"></i> Kontak & Domisili
+                <i class="fas fa-briefcase text-primary"></i> Informasi Pendidikan
               </div>
             </div>
             <div class="card-body">
-              <div class="mb-2">
-                <label class="form-label small fw-semibold text-muted mb-1">Nomor BPJS Kesehatan</label>
-                <input type="text" class="form-control form-control-sm" id="add-bpjs-kes" placeholder="13 digit No BPJS Kesehatan">
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Nama Lembaga</label>
+                  <input type="text" class="form-control form-control-sm" id="add-pendidikan" placeholder="Nama Lembaga / Universitas / Sekolah">
+                </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold text-muted mb-1">Jenis Pendidikan</label>
+                <select class="form-select form-select-sm" id="add-jenis-pendidikan">
+                  <option value="">Pilih Jenis Pendidikan</option>
+                </select>
               </div>
-              <div class="mb-2">
-                <label class="form-label small fw-semibold text-muted mb-1">Nomor BPJS Ketenagakerjaan</label>
-                <input type="text" class="form-control form-control-sm" id="add-bpjs-tk" placeholder="No BPJS TK / Jamsostek">
+            </div>
+
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Alamat Lembaga</label>
+                  <input type="text" class="form-control form-control-sm" id="add-alamat-lembaga" placeholder="Alamat Lembaga">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Status Lulus</label>
+                  <select class="form-select form-select-sm" id="add-status-lulus">
+                    <option value="">Pilih Status Lulus</option>
+                  </select>
+                </div>
               </div>
-              <div>
-                <label class="form-label small fw-semibold text-muted mb-1">NPWP</label>
-                <input type="text" class="form-control form-control-sm" id="add-npwp" placeholder="Nomor Pokok Wajib Pajak">
+
+            <div class="row g-2 mb-2">
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold text-muted mb-1">Tanggal Periode</label>
+                <input type="date" class="form-control form-control-sm" id="add-tgl-periode" placeholder="Contoh: 2020-2024">
               </div>
-               
-              
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold text-muted mb-1">IPK</label>
+              <input type="text" class="form-control form-control-sm" id="add-ipk" placeholder="Contoh: 3.50">
+              </div>
+            </div>
+
+            <div class="row g-2 mb-2">
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold text-muted mb-1">Sampai Dengan</label>
+                <input type="date" class="form-control form-control-sm" id="add-sampai-dengan" placeholder="Contoh: 2024">
+              </div>
+              <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Nomer Ijazah dan Sertifikat</label>
+                  <input type="text" class="form-control form-control-sm" id="add-no-ijazah" placeholder="Contoh: 123456789">
+                </div>
+            </div>
+
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Jenjang Pendidikan</label>
+                  <select class="form-select form-select-sm" id="add-jenjang-pendidikan">
+                    <option value="">Pilih Jenjang Pendidikan</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Nama Pejabat</label>
+                  <input type="text" class="form-control form-control-sm" id="add-nama-pejabat" placeholder="Nama Pejabat">
+                </div>
+              </div>
+
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Jurusan</label>
+                  <select class="form-select form-select-sm" id="add-jurusan">
+                    <option value="">Pilih Jurusan</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Upload Ijazah</label>
+                  <input type="file" class="form-control form-control-sm" id="add-upload-ijazah">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card Pengalaman Pekerjaan -->
+          <div class="card card-form-pegawai mb-3">
+            <div class="card-header bg-light py-2">
+              <div class="form-section-title mb-0">
+                <i class="fas fa-history text-primary"></i> Pengalaman Pekerjaan
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Nama Perusahaan</label>
+                  <input type="text" class="form-control form-control-sm" id="add-pengalaman-perusahaan" placeholder="Nama Perusahaan">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Alamat</label>
+                  <input type="text" class="form-control form-control-sm" id="add-pengalaman-alamat" placeholder="Alamat Perusahaan">
+                </div>
+              </div>
+
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Provinsi</label>
+                  <select class="form-select form-select-sm" id="add-pengalaman-provinsi">
+                    <option value="">Pilih Provinsi</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Kabupaten</label>
+                  <select class="form-select form-select-sm" id="add-pengalaman-kabupaten">
+                    <option value="">Pilih Kabupaten</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Kecamatan</label>
+                  <select class="form-select form-select-sm" id="add-pengalaman-kecamatan">
+                    <option value="">Pilih Kecamatan</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Kelurahan</label>
+                  <select class="form-select form-select-sm" id="add-pengalaman-kelurahan">
+                    <option value="">Pilih Kelurahan</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Periode</label>
+                  <input type="date" class="form-control form-control-sm" id="add-pengalaman-periode-mulai" placeholder="YYYY-MM-DD">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">S/d</label>
+                  <input type="date" class="form-control form-control-sm" id="add-pengalaman-periode-selesai" placeholder="YYYY-MM-DD">
+                </div>
+              </div>
+
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Jabatan</label>
+                  <select class="form-select form-select-sm" id="add-pengalaman-jabatan">
+                    <option value="">Pilih Jabatan</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Jenis Pengalaman</label>
+                  <select class="form-select form-select-sm" id="add-pengalaman-jenis">
+                    <option value="">Pilih Jenis Pengalaman</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row g-2">
+                <div class="col-md-12">
+                  <label class="form-label small fw-semibold text-muted mb-1">Upload File SK</label>
+                  <input type="file" class="form-control form-control-sm" id="add-pengalaman-sk">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card Informasi Keahlian -->
+          <div class="card card-form-pegawai mb-3">
+            <div class="card-header bg-light py-2">
+              <div class="form-section-title mb-0">
+                <i class="fas fa-certificate text-primary"></i> Informasi Keahlian
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Nama Keahlian</label>
+                  <input type="text" class="form-control form-control-sm" id="add-keahlian-nama" placeholder="Nama Keahlian / Kompetensi">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Status Keahlian</label>
+                  <select class="form-select form-select-sm" id="add-keahlian-status">
+                    <option value="">Pilih Status Keahlian</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Keterangan</label>
+                  <input type="text" class="form-control form-control-sm" id="add-keahlian-keterangan" placeholder="Keterangan singkat keahlian">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Upload</label>
+                  <input type="file" class="form-control form-control-sm" id="add-keahlian-upload">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card Informasi Keluarga -->
+          <div class="card card-form-pegawai mb-3">
+            <div class="card-header bg-light py-2">
+              <div class="form-section-title mb-0">
+                <i class="fas fa-users text-primary"></i> Informasi Keluarga
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Nama</label>
+                  <input type="text" class="form-control form-control-sm" id="add-keluarga-nama" placeholder="Nama Anggota Keluarga">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Hubungan</label>
+                  <select class="form-select form-select-sm" id="add-keluarga-hubungan">
+                    <option value="">Pilih Hubungan</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Tempat Lahir</label>
+                  <input type="text" class="form-control form-control-sm" id="add-keluarga-tempat-lahir" placeholder="Kota / Kabupaten Lahir">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Tanggal Lahir</label>
+                  <input type="date" class="form-control form-control-sm" id="add-keluarga-tgl-lahir" placeholder="YYYY-MM-DD">
+                </div>
+              </div>
+
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Jenis Kelamin</label>
+                  <select class="form-select form-select-sm" id="add-keluarga-jk">
+                    <option value="">Pilih Jenis Kelamin</option>
+                    <option value="1">Laki-laki</option>
+                    <option value="2">Perempuan</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Pekerjaan</label>
+                  <select class="form-select form-select-sm" id="add-keluarga-pekerjaan">
+                    <option value="">Pilih Pekerjaan</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Jenjang Pendidikan</label>
+                  <select class="form-select form-select-sm" id="add-keluarga-pendidikan">
+                    <option value="">Pilih Pendidikan</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Gol. Darah</label>
+                  <select class="form-select form-select-sm" id="add-keluarga-goldar">
+                    <option value="">Pilih Gol. Darah</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="AB">AB</option>
+                    <option value="O">O</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Status Asuransi</label>
+                  <select class="form-select form-select-sm" id="add-keluarga-status-asuransi">
+                    <option value="">Pilih Status Asuransi</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-semibold text-muted mb-1">Nama Asuransi</label>
+                  <select class="form-select form-select-sm" id="add-keluarga-nama-asuransi">
+                    <option value="">Pilih Nama Asuransi</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row g-2">
+                <div class="col-md-12">
+                  <label class="form-label small fw-semibold text-muted mb-1">Upload Akte/KTP</label>
+                  <input type="file" class="form-control form-control-sm" id="add-keluarga-upload">
+                </div>
+              </div>
             </div>
           </div>
 
           <!-- Action Buttons -->
           <div class="d-flex justify-content-end gap-2 pb-4">
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-batal-add" onclick="loadModule('modules/pegawai/Vpegawai', '#container-isi')">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-batal-add">
               <i class="fas fa-times me-1"></i> Batal
             </button>
             <button type="submit" class="btn btn-primary btn-sm" id="btn-simpan-add-pegawai">

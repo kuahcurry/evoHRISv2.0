@@ -200,86 +200,313 @@ class cPegawai extends BaseController
     }
 
     /**
-     * Simpan Pegawai Baru (VaddPegawai)
+     * Simpan Pegawai Baru Lengkap (Multipart FormData & JSON)
      */
-    public function simpan_data_pegawai()
+    public function save_data()
     {
+        // Support both JSON payload and multipart FormData
         $req = $this->request->getJSON(true) ?: $this->request->getPost();
+        if (empty($req)) {
+            $req = $_POST;
+        }
 
-        $nip  = trim($req['nip'] ?? $req['NIP'] ?? '');
-        $nama = trim($req['nama'] ?? $req['NAMA'] ?? '');
+        // Helper to get string / int / null safely
+        $val = function($keys, $default = null) use ($req) {
+            if (!is_array($keys)) $keys = [$keys];
+            foreach ($keys as $k) {
+                if (isset($req[$k]) && $req[$k] !== '') {
+                    return trim((string)$req[$k]);
+                }
+            }
+            return $default;
+        };
+
+        $valInt = function($keys, $default = null) use ($req) {
+            if (!is_array($keys)) $keys = [$keys];
+            foreach ($keys as $k) {
+                if (isset($req[$k]) && $req[$k] !== '' && is_numeric($req[$k])) {
+                    return (int)$req[$k];
+                }
+            }
+            return $default;
+        };
+
+        $nip  = $val(['nip', 'NIP', 'txt_nip', 'add-nip']);
+        $nama = $val(['nama', 'NAMA', 'txt_nama', 'add-nama']);
 
         if (empty($nip) || empty($nama)) {
             return sendResponse(400, null, 'NIP dan Nama Pegawai wajib diisi');
         }
 
+        // Cek duplikasi NIP
         $cek = $this->db->table('pegawai')->where('NIP', $nip)->get()->getRowArray();
         if ($cek) {
             return sendResponse(400, null, 'NIP sudah terdaftar dalam sistem');
         }
 
-        $max = $this->db->table('pegawai')->selectMax('NO_AUTO', 'max_no')->get()->getRowArray();
-        $noAuto = ($max['max_no'] ?? 0) + 1;
-        $idPegawai = (string) $noAuto;
+        // Upload Helper
+        $uploadDir = ROOTPATH . '../assets/user/';
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0777, true);
+        }
+        $uploadedFiles = [];
+
+        $handleUpload = function($fileKey) use ($uploadDir, &$uploadedFiles) {
+            try {
+                $file = $this->request->getFile($fileKey);
+                if ($file && $file->isValid() && !$file->hasMoved()) {
+                    $ext = $file->getClientExtension();
+                    $newName = time() . '_' . bin2hex(random_bytes(6)) . ($ext ? '.' . $ext : '');
+                    $file->move($uploadDir, $newName);
+                    $uploadedFiles[] = $uploadDir . $newName;
+                    return $newName;
+                }
+            } catch (\Exception $e) {
+                log_message('error', 'File upload error: ' . $e->getMessage());
+            }
+            return '';
+        };
+
+        // Handle uploaded files
+        $fotoProfile    = $handleUpload('foto') ?: $handleUpload('imgprofile') ?: $handleUpload('input-file-foto') ?: $val(['FOTO', 'foto', 'txt_foto'], '');
+        $filePenempatan = $handleUpload('file_penempatan') ?: $handleUpload('dokumen_penempatan') ?: $handleUpload('add-upload-dokumen');
+        $filePendidikan = $handleUpload('file_pendidikan') ?: $handleUpload('upload_ijazah') ?: $handleUpload('add-upload-ijazah');
+        $filePengalaman = $handleUpload('file_pengalaman') ?: $handleUpload('upload_sk') ?: $handleUpload('add-pengalaman-sk');
+        $fileKeahlian   = $handleUpload('file_keahlian') ?: $handleUpload('upload_keahlian') ?: $handleUpload('add-keahlian-upload');
+        $fileKeluarga   = $handleUpload('file_keluarga') ?: $handleUpload('upload_keluarga') ?: $handleUpload('add-keluarga-upload');
+
+        // Hitung ID_PEGAWAI baru
+        $resId = $this->db->query("SELECT COALESCE(MAX(CAST(ID_PEGAWAI AS UNSIGNED)), 0) + 1 AS new_id FROM pegawai")->getRowArray();
+        $idPegawai = (string)($resId['new_id'] ?? 1);
+
+        // Normalize Jenis Kelamin: 1 (Laki-laki), 2 (Perempuan)
+        $jkRaw = $val(['jenis_kelamin', 'JENIS_KELAMIN', 'cmb_jk', 'add-jk'], '1');
+        $jk = (strtoupper((string)$jkRaw) === 'P' || $jkRaw === '2' || stripos((string)$jkRaw, 'perempuan') !== false) ? 2 : 1;
+
+        $tglLahir = $val(['tgl_lahir', 'tanggal_lahir', 'TANGGAL_LAHIR', 'txt_tgl_lahir', 'add-tgl-lahir']);
+        $tglMasuk = $val(['tgl_masuk', 'tanggal_masuk', 'TANGGAL_MASUK', 'txt_tgl_masuk', 'add-tgl-masuk']) ?: date('Y-m-d');
 
         $dataPegawai = [
-            'NO_AUTO'              => $noAuto,
             'ID_PEGAWAI'           => $idPegawai,
             'NIP'                  => $nip,
             'NAMA'                 => $nama,
-            'GELAR_DEPAN'          => $req['gelar_depan'] ?? $req['GELAR_DEPAN'] ?? '',
-            'GELAR_BELAKANG'       => $req['gelar_belakang'] ?? $req['GELAR_BELAKANG'] ?? '',
-            'KD_AGAMA'             => $req['kd_agama'] ?? $req['KD_AGAMA'] ?? null,
-            'KD_IDENTITAS'         => $req['kd_identitas'] ?? $req['KD_IDENTITAS'] ?? null,
-            'NO_IDENTITAS'         => $req['no_identitas'] ?? $req['NO_IDENTITAS'] ?? '',
-            'KD_GOLDA'             => $req['kd_golda'] ?? $req['KD_GOLDA'] ?? null,
-            'KD_STATUS_PERKAWINAN' => $req['kd_status_perkawinan'] ?? $req['KD_STATUS_PERKAWINAN'] ?? null,
-            'TEMPAT_LAHIR'         => $req['tempat_lahir'] ?? $req['TEMPAT_LAHIR'] ?? '',
-            'TANGGAL_LAHIR'        => !empty($req['tanggal_lahir'] ?? $req['TANGGAL_LAHIR']) ? ($req['tanggal_lahir'] ?? $req['TANGGAL_LAHIR']) : null,
-            'JENIS_KELAMIN'        => $req['jenis_kelamin'] ?? $req['JENIS_KELAMIN'] ?? 'L',
-            'ALAMAT'               => $req['alamat'] ?? $req['ALAMAT'] ?? '',
-            'KD_PROVINSI'          => $req['kd_provinsi'] ?? $req['KD_PROVINSI'] ?? null,
-            'KD_KABUPATEN'         => $req['kd_kabupaten'] ?? $req['KD_KABUPATEN'] ?? null,
-            'KD_KECAMATAN'         => $req['kd_kecamatan'] ?? $req['KD_KECAMATAN'] ?? null,
-            'KD_KELURAHAN'         => $req['kd_kelurahan'] ?? $req['KD_KELURAHAN'] ?? null,
-            'KODE_POS'             => $req['kode_pos'] ?? $req['KODE_POS'] ?? '',
-            'TELEPON'              => $req['telepon'] ?? $req['TELEPON'] ?? '',
-            'HANDPHONE'            => $req['handphone'] ?? $req['HANDPHONE'] ?? '',
-            'EMAIL'                => $req['email'] ?? $req['EMAIL'] ?? '',
-            'status_aktif'         => $req['status_aktif'] ?? 1
+            'NAMA_ALIAS'           => $val(['nama_alias', 'NAMA_ALIAS', 'txt_alias'], ''),
+            'TEMPAT_LAHIR'         => $val(['tempat_lahir', 'TEMPAT_LAHIR', 'txt_tempat_lahir', 'add-tempat-lahir'], ''),
+            'TANGGAL_LAHIR'        => !empty($tglLahir) ? $tglLahir : null,
+            'JENIS_KELAMIN'        => $jk,
+            'KD_AGAMA'             => $valInt(['kd_agama', 'KD_AGAMA', 'cmb_agama', 'add-agama']),
+            'KD_GOLDA'             => $valInt(['kd_golda', 'KD_GOLDA', 'cmb_golda', 'add-goldar']),
+            'KD_STATUS_PERKAWINAN' => $valInt(['kd_status_perkawinan', 'KD_STATUS_PERKAWINAN', 'cmb_status_nikah', 'add-status-nikah']),
+            'ALAMAT'               => $val(['alamat', 'ALAMAT', 'txt_alamat', 'add-alamat'], ''),
+            'ALAMAT_DOMISILI'      => $val(['alamat_domisili', 'ALAMAT_DOMISILI'], ''),
+            'KD_PROVINSI'          => $valInt(['kd_provinsi', 'KD_PROVINSI', 'cmb_provinsi', 'add-provinsi']),
+            'KD_KABUPATEN'         => $valInt(['kd_kabupaten', 'KD_KABUPATEN', 'cmb_kabupaten', 'add-kabupaten']),
+            'KD_KECAMATAN'         => $valInt(['kd_kecamatan', 'KD_KECAMATAN', 'cmb_kecamatan', 'add-kecamatan']),
+            'KD_KELURAHAN'         => $valInt(['kd_kelurahan', 'KD_KELURAHAN', 'cmb_kelurahan', 'add-kelurahan']),
+            'KODEPOS'              => $val(['kodepos', 'KODEPOS', 'kode_pos', 'KODE_POS', 'txt_kodepos', 'add-kodepos'], ''),
+            'TELEPHONE'            => $val(['telephone', 'TELEPHONE', 'telepon', 'TELEPON', 'txt_telepon'], ''),
+            'HANDPHONE'            => $val(['handphone', 'HANDPHONE', 'hp', 'txt_hp', 'add-hp'], ''),
+            'EMAIL'                => $val(['email', 'EMAIL', 'txt_email', 'add-email'], ''),
+            'KD_IDENTITAS'         => $valInt(['kd_identitas', 'KD_IDENTITAS', 'cmb_identitas', 'add-identitas']),
+            'NO_IDENTITAS'         => $val(['no_identitas', 'NO_IDENTITAS', 'nik', 'txt_nik', 'add-nik'], ''),
+            'NO_NPWP'              => $val(['no_npwp', 'NO_NPWP', 'npwp', 'txt_npwp', 'add-npwp'], ''),
+            'FOTO'                 => $fotoProfile ?: '',
+            'TANGGAL_MASUK'        => !empty($tglMasuk) ? $tglMasuk : null,
+            'status_aktif'         => 1,
+            'jml_cuti'             => 12
         ];
 
         $this->db->transStart();
+
+        // 1. Insert Pegawai
         $this->db->table('pegawai')->insert($dataPegawai);
 
-        if (!empty($req['kd_bagian']) || !empty($req['kd_jabatan'])) {
-            $maxPen = $this->db->table('detail_penempatan_pegawai')->selectMax('KD_PENEMPATAN', 'max_id')->get()->getRowArray();
-            $newKdPen = ($maxPen['max_id'] ?? 0) + 1;
+        // 2. Insert Penempatan Pegawai (Wajib)
+        $resPen = $this->db->query("SELECT COALESCE(MAX(KD_PENEMPATAN), 0) + 1 AS new_id FROM detail_penempatan_pegawai")->getRowArray();
+        $kdPenempatan = (int)($resPen['new_id'] ?? 1);
 
-            $this->db->table('detail_penempatan_pegawai')->insert([
-                'KD_PENEMPATAN'     => $newKdPen,
-                'ID_PEGAWAI'        => $idPegawai,
-                'KD_BAGIAN'         => $req['kd_bagian'] ?? null,
-                'KD_SUBBAGIAN'      => $req['kd_subbagian'] ?? null,
-                'KD_JABATAN'        => $req['kd_jabatan'] ?? null,
-                'KD_GOLONGAN'       => $req['kd_golongan'] ?? null,
-                'KD_PANGKAT'        => $req['kd_pangkat'] ?? null,
-                'KD_STATUS_PEGAWAI' => $req['kd_status_pegawai'] ?? null,
-                'KD_JENIS_PEGAWAI'  => $req['kd_jenis_pegawai'] ?? null,
-                'KD_LOKASI'         => $req['kd_lokasi'] ?? null,
-                'TGL_MASUK'         => $req['tgl_masuk'] ?? date('Y-m-d')
-            ]);
+        $kdBagian        = $valInt(['kd_bagian', 'KD_BAGIAN', 'cmb_bagian', 'add-bagian'], 1);
+        $kdSubBagian     = $valInt(['kd_subbagian', 'KD_SUBBAGIAN', 'kd_sub_bagian', 'add-sub-bagian']);
+        $kdJabatan       = $valInt(['kd_jabatan', 'KD_JABATAN', 'cmb_jabatan', 'add-jabatan'], 1);
+        $kdGolongan      = $valInt(['kd_golongan', 'KD_GOLONGAN', 'cmb_golongan', 'add-golongan'], 1);
+        $kdPangkat       = $valInt(['kd_pangkat', 'KD_PANGKAT', 'cmb_pangkat', 'add-pangkat']);
+        $kdEkselon       = $valInt(['kd_eselon', 'kd_ekselon', 'KD_EKSELON', 'cmb_eselon', 'add-eselon']);
+        $kdJenisPegawai  = $valInt(['kd_jenis_pegawai', 'KD_JENIS_PEGAWAI', 'cmb_jenis_pegawai', 'add-jenis-pegawai'], 1);
+        $kdStatusPegawai = $valInt(['kd_status_pegawai', 'KD_STATUS_PEGAWAI', 'cmb_status_pegawai', 'add-status-pegawai'], 1);
+        $kdLokasi        = $valInt(['kd_lokasi', 'KD_LOKASI', 'cmb_lokasi', 'add-lokasi'], 1);
+        $jenisPenempatan = $valInt(['jenis_penempatan', 'JENIS_PENEMPATAN', 'add-jenis-penempatan'], 1);
+
+        $dataPenempatan = [
+            'KD_PENEMPATAN'           => $kdPenempatan,
+            'ID_PEGAWAI'              => $idPegawai,
+            'KD_BAGIAN'               => $kdBagian ?: 1,
+            'KD_SUBBAGIAN'            => $kdSubBagian,
+            'KD_JABATAN'              => $kdJabatan ?: 1,
+            'KD_GOLONGAN'             => $kdGolongan ?: 1,
+            'KD_PANGKAT'              => $kdPangkat,
+            'KD_EKSELON'              => $kdEkselon,
+            'KD_JENIS_PEGAWAI'        => $kdJenisPegawai ?: 1,
+            'KD_STATUS_PEGAWAI'       => $kdStatusPegawai ?: 1,
+            'KD_LOKASI'               => $kdLokasi ?: 1,
+            'JENIS_PENEMPATAN'        => $jenisPenempatan,
+            'TANGGAL_MULAI'           => !empty($tglMasuk) ? $tglMasuk : date('Y-m-d'),
+            'TANGGAL_SK_PENGANGKATAN' => !empty($tglMasuk) ? $tglMasuk : date('Y-m-d'),
+            'IMAGE'                   => $filePenempatan ?: ''
+        ];
+        $this->db->table('detail_penempatan_pegawai')->insert($dataPenempatan);
+
+        // 3. Insert Pendidikan Pegawai (Opsional jika ada input)
+        $namaLembaga = $val(['nama_lembaga', 'NAMA_LEMBAGA', 'txt_lembaga', 'add-lembaga', 'pendidikan', 'add-pendidikan']);
+        $kdJenjang = $valInt(['kd_jenjang', 'KD_JENJANG', 'cmb_jenjang', 'add-jenjang-pendidikan']);
+        if (!empty($namaLembaga) || !empty($kdJenjang) || !empty($filePendidikan)) {
+            $resPdk = $this->db->query("SELECT COALESCE(MAX(KD_PENDIDIKAN), 0) + 1 AS new_id FROM detail_pendidikan_pegawai")->getRowArray();
+            $kdPendidikan = (int)($resPdk['new_id'] ?? 1);
+
+            $dataPendidikan = [
+                'KD_PENDIDIKAN'       => $kdPendidikan,
+                'ID_PEGAWAI'          => $idPegawai,
+                'NAMA_LEMBAGA'        => $namaLembaga ?: '-',
+                'KD_JENJANG'          => $kdJenjang ?: 1,
+                'ALAMAT'              => $val(['alamat_lembaga', 'ALAMAT_LEMBAGA', 'add-alamat-lembaga'], '-'),
+                'PERIODE_MULAI'       => $val(['periode_mulai', 'PERIODE_MULAI', 'add-tgl-periode'], '2000-01-01'),
+                'PERIODE_SAMPAI'      => $val(['periode_sampai', 'PERIODE_SAMPAI', 'add-sampai-dengan'], '2004-01-01'),
+                'IPK'                 => $val(['ipk', 'IPK', 'add-ipk'], '0.00'),
+                'KD_JURUSAN'          => $valInt(['kd_jurusan', 'KD_JURUSAN', 'cmb_jurusan', 'add-jurusan']),
+                'KD_STATUS_LULUS'     => $valInt(['kd_status_lulus', 'KD_STATUS_LULUS', 'add-status-lulus'], 1),
+                'KD_JENIS_PENDIDIKAN' => $valInt(['kd_jenis_pendidikan', 'KD_JENIS_PENDIDIKAN', 'add-jenis-pendidikan'], 1),
+                'NAMA_PEJABAT'        => $val(['nama_pejabat', 'NAMA_PEJABAT', 'add-nama-pejabat'], '-'),
+                'NO_IJAZAH'           => $val(['no_ijazah', 'NO_IJAZAH', 'add-no-ijazah'], '-'),
+                'GAMBAR_IJAZAH'       => $filePendidikan ?: '',
+                'JURUSAN'             => $val(['jurusan', 'JURUSAN', 'txt_jurusan'], '-')
+            ];
+            $this->db->table('detail_pendidikan_pegawai')->insert($dataPendidikan);
         }
+
+        // 4. Insert Pengalaman Pegawai (Opsional jika ada input)
+        $namaPerusahaan = $val(['nama_perusahaan', 'NAMA_PERUSAHAAN', 'txt_perusahaan', 'pengalaman_perusahaan', 'add-pengalaman-perusahaan']);
+        if (!empty($namaPerusahaan) || !empty($filePengalaman)) {
+            $resPeng = $this->db->query("SELECT COALESCE(MAX(KD_PENGALAMAN), 0) + 1 AS new_id FROM detail_pengalaman_pegawai")->getRowArray();
+            $kdPengalaman = (int)($resPeng['new_id'] ?? 1);
+
+            $dataPengalaman = [
+                'KD_PENGALAMAN'       => $kdPengalaman,
+                'ID_PEGAWAI'          => $idPegawai,
+                'NAMA_PERUSAHAAN'     => $namaPerusahaan ?: '-',
+                'KD_JABATAN'          => $valInt(['pengalaman_jabatan', 'add-pengalaman-jabatan'], 1),
+                'JABATAN'             => $val(['pengalaman_nama_jabatan', 'add-pengalaman-nama-jabatan'], '-'),
+                'ALAMAT'              => $val(['pengalaman_alamat', 'add-pengalaman-alamat'], '-'),
+                'KD_JENIS_PENGALAMAN' => $valInt(['pengalaman_jenis', 'add-pengalaman-jenis'], 1),
+                'KD_PROVINSI'         => $valInt(['pengalaman_provinsi', 'add-pengalaman-provinsi'], 0),
+                'KD_KABUPATEN'        => $valInt(['pengalaman_kabupaten', 'add-pengalaman-kabupaten'], 0),
+                'KD_KECAMATAN'        => $valInt(['pengalaman_kecamatan', 'add-pengalaman-kecamatan'], 0),
+                'KD_KELURAHAN'        => $valInt(['pengalaman_kelurahan', 'add-pengalaman-kelurahan'], 0),
+                'TANGGAL_MULAI'       => $val(['pengalaman_periode_mulai', 'add-pengalaman-periode-mulai'], '2020-01-01'),
+                'TANGGAL_SAMPAI'      => $val(['pengalaman_periode_selesai', 'add-pengalaman-periode-selesai'], '2022-01-01'),
+                'IMAGE_SK'            => $filePengalaman ?: ''
+            ];
+            $this->db->table('detail_pengalaman_pegawai')->insert($dataPengalaman);
+        }
+
+        // 5. Insert Keahlian Pegawai (Opsional jika ada input)
+        $namaKeahlian = $val(['nama_keahlian', 'NAMA_KEAHLIAN', 'keahlian_nama', 'add-keahlian-nama']);
+        if (!empty($namaKeahlian) || !empty($fileKeahlian)) {
+            $resKhl = $this->db->query("SELECT COALESCE(MAX(KD_KEAHLIAN), 0) + 1 AS new_id FROM detail_keahlian_pegawai")->getRowArray();
+            $kdKeahlian = (int)($resKhl['new_id'] ?? 1);
+
+            $dataKeahlian = [
+                'KD_KEAHLIAN'         => $kdKeahlian,
+                'ID_PEGAWAI'          => $idPegawai,
+                'NAMA_KEAHLIAN'       => $namaKeahlian ?: '-',
+                'KD_STATUS_KEAHLIAN'  => $valInt(['keahlian_status', 'add-keahlian-status'], 1),
+                'KETERANGAN'          => $val(['keahlian_keterangan', 'add-keahlian-keterangan'], '-'),
+                'MULAI'               => date('Y-m-d'),
+                'SAMPAI'              => date('Y-m-d', strtotime('+5 years')),
+                'IMAGE'               => $fileKeahlian ?: ''
+            ];
+            $this->db->table('detail_keahlian_pegawai')->insert($dataKeahlian);
+        }
+
+        // 6. Insert Keluarga Pegawai (Opsional jika ada input)
+        $namaKeluarga = $val(['nama_keluarga', 'NAMA_KELUARGA', 'keluarga_nama', 'add-keluarga-nama']);
+        if (!empty($namaKeluarga) || !empty($fileKeluarga)) {
+            $resKel = $this->db->query("SELECT COALESCE(MAX(KD_KELUARGA), 0) + 1 AS new_id FROM detail_keluarga_pegawai")->getRowArray();
+            $kdKeluarga = (int)($resKel['new_id'] ?? 1);
+
+            $jkKelRaw = $val(['keluarga_jk', 'add-keluarga-jk'], '1');
+            $jkKel = (strtoupper((string)$jkKelRaw) === 'P' || $jkKelRaw === '2' || stripos((string)$jkKelRaw, 'perempuan') !== false) ? 2 : 1;
+
+            $dataKeluarga = [
+                'KD_KELUARGA'        => $kdKeluarga,
+                'ID_PEGAWAI'         => $idPegawai,
+                'NAMA'               => $namaKeluarga ?: '-',
+                'KD_HUBUNGAN'        => $valInt(['keluarga_hubungan', 'add-keluarga-hubungan'], 1),
+                'TEMPAT_LAHIR'       => $val(['keluarga_tempat_lahir', 'add-keluarga-tempat-lahir'], '-'),
+                'TGL_LAHIR'          => $val(['keluarga_tgl_lahir', 'add-keluarga-tgl-lahir'], '2000-01-01'),
+                'KD_PEKERJAAN'       => $valInt(['keluarga_pekerjaan', 'add-keluarga-pekerjaan'], 1),
+                'KD_JENJANG'         => $valInt(['keluarga_pendidikan', 'add-keluarga-pendidikan'], 1),
+                'KD_STATUS_ASURANSI' => $valInt(['keluarga_status_asuransi', 'add-keluarga-status-asuransi'], 1),
+                'KD_ASURANSI'        => $valInt(['keluarga_nama_asuransi', 'add-keluarga-nama-asuransi'], 1),
+                'JENIS_KELAMIN'      => $jkKel,
+                'KD_GOLDA'           => $valInt(['keluarga_goldar', 'add-keluarga-goldar'], 1),
+                'IMAGE_AKTE_KTP'     => $fileKeluarga ?: ''
+            ];
+            $this->db->table('detail_keluarga_pegawai')->insert($dataKeluarga);
+        }
+
+        // 7. Insert Akun Pengguna tb_users (Opsional / Checkbox)
+        $buatUser = $val(['buat_user', 'add-buat-user', 'is_create_user']);
+        $username = $val(['username', 'add-username']);
+        $password = $val(['password', 'add-password']);
+
+        if ($buatUser === '1' || $buatUser === 'true' || $buatUser === 'on' || !empty($username)) {
+            $userLogin = !empty($username) ? $username : $nip;
+            $passReal  = !empty($password) ? $password : (!empty($tglLahir) ? str_replace('-', '', $tglLahir) : '123456');
+
+            // Cek apakah username sudah ada
+            $cekUser = $this->db->table('tb_users')->where('username', $userLogin)->get()->getRowArray();
+            if (!$cekUser) {
+                $dataUser = [
+                    'nip'          => $nip,
+                    'nama_lengkap' => $nama,
+                    'pass_login'   => md5($passReal),
+                    'pass_real'    => $passReal,
+                    'foto'         => $fotoProfile ?: '',
+                    'level_akses'  => 'operator',
+                    'kd_userlevel' => 10,
+                    'status_user'  => 'valid',
+                    'status'       => 'offline',
+                    'id_pegawai'   => $idPegawai,
+                    'username'     => $userLogin,
+                    'email'        => $val(['email', 'EMAIL', 'add-email']),
+                    'allow'        => 1
+                ];
+                $this->db->table('tb_users')->insert($dataUser);
+            }
+        }
+
         $this->db->transComplete();
 
         if ($this->db->transStatus() === false) {
-            return sendResponse(500, null, 'Gagal menyimpan data pegawai ke database');
+            // Hapus file yang terlanjur diunggah jika transaksi gagal
+            foreach ($uploadedFiles as $f) {
+                if (file_exists($f)) {
+                    @unlink($f);
+                }
+            }
+            return sendResponse(500, null, 'Gagal menyimpan seluruh data pegawai ke database');
         }
 
-        return sendResponse(201, [
-            'no_auto'    => $noAuto,
-            'id_pegawai' => $idPegawai
+        return sendResponse(200, [
+            'id_pegawai' => $idPegawai,
+            'nip'        => $nip,
+            'nama'       => $nama,
+            'foto'       => $fotoProfile
         ], 'Data pegawai baru berhasil ditambahkan');
+    }
+
+    public function simpan_data_pegawai()
+    {
+        return $this->save_data();
     }
 
     /**
