@@ -269,6 +269,7 @@ class MPegawai extends Model
             'jenis_phk' => $this->db->query("SELECT KD_JENIS_PHK, JENIS_PHK FROM jenis_phk ORDER BY JENIS_PHK ASC")->getResultArray(),
             'jenis_sanksi' => $this->db->query("SELECT KD_JENIS_SANKSI, JENIS_SANKSI FROM jenis_sanksi ORDER BY JENIS_SANKSI ASC")->getResultArray(),
             'jenis_penghargaan' => $this->db->query("SELECT KD_JENIS_PENGHARGAAN, JENIS_PENGHARGAAN FROM jenis_penghargaan ORDER BY JENIS_PENGHARGAAN ASC")->getResultArray(),
+            'jenis_catatan' => $this->db->query("SELECT KD_JENIS_CATATAN, JENIS_CATATAN FROM jenis_catatan ORDER BY JENIS_CATATAN ASC")->getResultArray(),
             'jenis_cuti' => $this->db->query("SELECT KD_JENIS_CUTI, JENIS_CUTI, TOTAL_CUTI FROM jenis_cuti ORDER BY JENIS_CUTI ASC")->getResultArray(),
             'jenjang_pendidikan' => $this->db->query("SELECT KD_JENJANG, JENJANG_PENDIDIKAN FROM jenjang_pendidikan ORDER BY KD_JENJANG ASC")->getResultArray(),
         ];
@@ -1621,6 +1622,268 @@ class MPegawai extends Model
         try {
             $this->db->table('detail_cuti_pegawai')->where('KD_CUTI', $id)->delete();
             return ['code' => 200, 'message' => 'Cuti berhasil dihapus'];
+        } catch (\Exception $e) {
+            return ['code' => 500, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function getDemosi($params = [])
+    {
+        $keyword = trim($params['search'] ?? $params['keyword'] ?? '');
+
+        $sql = "SELECT dd.*,
+                       dm.KD_DEMOSI_MENJADI,
+                       dm.TGL_DEMOSI,
+                       dm.KD_BAGIAN AS KD_BAGIAN_BARU,
+                       dm.KD_JABATAN AS KD_JABATAN_BARU,
+                       dm.KD_PANGKAT AS KD_PANGKAT_BARU,
+                       dm.KD_GOLONGAN AS KD_GOLONGAN_BARU,
+                       dm.NIP_PIMPINAN,
+                       dm.NAMA_PIMPINAN,
+                       dm.KETERANGAN,
+                       COALESCE(p.NAMA, dd.NAMA) AS NAMA_PEGAWAI,
+                       b_asal.BAGIAN AS BAGIAN_ASAL,
+                       b_baru.BAGIAN AS BAGIAN_BARU,
+                       j_asal.JABATAN AS JABATAN_ASAL,
+                       j_baru.JABATAN AS JABATAN_BARU,
+                       pkt_asal.PANGKAT AS PANGKAT_ASAL,
+                       pkt_baru.PANGKAT AS PANGKAT_BARU
+                FROM detail_demosi_dari_pegawai dd
+                LEFT JOIN detail_demosi_menjadi_pegawai dm ON dm.KD_DEMOSI_DARI = dd.KD_DEMOSI_DARI
+                LEFT JOIN pegawai p ON p.ID_PEGAWAI = dd.ID_PEGAWAI
+                LEFT JOIN bagian b_asal ON b_asal.KD_BAGIAN = dd.KD_BAGIAN
+                LEFT JOIN bagian b_baru ON b_baru.KD_BAGIAN = dm.KD_BAGIAN
+                LEFT JOIN jabatan j_asal ON j_asal.KD_JABATAN = dd.KD_JABATAN
+                LEFT JOIN jabatan j_baru ON j_baru.KD_JABATAN = dm.KD_JABATAN
+                LEFT JOIN pangkat pkt_asal ON pkt_asal.KD_PANGKAT = dd.KD_PANGKAT
+                LEFT JOIN pangkat pkt_baru ON pkt_baru.KD_PANGKAT = dm.KD_PANGKAT
+                WHERE 1=1";
+        $binds = [];
+
+        if ($keyword !== '') {
+            $sql .= " AND (p.NAMA LIKE ? OR dd.NIP LIKE ? OR dd.NO_SURAT LIKE ?)";
+            $binds[] = "%$keyword%";
+            $binds[] = "%$keyword%";
+            $binds[] = "%$keyword%";
+        }
+
+        $sql .= " ORDER BY dd.KD_DEMOSI_DARI DESC LIMIT 200";
+        return $this->db->query($sql, $binds)->getResultArray();
+    }
+
+    public function saveDemosi($data)
+    {
+        try {
+            $idPegawai = $data['ID_PEGAWAI'] ?? null;
+            if (empty($idPegawai)) {
+                return ['code' => 422, 'message' => 'Pegawai belum dipilih'];
+            }
+
+            $snapshot = $this->getPegawaiSnapshot($idPegawai);
+            $kdDari = $data['KD_DEMOSI_DARI'] ?? '';
+            $isUpdate = !empty($kdDari);
+
+            $noSurat = !empty($data['NO_SURAT']) ? trim($data['NO_SURAT']) : (!empty($data['NO_SK']) ? trim($data['NO_SK']) : ('SK-DMS/' . date('Ymd') . '/' . $idPegawai));
+            $tglSurat = $this->normalizeDate($data['TGL_SURAT'] ?? $data['TGL_DEMOSI'] ?? null, date('Y-m-d'));
+            $tglDemosi = $this->normalizeDate($data['TGL_DEMOSI'] ?? null, date('Y-m-d'));
+
+            $kdBagianAsal  = !empty($data['KD_BAGIAN_ASAL']) ? (int)$data['KD_BAGIAN_ASAL'] : $snapshot['KD_BAGIAN'];
+            $kdJabatanAsal = isset($data['KD_JABATAN_ASAL']) && $data['KD_JABATAN_ASAL'] !== '' ? (int)$data['KD_JABATAN_ASAL'] : $snapshot['KD_JABATAN'];
+            $kdEkselonAsal = !empty($data['KD_EKSELON_ASAL']) ? (int)$data['KD_EKSELON_ASAL'] : $snapshot['KD_EKSELON'];
+            $kdStatusAsal  = isset($data['KD_STATUS_PEGAWAI_ASAL']) && $data['KD_STATUS_PEGAWAI_ASAL'] !== '' ? (int)$data['KD_STATUS_PEGAWAI_ASAL'] : $snapshot['KD_STATUS_PEGAWAI'];
+            $kdGolAsal     = !empty($data['KD_GOLONGAN_ASAL']) ? (int)$data['KD_GOLONGAN_ASAL'] : $snapshot['KD_GOLONGAN'];
+            $kdPangkatAsal = !empty($data['KD_PANGKAT_ASAL']) ? (int)$data['KD_PANGKAT_ASAL'] : $snapshot['KD_PANGKAT'];
+            $kdJenisAsal   = !empty($data['KD_JENIS_PEGAWAI_ASAL']) ? (int)$data['KD_JENIS_PEGAWAI_ASAL'] : $snapshot['KD_JENIS_PEGAWAI'];
+            $kdLokasiAsal  = !empty($data['KD_LOKASI_ASAL']) ? (int)$data['KD_LOKASI_ASAL'] : $snapshot['KD_LOKASI'];
+
+            $kdBagianBaru  = !empty($data['KD_BAGIAN_BARU']) ? (int)$data['KD_BAGIAN_BARU'] : (!empty($data['KD_BAGIAN']) ? (int)$data['KD_BAGIAN'] : $kdBagianAsal);
+            $kdJabatanBaru = isset($data['KD_JABATAN_BARU']) && $data['KD_JABATAN_BARU'] !== '' ? (int)$data['KD_JABATAN_BARU'] : (isset($data['KD_JABATAN']) && $data['KD_JABATAN'] !== '' ? (int)$data['KD_JABATAN'] : $kdJabatanAsal);
+            $kdEkselonBaru = !empty($data['KD_EKSELON_BARU']) ? (int)$data['KD_EKSELON_BARU'] : (!empty($data['KD_EKSELON']) ? (int)$data['KD_EKSELON'] : $kdEkselonAsal);
+            $kdStatusBaru  = isset($data['KD_STATUS_PEGAWAI_BARU']) && $data['KD_STATUS_PEGAWAI_BARU'] !== '' ? (int)$data['KD_STATUS_PEGAWAI_BARU'] : (isset($data['KD_STATUS_PEGAWAI']) && $data['KD_STATUS_PEGAWAI'] !== '' ? (int)$data['KD_STATUS_PEGAWAI'] : $kdStatusAsal);
+            $kdGolBaru     = !empty($data['KD_GOLONGAN_BARU']) ? (int)$data['KD_GOLONGAN_BARU'] : (!empty($data['KD_GOLONGAN']) ? (int)$data['KD_GOLONGAN'] : $kdGolAsal);
+            $kdPangkatBaru = !empty($data['KD_PANGKAT_BARU']) ? (int)$data['KD_PANGKAT_BARU'] : (!empty($data['KD_PANGKAT']) ? (int)$data['KD_PANGKAT'] : $kdPangkatAsal);
+            $kdJenisBaru   = !empty($data['KD_JENIS_PEGAWAI_BARU']) ? (int)$data['KD_JENIS_PEGAWAI_BARU'] : (!empty($data['KD_JENIS_PEGAWAI']) ? (int)$data['KD_JENIS_PEGAWAI'] : $kdJenisAsal);
+            $kdLokasiBaru  = !empty($data['KD_LOKASI_BARU']) ? (int)$data['KD_LOKASI_BARU'] : (!empty($data['KD_LOKASI']) ? (int)$data['KD_LOKASI'] : $kdLokasiAsal);
+
+            $nipPimpinan   = $data['NIP_PIMPINAN'] ?? '';
+            $namaPimpinan  = $data['NAMA_PIMPINAN'] ?? '';
+            $keterangan    = !empty($data['KETERANGAN']) ? $data['KETERANGAN'] : '-';
+
+            $dtDari = [
+                'ID_PEGAWAI'        => $idPegawai,
+                'NO_SURAT'          => $noSurat,
+                'TGL_SURAT'         => $tglSurat,
+                'NIP'               => $snapshot['NIP'],
+                'NAMA'              => $snapshot['NAMA'],
+                'KD_BAGIAN'         => $kdBagianAsal,
+                'KD_JABATAN'        => $kdJabatanAsal,
+                'KD_EKSELON'        => $kdEkselonAsal,
+                'KD_STATUS_PEGAWAI' => $kdStatusAsal,
+                'KD_GOLONGAN'       => $kdGolAsal,
+                'KD_PANGKAT'        => $kdPangkatAsal,
+                'KD_JENIS_PEGAWAI'  => $kdJenisAsal,
+                'KD_LOKASI'         => $kdLokasiAsal,
+            ];
+
+            if (!$isUpdate) {
+                $nextDari = $this->getNextId('detail_demosi_dari_pegawai', 'KD_DEMOSI_DARI');
+                $dtDari['KD_DEMOSI_DARI'] = $nextDari;
+                $this->db->table('detail_demosi_dari_pegawai')->insert($dtDari);
+                $kdDari = $nextDari;
+
+                $nextMenjadi = $this->getNextId('detail_demosi_menjadi_pegawai', 'KD_DEMOSI_MENJADI');
+                $dtMenjadi = [
+                    'KD_DEMOSI_MENJADI' => $nextMenjadi,
+                    'KD_DEMOSI_DARI'    => $kdDari,
+                    'NIP_PIMPINAN'       => $nipPimpinan,
+                    'NAMA_PIMPINAN'      => $namaPimpinan,
+                    'TGL_DEMOSI'        => $tglDemosi,
+                    'KD_BAGIAN'          => $kdBagianBaru,
+                    'KD_JABATAN'         => $kdJabatanBaru,
+                    'KD_EKSELON'         => $kdEkselonBaru,
+                    'KD_STATUS_PEGAWAI'  => $kdStatusBaru,
+                    'KD_GOLONGAN'        => $kdGolBaru,
+                    'KD_PANGKAT'         => $kdPangkatBaru,
+                    'KD_JENIS_PEGAWAI'   => $kdJenisBaru,
+                    'KD_LOKASI'          => $kdLokasiBaru,
+                    'KETERANGAN'         => $keterangan,
+                    'ID_PEGAWAI'         => $idPegawai,
+                ];
+                $this->db->table('detail_demosi_menjadi_pegawai')->insert($dtMenjadi);
+            } else {
+                $this->db->table('detail_demosi_dari_pegawai')->where('KD_DEMOSI_DARI', $kdDari)->update($dtDari);
+
+                $dtMenjadi = [
+                    'NIP_PIMPINAN'      => $nipPimpinan,
+                    'NAMA_PIMPINAN'     => $namaPimpinan,
+                    'TGL_DEMOSI'        => $tglDemosi,
+                    'KD_BAGIAN'         => $kdBagianBaru,
+                    'KD_JABATAN'        => $kdJabatanBaru,
+                    'KD_EKSELON'        => $kdEkselonBaru,
+                    'KD_STATUS_PEGAWAI' => $kdStatusBaru,
+                    'KD_GOLONGAN'       => $kdGolBaru,
+                    'KD_PANGKAT'        => $kdPangkatBaru,
+                    'KD_JENIS_PEGAWAI'  => $kdJenisBaru,
+                    'KD_LOKASI'         => $kdLokasiBaru,
+                    'KETERANGAN'        => $keterangan,
+                    'ID_PEGAWAI'        => $idPegawai,
+                ];
+                $this->db->table('detail_demosi_menjadi_pegawai')->where('KD_DEMOSI_DARI', $kdDari)->update($dtMenjadi);
+            }
+
+            if (!empty($data['SYNC_PEGAWAI'])) {
+                $this->db->table('pegawai')->where('ID_PEGAWAI', $idPegawai)->update([
+                    'KD_BAGIAN'         => $kdBagianBaru,
+                    'KD_JABATAN'        => $kdJabatanBaru,
+                    'KD_EKSELON'        => $kdEkselonBaru,
+                    'KD_STATUS_PEGAWAI' => $kdStatusBaru,
+                    'KD_GOLONGAN'       => $kdGolBaru,
+                    'KD_PANGKAT'        => $kdPangkatBaru,
+                    'KD_JENIS_PEGAWAI'  => $kdJenisBaru,
+                    'KD_LOKASI'         => $kdLokasiBaru,
+                ]);
+            }
+
+            return ['code' => 200, 'message' => 'Data demosi berhasil disimpan'];
+        } catch (\Exception $e) {
+            return ['code' => 500, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function deleteDemosi($id)
+    {
+        try {
+            $this->db->table('detail_demosi_menjadi_pegawai')->where('KD_DEMOSI_DARI', $id)->delete();
+            $this->db->table('detail_demosi_dari_pegawai')->where('KD_DEMOSI_DARI', $id)->delete();
+            return ['code' => 200, 'message' => 'Demosi berhasil dihapus'];
+        } catch (\Exception $e) {
+            return ['code' => 500, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function getCatatan($params = [])
+    {
+        $keyword = trim($params['search'] ?? $params['keyword'] ?? '');
+
+        $sql = "SELECT c.*,
+                       COALESCE(p.NAMA, c.NAMA) AS NAMA_PEGAWAI,
+                       jc.JENIS_CATATAN,
+                       b.BAGIAN,
+                       j.JABATAN
+                FROM detail_catatan_pegawai c
+                LEFT JOIN pegawai p ON p.ID_PEGAWAI = c.ID_PEGAWAI
+                LEFT JOIN jenis_catatan jc ON jc.KD_JENIS_CATATAN = c.KD_JENIS_CATATAN
+                LEFT JOIN bagian b ON b.KD_BAGIAN = c.KD_BAGIAN
+                LEFT JOIN jabatan j ON j.KD_JABATAN = c.KD_JABATAN
+                WHERE 1=1";
+        $binds = [];
+
+        if ($keyword !== '') {
+            $sql .= " AND (p.NAMA LIKE ? OR c.NIP LIKE ? OR c.NO_SURAT LIKE ? OR jc.JENIS_CATATAN LIKE ?)";
+            $binds[] = "%$keyword%";
+            $binds[] = "%$keyword%";
+            $binds[] = "%$keyword%";
+            $binds[] = "%$keyword%";
+        }
+
+        $sql .= " ORDER BY c.KD_CATATAN DESC LIMIT 200";
+        return $this->db->query($sql, $binds)->getResultArray();
+    }
+
+    public function saveCatatan($data)
+    {
+        try {
+            $idPegawai = $data['ID_PEGAWAI'] ?? null;
+            if (empty($idPegawai)) {
+                return ['code' => 422, 'message' => 'Pegawai belum dipilih'];
+            }
+
+            $snapshot = $this->getPegawaiSnapshot($idPegawai);
+            $kd = $data['KD_CATATAN'] ?? '';
+
+            $noSurat = !empty($data['NO_SURAT']) ? trim($data['NO_SURAT']) : (!empty($data['NO_SK']) ? trim($data['NO_SK']) : ('SK-CTT/' . date('Ymd') . '/' . $idPegawai));
+            $tglSurat = $this->normalizeDate($data['TGL_SURAT'] ?? $data['TGL_CATATAN'] ?? null, date('Y-m-d'));
+            $tglCatatan = $this->normalizeDate($data['TGL_CATATAN'] ?? null, date('Y-m-d'));
+            $kdJenis = !empty($data['KD_JENIS_CATATAN']) ? (int)$data['KD_JENIS_CATATAN'] : 1;
+
+            $record = [
+                'ID_PEGAWAI'        => $idPegawai,
+                'NO_SURAT'          => $noSurat,
+                'TGL_SURAT'         => $tglSurat,
+                'NIP'               => $snapshot['NIP'],
+                'NAMA'              => $snapshot['NAMA'],
+                'KD_BAGIAN'         => !empty($data['KD_BAGIAN']) ? (int)$data['KD_BAGIAN'] : $snapshot['KD_BAGIAN'],
+                'KD_JABATAN'        => isset($data['KD_JABATAN']) && $data['KD_JABATAN'] !== '' ? (int)$data['KD_JABATAN'] : $snapshot['KD_JABATAN'],
+                'KD_EKSELON'        => !empty($data['KD_EKSELON']) ? (int)$data['KD_EKSELON'] : $snapshot['KD_EKSELON'],
+                'KD_STATUS_PEGAWAI' => isset($data['KD_STATUS_PEGAWAI']) && $data['KD_STATUS_PEGAWAI'] !== '' ? (int)$data['KD_STATUS_PEGAWAI'] : $snapshot['KD_STATUS_PEGAWAI'],
+                'KD_JENIS_CATATAN'  => $kdJenis,
+                'KD_GOLONGAN'       => !empty($data['KD_GOLONGAN']) ? (int)$data['KD_GOLONGAN'] : $snapshot['KD_GOLONGAN'],
+                'KD_PANGKAT'        => !empty($data['KD_PANGKAT']) ? (int)$data['KD_PANGKAT'] : $snapshot['KD_PANGKAT'],
+                'KD_JENIS_PEGAWAI'  => !empty($data['KD_JENIS_PEGAWAI']) ? (int)$data['KD_JENIS_PEGAWAI'] : $snapshot['KD_JENIS_PEGAWAI'],
+                'KD_LOKASI'         => !empty($data['KD_LOKASI']) ? (int)$data['KD_LOKASI'] : $snapshot['KD_LOKASI'],
+                'TGL_CATATAN'       => $tglCatatan,
+                'KETERANGAN'        => $data['KETERANGAN'] ?? '-',
+                'FILE'              => $data['FILE'] ?? ''
+            ];
+
+            if (empty($kd)) {
+                $record['KD_CATATAN'] = $this->getNextId('detail_catatan_pegawai', 'KD_CATATAN');
+                $this->db->table('detail_catatan_pegawai')->insert($record);
+                return ['code' => 200, 'message' => 'Data catatan berhasil disimpan'];
+            } else {
+                $this->db->table('detail_catatan_pegawai')->where('KD_CATATAN', $kd)->update($record);
+                return ['code' => 200, 'message' => 'Data catatan berhasil diperbarui'];
+            }
+        } catch (\Exception $e) {
+            return ['code' => 500, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function deleteCatatan($id)
+    {
+        try {
+            $this->db->table('detail_catatan_pegawai')->where('KD_CATATAN', $id)->delete();
+            return ['code' => 200, 'message' => 'Catatan berhasil dihapus'];
         } catch (\Exception $e) {
             return ['code' => 500, 'message' => $e->getMessage()];
         }

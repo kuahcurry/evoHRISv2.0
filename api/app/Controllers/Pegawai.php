@@ -454,6 +454,10 @@ class Pegawai extends BaseController
 
     public function delete_promosi($id = null)
     {
+        if (empty($id)) {
+            $data = $this->getPayload();
+            $id = $data['KD_PROMOSI_DARI'] ?? $data['id'] ?? null;
+        }
         if (empty($id)) return sendResponse(400, null, 'ID promosi diperlukan');
         $res = $this->mPegawai->deletePromosi($id);
         return sendResponse($res['code'], $res, $res['message']);
@@ -479,6 +483,10 @@ class Pegawai extends BaseController
 
     public function delete_kontrak($id = null)
     {
+        if (empty($id)) {
+            $data = $this->getPayload();
+            $id = $data['KD_KONTRAK'] ?? $data['id'] ?? null;
+        }
         if (empty($id)) return sendResponse(400, null, 'ID kontrak diperlukan');
         $res = $this->mPegawai->deleteKontrak($id);
         return sendResponse($res['code'], $res, $res['message']);
@@ -504,6 +512,10 @@ class Pegawai extends BaseController
 
     public function delete_phk($id = null)
     {
+        if (empty($id)) {
+            $data = $this->getPayload();
+            $id = $data['KD_PHK'] ?? $data['id'] ?? null;
+        }
         if (empty($id)) return sendResponse(400, null, 'ID PHK diperlukan');
         $res = $this->mPegawai->deletePHK($id);
         return sendResponse($res['code'], $res, $res['message']);
@@ -529,6 +541,10 @@ class Pegawai extends BaseController
 
     public function delete_penghargaan($id = null)
     {
+        if (empty($id)) {
+            $data = $this->getPayload();
+            $id = $data['KD_PENGHARGAAN'] ?? $data['id'] ?? null;
+        }
         if (empty($id)) return sendResponse(400, null, 'ID penghargaan diperlukan');
         $res = $this->mPegawai->deletePenghargaan($id);
         return sendResponse($res['code'], $res, $res['message']);
@@ -551,6 +567,10 @@ class Pegawai extends BaseController
 
     public function delete_sanksi($id = null)
     {
+        if (empty($id)) {
+            $data = $this->getPayload();
+            $id = $data['KD_SANKSI'] ?? $data['id'] ?? null;
+        }
         if (empty($id)) return sendResponse(400, null, 'ID sanksi diperlukan');
         $res = $this->mPegawai->deleteSanksi($id);
         return sendResponse($res['code'], $res, $res['message']);
@@ -576,8 +596,70 @@ class Pegawai extends BaseController
 
     public function delete_cuti($id = null)
     {
+        if (empty($id)) {
+            $data = $this->getPayload();
+            $id = $data['KD_CUTI'] ?? $data['id'] ?? null;
+        }
         if (empty($id)) return sendResponse(400, null, 'ID cuti diperlukan');
         $res = $this->mPegawai->deleteCuti($id);
+        return sendResponse($res['code'], $res, $res['message']);
+    }
+
+    // ==========================================
+    // 12. DEMOSI
+    // ==========================================
+    public function demosi()
+    {
+        $params = [
+            'search' => $this->request->getGet('search') ?? $this->request->getGet('keyword')
+        ];
+        return sendResponse(200, $this->mPegawai->getDemosi($params));
+    }
+
+    public function save_demosi()
+    {
+        $data = $this->getPayload();
+        $res = $this->mPegawai->saveDemosi($data);
+        return sendResponse($res['code'], $res, $res['message']);
+    }
+
+    public function delete_demosi($id = null)
+    {
+        if (empty($id)) {
+            $data = $this->getPayload();
+            $id = $data['KD_DEMOSI_DARI'] ?? $data['id'] ?? null;
+        }
+        if (empty($id)) return sendResponse(400, null, 'ID demosi diperlukan');
+        $res = $this->mPegawai->deleteDemosi($id);
+        return sendResponse($res['code'], $res, $res['message']);
+    }
+
+    // ==========================================
+    // 13. CATATAN
+    // ==========================================
+    public function catatan()
+    {
+        $params = [
+            'search' => $this->request->getGet('search') ?? $this->request->getGet('keyword')
+        ];
+        return sendResponse(200, $this->mPegawai->getCatatan($params));
+    }
+
+    public function save_catatan()
+    {
+        $data = $this->getPayload();
+        $res = $this->mPegawai->saveCatatan($data);
+        return sendResponse($res['code'], $res, $res['message']);
+    }
+
+    public function delete_catatan($id = null)
+    {
+        if (empty($id)) {
+            $data = $this->getPayload();
+            $id = $data['KD_CATATAN'] ?? $data['id'] ?? null;
+        }
+        if (empty($id)) return sendResponse(400, null, 'ID catatan diperlukan');
+        $res = $this->mPegawai->deleteCatatan($id);
         return sendResponse($res['code'], $res, $res['message']);
     }
 }
