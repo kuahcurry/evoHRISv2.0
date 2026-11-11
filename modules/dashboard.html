@@ -832,7 +832,7 @@
                 <td class="text-center text-muted fw-bold">${idx + 1}</td>
                 <td class="fw-bold text-dark">${s.NAMA}</td>
                 <td><code>${s.NO_SIP || '-'}</code></td>
-                <td>${s.TGL_EXPIRED_FORMAT}</td>
+                <td>${s.SAMPAI_FORMAT || '-'}</td>  
                 <td><span class="badge ${badgeClass} fw-semibold">${labelSisa}</span></td>
               </tr>
             `;
