@@ -1364,10 +1364,19 @@ class cPegawai extends BaseController
 
         switch (strtolower($mode)) {
             case 'pegawai':
-                $peg = $this->db->table('pegawai')->where('NO_AUTO', $id)->orWhere('ID_PEGAWAI', $id)->get()->getRowArray();
+                $peg = $this->db->table('pegawai')
+                    ->groupStart()
+                        ->where('NO_AUTO', $id)
+                        ->orWhere('ID_PEGAWAI', $id)
+                        ->orWhere('NIP', $id)
+                    ->groupEnd()
+                    ->get()->getRowArray();
                 if ($peg) {
                     $idPeg = $peg['ID_PEGAWAI'];
                     $this->db->table('pegawai')->where('ID_PEGAWAI', $idPeg)->update(['status_aktif' => 0]);
+                    $this->db->table('tb_users')->where('id_pegawai', $idPeg)->update(['status_hapus' => 1, 'allow' => 0]);
+                } else {
+                    return sendResponse(404, null, 'Data pegawai tidak ditemukan');
                 }
                 break;
 

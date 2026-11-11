@@ -100,8 +100,13 @@ class cTambahPegawai extends BaseController
             $builder->where('d.KD_STATUS_PEGAWAI', $kdStatusPegawai);
         }
 
-        if ($statusAktif !== null && $statusAktif !== '') {
-            $builder->where('p.status_aktif', $statusAktif);
+        // Soft delete enforcement: strictly default to active employees only (status_aktif = 1)
+        if ($statusAktif === null || $statusAktif === '') {
+            $statusAktif = 1;
+        }
+
+        if ($statusAktif !== 'all') {
+            $builder->where('p.status_aktif', (int) $statusAktif);
         }
 
         $totalBuilder = clone $builder;
