@@ -82,6 +82,27 @@
     background-color: #edf2f9;
     color: #2c7be5;
   }
+
+  #form-mutasi {
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 5;
+  }
+
+  #form-mutasi input.form-control,
+  #form-mutasi textarea.form-control,
+  #form-mutasi select.form-select,
+  .card-body input.form-control,
+  [data-role="selector"] input.form-control {
+    background-color: #ffffff !important;
+    color: #1e293b !important;
+    border: 1px solid #cbd5e1 !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    cursor: text !important;
+    display: block !important;
+    visibility: visible !important;
+  }
 </style>
 
 <template id="template-vmutasi">
@@ -120,14 +141,8 @@
           <div class="row g-2 mb-3">
             <!-- Row 1: NIP, BAGIAN, Golongan, Nama -->
             <div class="col-12 col-md-6 col-xl-3">
-              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_NIP">NIP :</label>
-              <div class="input-group input-group-sm">
-                <input type="text" class="form-control form-control-sm" id="replacement_NIP" name="replacement_NIP" list="datalist-nip-pegawai" placeholder="*Masukkan NIP..." required>
-                <button type="button" class="btn btn-outline-primary" id="btn-lookup-nip" title="Cari Pegawai">
-                  <i class="fas fa-search"></i>
-                </button>
-              </div>
-              <datalist id="datalist-nip-pegawai"></datalist>
+              <label class="form-label fs--1 fw-semi-bold mb-1">NIP :</label>
+              <div id="sel_nip" placeholder="Pilih NIK / NIP Pegawai..."></div>
             </div>
 
             <div class="col-12 col-md-6 col-xl-3">
@@ -142,7 +157,7 @@
 
             <div class="col-12 col-md-6 col-xl-3">
               <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_nama">Nama :</label>
-              <input type="text" class="form-control form-control-sm" id="replacement_nama" name="replacement_nama" placeholder="*Masukkan Nama...">
+              <input type="text" class="form-control form-control-sm bg-light" id="replacement_nama" name="replacement_nama" placeholder="*Masukkan Nama..." readonly>
             </div>
 
             <!-- Row 2: Jabatan, Pangkat, No Surat, ekselon -->
@@ -251,7 +266,7 @@
 
             <div class="col-12 col-md-6 col-xl-3">
               <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_keterangan">Keterangan :</label>
-              <textarea class="form-control form-control-sm" id="replacement_keterangan" name="replacement_keterangan" rows="1" placeholder="Masukkan Keterangan"></textarea>
+              <textarea class="form-control form-control-sm" id="replacement_keterangan" name="replacement_keterangan" rows="1" placeholder="Masukkan Keterangan..."></textarea>
             </div>
           </div>
 
@@ -341,46 +356,6 @@
       </div>
     </div>
 
-    <!-- MODAL LOOKUP PEGAWAI -->
-    <div class="modal fade" id="modalLookupPegawai" tabindex="-1" aria-labelledby="modalLookupPegawaiLabel" aria-hidden="true">
-      <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content">
-          <div class="modal-header py-2 bg-light">
-            <h6 class="modal-title fw-bold" id="modalLookupPegawaiLabel">
-              <i class="fas fa-users me-1 text-primary"></i> Pilih Pegawai
-            </h6>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body p-3">
-            <div class="mb-3">
-              <div class="input-group input-group-sm">
-                <span class="input-group-text"><i class="fas fa-search"></i></span>
-                <input type="text" class="form-control" id="txtcari_lookup_pegawai" placeholder="Ketik NIP atau Nama Pegawai...">
-              </div>
-            </div>
-            <div class="table-responsive" style="max-height: 380px;">
-              <table class="table table-sm table-hover table-striped align-middle fs--1 mb-0">
-                <thead class="bg-200">
-                  <tr>
-                    <th style="width: 50px;">No</th>
-                    <th>NIP</th>
-                    <th>Nama Pegawai</th>
-                    <th style="width: 80px;" class="text-center">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody id="tbody-lookup-pegawai">
-                  <tr>
-                    <td colspan="4" class="text-center py-3 text-muted">Memuat daftar pegawai...</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div class="modal-footer py-2 bg-light">
-            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Tutup</button>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -411,6 +386,7 @@
   let lookupModalInstance = null;
 
   // EvoSelector instances
+  let selNip = null;
   let selDariBagian = null;
   let selDariGolongan = null;
   let selDariJabatan = null;
@@ -444,6 +420,7 @@
 
   // Inisialisasi seluruh EvoSelector Dari dan Menjadi (tampil instan)
   function initEvoSelectors() {
+    selNip = new EvoSelector('sel_nip', [{ text: 'Pilih NIK / NIP Pegawai...', value: '-' }]);
     selDariBagian = new EvoSelector('sel_dari_bagian', [{ text: 'Pilih Bagian', value: '-' }]);
     selDariGolongan = new EvoSelector('sel_dari_golongan', [{ text: 'Pilih Golongan', value: '-' }]);
     selDariJabatan = new EvoSelector('sel_dari_jabatan', [{ text: 'Pilih Jabatan', value: '-' }]);
@@ -461,6 +438,13 @@
     selMenjadiJenisPegawai = new EvoSelector('sel_menjadi_jenis_pegawai', [{ text: 'Pilih Jenis Pegawai', value: '-' }]);
     selMenjadiStatusPegawai = new EvoSelector('sel_menjadi_status_pegawai', [{ text: 'Pilih Status Pegawai', value: '-' }]);
     selMenjadiLokasi = new EvoSelector('sel_menjadi_lokasi', [{ text: 'Pilih Lokasi', value: '-' }]);
+
+    selNip.on('selected', (e) => {
+      const nip = e.values ? (e.values.nip || e.value) : e.value;
+      if (nip && nip !== '-') {
+        fetchAndApplySnapshot(nip);
+      }
+    });
   }
 
   // Update opsi dropdown dari data master database
@@ -520,8 +504,28 @@
         lookupPegawai = lookupRes.data;
       }
 
+      try {
+        const listRes = await httpGet(`${apiUrl}/pegawai/list?limit=1000`);
+        if (listRes && listRes.code === 200 && Array.isArray(listRes.data)) {
+          const opts = [{ text: 'Pilih NIK / NIP Pegawai...', value: '-' }];
+          listRes.data.forEach(p => {
+            const nik = (p.NO_IDENTITAS || '').trim();
+            const nip = (p.NIP || '').trim();
+            const nama = (p.NAMA || '').trim();
+            let label = nik && nip ? `${nik} - ${nip} - ${nama}` : (nip ? `${nip} - ${nama}` : (nik ? `${nik} - ${nama}` : (nama || 'Pegawai')));
+            opts.push({
+              text: label,
+              value: nip || String(p.ID_PEGAWAI),
+              values: { id_pegawai: p.ID_PEGAWAI, nip: nip, nik: nik, nama: nama }
+            });
+          });
+          if (selNip) selNip.addOptions(opts);
+        }
+      } catch (eList) {
+        console.warn('Gagal memuat list pegawai untuk selector:', eList);
+      }
+
       updateEvoSelectorOptions();
-      populateNipDatalist();
     } catch (err) {
       console.warn('Gagal memuat master data mutasi:', err);
     }
@@ -785,7 +789,8 @@
     document.querySelector('#replacement_kd_mutasi_menjadi').value = row.KD_MUTASI_MENJADI || '';
 
     // Sisi Dari
-    document.querySelector('#replacement_NIP').value = row.NIP || '';
+    document.querySelector('#replacement_NIP')?.setAttribute('value', row.NIP || '');
+    if (selNip) selNip.value = row.NIP || '-';
     document.querySelector('#replacement_nama').value = row.NAMA_PEGAWAI || row.NAMA || '';
     document.querySelector('#replacement_no_surat').value = row.NO_SURAT || '';
     document.querySelector('#replacement_tanggal_surat').value = row.TGL_SURAT ? row.TGL_SURAT.substring(0, 10) : '';
@@ -829,6 +834,7 @@
     const form = document.querySelector('#form-mutasi');
     if (form) form.reset();
     document.querySelector('#replacement_id_pegawai').value = '';
+    if (selNip) selNip.value = '-';
     document.querySelector('#replacement_kd_mutasi_dari').value = '';
     document.querySelector('#replacement_kd_mutasi_menjadi').value = '';
 
@@ -866,7 +872,7 @@
     const btnSave = document.querySelector('#btn-save-mutasi');
     const statusEl = document.querySelector('#form-mutasi-status');
 
-    const nip = document.querySelector('#replacement_NIP')?.value?.trim();
+    const nip = (selNip?.value && selNip.value !== '-' ? selNip.value : '').trim();
     if (!nip) {
       alert('Silakan pilih atau masukkan NIP Pegawai terlebih dahulu!');
       return;
@@ -961,57 +967,6 @@
     }
   }
 
-  // Render data di tabel modal lookup pegawai
-  function renderLookupPegawaiTable(filterText = '') {
-    const tbody = document.querySelector('#tbody-lookup-pegawai');
-    if (!tbody) return;
-
-    let list = lookupPegawai;
-    const q = filterText.trim().toLowerCase();
-    if (q) {
-      list = lookupPegawai.filter(p => {
-        return (
-          (p.NIP && p.NIP.toLowerCase().includes(q)) ||
-          (p.NAMA && p.NAMA.toLowerCase().includes(q))
-        );
-      });
-    }
-
-    if (list.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted">Tidak ada pegawai yang sesuai.</td></tr>';
-      return;
-    }
-
-    let html = '';
-    list.slice(0, 100).forEach((p, idx) => {
-      html += `
-        <tr>
-          <td class="text-center">${idx + 1}</td>
-          <td><span class="badge bg-soft-primary text-primary">${p.NIP}</span></td>
-          <td class="fw-semi-bold">${p.NAMA}</td>
-          <td class="text-center">
-            <button type="button" class="btn btn-xs btn-primary text-white btn-select-pegawai" data-nip="${p.NIP}" data-id="${p.ID_PEGAWAI || ''}">
-              Pilih
-            </button>
-          </td>
-        </tr>
-      `;
-    });
-
-    tbody.innerHTML = html;
-
-    tbody.querySelectorAll('.btn-select-pegawai').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const nip = btn.getAttribute('data-nip');
-        const id = btn.getAttribute('data-id');
-        fetchAndApplySnapshot(nip || id);
-        if (lookupModalInstance) {
-          lookupModalInstance.hide();
-        }
-      });
-    });
-  }
-
   // Binding Event Handlers Utama
   function initEvents() {
     // Submit Form
@@ -1024,41 +979,6 @@
     const btnReset = document.querySelector('#btn-reset-mutasi');
     if (btnReset) {
       btnReset.addEventListener('click', resetForm);
-    }
-
-    // Cari NIP via manual typing / change / blur
-    const nipInput = document.querySelector('#replacement_NIP');
-    if (nipInput) {
-      nipInput.addEventListener('change', () => {
-        const val = nipInput.value.trim();
-        if (val) fetchAndApplySnapshot(val);
-      });
-      nipInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          const val = nipInput.value.trim();
-          if (val) fetchAndApplySnapshot(val);
-        }
-      });
-    }
-
-    // Modal Lookup Pegawai
-    const btnLookup = document.querySelector('#btn-lookup-nip');
-    const modalEl = document.querySelector('#modalLookupPegawai');
-    if (btnLookup && modalEl && (window.bootstrap || typeof bootstrap !== 'undefined')) {
-      const bs = window.bootstrap || bootstrap;
-      lookupModalInstance = new bs.Modal(modalEl);
-      btnLookup.addEventListener('click', () => {
-        renderLookupPegawaiTable();
-        lookupModalInstance.show();
-      });
-    }
-
-    const searchLookup = document.querySelector('#txtcari_lookup_pegawai');
-    if (searchLookup) {
-      searchLookup.addEventListener('input', () => {
-        renderLookupPegawaiTable(searchLookup.value);
-      });
     }
 
     // Toolbar Pencarian Tabel

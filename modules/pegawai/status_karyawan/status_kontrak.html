@@ -1,629 +1,1036 @@
 <style>
-  .table-status_kontrak-card {
-    border-radius: 0.5rem;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  /* Styling EvoSelector Searchable Dropdown */
+  #sel_bagian, #sel_golongan, #sel_jenis_kontrak, #sel_jabatan, 
+  #sel_pangkat, #sel_ekselon, #sel_jenis_pegawai, #sel_status_pegawai, #sel_lokasi {
+    width: 100%;
   }
-  .btn-action-icon {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
+
+  .evoselector-container {
+    position: relative;
+    width: 100%;
+  }
+
+  [data-role="selector"] .dropdown-menu {
+    border: 1px solid #d8e2ef;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    border-radius: 0.375rem;
+    z-index: 1060 !important;
+  }
+
+  [data-role="selector"] .dropdown-item {
+    font-size: 0.8125rem;
+    padding: 0.35rem 0.75rem;
+    cursor: pointer;
+  }
+
+  [data-role="selector"] .dropdown-item:hover,
+  [data-role="selector"] .dropdown-item:focus {
+    background-color: #edf2f9;
+    color: #12161a;
+  }
+
+  [data-role="selector"] span.fa-chevron-down {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.75rem;
+    color: #9da9bb;
+    pointer-events: none;
+  }
+
+  [data-role="selector"] a[href="#!selectorclose"] {
+    position: absolute;
+    right: 26px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.8rem;
+    color: #9da9bb;
+    text-decoration: none;
+  }
+
+  [data-role="selector"] a[href="#!selectorclose"]:hover {
+    color: #e63757;
+  }
+
+  .table-kontrak th {
+    background-color: #f9fbfd;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: #5e6e82;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  .table-kontrak td {
+    font-size: 0.8125rem;
+    vertical-align: middle;
+  }
+
+  .badge-kontrak-aktif {
+    background-color: #d4edda;
+    color: #155724;
+    font-weight: 600;
+  }
+
+  .badge-kontrak-warning {
+    background-color: #fff3cd;
+    color: #856404;
+    font-weight: 600;
+  }
+
+  .badge-kontrak-expired {
+    background-color: #f8d7da;
+    color: #721c24;
+    font-weight: 600;
+  }
+
+  #form-kontrak {
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 5;
+  }
+
+  #form-kontrak input.form-control,
+  #form-kontrak textarea.form-control,
+  #form-kontrak select.form-select,
+  .card-body input.form-control,
+  [data-role="selector"] input.form-control {
+    background-color: #ffffff !important;
+    color: #1e293b !important;
+    border: 1px solid #cbd5e1 !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    cursor: text !important;
+    display: block !important;
+    visibility: visible !important;
   }
 </style>
 
 <template id="template-status_kontrak">
-  <!-- Actions Toolbar -->
-  <div id="status_kontrak-actions" class="card mb-3 shadow-none border">
-    <div class="card-body p-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <div class="d-flex align-items-center gap-2">
-        <h5 class="mb-0 text-success fw-bold"><i class="fas fa-file-signature me-2"></i>Kontrak Kerja Pegawai</h5>
-        <span class="badge bg-soft-success text-success ms-2" id="status_kontrak-total-badge">0 Data</span>
-      </div>
-      <div class="d-flex align-items-center gap-2 flex-wrap">
-        <div class="input-group input-group-sm" style="width: 240px;">
-          <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-          <input type="text" class="form-control form-control-sm border-start-0 search-box" placeholder="Cari NIP, nama, kontrak...">
+  <div class="container-fluid p-0">
+    <!-- Breadcrumb & Header -->
+    <div class="row mb-3">
+      <div class="col-12">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <h4 class="mb-1 text-800 fw-bold">
+              <i class="fas fa-file-contract text-primary me-2"></i>Perpanjangan Kontrak Kerja
+            </h4>
+            <nav aria-label="breadcrumb">
+              <ol class="breadcrumb fs--1 mb-0">
+                <li class="breadcrumb-item"><a href="#!home">Kepegawaian</a></li>
+                <li class="breadcrumb-item"><a href="#!pegawai">Perubahan Status</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Kontrak</li>
+              </ol>
+            </nav>
+          </div>
         </div>
-        <a href="#!btn-tambah" class="btn btn-sm btn-success text-white" role="button">
-          <i class="fas fa-plus me-1"></i> Tambah Kontrak
-        </a>
-        <a href="#!btn-refresh" class="btn btn-sm btn-outline-secondary" role="button">
-          <i class="fas fa-sync-alt me-1"></i> Refresh
-        </a>
-        <a href="#!btn-export" class="btn btn-sm btn-outline-success" role="button">
-          <i class="fas fa-file-excel me-1"></i> Ekspor CSV
-        </a>
       </div>
     </div>
-  </div>
 
-  <!-- Entries Table -->
-  <div id="status_kontrak-entries" class="card shadow-sm border table-status_kontrak-card">
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-sm table-striped table-hover fs--1 mb-0 align-middle">
-          <thead class="bg-200 text-800 text-uppercase">
-            <tr>
-              <th class="text-center py-2" style="width: 50px;">#</th>
-              <th class="py-2" style="min-width: 140px;">NIP / Pegawai</th>
-              <th class="py-2" style="min-width: 140px;">Nomor Kontrak</th>
-              <th class="py-2" style="min-width: 120px;">Jenis Kontrak</th>
-              <th class="text-center py-2" style="min-width: 110px;">Tgl Mulai</th>
-              <th class="text-center py-2" style="min-width: 110px;">Tgl Selesai</th>
-              <th class="text-center py-2" style="min-width: 110px;">Status</th>
-              <th class="py-2" style="min-width: 140px;">Keterangan</th>
-              <th class="text-center py-2" style="width: 140px;">Aksi</th>
-            </tr>
-          </thead>
-          <tbody class="list">
-            <tr>
-              <td colspan="9" class="text-center py-4 text-muted">
-                <span class="spinner-border spinner-border-sm me-2"></span>Memuat data kontrak...
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div class="card-footer d-flex justify-content-between align-items-center py-2 bg-light border-top">
-      <span class="pagination-info fs--1 text-muted">Menampilkan 0 data</span>
-      <ul class="pagination pagination-sm mb-0"></ul>
-    </div>
-  </div>
-
-  <!-- Modal Form CRUD -->
-  <div class="modal fade" id="status_kontrak-modal" tabindex="-1" aria-labelledby="status_kontrak-modal-title" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-      <div class="modal-content shadow">
-        <div class="modal-header bg-light">
-          <h5 class="modal-title" id="status_kontrak-modal-title">
-            <i class="fas fa-file-signature text-success me-2"></i>Form Data Kontrak
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <!-- Form Kontrak Pegawai -->
+    <div class="card mb-3 shadow-none border">
+      <div class="card-header bg-light py-2">
+        <div class="row align-items-center">
+          <div class="col">
+            <h6 class="mb-0 text-primary fw-semi-bold">
+              <i class="fas fa-pen-nib me-2"></i>Form Kontrak Pegawai
+            </h6>
+          </div>
+          <div class="col-auto">
+            <span id="form-mode-badge" class="badge bg-soft-primary text-primary fs--2">Mode Tambah</span>
+          </div>
         </div>
-        <div class="modal-body p-4" id="status_kontrak-form">
-          <input type="hidden" data-field="KD_KONTRAK" data-type="txt">
+      </div>
+      <div class="card-body p-3">
+        <form id="form-kontrak" autocomplete="off">
+          <input type="hidden" id="replacement_kd_kontrak" name="kd_kontrak" value="" />
+          <input type="hidden" id="replacement_id_pegawai" name="id_pegawai" value="" />
+
           <div class="row g-3">
-            <div class="col-md-12">
-              <label class="form-label fw-semi-bold">Pilih Pegawai <span class="text-danger">*</span></label>
-              <select class="form-select form-select-sm" data-field="ID_PEGAWAI" data-type="sel" required>
-                <option value="">-- Pilih Pegawai --</option>
-              </select>
+            <!-- 1. No Surat -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1" for="replacement_no_surat">
+                No Surat : <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-control form-control-sm" id="replacement_no_surat" name="no_surat" placeholder="*Masukkan Nomer Surat..." required />
             </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semi-bold">Nomor Kontrak / SK <span class="text-danger">*</span></label>
-              <input type="text" class="form-control form-control-sm" data-field="NO_SURAT" data-type="txt" placeholder="Nomor surat kontrak" required>
+
+            <!-- 2. NIP -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                NIP : <span class="text-danger">*</span>
+              </label>
+              <div id="sel_nip" placeholder="Pilih NIK / NIP Pegawai..."></div>
             </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semi-bold">Jenis Kontrak <span class="text-danger">*</span></label>
-              <select class="form-select form-select-sm" data-field="KD_JENIS_KONTRAK" data-type="sel" required>
-                <option value="">-- Pilih Jenis Kontrak --</option>
-              </select>
+
+            <!-- 3. Nama -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1" for="replacement_nama">
+                Nama : <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-control form-control-sm" id="replacement_nama" name="nama" placeholder="*Masukkan Nama..." required />
             </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semi-bold">Tgl Mulai Kontrak <span class="text-danger">*</span></label>
-              <input type="date" class="form-control form-control-sm" data-field="TGL_KONTRAK_MULAI" data-type="txt" required>
+
+            <!-- 4. Tgl Surat -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1" for="replacement_tanggal_surat">
+                Tgl Surat : <span class="text-danger">*</span>
+              </label>
+              <input type="date" class="form-control form-control-sm" id="replacement_tanggal_surat" name="tgl_surat" placeholder="mm/dd/yyyy" required />
             </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semi-bold">Tgl Selesai Kontrak <span class="text-danger">*</span></label>
-              <input type="date" class="form-control form-control-sm" data-field="TGL_KONTRAK_SAMPAI" data-type="txt" required>
+
+            <!-- 5. BAGIAN -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                BAGIAN :
+              </label>
+              <div id="sel_bagian" placeholder="Pilih Bagian"></div>
             </div>
-            <div class="col-md-12">
-              <label class="form-label fw-semi-bold">Keterangan / Klausul Khusus</label>
-              <textarea class="form-control form-control-sm" data-field="KETERANGAN" data-type="txtarea" rows="3" placeholder="Ketentuan khusus atau catatan perpanjangan..."></textarea>
+
+            <!-- 6. Golongan -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Golongan :
+              </label>
+              <div id="sel_golongan" placeholder="Pilih Golongan"></div>
+            </div>
+
+            <!-- 7. Jenis kontrak -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Jenis kontrak : <span class="text-danger">*</span>
+              </label>
+              <div id="sel_jenis_kontrak" placeholder="Pilih Jenis Kontrak"></div>
+            </div>
+
+            <!-- 8. Jabatan -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Jabatan :
+              </label>
+              <div id="sel_jabatan" placeholder="Pilih Jabatan"></div>
+            </div>
+
+            <!-- 9. Pangkat -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Pangkat :
+              </label>
+              <div id="sel_pangkat" placeholder="Pilih Pangkat"></div>
+            </div>
+
+            <!-- 10. Tgl Kontrak Dimulai -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1" for="replacement_tgl_kontrak_mulai">
+                Tgl Kontrak Dimulai : <span class="text-danger">*</span>
+              </label>
+              <input type="date" class="form-control form-control-sm" id="replacement_tgl_kontrak_mulai" name="tgl_mulai" placeholder="mm/dd/yyyy" required />
+            </div>
+
+            <!-- 11. ekselon -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                ekselon :
+              </label>
+              <div id="sel_ekselon" placeholder="Pilih Ekselon"></div>
+            </div>
+
+            <!-- 12. Jenis Pegawai -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Jenis Pegawai :
+              </label>
+              <div id="sel_jenis_pegawai" placeholder="Pilih Jenis Pegawai"></div>
+            </div>
+
+            <!-- 13. Tgl Kontrak Sampai -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1" for="replacement_tgl_kontrak_sampai">
+                Tgl Kontrak Sampai : <span class="text-danger">*</span>
+              </label>
+              <input type="date" class="form-control form-control-sm" id="replacement_tgl_kontrak_sampai" name="tgl_selesai" placeholder="mm/dd/yyyy" required />
+            </div>
+
+            <!-- 14. Status Pegawai -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Status Pegawai :
+              </label>
+              <div id="sel_status_pegawai" placeholder="Pilih Status Pegawai"></div>
+            </div>
+
+            <!-- 15. Lokasi -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Lokasi :
+              </label>
+              <div id="sel_lokasi" placeholder="Pilih Lokasi"></div>
+            </div>
+
+            <!-- 16. Keterangan -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1" for="replacement_keterangan">
+                Keterangan :
+              </label>
+              <textarea class="form-control form-control-sm" id="replacement_keterangan" name="keterangan" rows="1" placeholder="Masukkan Keterangan..."></textarea>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center justify-content-between mt-3 pt-2 border-top">
+            <div>
+              <button type="submit" class="btn btn-sm btn-primary px-3 fw-semi-bold" id="btn-save-kontrak">
+                <i class="fas fa-save me-1"></i> Simpan
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary px-3 ms-1" id="btn-reset-kontrak">
+                <i class="fas fa-undo me-1"></i> Reset
+              </button>
+              <span class="fs--1 text-muted ms-2" id="form-kontrak-status"></span>
+            </div>
+            <div class="text-muted fs--2">
+              <span class="text-danger">*</span> Wajib diisi
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Riwayat Data Kontrak Kerja -->
+    <div class="card shadow-none border">
+      <div class="card-header bg-light py-2">
+        <div class="row g-2 align-items-center justify-content-between">
+          <div class="col-12 col-md-auto d-flex align-items-center">
+            <h6 class="mb-0 text-700 fw-semi-bold me-2">
+              <i class="fas fa-list-alt me-1 text-primary"></i>Riwayat Kontrak Kerja
+            </h6>
+            <span class="badge bg-soft-primary text-primary" id="badge-total-kontrak">0 Data</span>
+          </div>
+          <div class="col-12 col-md-auto">
+            <div class="d-flex align-items-center gap-2">
+              <div class="input-group input-group-sm" style="max-width: 320px;">
+                <span class="input-group-text bg-white border-end-0 text-muted">
+                  Cari
+                </span>
+                <input type="text" class="form-control border-start-0" id="txtcari_kontrak" placeholder="Cari..." />
+                <button class="btn btn-outline-secondary" type="button" id="btn-cari-kontrak" title="Cari">
+                  <i class="fas fa-search"></i>
+                </button>
+                <button class="btn btn-outline-secondary" type="button" id="btn-clear-kontrak" title="Reset Pencarian">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              <button class="btn btn-sm btn-outline-primary" type="button" id="btn-refresh-kontrak" title="Segarkan Data">
+                <i class="fas fa-sync-alt"></i>
+              </button>
             </div>
           </div>
         </div>
-        <div class="modal-footer bg-light py-2">
-          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
-          <a href="#!btn-simpan" class="btn btn-sm btn-success text-white">
-            <i class="fas fa-save me-1"></i> Simpan
-          </a>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive scrollbar">
+          <table class="table table-sm table-striped table-hover table-kontrak mb-0">
+            <thead>
+              <tr>
+                <th class="text-center" style="width: 45px;">No.</th>
+                <th>NIP</th>
+                <th>Nama</th>
+                <th>No. Surat</th>
+                <th>Tgl Surat</th>
+                <th>Jenis Kontrak</th>
+                <th>Bagian</th>
+                <th>Jabatan</th>
+                <th>Pangkat</th>
+                <th class="text-center" style="width: 80px;"><i class="fas fa-cog"></i></th>
+              </tr>
+            </thead>
+            <tbody id="tb_kontrak_body">
+              <tr>
+                <td colspan="10" class="text-center py-4 text-muted">
+                  <i class="fas fa-spinner fa-spin me-2"></i>Memuat data kontrak kerja...
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
+      <div class="card-footer bg-light py-2 d-flex align-items-center justify-content-between">
+        <div class="fs--1 text-muted" id="kontrak-pagination-info">Menampilkan 0 data</div>
+        <ul class="pagination pagination-sm mb-0" id="kontrak-pagination"></ul>
+      </div>
+    </div>
+
     </div>
   </div>
 </template>
 
 <script type="module" defer>
   import { httpGet, httpPost } from './assets/js/core/http.js';
-  import { getFormEntries, setFormEntries, showDialog } from './assets/js/core/helpers.js';
+  import EvoSelector from './components/EvoSelector.js';
 
-  const id = 'status_kontrak';
-  const { actions: frm_actions, entries: frm_entries } = getThisForm(id);
   const apiUrl = (typeof config !== 'undefined' && config.api_url) 
     ? config.api_url 
     : `${window.location.origin}/evoHRIS_v2.1/api`;
 
-  let allData = [];
-  let filteredData = [];
-  let refData = null;
-  let lookupPegawai = [];
+  // State Management
+  let allPegawai = [];
+  let allKontrak = [];
+  let filteredKontrak = [];
   let currentPage = 1;
-  const rowsPerPage = 10;
+  const pageSize = 10;
+  let lookupModalInstance = null;
+  let isEditMode = false;
 
-  function getModal() {
-    const modalEl = document.getElementById(`${id}-modal`);
-    if (!modalEl) return null;
-    return window.bootstrap ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+  // EvoSelector instances
+  let selNip = null;
+  let selBagian = null;
+  let selGolongan = null;
+  let selJenisKontrak = null;
+  let selJabatan = null;
+  let selPangkat = null;
+  let selEkselon = null;
+  let selJenisPegawai = null;
+  let selStatusPegawai = null;
+  let selLokasi = null;
+
+  // Helper untuk membuat opsi EvoSelector
+  function makeOptions(items, valKey, textKey, placeholder) {
+    const opts = [{ text: placeholder, value: '-' }];
+    if (Array.isArray(items)) {
+      items.forEach(it => {
+        const v = it[valKey];
+        const t = it[textKey] || it.NAMA || v;
+        if (v !== undefined && v !== null) {
+          opts.push({ text: String(t), value: String(v) });
+        }
+      });
+    }
+    return opts;
   }
 
+  // Format Tanggal DD/MM/YYYY
+  function formatDate(dateStr) {
+    if (!dateStr || dateStr === '0000-00-00') return '-';
+    const parts = dateStr.substring(0, 10).split('-');
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    return dateStr;
+  }
+
+  // Format Tanggal YYYY-MM-DD
+  function toInputDate(dateStr) {
+    if (!dateStr || dateStr === '0000-00-00') return '';
+    return dateStr.substring(0, 10);
+  }
+
+  // Set default dates
+  function setDefaultDates() {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+
+    const nextYear = new Date(today);
+    nextYear.setFullYear(today.getFullYear() + 1);
+    const nextYyyy = nextYear.getFullYear();
+    const nextMm = String(nextYear.getMonth() + 1).padStart(2, '0');
+    const nextDd = String(nextYear.getDate()).padStart(2, '0');
+    const nextYearStr = `${nextYyyy}-${nextMm}-${nextDd}`;
+
+    const tglSuratEl = document.querySelector('#replacement_tanggal_surat');
+    const tglMulaiEl = document.querySelector('#replacement_tgl_kontrak_mulai');
+    const tglSampaiEl = document.querySelector('#replacement_tgl_kontrak_sampai');
+
+    if (tglSuratEl && !tglSuratEl.value) tglSuratEl.value = todayStr;
+    if (tglMulaiEl && !tglMulaiEl.value) tglMulaiEl.value = todayStr;
+    if (tglSampaiEl && !tglSampaiEl.value) tglSampaiEl.value = nextYearStr;
+  }
+
+  // Inisialisasi seluruh EvoSelector
+  function initEvoSelectors() {
+    selNip = new EvoSelector('sel_nip', [{ text: 'Pilih NIK / NIP Pegawai...', value: '-' }]);
+    selBagian = new EvoSelector('sel_bagian', [{ text: 'Pilih Bagian', value: '-' }]);
+    selGolongan = new EvoSelector('sel_golongan', [{ text: 'Pilih Golongan', value: '-' }]);
+    selJenisKontrak = new EvoSelector('sel_jenis_kontrak', [{ text: 'Pilih Jenis Kontrak', value: '-' }]);
+    selJabatan = new EvoSelector('sel_jabatan', [{ text: 'Pilih Jabatan', value: '-' }]);
+    selPangkat = new EvoSelector('sel_pangkat', [{ text: 'Pilih Pangkat', value: '-' }]);
+    selEkselon = new EvoSelector('sel_ekselon', [{ text: 'Pilih Ekselon', value: '-' }]);
+    selJenisPegawai = new EvoSelector('sel_jenis_pegawai', [{ text: 'Pilih Jenis Pegawai', value: '-' }]);
+    selStatusPegawai = new EvoSelector('sel_status_pegawai', [{ text: 'Pilih Status Pegawai', value: '-' }]);
+    selLokasi = new EvoSelector('sel_lokasi', [{ text: 'Pilih Lokasi', value: '-' }]);
+
+    selNip.on('selected', (e) => {
+      const nip = e.values ? (e.values.nip || e.value) : e.value;
+      if (nip && nip !== '-') {
+        autofillPegawai(nip);
+      }
+    });
+  }
+
+  // Load Master Data (refData)
   async function loadMasterData() {
     try {
-      const [refRes, lookupRes] = await Promise.all([
-        httpGet(`${apiUrl}/pegawai/ref_data`),
-        httpGet(`${apiUrl}/pegawai/lookup`)
-      ]);
-
-      if (refRes && refRes.code === 200 && refRes.data) {
-        refData = refRes.data;
-        populateSelectOptions();
+      const res = await httpGet(`${apiUrl}/pegawai/ref_data`);
+      if (res && res.data) {
+        const d = res.data;
+        if (selBagian && d.bagian) selBagian.addOptions(makeOptions(d.bagian, 'KD_BAGIAN', 'BAGIAN', 'Pilih Bagian'));
+        if (selGolongan && d.golongan) selGolongan.addOptions(makeOptions(d.golongan, 'KD_GOLONGAN', 'GOLONGAN', 'Pilih Golongan'));
+        if (selJenisKontrak && d.jenis_kontrak) selJenisKontrak.addOptions(makeOptions(d.jenis_kontrak, 'KD_JENIS_KONTRAK', 'JENIS_KONTRAK', 'Pilih Jenis Kontrak'));
+        if (selJabatan && d.jabatan) selJabatan.addOptions(makeOptions(d.jabatan, 'KD_JABATAN', 'JABATAN', 'Pilih Jabatan'));
+        if (selPangkat && d.pangkat) selPangkat.addOptions(makeOptions(d.pangkat, 'KD_PANGKAT', 'PANGKAT', 'Pilih Pangkat'));
+        if (selEkselon && d.ekselon) selEkselon.addOptions(makeOptions(d.ekselon, 'KD_EKSELON', 'EKSELON', 'Pilih Ekselon'));
+        if (selJenisPegawai && d.jenis_pegawai) selJenisPegawai.addOptions(makeOptions(d.jenis_pegawai, 'KD_JENIS_PEGAWAI', 'JENIS_PEGAWAI', 'Pilih Jenis Pegawai'));
+        if (selStatusPegawai && d.status_pegawai) selStatusPegawai.addOptions(makeOptions(d.status_pegawai, 'KD_STATUS_PEGAWAI', 'STATUS_PEGAWAI', 'Pilih Status Pegawai'));
+        if (selLokasi && d.lokasi) selLokasi.addOptions(makeOptions(d.lokasi, 'KD_LOKASI', 'LOKASI', 'Pilih Lokasi'));
       }
-      if (lookupRes && lookupRes.code === 200 && Array.isArray(lookupRes.data)) {
-        lookupPegawai = lookupRes.data;
-        populatePegawaiOptions();
-      }
-    } catch (e) {
-      console.warn('Gagal memuat master data kontrak:', e);
+    } catch (err) {
+      console.warn('Gagal memuat master data:', err);
     }
   }
 
-  function populatePegawaiOptions() {
-    const selPegawai = document.querySelector(`#${id}-form [data-field="ID_PEGAWAI"]`);
-    if (!selPegawai) return;
-    let html = '<option value="">-- Pilih Pegawai --</option>';
-    lookupPegawai.forEach(p => {
-      html += `<option value="${p.ID_PEGAWAI}">[${p.NIP || '-'}] ${p.NAMA || '-'}</option>`;
-    });
-    selPegawai.innerHTML = html;
-  }
+  // Load Pegawai List untuk EvoSelector
+  async function loadPegawaiList() {
+    try {
+      const res = await httpGet(`${apiUrl}/pegawai/list?limit=1000`);
+      let list = [];
+      if (res && Array.isArray(res.data)) list = res.data;
+      else if (res && res.data && Array.isArray(res.data.pegawai)) list = res.data.pegawai;
 
-  function populateSelectOptions() {
-    if (!refData) return;
-    const formEl = document.getElementById(`${id}-form`);
-    if (!formEl) return;
+      allPegawai = list;
 
-    const selJenis = formEl.querySelector('[data-field="KD_JENIS_KONTRAK"]');
-    if (selJenis && Array.isArray(refData.jenis_kontrak)) {
-      selJenis.innerHTML = '<option value="">-- Pilih Jenis Kontrak --</option>' + 
-        refData.jenis_kontrak.map(k => `<option value="${k.KD_JENIS_KONTRAK}">${k.JENIS_KONTRAK}</option>`).join('');
+      const opts = [{ text: 'Pilih NIK / NIP Pegawai...', value: '-' }];
+      list.forEach(p => {
+        const nik = (p.NO_IDENTITAS || '').trim();
+        const nip = (p.NIP || '').trim();
+        const nama = (p.NAMA || '').trim();
+
+        let label = '';
+        if (nik && nip) {
+          label = `${nik} - ${nip} - ${nama}`;
+        } else if (nip) {
+          label = `${nip} - ${nama}`;
+        } else if (nik) {
+          label = `${nik} - ${nama}`;
+        } else {
+          label = nama || 'Pegawai';
+        }
+
+        opts.push({
+          text: label,
+          value: nip || String(p.ID_PEGAWAI),
+          values: {
+            id_pegawai: p.ID_PEGAWAI,
+            nip: nip,
+            nik: nik,
+            nama: nama
+          }
+        });
+      });
+
+      if (selNip) {
+        selNip.addOptions(opts);
+      }
+    } catch (err) {
+      console.warn('Gagal memuat daftar pegawai:', err);
     }
   }
 
-  async function loadData() {
-    if (!frm_entries) return;
-    const tableBody = frm_entries.querySelector('tbody.list');
-    if (tableBody) {
-      tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data kontrak...</td></tr>';
+  // Autofill Data Pegawai berdasarkan NIP
+  async function autofillPegawai(nip) {
+    if (!nip) return;
+    const cleanNip = String(nip).trim();
+    if (!cleanNip) return;
+
+    const statusEl = document.querySelector('#form-kontrak-status');
+    if (statusEl) statusEl.textContent = 'Memuat snapshot pegawai...';
+
+    try {
+      const res = await httpGet(`${apiUrl}/pegawai/snapshot/${encodeURIComponent(cleanNip)}`);
+      if (res && res.data) {
+        const snap = res.data;
+        const idPegEl = document.querySelector('#replacement_id_pegawai');
+        const namaEl = document.querySelector('#replacement_nama');
+
+        if (idPegEl) idPegEl.value = snap.ID_PEGAWAI || '';
+        if (namaEl) namaEl.value = snap.NAMA || '';
+
+        if (selBagian && snap.KD_BAGIAN) selBagian.value = snap.KD_BAGIAN;
+        if (selGolongan && snap.KD_GOLONGAN) selGolongan.value = snap.KD_GOLONGAN;
+        if (selJabatan && (snap.KD_JABATAN !== undefined && snap.KD_JABATAN !== null)) selJabatan.value = snap.KD_JABATAN;
+        if (selPangkat && snap.KD_PANGKAT) selPangkat.value = snap.KD_PANGKAT;
+        if (selEkselon && snap.KD_EKSELON) selEkselon.value = snap.KD_EKSELON;
+        if (selJenisPegawai && snap.KD_JENIS_PEGAWAI) selJenisPegawai.value = snap.KD_JENIS_PEGAWAI;
+        if (selStatusPegawai && (snap.KD_STATUS_PEGAWAI !== undefined && snap.KD_STATUS_PEGAWAI !== null)) selStatusPegawai.value = snap.KD_STATUS_PEGAWAI;
+        if (selLokasi && snap.KD_LOKASI) selLokasi.value = snap.KD_LOKASI;
+
+        if (statusEl) {
+          statusEl.textContent = `Pegawai ditemukan: ${snap.NAMA || cleanNip}`;
+          statusEl.className = 'fs--1 text-success ms-2';
+        }
+        return;
+      }
+    } catch (err) {
+      console.warn('Snapshot endpoint gagal, coba cari di memori:', err);
+    }
+
+    // Fallback pencarian di memori allPegawai
+    const found = allPegawai.find(p => String(p.NIP).trim() === cleanNip);
+    if (found) {
+      const idPegEl = document.querySelector('#replacement_id_pegawai');
+      const namaEl = document.querySelector('#replacement_nama');
+      if (idPegEl) idPegEl.value = found.ID_PEGAWAI || '';
+      if (namaEl) namaEl.value = found.NAMA || '';
+      if (statusEl) {
+        statusEl.textContent = `Pegawai ditemukan: ${found.NAMA || cleanNip}`;
+        statusEl.className = 'fs--1 text-success ms-2';
+      }
+    } else {
+      if (statusEl) {
+        statusEl.textContent = 'Pegawai belum terdaftar di snapshot';
+        statusEl.className = 'fs--1 text-warning ms-2';
+      }
+    }
+  }
+
+  // Load Tabel Kontrak
+  async function loadKontrakTable() {
+    const tbody = document.querySelector('#tb_kontrak_body');
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Memuat data kontrak kerja...</td></tr>';
     }
 
     try {
-      if (!refData || !lookupPegawai.length) {
-        await loadMasterData();
-      }
-
       const res = await httpGet(`${apiUrl}/pegawai/kontrak`);
-      if (res && res.code === 200 && Array.isArray(res.data)) {
-        allData = res.data;
+      if (res && Array.isArray(res.data)) {
+        allKontrak = res.data;
       } else {
-        allData = [];
+        allKontrak = [];
       }
-      filterAndRender();
     } catch (err) {
-      console.error(err);
-      if (tableBody) {
-        tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-danger">Gagal memuat data kontrak dari server.</td></tr>';
-      }
+      console.warn('Gagal memuat kontrak:', err);
+      allKontrak = [];
     }
+
+    applyFilter();
   }
 
-  function filterAndRender() {
-    const searchInput = frm_actions ? frm_actions.querySelector('.search-box') : null;
-    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
-
-    if (!query) {
-      filteredData = [...allData];
+  // Filter Tabel Kontrak
+  function applyFilter() {
+    const keyword = (document.querySelector('#txtcari_kontrak')?.value || '').trim().toLowerCase();
+    if (!keyword) {
+      filteredKontrak = [...allKontrak];
     } else {
-      filteredData = allData.filter(item => {
-        const nama = item.NAMA_PEGAWAI || item.NAMA || '';
-        return (item.NIP && item.NIP.toLowerCase().includes(query)) ||
-          (nama && nama.toLowerCase().includes(query)) ||
-          (item.NO_SURAT && item.NO_SURAT.toLowerCase().includes(query)) ||
-          (item.JENIS_KONTRAK && item.JENIS_KONTRAK.toLowerCase().includes(query)) ||
-          (item.KETERANGAN && item.KETERANGAN.toLowerCase().includes(query));
+      filteredKontrak = allKontrak.filter(row => {
+        return (
+          (row.NIP && row.NIP.toLowerCase().includes(keyword)) ||
+          (row.NAMA_PEGAWAI && row.NAMA_PEGAWAI.toLowerCase().includes(keyword)) ||
+          (row.NAMA && row.NAMA.toLowerCase().includes(keyword)) ||
+          (row.NO_SURAT && row.NO_SURAT.toLowerCase().includes(keyword)) ||
+          (row.JENIS_KONTRAK && row.JENIS_KONTRAK.toLowerCase().includes(keyword)) ||
+          (row.BAGIAN && row.BAGIAN.toLowerCase().includes(keyword)) ||
+          (row.JABATAN && row.JABATAN.toLowerCase().includes(keyword)) ||
+          (row.PANGKAT && row.PANGKAT.toLowerCase().includes(keyword))
+        );
       });
     }
 
     currentPage = 1;
     renderTable();
-    updateTotalBadge();
   }
 
-  function updateTotalBadge() {
-    const badge = document.getElementById(`${id}-total-badge`);
-    if (badge) {
-      badge.textContent = `${filteredData.length} Data`;
-    }
-  }
-
-  function renderStatusBadge(status, sisaHari) {
-    const st = (status || '').toUpperCase();
-    if (st === 'AKTIF') {
-      return `<span class="badge bg-soft-success text-success fw-bold"><i class="fas fa-check-circle me-1"></i>AKTIF</span>`;
-    } else if (st === 'WARNING') {
-      return `<span class="badge bg-soft-warning text-warning fw-bold"><i class="fas fa-clock me-1"></i>SEGERA HABIS (${sisaHari || 0} hari)</span>`;
-    } else if (st === 'EXPIRED') {
-      return `<span class="badge bg-soft-danger text-danger fw-bold"><i class="fas fa-times-circle me-1"></i>KADALUARSA</span>`;
-    }
-    return `<span class="badge bg-soft-secondary text-secondary">${status || '-'}</span>`;
-  }
-
+  // Render Tabel Kontrak
   function renderTable() {
-    if (!frm_entries) return;
-    const tableBody = frm_entries.querySelector('tbody.list');
-    if (!tableBody) return;
+    const tbody = document.querySelector('#tb_kontrak_body');
+    const badgeTotal = document.querySelector('#badge-total-kontrak');
+    const infoEl = document.querySelector('#kontrak-pagination-info');
+    if (!tbody) return;
 
-    if (!filteredData.length) {
-      tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted"><i class="fas fa-inbox fa-2x mb-2 d-block text-400"></i>Tidak ada data kontrak yang ditemukan.</td></tr>';
+    if (badgeTotal) badgeTotal.textContent = `${filteredKontrak.length} Data`;
+
+    if (filteredKontrak.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">Belum ada data riwayat kontrak kerja</td></tr>';
+      if (infoEl) infoEl.textContent = 'Menampilkan 0 data';
       renderPagination(0);
       return;
     }
 
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    const endIndex = Math.min(startIndex + rowsPerPage, filteredData.length);
-    const paginatedItems = filteredData.slice(startIndex, endIndex);
+    const totalPages = Math.ceil(filteredKontrak.length / pageSize);
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
 
-    tableBody.innerHTML = paginatedItems.map((item, idx) => {
-      const rowNum = startIndex + idx + 1;
-      const tglMulai = item.TGL_MULAI || item.TGL_KONTRAK_MULAI || '-';
-      const tglSelesai = item.TGL_SELESAI || item.TGL_KONTRAK_SAMPAI || '-';
-      const nama = item.NAMA_PEGAWAI || item.NAMA || '-';
-      return `
+    const startIdx = (currentPage - 1) * pageSize;
+    const endIdx = Math.min(startIdx + pageSize, filteredKontrak.length);
+    const pageRows = filteredKontrak.slice(startIdx, endIdx);
+
+    let html = '';
+    pageRows.forEach((row, idx) => {
+      const rowNum = startIdx + idx + 1;
+      const nip = row.NIP || '-';
+      const nama = row.NAMA_PEGAWAI || row.NAMA || '-';
+      const noSurat = row.NO_SURAT || '-';
+      const tglSurat = formatDate(row.TGL_SURAT);
+      const jenisKontrak = row.JENIS_KONTRAK || '-';
+      const bagian = row.BAGIAN || '-';
+      const jabatan = row.JABATAN || '-';
+      const pangkat = row.PANGKAT || '-';
+      const kdKontrak = row.KD_KONTRAK || row.id_detail_kontrak || '';
+
+      html += `
         <tr>
-          <td class="text-center text-muted fw-semi-bold">${rowNum}</td>
-          <td>
-            <div class="fw-bold text-dark">${nama}</div>
-            <div class="text-muted font-monospace fs--2">NIP: ${item.NIP || '-'}</div>
-          </td>
-          <td class="fw-semi-bold text-dark font-monospace">${item.NO_SURAT || '-'}</td>
-          <td><span class="badge bg-soft-info text-info fw-bold">${item.JENIS_KONTRAK || '-'}</span></td>
-          <td class="text-center font-monospace">${tglMulai}</td>
-          <td class="text-center font-monospace">${tglSelesai}</td>
-          <td class="text-center">${renderStatusBadge(item.STATUS_KONTRAK, item.SISA_HARI)}</td>
-          <td class="text-muted fs--2">${item.KETERANGAN || '-'}</td>
-          <td class="text-center">
-            <div class="d-inline-flex gap-1">
-              <a href="#!btn-edit" class="btn btn-sm btn-outline-warning py-1 px-2 btn-action-icon" role="button" title="Edit Data" data-row='${JSON.stringify(item)}'>
-                <i class="fas fa-edit"></i>
-              </a>
-              <a href="#!btn-hapus" class="btn btn-sm btn-outline-danger py-1 px-2 btn-action-icon" role="button" title="Hapus Data" data-row='${JSON.stringify(item)}'>
-                <i class="fas fa-trash-alt"></i>
-              </a>
-            </div>
+          <td class="text-center fw-semi-bold text-muted">${rowNum}</td>
+          <td class="fw-semi-bold">${nip}</td>
+          <td>${nama}</td>
+          <td><span class="badge bg-soft-secondary text-dark font-monospace">${noSurat}</span></td>
+          <td>${tglSurat}</td>
+          <td><span class="badge bg-soft-info text-info">${jenisKontrak}</span></td>
+          <td>${bagian}</td>
+          <td>${jabatan}</td>
+          <td>${pangkat}</td>
+          <td class="text-center text-nowrap">
+            <button class="btn btn-sm btn-outline-primary py-0 px-2 btn-edit-kontrak" data-id="${kdKontrak}" title="Edit Data">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger py-0 px-2 ms-1 btn-delete-kontrak" data-id="${kdKontrak}" data-surat="${noSurat}" title="Hapus Data">
+              <i class="fas fa-trash-alt"></i>
+            </button>
           </td>
         </tr>
       `;
-    }).join('');
+    });
 
-    renderPagination(filteredData.length);
+    tbody.innerHTML = html;
+    if (infoEl) infoEl.textContent = `Menampilkan ${startIdx + 1} - ${endIdx} dari ${filteredKontrak.length} data`;
+    renderPagination(totalPages);
   }
 
-  function renderPagination(totalRows) {
-    if (!frm_entries) return;
-    const infoEl = frm_entries.querySelector('.pagination-info');
-    const paginationEl = frm_entries.querySelector('.pagination');
-    if (!infoEl || !paginationEl) return;
+  // Render Pagination Kontrak
+  function renderPagination(totalPages) {
+    const ul = document.querySelector('#kontrak-pagination');
+    if (!ul) return;
+    ul.innerHTML = '';
+    if (totalPages <= 1) return;
 
-    if (totalRows === 0) {
-      infoEl.textContent = 'Menampilkan 0 data';
-      paginationEl.innerHTML = '';
-      return;
-    }
+    // Tombol Prev
+    const prevLi = document.createElement('li');
+    prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+    prevLi.innerHTML = '<a class="page-link" href="#" aria-label="Previous">&laquo;</a>';
+    prevLi.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (currentPage > 1) {
+        currentPage--;
+        renderTable();
+      }
+    });
+    ul.appendChild(prevLi);
 
-    const totalPages = Math.ceil(totalRows / rowsPerPage);
-    const startIndex = (currentPage - 1) * rowsPerPage + 1;
-    const endIndex = Math.min(currentPage * rowsPerPage, totalRows);
-    infoEl.textContent = `Menampilkan ${startIndex}-${endIndex} dari ${totalRows} data`;
-
-    let html = '';
-    html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-      <a class="page-link" href="#" data-page="${currentPage - 1}">&laquo;</a>
-    </li>`;
-
+    // Nomor Halaman
     for (let i = 1; i <= totalPages; i++) {
       if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
-        html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
-          <a class="page-link" href="#" data-page="${i}">${i}</a>
-        </li>`;
+        const li = document.createElement('li');
+        li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+        li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+        li.addEventListener('click', (e) => {
+          e.preventDefault();
+          currentPage = i;
+          renderTable();
+        });
+        ul.appendChild(li);
       } else if (i === currentPage - 3 || i === currentPage + 3) {
-        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        const dots = document.createElement('li');
+        dots.className = 'page-item disabled';
+        dots.innerHTML = '<span class="page-link">...</span>';
+        ul.appendChild(dots);
       }
     }
 
-    html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-      <a class="page-link" href="#" data-page="${currentPage + 1}">&raquo;</a>
-    </li>`;
-
-    paginationEl.innerHTML = html;
-
-    paginationEl.querySelectorAll('a.page-link').forEach(a => {
-      a.addEventListener('click', (e) => {
-        e.preventDefault();
-        const p = parseInt(a.getAttribute('data-page'));
-        if (p >= 1 && p <= totalPages && p !== currentPage) {
-          currentPage = p;
-          renderTable();
-        }
-      });
+    // Tombol Next
+    const nextLi = document.createElement('li');
+    nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+    nextLi.innerHTML = '<a class="page-link" href="#" aria-label="Next">&raquo;</a>';
+    nextLi.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderTable();
+      }
     });
+    ul.appendChild(nextLi);
   }
 
-  function openAddModal() {
-    const formEl = document.getElementById(`${id}-form`);
-    if (!formEl) return;
+  // Reset Form
+  function resetForm() {
+    isEditMode = false;
+    const form = document.querySelector('#form-kontrak');
+    if (form) form.reset();
 
-    document.getElementById(`${id}-modal-title`).innerHTML = '<i class="fas fa-file-signature text-success me-2"></i>Tambah Data Kontrak Kerja';
-    setFormEntries(formEl, {
-      KD_KONTRAK: '',
-      ID_PEGAWAI: '',
-      NO_SURAT: '',
-      KD_JENIS_KONTRAK: '',
-      TGL_KONTRAK_MULAI: new Date().toISOString().split('T')[0],
-      TGL_KONTRAK_SAMPAI: '',
-      KETERANGAN: ''
-    });
+    const kdEl = document.querySelector('#replacement_kd_kontrak');
+    const idPegEl = document.querySelector('#replacement_id_pegawai');
+    const badgeMode = document.querySelector('#form-mode-badge');
+    const btnSave = document.querySelector('#btn-save-kontrak');
+    const statusEl = document.querySelector('#form-kontrak-status');
 
-    const modal = getModal();
-    if (modal) modal.show();
+    if (kdEl) kdEl.value = '';
+    if (idPegEl) idPegEl.value = '';
+    if (badgeMode) {
+      badgeMode.textContent = 'Mode Tambah';
+      badgeMode.className = 'badge bg-soft-primary text-primary fs--2';
+    }
+    if (btnSave) {
+      btnSave.innerHTML = '<i class="fas fa-save me-1"></i> Simpan';
+      btnSave.className = 'btn btn-sm btn-primary px-3 fw-semi-bold';
+    }
+    if (statusEl) {
+      statusEl.textContent = '';
+      statusEl.className = 'fs--1 text-muted ms-2';
+    }
+
+    if (selNip) selNip.value = '-';
+    if (selBagian) selBagian.value = '-';
+    if (selGolongan) selGolongan.value = '-';
+    if (selJenisKontrak) selJenisKontrak.value = '-';
+    if (selJabatan) selJabatan.value = '-';
+    if (selPangkat) selPangkat.value = '-';
+    if (selEkselon) selEkselon.value = '-';
+    if (selJenisPegawai) selJenisPegawai.value = '-';
+    if (selStatusPegawai) selStatusPegawai.value = '-';
+    if (selLokasi) selLokasi.value = '-';
+
+    setDefaultDates();
   }
 
-  function openEditModal(item) {
-    const formEl = document.getElementById(`${id}-form`);
-    if (!formEl || !item) return;
+  // Edit Kontrak
+  function editKontrak(kdKontrak) {
+    const row = allKontrak.find(r => String(r.KD_KONTRAK) === String(kdKontrak) || String(r.id_detail_kontrak) === String(kdKontrak));
+    if (!row) {
+      alert('Data kontrak tidak ditemukan');
+      return;
+    }
 
-    const nama = item.NAMA_PEGAWAI || item.NAMA || '';
-    document.getElementById(`${id}-modal-title`).innerHTML = `<i class="fas fa-edit text-warning me-2"></i>Edit Data Kontrak [${nama}]`;
-    setFormEntries(formEl, {
-      KD_KONTRAK: item.KD_KONTRAK || '',
-      ID_PEGAWAI: item.ID_PEGAWAI || '',
-      NO_SURAT: item.NO_SURAT || '',
-      KD_JENIS_KONTRAK: item.KD_JENIS_KONTRAK || '',
-      TGL_KONTRAK_MULAI: item.TGL_MULAI || item.TGL_KONTRAK_MULAI || '',
-      TGL_KONTRAK_SAMPAI: item.TGL_SELESAI || item.TGL_KONTRAK_SAMPAI || '',
-      KETERANGAN: item.KETERANGAN || ''
-    });
+    isEditMode = true;
+    const kdEl = document.querySelector('#replacement_kd_kontrak');
+    const idPegEl = document.querySelector('#replacement_id_pegawai');
+    const noSuratEl = document.querySelector('#replacement_no_surat');
+    const nipEl = document.querySelector('#replacement_NIP');
+    const namaEl = document.querySelector('#replacement_nama');
+    const tglSuratEl = document.querySelector('#replacement_tanggal_surat');
+    const tglMulaiEl = document.querySelector('#replacement_tgl_kontrak_mulai');
+    const tglSampaiEl = document.querySelector('#replacement_tgl_kontrak_sampai');
+    const ketEl = document.querySelector('#replacement_keterangan');
 
-    const modal = getModal();
-    if (modal) modal.show();
+    const badgeMode = document.querySelector('#form-mode-badge');
+    const btnSave = document.querySelector('#btn-save-kontrak');
+    const statusEl = document.querySelector('#form-kontrak-status');
+
+    if (kdEl) kdEl.value = row.KD_KONTRAK || row.id_detail_kontrak || '';
+    if (idPegEl) idPegEl.value = row.ID_PEGAWAI || '';
+    if (noSuratEl) noSuratEl.value = row.NO_SURAT || '';
+    if (nipEl) nipEl.value = row.NIP || '';
+    if (selNip) selNip.value = row.NIP || '-';
+    if (namaEl) namaEl.value = row.NAMA_PEGAWAI || row.NAMA || '';
+    if (tglSuratEl) tglSuratEl.value = toInputDate(row.TGL_SURAT);
+    if (tglMulaiEl) tglMulaiEl.value = toInputDate(row.TGL_KONTRAK_MULAI || row.TGL_MULAI);
+    if (tglSampaiEl) tglSampaiEl.value = toInputDate(row.TGL_KONTRAK_SAMPAI || row.TGL_SELESAI);
+    if (ketEl) ketEl.value = row.KETERANGAN || '';
+
+    if (selBagian) selBagian.value = row.KD_BAGIAN || '-';
+    if (selGolongan) selGolongan.value = row.KD_GOLONGAN || '-';
+    if (selJenisKontrak) selJenisKontrak.value = row.KD_JENIS_KONTRAK || '-';
+    if (selJabatan) selJabatan.value = row.KD_JABATAN !== undefined ? row.KD_JABATAN : '-';
+    if (selPangkat) selPangkat.value = row.KD_PANGKAT || '-';
+    if (selEkselon) selEkselon.value = row.KD_EKSELON || '-';
+    if (selJenisPegawai) selJenisPegawai.value = row.KD_JENIS_PEGAWAI || '-';
+    if (selStatusPegawai) selStatusPegawai.value = row.KD_STATUS_PEGAWAI !== undefined ? row.KD_STATUS_PEGAWAI : '-';
+    if (selLokasi) selLokasi.value = row.KD_LOKASI || '-';
+
+    if (badgeMode) {
+      badgeMode.textContent = `Mode Edit: ${row.NO_SURAT || kdKontrak}`;
+      badgeMode.className = 'badge bg-soft-warning text-warning fs--2';
+    }
+    if (btnSave) {
+      btnSave.innerHTML = '<i class="fas fa-save me-1"></i> Update Kontrak';
+      btnSave.className = 'btn btn-sm btn-warning px-3 fw-semi-bold';
+    }
+    if (statusEl) {
+      statusEl.textContent = 'Silakan ubah data di atas lalu klik Update Kontrak';
+      statusEl.className = 'fs--1 text-info ms-2';
+    }
+
+    const formCard = document.querySelector('#form-kontrak');
+    if (formCard) formCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  async function saveData() {
-    const formEl = document.getElementById(`${id}-form`);
-    if (!formEl) return;
+  // Hapus Kontrak
+  async function deleteKontrak(kdKontrak, noSurat) {
+    const msg = `Apakah Anda yakin ingin menghapus data kontrak No. Surat "${noSurat}"?`;
+    if (!confirm(msg)) return;
 
-    const payload = getFormEntries(formEl);
-    if (!payload.ID_PEGAWAI) {
-      showDialog({
-        ui: 'interactive',
-        type: 'warning',
-        label: '<span class="text-danger">Silakan pilih Pegawai terlebih dahulu.</span>'
-      });
+    try {
+      const res = await httpPost(`${apiUrl}/pegawai/kontrak/delete/${kdKontrak}`, {});
+      if (res && (res.code === 200 || res.status === true || res.status === 'ok')) {
+        alert(res.message || 'Kontrak kerja berhasil dihapus');
+        loadKontrakTable();
+      } else {
+        alert(res?.message || 'Gagal menghapus data kontrak');
+      }
+    } catch (err) {
+      alert(`Terjadi kesalahan saat menghapus data: ${err.message}`);
+    }
+  }
+
+  // Simpan / Update Kontrak
+  async function saveKontrak(e) {
+    e.preventDefault();
+
+    const kdKontrak = document.querySelector('#replacement_kd_kontrak')?.value || '';
+    const idPegawai = document.querySelector('#replacement_id_pegawai')?.value || '';
+    const nip = (selNip?.value && selNip.value !== '-' ? selNip.value : '').trim();
+    const nama = (document.querySelector('#replacement_nama')?.value || '').trim();
+    const noSurat = (document.querySelector('#replacement_no_surat')?.value || '').trim();
+    const tglSurat = document.querySelector('#replacement_tanggal_surat')?.value || '';
+    const tglMulai = document.querySelector('#replacement_tgl_kontrak_mulai')?.value || '';
+    const tglSampai = document.querySelector('#replacement_tgl_kontrak_sampai')?.value || '';
+    const keterangan = (document.querySelector('#replacement_keterangan')?.value || '').trim();
+
+    const kdBagian = selBagian?.value !== '-' ? selBagian?.value : '';
+    const kdGolongan = selGolongan?.value !== '-' ? selGolongan?.value : '';
+    const kdJenisKontrak = selJenisKontrak?.value !== '-' ? selJenisKontrak?.value : '';
+    const kdJabatan = selJabatan?.value !== '-' ? selJabatan?.value : '';
+    const kdPangkat = selPangkat?.value !== '-' ? selPangkat?.value : '';
+    const kdEkselon = selEkselon?.value !== '-' ? selEkselon?.value : '';
+    const kdJenisPegawai = selJenisPegawai?.value !== '-' ? selJenisPegawai?.value : '';
+    const kdStatusPegawai = selStatusPegawai?.value !== '-' ? selStatusPegawai?.value : '';
+    const kdLokasi = selLokasi?.value !== '-' ? selLokasi?.value : '';
+
+    if (!nip) {
+      alert('NIP wajib diisi');
+      /* selNip focus */
       return;
     }
-    if (!payload.NO_SURAT) {
-      showDialog({
-        ui: 'interactive',
-        type: 'warning',
-        label: '<span class="text-danger">Nomor Kontrak wajib diisi.</span>'
-      });
+    if (!noSurat) {
+      alert('Nomor Surat wajib diisi');
+      document.querySelector('#replacement_no_surat')?.focus();
       return;
     }
-    if (!payload.KD_JENIS_KONTRAK) {
-      showDialog({
-        ui: 'interactive',
-        type: 'warning',
-        label: '<span class="text-danger">Jenis Kontrak wajib dipilih.</span>'
-      });
+    if (!kdJenisKontrak) {
+      alert('Jenis Kontrak wajib dipilih');
       return;
     }
-    if (!payload.TGL_KONTRAK_MULAI || !payload.TGL_KONTRAK_SAMPAI) {
-      showDialog({
-        ui: 'interactive',
-        type: 'warning',
-        label: '<span class="text-danger">Tanggal Mulai dan Tanggal Selesai Kontrak wajib diisi.</span>'
-      });
-      return;
+
+    const payload = {
+      KD_KONTRAK: kdKontrak,
+      ID_PEGAWAI: idPegawai,
+      NIP: nip,
+      NAMA: nama,
+      NO_SURAT: noSurat,
+      TGL_SURAT: tglSurat,
+      TGL_KONTRAK_MULAI: tglMulai,
+      TGL_KONTRAK_SAMPAI: tglSampai,
+      KD_BAGIAN: kdBagian,
+      KD_GOLONGAN: kdGolongan,
+      KD_JENIS_KONTRAK: kdJenisKontrak,
+      KD_JABATAN: kdJabatan,
+      KD_PANGKAT: kdPangkat,
+      KD_EKSELON: kdEkselon,
+      KD_JENIS_PEGAWAI: kdJenisPegawai,
+      KD_STATUS_PEGAWAI: kdStatusPegawai,
+      KD_LOKASI: kdLokasi,
+      KETERANGAN: keterangan
+    };
+
+    const statusEl = document.querySelector('#form-kontrak-status');
+    const btnSave = document.querySelector('#btn-save-kontrak');
+    if (btnSave) btnSave.disabled = true;
+    if (statusEl) {
+      statusEl.textContent = 'Menyimpan data kontrak...';
+      statusEl.className = 'fs--1 text-info ms-2';
     }
 
     try {
       const res = await httpPost(`${apiUrl}/pegawai/kontrak/save`, payload);
-      if (res && res.code === 200) {
-        const modal = getModal();
-        if (modal) modal.hide();
-        showDialog({
-          type: 'success',
-          label: '<span class="text-success">Data kontrak kerja berhasil disimpan.</span>'
-        });
-        await loadData();
+      if (res && (res.code === 200 || res.status === true || res.status === 'ok')) {
+        alert(res.message || 'Kontrak kerja berhasil disimpan');
+        resetForm();
+        loadKontrakTable();
       } else {
-        showDialog({
-          ui: 'interactive',
-          type: 'warning',
-          label: `<span class="text-danger">${res?.message || 'Gagal menyimpan data kontrak.'}</span>`
-        });
+        alert(res?.message || 'Gagal menyimpan kontrak kerja');
+        if (statusEl) {
+          statusEl.textContent = res?.message || 'Gagal menyimpan';
+          statusEl.className = 'fs--1 text-danger ms-2';
+        }
       }
     } catch (err) {
-      console.error(err);
-      showDialog({
-        ui: 'interactive',
-        type: 'warning',
-        label: '<span class="text-danger">Terjadi kesalahan pada server saat menyimpan data.</span>'
-      });
+      alert(`Terjadi kesalahan: ${err.message}`);
+      if (statusEl) {
+        statusEl.textContent = err.message;
+        statusEl.className = 'fs--1 text-danger ms-2';
+      }
+    } finally {
+      if (btnSave) btnSave.disabled = false;
     }
   }
 
-  async function deleteData(item) {
-    const pk = item.KD_KONTRAK;
-    if (!pk) return;
-
-    const nama = item.NAMA_PEGAWAI || item.NAMA || '';
-    const dialog = await showDialog({
-      ui: 'interactive',
-      type: 'question',
-      label: `<span class="text-black">Apakah anda yakin akan menghapus data kontrak <b>${item.NO_SURAT || '-'}</b> atas nama <b>${nama}</b>?</span>`,
-      buttons: [
-        {
-          label: 'Ya, Hapus',
-          class: 'btn-danger',
-          onClick: async () => {
-            dialog.close();
-            try {
-              const res = await httpPost(`${apiUrl}/pegawai/kontrak/delete/${pk}`, { id: pk });
-              if (res && res.code === 200) {
-                showDialog({
-                  type: 'success',
-                  label: '<span class="text-success">Data kontrak berhasil dihapus.</span>'
-                });
-                await loadData();
-              } else {
-                showDialog({
-                  ui: 'interactive',
-                  type: 'warning',
-                  label: `<span class="text-danger">${res?.message || 'Gagal menghapus data kontrak.'}</span>`
-                });
-              }
-            } catch (err) {
-              console.error(err);
-              showDialog({
-                ui: 'interactive',
-                type: 'warning',
-                label: '<span class="text-danger">Terjadi kesalahan server saat menghapus data.</span>'
-              });
-            }
-          }
-        },
-        {
-          label: 'Batal',
-          class: 'btn-secondary',
-          onClick: () => dialog.close()
-        }
-      ]
-    });
-  }
-
-  function exportCSV() {
-    if (!filteredData.length) {
-      showDialog({
-        ui: 'interactive',
-        type: 'warning',
-        label: '<span class="text-danger">Tidak ada data untuk diekspor.</span>'
-      });
-      return;
-    }
-
-    const headers = ['No', 'NIP', 'Nama Pegawai', 'Nomor Kontrak', 'Jenis Kontrak', 'Tgl Mulai', 'Tgl Selesai', 'Status', 'Sisa Hari', 'Keterangan'];
-    const rows = filteredData.map((d, i) => [
-      i + 1,
-      `"${(d.NIP || '').replace(/"/g, '""')}"`,
-      `"${(d.NAMA_PEGAWAI || d.NAMA || '').replace(/"/g, '""')}"`,
-      `"${(d.NO_SURAT || '').replace(/"/g, '""')}"`,
-      `"${(d.JENIS_KONTRAK || '').replace(/"/g, '""')}"`,
-      `"${(d.TGL_MULAI || d.TGL_KONTRAK_MULAI || '').replace(/"/g, '""')}"`,
-      `"${(d.TGL_SELESAI || d.TGL_KONTRAK_SAMPAI || '').replace(/"/g, '""')}"`,
-      `"${(d.STATUS_KONTRAK || '').replace(/"/g, '""')}"`,
-      `"${d.SISA_HARI !== undefined ? d.SISA_HARI : ''}"`,
-      `"${(d.KETERANGAN || '').replace(/"/g, '""')}"`
-    ]);
-
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `status_kontrak_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
+  // Setup Event Listeners
   function setupEventListeners() {
-    if (frm_actions) {
-      const btnTambah = frm_actions.querySelector('a[href="#!btn-tambah"]');
-      if (btnTambah) {
-        btnTambah.addEventListener('click', (e) => {
-          e.preventDefault();
-          openAddModal();
-        });
-      }
+    // Form submit
+    const form = document.querySelector('#form-kontrak');
+    if (form) form.addEventListener('submit', saveKontrak);
 
-      const btnRefresh = frm_actions.querySelector('a[href="#!btn-refresh"]');
-      if (btnRefresh) {
-        btnRefresh.addEventListener('click', (e) => {
-          e.preventDefault();
-          loadData();
-        });
-      }
+    // Reset button
+    const btnReset = document.querySelector('#btn-reset-kontrak');
+    if (btnReset) btnReset.addEventListener('click', resetForm);
 
-      const btnExport = frm_actions.querySelector('a[href="#!btn-export"]');
-      if (btnExport) {
-        btnExport.addEventListener('click', (e) => {
-          e.preventDefault();
-          exportCSV();
-        });
-      }
+    // Tabel search & toolbar
+    const searchInput = document.querySelector('#txtcari_kontrak');
+    const btnCari = document.querySelector('#btn-cari-kontrak');
+    const btnClear = document.querySelector('#btn-clear-kontrak');
+    const btnRefresh = document.querySelector('#btn-refresh-kontrak');
 
-      const searchInput = frm_actions.querySelector('.search-box');
-      if (searchInput) {
-        searchInput.addEventListener('input', () => {
-          filterAndRender();
-        });
-      }
+    if (searchInput) {
+      searchInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') applyFilter();
+      });
     }
+    if (btnCari) btnCari.addEventListener('click', applyFilter);
+    if (btnClear) {
+      btnClear.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        applyFilter();
+      });
+    }
+    if (btnRefresh) btnRefresh.addEventListener('click', loadKontrakTable);
 
-    if (frm_entries) {
-      frm_entries.addEventListener('click', (e) => {
-        const btnEdit = e.target.closest('a[href="#!btn-edit"]');
-        const btnHapus = e.target.closest('a[href="#!btn-hapus"]');
-
+    // Delegation tombol Edit & Delete pada tabel
+    const tbody = document.querySelector('#tb_kontrak_body');
+    if (tbody) {
+      tbody.addEventListener('click', (e) => {
+        const btnEdit = e.target.closest('.btn-edit-kontrak');
         if (btnEdit) {
-          e.preventDefault();
-          const rowData = btnEdit.getAttribute('data-row');
-          if (rowData) {
-            try {
-              openEditModal(JSON.parse(rowData));
-            } catch (err) {
-              console.error(err);
-            }
-          }
-        } else if (btnHapus) {
-          e.preventDefault();
-          const rowData = btnHapus.getAttribute('data-row');
-          if (rowData) {
-            try {
-              deleteData(JSON.parse(rowData));
-            } catch (err) {
-              console.error(err);
-            }
-          }
+          editKontrak(btnEdit.dataset.id);
+          return;
+        }
+
+        const btnDel = e.target.closest('.btn-delete-kontrak');
+        if (btnDel) {
+          deleteKontrak(btnDel.dataset.id, btnDel.dataset.surat);
+          return;
         }
       });
     }
-
-    const modalEl = document.getElementById(`${id}-modal`);
-    if (modalEl) {
-      const btnSimpan = modalEl.querySelector('a[href="#!btn-simpan"]');
-      if (btnSimpan) {
-        btnSimpan.addEventListener('click', (e) => {
-          e.preventDefault();
-          saveData();
-        });
-      }
-    }
   }
 
-  // Init Lifecycle
-  setupEventListeners();
-  loadData();
+  // Inisialisasi Halaman
+  async function init() {
+    initEvoSelectors();
+    setDefaultDates();
+    setupEventListeners();
+    await Promise.all([
+      loadMasterData(),
+      loadPegawaiList(),
+      loadKontrakTable()
+    ]);
+  }
 
-  // Expose to Global Lifecycle
-  document[id] = { id, loadData, reload: loadData, openAddModal };
-  window[id] = document[id];
+  init();
 </script>

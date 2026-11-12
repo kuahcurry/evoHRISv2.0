@@ -1331,6 +1331,12 @@ class MPegawai extends Model
                        jk.JENIS_KONTRAK,
                        b.BAGIAN,
                        j.JABATAN,
+                       pkt.PANGKAT,
+                       g.GOLONGAN,
+                       e.EKSELON,
+                       sp.STATUS_PEGAWAI,
+                       jp.JENIS_PEGAWAI,
+                       l.LOKASI,
                        DATEDIFF(k.TGL_KONTRAK_SAMPAI, CURDATE()) AS SISA_HARI,
                        CASE 
                            WHEN k.TGL_KONTRAK_SAMPAI < CURDATE() THEN 'EXPIRED'
@@ -1342,11 +1348,20 @@ class MPegawai extends Model
                 LEFT JOIN jenis_kontrak jk ON jk.KD_JENIS_KONTRAK = k.KD_JENIS_KONTRAK
                 LEFT JOIN bagian b ON b.KD_BAGIAN = k.KD_BAGIAN
                 LEFT JOIN jabatan j ON j.KD_JABATAN = k.KD_JABATAN
+                LEFT JOIN pangkat pkt ON pkt.KD_PANGKAT = k.KD_PANGKAT
+                LEFT JOIN golongan g ON g.KD_GOLONGAN = k.KD_GOLONGAN
+                LEFT JOIN ekselon e ON e.KD_EKSELON = k.KD_EKSELON
+                LEFT JOIN status_pegawai sp ON sp.KD_STATUS_PEGAWAI = k.KD_STATUS_PEGAWAI
+                LEFT JOIN jenis_pegawai jp ON jp.KD_JENIS_PEGAWAI = k.KD_JENIS_PEGAWAI
+                LEFT JOIN lokasi l ON l.KD_LOKASI = k.KD_LOKASI
                 WHERE 1=1";
         $binds = [];
 
         if ($keyword !== '') {
-            $sql .= " AND (p.NAMA LIKE ? OR k.NIP LIKE ? OR k.NO_SURAT LIKE ? OR b.BAGIAN LIKE ? OR jk.JENIS_KONTRAK LIKE ?)";
+            $sql .= " AND (p.NAMA LIKE ? OR k.NAMA LIKE ? OR k.NIP LIKE ? OR k.NO_SURAT LIKE ? OR b.BAGIAN LIKE ? OR j.JABATAN LIKE ? OR pkt.PANGKAT LIKE ? OR jk.JENIS_KONTRAK LIKE ?)";
+            $binds[] = "%$keyword%";
+            $binds[] = "%$keyword%";
+            $binds[] = "%$keyword%";
             $binds[] = "%$keyword%";
             $binds[] = "%$keyword%";
             $binds[] = "%$keyword%";
@@ -1361,38 +1376,56 @@ class MPegawai extends Model
     public function saveKontrak($data)
     {
         try {
-            $idPegawai = $data['ID_PEGAWAI'] ?? null;
+            $idPegawai = $data['ID_PEGAWAI'] ?? $data['id_pegawai'] ?? $data['replacement_id_pegawai'] ?? null;
+            $nip = $data['NIP'] ?? $data['nip'] ?? $data['replacement_NIP'] ?? null;
+            if (empty($idPegawai) && !empty($nip)) {
+                $rowPeg = $this->db->table('pegawai')->where('NIP', $nip)->get()->getRowArray();
+                if ($rowPeg) {
+                    $idPegawai = $rowPeg['ID_PEGAWAI'];
+                }
+            }
             if (empty($idPegawai)) {
                 return ['code' => 422, 'message' => 'Pegawai belum dipilih'];
             }
 
             $snapshot = $this->getPegawaiSnapshot($idPegawai);
-            $kd = $data['KD_KONTRAK'] ?? '';
+            $kd = $data['KD_KONTRAK'] ?? $data['kd_kontrak'] ?? $data['replacement_kd_kontrak'] ?? '';
 
-            $noSurat = !empty($data['NO_SURAT']) ? trim($data['NO_SURAT']) : (!empty($data['NO_KONTRAK']) ? trim($data['NO_KONTRAK']) : ('KTR/' . date('Ymd') . '/' . $idPegawai));
-            $tglSurat = $this->normalizeDate($data['TGL_SURAT'] ?? $data['TGL_MULAI'] ?? null, date('Y-m-d'));
-            $tglMulai = $this->normalizeDate($data['TGL_KONTRAK_MULAI'] ?? $data['TGL_MULAI'] ?? null, date('Y-m-d'));
-            $tglSampai = $this->normalizeDate($data['TGL_KONTRAK_SAMPAI'] ?? $data['TGL_SELESAI'] ?? null, date('Y-m-d', strtotime('+1 year')));
-            $kdJenisKontrak = !empty($data['KD_JENIS_KONTRAK']) ? (int)$data['KD_JENIS_KONTRAK'] : 1;
+            $noSurat = !empty($data['NO_SURAT']) ? trim($data['NO_SURAT']) : (!empty($data['no_surat']) ? trim($data['no_surat']) : (!empty($data['replacement_no_surat']) ? trim($data['replacement_no_surat']) : ('KTR/' . date('Ymd') . '/' . $idPegawai)));
+            $tglSurat = $this->normalizeDate($data['TGL_SURAT'] ?? $data['tgl_surat'] ?? $data['replacement_tanggal_surat'] ?? null, date('Y-m-d'));
+            $tglMulai = $this->normalizeDate($data['TGL_KONTRAK_MULAI'] ?? $data['tgl_mulai'] ?? $data['replacement_tgl_kontrak_mulai'] ?? null, date('Y-m-d'));
+            $tglSampai = $this->normalizeDate($data['TGL_KONTRAK_SAMPAI'] ?? $data['tgl_selesai'] ?? $data['replacement_tgl_kontrak_sampai'] ?? null, date('Y-m-d', strtotime('+1 year')));
+            $kdJenisKontrak = !empty($data['KD_JENIS_KONTRAK']) && $data['KD_JENIS_KONTRAK'] !== '-' ? (int)$data['KD_JENIS_KONTRAK'] : (!empty($data['kd_jenis_kontrak']) && $data['kd_jenis_kontrak'] !== '-' ? (int)$data['kd_jenis_kontrak'] : (!empty($data['id_jenis_kontrak']) && $data['id_jenis_kontrak'] !== '-' ? (int)$data['id_jenis_kontrak'] : (!empty($data['replacement_jenis_kontrak']) && $data['replacement_jenis_kontrak'] !== '-' ? (int)$data['replacement_jenis_kontrak'] : 1)));
+
+            $nama = !empty($data['NAMA']) ? $data['NAMA'] : (!empty($data['nama']) ? $data['nama'] : (!empty($data['replacement_nama']) ? $data['replacement_nama'] : ($snapshot['NAMA'] ?? '')));
+
+            $valBagian = $data['KD_BAGIAN'] ?? $data['kd_bagian'] ?? $data['id_bagian'] ?? $data['replacement_bagian'] ?? null;
+            $valJabatan = $data['KD_JABATAN'] ?? $data['kd_jabatan'] ?? $data['id_jabatan'] ?? $data['replacement_jabatan'] ?? null;
+            $valEkselon = $data['KD_EKSELON'] ?? $data['kd_eselon'] ?? $data['kd_ekselon'] ?? $data['id_eselon'] ?? $data['id_ekselon'] ?? $data['replacement_ekselon'] ?? null;
+            $valStatusPegawai = $data['KD_STATUS_PEGAWAI'] ?? $data['kd_status_pegawai'] ?? $data['id_status_pegawai'] ?? $data['replacement_status_pegawai'] ?? null;
+            $valGolongan = $data['KD_GOLONGAN'] ?? $data['kd_golongan'] ?? $data['id_golongan'] ?? $data['replacement_golongan'] ?? null;
+            $valPangkat = $data['KD_PANGKAT'] ?? $data['kd_pangkat'] ?? $data['id_pangkat'] ?? $data['replacement_pangkat'] ?? null;
+            $valJenisPegawai = $data['KD_JENIS_PEGAWAI'] ?? $data['kd_jenis_pegawai'] ?? $data['id_jenis_pegawai'] ?? $data['replacement_jenis_pegawai'] ?? null;
+            $valLokasi = $data['KD_LOKASI'] ?? $data['kd_lokasi'] ?? $data['id_lokasi'] ?? $data['replacement_lokasi'] ?? null;
 
             $record = [
                 'ID_PEGAWAI'         => $idPegawai,
                 'NO_SURAT'           => $noSurat,
                 'TGL_SURAT'          => $tglSurat,
-                'NIP'                => $snapshot['NIP'],
-                'NAMA'               => $snapshot['NAMA'],
-                'KD_BAGIAN'          => !empty($data['KD_BAGIAN']) ? (int)$data['KD_BAGIAN'] : $snapshot['KD_BAGIAN'],
-                'KD_JABATAN'         => isset($data['KD_JABATAN']) && $data['KD_JABATAN'] !== '' ? (int)$data['KD_JABATAN'] : $snapshot['KD_JABATAN'],
-                'KD_EKSELON'         => !empty($data['KD_EKSELON']) ? (int)$data['KD_EKSELON'] : $snapshot['KD_EKSELON'],
-                'KD_STATUS_PEGAWAI'  => isset($data['KD_STATUS_PEGAWAI']) && $data['KD_STATUS_PEGAWAI'] !== '' ? (int)$data['KD_STATUS_PEGAWAI'] : $snapshot['KD_STATUS_PEGAWAI'],
+                'NIP'                => $snapshot['NIP'] ?? $nip,
+                'NAMA'               => $nama,
+                'KD_BAGIAN'          => (!empty($valBagian) && $valBagian !== '-') ? (int)$valBagian : ($snapshot['KD_BAGIAN'] ?? null),
+                'KD_JABATAN'         => (isset($valJabatan) && $valJabatan !== '' && $valJabatan !== '-') ? (int)$valJabatan : ($snapshot['KD_JABATAN'] ?? null),
+                'KD_EKSELON'         => (!empty($valEkselon) && $valEkselon !== '-') ? (int)$valEkselon : ($snapshot['KD_EKSELON'] ?? null),
+                'KD_STATUS_PEGAWAI'  => (isset($valStatusPegawai) && $valStatusPegawai !== '' && $valStatusPegawai !== '-') ? (int)$valStatusPegawai : ($snapshot['KD_STATUS_PEGAWAI'] ?? null),
                 'KD_JENIS_KONTRAK'   => $kdJenisKontrak,
-                'KD_GOLONGAN'        => !empty($data['KD_GOLONGAN']) ? (int)$data['KD_GOLONGAN'] : $snapshot['KD_GOLONGAN'],
-                'KD_PANGKAT'         => !empty($data['KD_PANGKAT']) ? (int)$data['KD_PANGKAT'] : $snapshot['KD_PANGKAT'],
-                'KD_JENIS_PEGAWAI'   => !empty($data['KD_JENIS_PEGAWAI']) ? (int)$data['KD_JENIS_PEGAWAI'] : $snapshot['KD_JENIS_PEGAWAI'],
-                'KD_LOKASI'          => !empty($data['KD_LOKASI']) ? (int)$data['KD_LOKASI'] : $snapshot['KD_LOKASI'],
+                'KD_GOLONGAN'        => (!empty($valGolongan) && $valGolongan !== '-') ? (int)$valGolongan : ($snapshot['KD_GOLONGAN'] ?? null),
+                'KD_PANGKAT'         => (!empty($valPangkat) && $valPangkat !== '-') ? (int)$valPangkat : ($snapshot['KD_PANGKAT'] ?? null),
+                'KD_JENIS_PEGAWAI'   => (!empty($valJenisPegawai) && $valJenisPegawai !== '-') ? (int)$valJenisPegawai : ($snapshot['KD_JENIS_PEGAWAI'] ?? null),
+                'KD_LOKASI'          => (!empty($valLokasi) && $valLokasi !== '-') ? (int)$valLokasi : ($snapshot['KD_LOKASI'] ?? null),
                 'TGL_KONTRAK_MULAI'  => $tglMulai,
                 'TGL_KONTRAK_SAMPAI' => $tglSampai,
-                'KETERANGAN'         => $data['KETERANGAN'] ?? '-'
+                'KETERANGAN'         => $data['KETERANGAN'] ?? $data['keterangan'] ?? $data['replacement_keterangan'] ?? '-'
             ];
 
             if (empty($kd)) {
@@ -1430,17 +1463,34 @@ class MPegawai extends Model
                        COALESCE(p.NAMA, phk.NAMA) AS NAMA_PEGAWAI,
                        jp.JENIS_PHK,
                        b.BAGIAN,
-                       j.JABATAN
+                       j.JABATAN,
+                       pg.PANGKAT,
+                       gol.GOLONGAN,
+                       es.EKSELON,
+                       sp.STATUS_PEGAWAI,
+                       jpe.JENIS_PEGAWAI,
+                       lok.LOKASI
                 FROM detail_phk_pegawai phk
                 LEFT JOIN pegawai p ON p.ID_PEGAWAI = phk.ID_PEGAWAI
                 LEFT JOIN jenis_phk jp ON jp.KD_JENIS_PHK = phk.KD_JENIS_PHK
                 LEFT JOIN bagian b ON b.KD_BAGIAN = phk.KD_BAGIAN
                 LEFT JOIN jabatan j ON j.KD_JABATAN = phk.KD_JABATAN
+                LEFT JOIN pangkat pg ON pg.KD_PANGKAT = phk.KD_PANGKAT
+                LEFT JOIN golongan gol ON gol.KD_GOLONGAN = phk.KD_GOLONGAN
+                LEFT JOIN ekselon es ON es.KD_EKSELON = phk.KD_EKSELON
+                LEFT JOIN status_pegawai sp ON sp.KD_STATUS_PEGAWAI = phk.KD_STATUS_PEGAWAI
+                LEFT JOIN jenis_pegawai jpe ON jpe.KD_JENIS_PEGAWAI = phk.KD_JENIS_PEGAWAI
+                LEFT JOIN lokasi lok ON lok.KD_LOKASI = phk.KD_LOKASI
                 WHERE 1=1";
         $binds = [];
 
         if ($keyword !== '') {
-            $sql .= " AND (p.NAMA LIKE ? OR phk.NIP LIKE ? OR phk.NO_SURAT LIKE ? OR jp.JENIS_PHK LIKE ?)";
+            $sql .= " AND (p.NAMA LIKE ? OR phk.NAMA LIKE ? OR phk.NIP LIKE ? OR phk.NO_SURAT LIKE ? OR jp.JENIS_PHK LIKE ? OR b.BAGIAN LIKE ? OR j.JABATAN LIKE ? OR pg.PANGKAT LIKE ? OR phk.ALASAN LIKE ?)";
+            $binds[] = "%$keyword%";
+            $binds[] = "%$keyword%";
+            $binds[] = "%$keyword%";
+            $binds[] = "%$keyword%";
+            $binds[] = "%$keyword%";
             $binds[] = "%$keyword%";
             $binds[] = "%$keyword%";
             $binds[] = "%$keyword%";
@@ -1454,35 +1504,55 @@ class MPegawai extends Model
     public function savePHK($data)
     {
         try {
-            $idPegawai = $data['ID_PEGAWAI'] ?? null;
+            $idPegawai = $data['ID_PEGAWAI'] ?? $data['id_pegawai'] ?? $data['replacement_id_pegawai'] ?? null;
+            $nip = $data['NIP'] ?? $data['nip'] ?? $data['replacement_NIP'] ?? '';
+
+            if (empty($idPegawai) && !empty($nip)) {
+                $peg = $this->db->table('pegawai')->where('NIP', $nip)->get()->getRowArray();
+                if ($peg) {
+                    $idPegawai = $peg['ID_PEGAWAI'];
+                }
+            }
+
             if (empty($idPegawai)) {
                 return ['code' => 422, 'message' => 'Pegawai belum dipilih'];
             }
 
             $snapshot = $this->getPegawaiSnapshot($idPegawai);
-            $kd = $data['KD_PHK'] ?? '';
+            $kd = $data['KD_PHK'] ?? $data['kd_phk'] ?? $data['id'] ?? '';
 
-            $noSurat = !empty($data['NO_SURAT']) ? trim($data['NO_SURAT']) : (!empty($data['NO_SK']) ? trim($data['NO_SK']) : ('SK-PHK/' . date('Ymd') . '/' . $idPegawai));
-            $tglSurat = $this->normalizeDate($data['TGL_SURAT'] ?? $data['TGL_PHK'] ?? null, date('Y-m-d'));
-            $tglPhk = $this->normalizeDate($data['TGL_PHK'] ?? null, date('Y-m-d'));
-            $kdJenisPhk = !empty($data['KD_JENIS_PHK']) ? (int)$data['KD_JENIS_PHK'] : 1;
-            $alasan = !empty($data['ALASAN']) ? $data['ALASAN'] : (!empty($data['KETERANGAN']) ? $data['KETERANGAN'] : '-');
+            $noSurat = !empty($data['NO_SURAT']) ? trim($data['NO_SURAT']) : (!empty($data['no_surat']) ? trim($data['no_surat']) : (!empty($data['NO_SK']) ? trim($data['NO_SK']) : ('SK-PHK/' . date('Ymd') . '/' . $idPegawai)));
+            $tglSurat = $this->normalizeDate($data['TGL_SURAT'] ?? $data['tgl_surat'] ?? $data['TGL_PHK'] ?? $data['tgl_phk'] ?? null, date('Y-m-d'));
+            $tglPhk = $this->normalizeDate($data['TGL_PHK'] ?? $data['tgl_phk'] ?? null, date('Y-m-d'));
+            $kdJenisPhk = !empty($data['KD_JENIS_PHK']) && $data['KD_JENIS_PHK'] !== '-' ? (int)$data['KD_JENIS_PHK'] : (!empty($data['kd_jenis_phk']) && $data['kd_jenis_phk'] !== '-' ? (int)$data['kd_jenis_phk'] : (!empty($data['id_jenis_phk']) && $data['id_jenis_phk'] !== '-' ? (int)$data['id_jenis_phk'] : (!empty($data['replacement_jenis_phk']) && $data['replacement_jenis_phk'] !== '-' ? (int)$data['replacement_jenis_phk'] : 3)));
+            $alasan = !empty($data['ALASAN']) ? $data['ALASAN'] : (!empty($data['alasan']) ? $data['alasan'] : (!empty($data['KETERANGAN']) ? $data['KETERANGAN'] : (!empty($data['keterangan']) ? $data['keterangan'] : '-')));
+
+            $nama = !empty($data['NAMA']) ? $data['NAMA'] : (!empty($data['nama']) ? $data['nama'] : (!empty($data['replacement_nama']) ? $data['replacement_nama'] : ($snapshot['NAMA'] ?? '')));
+
+            $valBagian = $data['KD_BAGIAN'] ?? $data['kd_bagian'] ?? $data['id_bagian'] ?? $data['replacement_bagian'] ?? null;
+            $valJabatan = $data['KD_JABATAN'] ?? $data['kd_jabatan'] ?? $data['id_jabatan'] ?? $data['replacement_jabatan'] ?? null;
+            $valEkselon = $data['KD_EKSELON'] ?? $data['kd_eselon'] ?? $data['kd_ekselon'] ?? $data['id_eselon'] ?? $data['id_ekselon'] ?? $data['replacement_ekselon'] ?? null;
+            $valStatusPegawai = $data['KD_STATUS_PEGAWAI'] ?? $data['kd_status_pegawai'] ?? $data['id_status_pegawai'] ?? $data['replacement_status_pegawai'] ?? null;
+            $valGolongan = $data['KD_GOLONGAN'] ?? $data['kd_golongan'] ?? $data['id_golongan'] ?? $data['replacement_golongan'] ?? null;
+            $valPangkat = $data['KD_PANGKAT'] ?? $data['kd_pangkat'] ?? $data['id_pangkat'] ?? $data['replacement_pangkat'] ?? null;
+            $valJenisPegawai = $data['KD_JENIS_PEGAWAI'] ?? $data['kd_jenis_pegawai'] ?? $data['id_jenis_pegawai'] ?? $data['replacement_jenis_pegawai'] ?? null;
+            $valLokasi = $data['KD_LOKASI'] ?? $data['kd_lokasi'] ?? $data['id_lokasi'] ?? $data['replacement_lokasi'] ?? null;
 
             $record = [
                 'ID_PEGAWAI'        => $idPegawai,
                 'NO_SURAT'          => $noSurat,
                 'TGL_SURAT'         => $tglSurat,
-                'NIP'               => $snapshot['NIP'],
-                'NAMA'              => $snapshot['NAMA'],
-                'KD_BAGIAN'         => !empty($data['KD_BAGIAN']) ? (int)$data['KD_BAGIAN'] : $snapshot['KD_BAGIAN'],
-                'KD_JABATAN'        => isset($data['KD_JABATAN']) && $data['KD_JABATAN'] !== '' ? (int)$data['KD_JABATAN'] : $snapshot['KD_JABATAN'],
-                'KD_EKSELON'        => !empty($data['KD_EKSELON']) ? (int)$data['KD_EKSELON'] : $snapshot['KD_EKSELON'],
-                'KD_STATUS_PEGAWAI' => isset($data['KD_STATUS_PEGAWAI']) && $data['KD_STATUS_PEGAWAI'] !== '' ? (int)$data['KD_STATUS_PEGAWAI'] : $snapshot['KD_STATUS_PEGAWAI'],
+                'NIP'               => $snapshot['NIP'] ?? $nip,
+                'NAMA'              => $nama,
+                'KD_BAGIAN'         => (!empty($valBagian) && $valBagian !== '-') ? (int)$valBagian : ($snapshot['KD_BAGIAN'] ?? null),
+                'KD_JABATAN'        => (isset($valJabatan) && $valJabatan !== '' && $valJabatan !== '-') ? (int)$valJabatan : ($snapshot['KD_JABATAN'] ?? null),
+                'KD_EKSELON'        => (!empty($valEkselon) && $valEkselon !== '-') ? (int)$valEkselon : ($snapshot['KD_EKSELON'] ?? null),
+                'KD_STATUS_PEGAWAI' => (isset($valStatusPegawai) && $valStatusPegawai !== '' && $valStatusPegawai !== '-') ? (int)$valStatusPegawai : ($snapshot['KD_STATUS_PEGAWAI'] ?? null),
                 'KD_JENIS_PHK'      => $kdJenisPhk,
-                'KD_GOLONGAN'       => !empty($data['KD_GOLONGAN']) ? (int)$data['KD_GOLONGAN'] : $snapshot['KD_GOLONGAN'],
-                'KD_PANGKAT'        => !empty($data['KD_PANGKAT']) ? (int)$data['KD_PANGKAT'] : $snapshot['KD_PANGKAT'],
-                'KD_JENIS_PEGAWAI'  => !empty($data['KD_JENIS_PEGAWAI']) ? (int)$data['KD_JENIS_PEGAWAI'] : $snapshot['KD_JENIS_PEGAWAI'],
-                'KD_LOKASI'         => !empty($data['KD_LOKASI']) ? (int)$data['KD_LOKASI'] : $snapshot['KD_LOKASI'],
+                'KD_GOLONGAN'       => (!empty($valGolongan) && $valGolongan !== '-') ? (int)$valGolongan : ($snapshot['KD_GOLONGAN'] ?? null),
+                'KD_PANGKAT'        => (!empty($valPangkat) && $valPangkat !== '-') ? (int)$valPangkat : ($snapshot['KD_PANGKAT'] ?? null),
+                'KD_JENIS_PEGAWAI'  => (!empty($valJenisPegawai) && $valJenisPegawai !== '-') ? (int)$valJenisPegawai : ($snapshot['KD_JENIS_PEGAWAI'] ?? null),
+                'KD_LOKASI'         => (!empty($valLokasi) && $valLokasi !== '-') ? (int)$valLokasi : ($snapshot['KD_LOKASI'] ?? null),
                 'TGL_PHK'           => $tglPhk,
                 'ALASAN'            => $alasan
             ];
@@ -1519,19 +1589,33 @@ class MPegawai extends Model
 
         $sql = "SELECT ph.*,
                        COALESCE(pg.NAMA, ph.NAMA) AS NAMA_PEGAWAI,
+                       COALESCE(pg.NIP, ph.NIP) AS NIP,
                        jp.JENIS_PENGHARGAAN,
                        b.BAGIAN,
-                       j.JABATAN
+                       j.JABATAN,
+                       pkt.PANGKAT,
+                       g.GOLONGAN,
+                       e.EKSELON,
+                       sp.STATUS_PEGAWAI,
+                       l.LOKASI
                 FROM detail_penghargaan_pegawai ph
                 LEFT JOIN pegawai pg ON pg.ID_PEGAWAI = ph.ID_PEGAWAI
                 LEFT JOIN jenis_penghargaan jp ON jp.KD_JENIS_PENGHARGAAN = ph.KD_JENIS_PENGHARGAAN
                 LEFT JOIN bagian b ON b.KD_BAGIAN = ph.KD_BAGIAN
                 LEFT JOIN jabatan j ON j.KD_JABATAN = ph.KD_JABATAN
+                LEFT JOIN pangkat pkt ON pkt.KD_PANGKAT = ph.KD_PANGKAT
+                LEFT JOIN golongan g ON g.KD_GOLONGAN = ph.KD_GOLONGAN
+                LEFT JOIN ekselon e ON e.KD_EKSELON = ph.KD_EKSELON
+                LEFT JOIN status_pegawai sp ON sp.KD_STATUS_PEGAWAI = ph.KD_STATUS_PEGAWAI
+                LEFT JOIN lokasi l ON l.KD_LOKASI = ph.KD_LOKASI
                 WHERE 1=1";
         $binds = [];
 
         if ($keyword !== '') {
-            $sql .= " AND (pg.NAMA LIKE ? OR ph.NIP LIKE ? OR ph.NO_SURAT LIKE ? OR jp.JENIS_PENGHARGAAN LIKE ?)";
+            $sql .= " AND (pg.NAMA LIKE ? OR ph.NIP LIKE ? OR ph.NO_SURAT LIKE ? OR jp.JENIS_PENGHARGAAN LIKE ? OR b.BAGIAN LIKE ? OR j.JABATAN LIKE ? OR pkt.PANGKAT LIKE ?)";
+            $binds[] = "%$keyword%";
+            $binds[] = "%$keyword%";
+            $binds[] = "%$keyword%";
             $binds[] = "%$keyword%";
             $binds[] = "%$keyword%";
             $binds[] = "%$keyword%";
@@ -1545,36 +1629,57 @@ class MPegawai extends Model
     public function savePenghargaan($data)
     {
         try {
-            $idPegawai = $data['ID_PEGAWAI'] ?? null;
+            // Support parameter alias
+            $idPegawai = $data['ID_PEGAWAI'] ?? $data['id_pegawai'] ?? null;
+            $nip = trim($data['NIP'] ?? $data['nip'] ?? '');
+            if (empty($idPegawai) && !empty($nip)) {
+                $peg = $this->db->query("SELECT ID_PEGAWAI FROM pegawai WHERE NIP = ? LIMIT 1", [$nip])->getRowArray();
+                if ($peg) {
+                    $idPegawai = $peg['ID_PEGAWAI'];
+                }
+            }
             if (empty($idPegawai)) {
-                return ['code' => 422, 'message' => 'Pegawai belum dipilih'];
+                return ['code' => 422, 'message' => 'Pegawai belum dipilih atau NIP tidak valid'];
             }
 
             $snapshot = $this->getPegawaiSnapshot($idPegawai);
-            $kd = $data['KD_PENGHARGAAN'] ?? '';
+            $kd = $data['KD_PENGHARGAAN'] ?? $data['kd_penghargaan'] ?? $data['id_penghargaan'] ?? '';
 
-            $noSurat = !empty($data['NO_SURAT']) ? trim($data['NO_SURAT']) : (!empty($data['NO_SK']) ? trim($data['NO_SK']) : ('SK-PGR/' . date('Ymd') . '/' . $idPegawai));
-            $tglSurat = $this->normalizeDate($data['TGL_SURAT'] ?? $data['TGL_PENGHARGAAN'] ?? null, date('Y-m-d'));
-            $tglPenghargaan = $this->normalizeDate($data['TGL_PENGHARGAAN'] ?? null, date('Y-m-d'));
-            $kdJenis = !empty($data['KD_JENIS_PENGHARGAAN']) ? (int)$data['KD_JENIS_PENGHARGAAN'] : 1;
+            $noSurat = !empty($data['NO_SURAT']) ? trim($data['NO_SURAT']) : (!empty($data['no_surat']) ? trim($data['no_surat']) : (!empty($data['NO_SK']) ? trim($data['NO_SK']) : ('SK-PGR/' . date('Ymd') . '/' . $idPegawai)));
+            $tglSurat = $this->normalizeDate($data['TGL_SURAT'] ?? $data['tgl_surat'] ?? $data['TGL_PENGHARGAAN'] ?? $data['tgl_penghargaan'] ?? null, date('Y-m-d'));
+            $tglPenghargaan = $this->normalizeDate($data['TGL_PENGHARGAAN'] ?? $data['tgl_penghargaan'] ?? null, date('Y-m-d'));
+            
+            $kdJenisRaw = $data['KD_JENIS_PENGHARGAAN'] ?? $data['kd_jenis_penghargaan'] ?? $data['id_jenis_penghargaan'] ?? null;
+            $kdJenis = (!empty($kdJenisRaw) && $kdJenisRaw !== '-') ? (int)$kdJenisRaw : 1;
+
+            $kdBagian = !empty($data['KD_BAGIAN']) ? (int)$data['KD_BAGIAN'] : (!empty($data['id_bagian']) ? (int)$data['id_bagian'] : (!empty($data['kd_bagian']) ? (int)$data['kd_bagian'] : $snapshot['KD_BAGIAN']));
+            $kdJabatan = isset($data['KD_JABATAN']) && $data['KD_JABATAN'] !== '' && $data['KD_JABATAN'] !== '-' ? (int)$data['KD_JABATAN'] : (isset($data['id_jabatan']) && $data['id_jabatan'] !== '' && $data['id_jabatan'] !== '-' ? (int)$data['id_jabatan'] : (isset($data['kd_jabatan']) && $data['kd_jabatan'] !== '' && $data['kd_jabatan'] !== '-' ? (int)$data['kd_jabatan'] : $snapshot['KD_JABATAN']));
+            $kdEkselon = !empty($data['KD_EKSELON']) ? (int)$data['KD_EKSELON'] : (!empty($data['id_eselon']) ? (int)$data['id_eselon'] : (!empty($data['id_ekselon']) ? (int)$data['id_ekselon'] : (!empty($data['kd_ekselon']) ? (int)$data['kd_ekselon'] : $snapshot['KD_EKSELON'])));
+            $kdStatus = isset($data['KD_STATUS_PEGAWAI']) && $data['KD_STATUS_PEGAWAI'] !== '' && $data['KD_STATUS_PEGAWAI'] !== '-' ? (int)$data['KD_STATUS_PEGAWAI'] : (isset($data['id_status_pegawai']) && $data['id_status_pegawai'] !== '' && $data['id_status_pegawai'] !== '-' ? (int)$data['id_status_pegawai'] : (isset($data['kd_status_pegawai']) && $data['kd_status_pegawai'] !== '' && $data['kd_status_pegawai'] !== '-' ? (int)$data['kd_status_pegawai'] : $snapshot['KD_STATUS_PEGAWAI']));
+            $kdGolongan = !empty($data['KD_GOLONGAN']) ? (int)$data['KD_GOLONGAN'] : (!empty($data['id_golongan']) ? (int)$data['id_golongan'] : (!empty($data['kd_golongan']) ? (int)$data['kd_golongan'] : $snapshot['KD_GOLONGAN']));
+            $kdPangkat = !empty($data['KD_PANGKAT']) ? (int)$data['KD_PANGKAT'] : (!empty($data['id_pangkat']) ? (int)$data['id_pangkat'] : (!empty($data['kd_pangkat']) ? (int)$data['kd_pangkat'] : $snapshot['KD_PANGKAT']));
+            $kdJenisPegawai = !empty($data['KD_JENIS_PEGAWAI']) ? (int)$data['KD_JENIS_PEGAWAI'] : (!empty($data['id_jenis_pegawai']) ? (int)$data['id_jenis_pegawai'] : (!empty($data['kd_jenis_pegawai']) ? (int)$data['kd_jenis_pegawai'] : $snapshot['KD_JENIS_PEGAWAI']));
+            $kdLokasi = !empty($data['KD_LOKASI']) ? (int)$data['KD_LOKASI'] : (!empty($data['id_lokasi']) ? (int)$data['id_lokasi'] : (!empty($data['kd_lokasi']) ? (int)$data['kd_lokasi'] : $snapshot['KD_LOKASI']));
+            $keterangan = $data['KETERANGAN'] ?? $data['keterangan'] ?? '-';
+            $nama = !empty($data['NAMA']) ? trim($data['NAMA']) : (!empty($data['nama']) ? trim($data['nama']) : $snapshot['NAMA']);
 
             $record = [
                 'ID_PEGAWAI'           => $idPegawai,
                 'NO_SURAT'             => $noSurat,
                 'TGL_SURAT'            => $tglSurat,
                 'NIP'                  => $snapshot['NIP'],
-                'NAMA'                 => $snapshot['NAMA'],
-                'KD_BAGIAN'            => !empty($data['KD_BAGIAN']) ? (int)$data['KD_BAGIAN'] : $snapshot['KD_BAGIAN'],
-                'KD_JABATAN'           => isset($data['KD_JABATAN']) && $data['KD_JABATAN'] !== '' ? (int)$data['KD_JABATAN'] : $snapshot['KD_JABATAN'],
-                'KD_EKSELON'           => !empty($data['KD_EKSELON']) ? (int)$data['KD_EKSELON'] : $snapshot['KD_EKSELON'],
-                'KD_STATUS_PEGAWAI'    => isset($data['KD_STATUS_PEGAWAI']) && $data['KD_STATUS_PEGAWAI'] !== '' ? (int)$data['KD_STATUS_PEGAWAI'] : $snapshot['KD_STATUS_PEGAWAI'],
+                'NAMA'                 => $nama,
+                'KD_BAGIAN'            => $kdBagian,
+                'KD_JABATAN'           => $kdJabatan,
+                'KD_EKSELON'           => $kdEkselon,
+                'KD_STATUS_PEGAWAI'    => $kdStatus,
                 'KD_JENIS_PENGHARGAAN' => $kdJenis,
-                'KD_GOLONGAN'          => !empty($data['KD_GOLONGAN']) ? (int)$data['KD_GOLONGAN'] : $snapshot['KD_GOLONGAN'],
-                'KD_PANGKAT'           => !empty($data['KD_PANGKAT']) ? (int)$data['KD_PANGKAT'] : $snapshot['KD_PANGKAT'],
-                'KD_JENIS_PEGAWAI'     => !empty($data['KD_JENIS_PEGAWAI']) ? (int)$data['KD_JENIS_PEGAWAI'] : $snapshot['KD_JENIS_PEGAWAI'],
-                'KD_LOKASI'            => !empty($data['KD_LOKASI']) ? (int)$data['KD_LOKASI'] : $snapshot['KD_LOKASI'],
+                'KD_GOLONGAN'          => $kdGolongan,
+                'KD_PANGKAT'           => $kdPangkat,
+                'KD_JENIS_PEGAWAI'     => $kdJenisPegawai,
+                'KD_LOKASI'            => $kdLokasi,
                 'TGL_PENGHARGAAN'      => $tglPenghargaan,
-                'KETERANGAN'           => $data['KETERANGAN'] ?? '-'
+                'KETERANGAN'           => $keterangan
             ];
 
             if (empty($kd)) {
@@ -1611,19 +1716,32 @@ class MPegawai extends Model
                        s.MULAI AS TGL_MULAI,
                        s.SAMPAI AS TGL_SELESAI,
                        COALESCE(pg.NAMA, s.NAMA) AS NAMA_PEGAWAI,
+                       COALESCE(pg.NIP, s.NIP) AS NIP,
                        js.JENIS_SANKSI,
                        b.BAGIAN,
-                       j.JABATAN
+                       j.JABATAN,
+                       pkt.PANGKAT,
+                       g.GOLONGAN,
+                       sp.STATUS_PEGAWAI,
+                       l.LOKASI
                 FROM detail_sanksi_pegawai s
                 LEFT JOIN pegawai pg ON pg.ID_PEGAWAI = s.ID_PEGAWAI
                 LEFT JOIN jenis_sanksi js ON js.KD_JENIS_SANKSI = s.KD_JENIS_SANKSI
                 LEFT JOIN bagian b ON b.KD_BAGIAN = s.KD_BAGIAN
                 LEFT JOIN jabatan j ON j.KD_JABATAN = s.KD_JABATAN
+                LEFT JOIN pangkat pkt ON pkt.KD_PANGKAT = s.KD_PANGKAT
+                LEFT JOIN golongan g ON g.KD_GOLONGAN = s.KD_GOLONGAN
+                LEFT JOIN status_pegawai sp ON sp.KD_STATUS_PEGAWAI = s.KD_STATUS_PEGAWAI
+                LEFT JOIN lokasi l ON l.KD_LOKASI = s.KD_LOKASI
                 WHERE 1=1";
         $binds = [];
 
         if ($keyword !== '') {
-            $sql .= " AND (pg.NAMA LIKE ? OR s.NIP LIKE ? OR s.NO_SURAT LIKE ? OR js.JENIS_SANKSI LIKE ?)";
+            $sql .= " AND (pg.NAMA LIKE ? OR s.NAMA LIKE ? OR s.NIP LIKE ? OR pg.NIP LIKE ? OR s.NO_SURAT LIKE ? OR js.JENIS_SANKSI LIKE ? OR b.BAGIAN LIKE ? OR j.JABATAN LIKE ?)";
+            $binds[] = "%$keyword%";
+            $binds[] = "%$keyword%";
+            $binds[] = "%$keyword%";
+            $binds[] = "%$keyword%";
             $binds[] = "%$keyword%";
             $binds[] = "%$keyword%";
             $binds[] = "%$keyword%";
@@ -1637,44 +1755,61 @@ class MPegawai extends Model
     public function saveSanksi($data)
     {
         try {
-            $idPegawai = $data['ID_PEGAWAI'] ?? null;
+            $idPegawai = $data['ID_PEGAWAI'] ?? $data['id_pegawai'] ?? $data['replacement_id_pegawai'] ?? null;
+            if (empty($idPegawai)) {
+                $nip = $data['NIP'] ?? $data['nip'] ?? $data['replacement_NIP'] ?? null;
+                if (!empty($nip)) {
+                    $p = $this->db->table('pegawai')->select('ID_PEGAWAI')->where('NIP', $nip)->get()->getRowArray();
+                    if ($p) $idPegawai = $p['ID_PEGAWAI'];
+                }
+            }
             if (empty($idPegawai)) {
                 return ['code' => 422, 'message' => 'Pegawai belum dipilih'];
             }
 
             $snapshot = $this->getPegawaiSnapshot($idPegawai);
-            $kd = $data['KD_SANKSI'] ?? '';
+            $kd = $data['KD_SANKSI'] ?? $data['kd_sanksi'] ?? $data['replacement_kd_sanksi'] ?? '';
 
-            $noSurat = !empty($data['NO_SURAT']) ? trim($data['NO_SURAT']) : (!empty($data['NO_SK']) ? trim($data['NO_SK']) : ('SK-SNK/' . date('Ymd') . '/' . $idPegawai));
-            $tglSurat = $this->normalizeDate($data['TGL_SURAT'] ?? $data['TGL_SANKSI'] ?? null, date('Y-m-d'));
-            $tglSanksi = $this->normalizeDate($data['TGL_SANKSI'] ?? null, date('Y-m-d'));
-            $mulai = $this->normalizeDate($data['MULAI'] ?? $data['TGL_MULAI'] ?? $data['TGL_SANKSI'] ?? null, date('Y-m-d'));
-            $sampai = $this->normalizeDate($data['SAMPAI'] ?? $data['TGL_SELESAI'] ?? $data['TGL_SAMPAI'] ?? null, date('Y-m-d', strtotime('+1 month')));
-            $kdJenis = !empty($data['KD_JENIS_SANKSI']) ? (int)$data['KD_JENIS_SANKSI'] : 1;
+            $noSurat = !empty($data['NO_SURAT']) ? trim($data['NO_SURAT']) : (!empty($data['replacement_no_surat']) ? trim($data['replacement_no_surat']) : (!empty($data['NO_SK']) ? trim($data['NO_SK']) : ('SK-SNK/' . date('Ymd') . '/' . $idPegawai)));
+            $tglSurat = $this->normalizeDate($data['TGL_SURAT'] ?? $data['replacement_tanggal_surat'] ?? $data['TGL_SANKSI'] ?? null, date('Y-m-d'));
+            $tglSanksi = $this->normalizeDate($data['TGL_SANKSI'] ?? $data['replacement_tanggal_sanksi'] ?? null, date('Y-m-d'));
+            $mulai = $this->normalizeDate($data['MULAI'] ?? $data['TGL_MULAI'] ?? $data['berlaku_mulai'] ?? $data['replacement_berlaku_mulai'] ?? null, date('Y-m-d'));
+            $sampai = $this->normalizeDate($data['SAMPAI'] ?? $data['TGL_SELESAI'] ?? $data['berlaku_selesai'] ?? $data['replacement_berlaku_selesai'] ?? null, date('Y-m-d', strtotime('+1 month')));
+            
+            $kdJenis = !empty($data['KD_JENIS_SANKSI']) ? (int)$data['KD_JENIS_SANKSI'] : (!empty($data['replacement_jenis_sanksi']) ? (int)$data['replacement_jenis_sanksi'] : 1);
+            $kdBagian = !empty($data['KD_BAGIAN']) ? (int)$data['KD_BAGIAN'] : (!empty($data['replacement_bagian']) ? (int)$data['replacement_bagian'] : $snapshot['KD_BAGIAN']);
+            $kdGolongan = !empty($data['KD_GOLONGAN']) ? (int)$data['KD_GOLONGAN'] : (!empty($data['replacement_golongan']) ? (int)$data['replacement_golongan'] : $snapshot['KD_GOLONGAN']);
+            $kdJabatan = isset($data['KD_JABATAN']) && $data['KD_JABATAN'] !== '' ? (int)$data['KD_JABATAN'] : (isset($data['replacement_jabatan']) && $data['replacement_jabatan'] !== '' ? (int)$data['replacement_jabatan'] : $snapshot['KD_JABATAN']);
+            $kdPangkat = !empty($data['KD_PANGKAT']) ? (int)$data['KD_PANGKAT'] : (!empty($data['replacement_pangkat']) ? (int)$data['replacement_pangkat'] : $snapshot['KD_PANGKAT']);
+            $kdStatusPegawai = isset($data['KD_STATUS_PEGAWAI']) && $data['KD_STATUS_PEGAWAI'] !== '' ? (int)$data['KD_STATUS_PEGAWAI'] : (isset($data['replacement_status_pegawai']) && $data['replacement_status_pegawai'] !== '' ? (int)$data['replacement_status_pegawai'] : $snapshot['KD_STATUS_PEGAWAI']);
+            $kdLokasi = !empty($data['KD_LOKASI']) ? (int)$data['KD_LOKASI'] : (!empty($data['replacement_lokasi']) ? (int)$data['replacement_lokasi'] : $snapshot['KD_LOKASI']);
+            $keterangan = $data['KETERANGAN'] ?? $data['replacement_keterangan'] ?? '-';
 
             $record = [
                 'ID_PEGAWAI'        => $idPegawai,
                 'NO_SURAT'          => $noSurat,
                 'TGL_SURAT'         => $tglSurat,
-                'NIP'               => $snapshot['NIP'],
-                'NAMA'              => $snapshot['NAMA'],
-                'KD_BAGIAN'         => !empty($data['KD_BAGIAN']) ? (int)$data['KD_BAGIAN'] : $snapshot['KD_BAGIAN'],
-                'KD_JABATAN'        => isset($data['KD_JABATAN']) && $data['KD_JABATAN'] !== '' ? (int)$data['KD_JABATAN'] : $snapshot['KD_JABATAN'],
-                'KD_EKSELON'        => !empty($data['KD_EKSELON']) ? (int)$data['KD_EKSELON'] : $snapshot['KD_EKSELON'],
-                'KD_STATUS_PEGAWAI' => isset($data['KD_STATUS_PEGAWAI']) && $data['KD_STATUS_PEGAWAI'] !== '' ? (int)$data['KD_STATUS_PEGAWAI'] : $snapshot['KD_STATUS_PEGAWAI'],
+                'NIP'               => $data['NIP'] ?? $data['replacement_NIP'] ?? $snapshot['NIP'],
+                'NAMA'              => $data['NAMA'] ?? $data['replacement_nama'] ?? $snapshot['NAMA'],
+                'KD_BAGIAN'         => $kdBagian,
+                'KD_JABATAN'        => $kdJabatan,
+                'KD_EKSELON'        => !empty($data['KD_EKSELON']) ? (int)$data['KD_EKSELON'] : (!empty($data['replacement_ekselon']) ? (int)$data['replacement_ekselon'] : $snapshot['KD_EKSELON']),
+                'KD_STATUS_PEGAWAI' => $kdStatusPegawai,
                 'KD_JENIS_SANKSI'   => $kdJenis,
-                'KD_GOLONGAN'       => !empty($data['KD_GOLONGAN']) ? (int)$data['KD_GOLONGAN'] : $snapshot['KD_GOLONGAN'],
-                'KD_PANGKAT'        => !empty($data['KD_PANGKAT']) ? (int)$data['KD_PANGKAT'] : $snapshot['KD_PANGKAT'],
-                'KD_JENIS_PEGAWAI'  => !empty($data['KD_JENIS_PEGAWAI']) ? (int)$data['KD_JENIS_PEGAWAI'] : $snapshot['KD_JENIS_PEGAWAI'],
-                'KD_LOKASI'         => !empty($data['KD_LOKASI']) ? (int)$data['KD_LOKASI'] : $snapshot['KD_LOKASI'],
+                'KD_GOLONGAN'       => $kdGolongan,
+                'KD_PANGKAT'        => $kdPangkat,
+                'KD_JENIS_PEGAWAI'  => !empty($data['KD_JENIS_PEGAWAI']) ? (int)$data['KD_JENIS_PEGAWAI'] : (!empty($data['replacement_jenis_pegawai']) ? (int)$data['replacement_jenis_pegawai'] : $snapshot['KD_JENIS_PEGAWAI']),
+                'KD_LOKASI'         => $kdLokasi,
                 'TGL_SANKSI'        => $tglSanksi,
                 'MULAI'             => $mulai,
                 'SAMPAI'            => $sampai,
-                'KETERANGAN'        => $data['KETERANGAN'] ?? '-'
+                'KETERANGAN'        => $keterangan
             ];
 
             if (isset($data['FILE']) && $data['FILE'] !== '') {
                 $record['FILE'] = $data['FILE'];
+            } elseif (isset($data['file']) && $data['file'] !== '') {
+                $record['FILE'] = $data['file'];
             }
 
             if (empty($kd)) {
@@ -2043,12 +2178,24 @@ class MPegawai extends Model
                        COALESCE(p.NAMA, c.NAMA) AS NAMA_PEGAWAI,
                        jc.JENIS_CATATAN,
                        b.BAGIAN,
-                       j.JABATAN
+                       j.JABATAN,
+                       pkt.PANGKAT,
+                       g.GOLONGAN,
+                       e.EKSELON,
+                       jp.JENIS_PEGAWAI,
+                       sp.STATUS_PEGAWAI,
+                       l.LOKASI
                 FROM detail_catatan_pegawai c
                 LEFT JOIN pegawai p ON p.ID_PEGAWAI = c.ID_PEGAWAI
                 LEFT JOIN jenis_catatan jc ON jc.KD_JENIS_CATATAN = c.KD_JENIS_CATATAN
                 LEFT JOIN bagian b ON b.KD_BAGIAN = c.KD_BAGIAN
                 LEFT JOIN jabatan j ON j.KD_JABATAN = c.KD_JABATAN
+                LEFT JOIN pangkat pkt ON pkt.KD_PANGKAT = c.KD_PANGKAT
+                LEFT JOIN golongan g ON g.KD_GOLONGAN = c.KD_GOLONGAN
+                LEFT JOIN ekselon e ON e.KD_EKSELON = c.KD_EKSELON
+                LEFT JOIN jenis_pegawai jp ON jp.KD_JENIS_PEGAWAI = c.KD_JENIS_PEGAWAI
+                LEFT JOIN status_pegawai sp ON sp.KD_STATUS_PEGAWAI = c.KD_STATUS_PEGAWAI
+                LEFT JOIN lokasi l ON l.KD_LOKASI = c.KD_LOKASI
                 WHERE 1=1";
         $binds = [];
 
@@ -2067,37 +2214,57 @@ class MPegawai extends Model
     public function saveCatatan($data)
     {
         try {
-            $idPegawai = $data['ID_PEGAWAI'] ?? null;
+            $idPegawai = $data['ID_PEGAWAI'] ?? $data['id_pegawai'] ?? null;
+            $nip = $data['NIP'] ?? $data['nip'] ?? null;
+            $nama = $data['NAMA'] ?? $data['nama'] ?? '';
+
+            if (empty($idPegawai) && !empty($nip)) {
+                $peg = $this->db->table('pegawai')->select('ID_PEGAWAI, NAMA')->where('NIP', $nip)->get()->getRowArray();
+                if ($peg) {
+                    $idPegawai = $peg['ID_PEGAWAI'];
+                    if (empty($nama)) $nama = $peg['NAMA'];
+                }
+            }
+
             if (empty($idPegawai)) {
-                return ['code' => 422, 'message' => 'Pegawai belum dipilih'];
+                return ['code' => 422, 'message' => 'Pegawai belum dipilih atau NIP tidak valid'];
             }
 
             $snapshot = $this->getPegawaiSnapshot($idPegawai);
-            $kd = $data['KD_CATATAN'] ?? '';
+            $kd = $data['KD_CATATAN'] ?? $data['kd_catatan'] ?? $data['id_catatan'] ?? $data['ID_CATATAN'] ?? $data['id'] ?? '';
 
-            $noSurat = !empty($data['NO_SURAT']) ? trim($data['NO_SURAT']) : (!empty($data['NO_SK']) ? trim($data['NO_SK']) : ('SK-CTT/' . date('Ymd') . '/' . $idPegawai));
-            $tglSurat = $this->normalizeDate($data['TGL_SURAT'] ?? $data['TGL_CATATAN'] ?? null, date('Y-m-d'));
-            $tglCatatan = $this->normalizeDate($data['TGL_CATATAN'] ?? null, date('Y-m-d'));
-            $kdJenis = !empty($data['KD_JENIS_CATATAN']) ? (int)$data['KD_JENIS_CATATAN'] : 1;
+            $noSurat = !empty($data['NO_SURAT']) ? trim($data['NO_SURAT']) : (!empty($data['no_surat']) ? trim($data['no_surat']) : (!empty($data['NO_SK']) ? trim($data['NO_SK']) : ('SK-CTT/' . date('Ymd') . '/' . $idPegawai)));
+            $tglSurat = $this->normalizeDate($data['TGL_SURAT'] ?? $data['tgl_surat'] ?? $data['TGL_CATATAN'] ?? $data['tgl_catatan'] ?? null, date('Y-m-d'));
+            $tglCatatan = $this->normalizeDate($data['TGL_CATATAN'] ?? $data['tgl_catatan'] ?? null, date('Y-m-d'));
+            $kdJenis = !empty($data['KD_JENIS_CATATAN']) ? (int)$data['KD_JENIS_CATATAN'] : (!empty($data['id_jenis_catatan']) ? (int)$data['id_jenis_catatan'] : (!empty($data['kd_jenis_catatan']) ? (int)$data['kd_jenis_catatan'] : 1));
+
+            $kdBagian = !empty($data['KD_BAGIAN']) ? (int)$data['KD_BAGIAN'] : (!empty($data['id_bagian']) ? (int)$data['id_bagian'] : (!empty($data['kd_bagian']) ? (int)$data['kd_bagian'] : $snapshot['KD_BAGIAN']));
+            $kdJabatan = isset($data['KD_JABATAN']) && $data['KD_JABATAN'] !== '' ? (int)$data['KD_JABATAN'] : (isset($data['id_jabatan']) && $data['id_jabatan'] !== '' ? (int)$data['id_jabatan'] : (isset($data['kd_jabatan']) && $data['kd_jabatan'] !== '' ? (int)$data['kd_jabatan'] : $snapshot['KD_JABATAN']));
+            $kdGolongan = !empty($data['KD_GOLONGAN']) ? (int)$data['KD_GOLONGAN'] : (!empty($data['id_golongan']) ? (int)$data['id_golongan'] : (!empty($data['kd_golongan']) ? (int)$data['kd_golongan'] : $snapshot['KD_GOLONGAN']));
+            $kdPangkat = !empty($data['KD_PANGKAT']) ? (int)$data['KD_PANGKAT'] : (!empty($data['id_pangkat']) ? (int)$data['id_pangkat'] : (!empty($data['kd_pangkat']) ? (int)$data['kd_pangkat'] : $snapshot['KD_PANGKAT']));
+            $kdEkselon = !empty($data['KD_EKSELON']) ? (int)$data['KD_EKSELON'] : (!empty($data['id_eselon']) ? (int)$data['id_eselon'] : (!empty($data['kd_ekselon']) ? (int)$data['kd_ekselon'] : $snapshot['KD_EKSELON']));
+            $kdJenisPegawai = !empty($data['KD_JENIS_PEGAWAI']) ? (int)$data['KD_JENIS_PEGAWAI'] : (!empty($data['id_jenis_pegawai']) ? (int)$data['id_jenis_pegawai'] : (!empty($data['kd_jenis_pegawai']) ? (int)$data['kd_jenis_pegawai'] : $snapshot['KD_JENIS_PEGAWAI']));
+            $kdStatusPegawai = isset($data['KD_STATUS_PEGAWAI']) && $data['KD_STATUS_PEGAWAI'] !== '' ? (int)$data['KD_STATUS_PEGAWAI'] : (isset($data['id_status_pegawai']) && $data['id_status_pegawai'] !== '' ? (int)$data['id_status_pegawai'] : (isset($data['kd_status_pegawai']) && $data['kd_status_pegawai'] !== '' ? (int)$data['kd_status_pegawai'] : $snapshot['KD_STATUS_PEGAWAI']));
+            $kdLokasi = !empty($data['KD_LOKASI']) ? (int)$data['KD_LOKASI'] : (!empty($data['id_lokasi']) ? (int)$data['id_lokasi'] : (!empty($data['kd_lokasi']) ? (int)$data['kd_lokasi'] : $snapshot['KD_LOKASI']));
 
             $record = [
                 'ID_PEGAWAI'        => $idPegawai,
                 'NO_SURAT'          => $noSurat,
                 'TGL_SURAT'         => $tglSurat,
-                'NIP'               => $snapshot['NIP'],
-                'NAMA'              => $snapshot['NAMA'],
-                'KD_BAGIAN'         => !empty($data['KD_BAGIAN']) ? (int)$data['KD_BAGIAN'] : $snapshot['KD_BAGIAN'],
-                'KD_JABATAN'        => isset($data['KD_JABATAN']) && $data['KD_JABATAN'] !== '' ? (int)$data['KD_JABATAN'] : $snapshot['KD_JABATAN'],
-                'KD_EKSELON'        => !empty($data['KD_EKSELON']) ? (int)$data['KD_EKSELON'] : $snapshot['KD_EKSELON'],
-                'KD_STATUS_PEGAWAI' => isset($data['KD_STATUS_PEGAWAI']) && $data['KD_STATUS_PEGAWAI'] !== '' ? (int)$data['KD_STATUS_PEGAWAI'] : $snapshot['KD_STATUS_PEGAWAI'],
+                'NIP'               => !empty($data['NIP']) ? $data['NIP'] : (!empty($data['nip']) ? $data['nip'] : $snapshot['NIP']),
+                'NAMA'              => !empty($nama) ? $nama : $snapshot['NAMA'],
+                'KD_BAGIAN'         => $kdBagian,
+                'KD_JABATAN'        => $kdJabatan,
+                'KD_EKSELON'        => $kdEkselon,
+                'KD_STATUS_PEGAWAI' => $kdStatusPegawai,
                 'KD_JENIS_CATATAN'  => $kdJenis,
-                'KD_GOLONGAN'       => !empty($data['KD_GOLONGAN']) ? (int)$data['KD_GOLONGAN'] : $snapshot['KD_GOLONGAN'],
-                'KD_PANGKAT'        => !empty($data['KD_PANGKAT']) ? (int)$data['KD_PANGKAT'] : $snapshot['KD_PANGKAT'],
-                'KD_JENIS_PEGAWAI'  => !empty($data['KD_JENIS_PEGAWAI']) ? (int)$data['KD_JENIS_PEGAWAI'] : $snapshot['KD_JENIS_PEGAWAI'],
-                'KD_LOKASI'         => !empty($data['KD_LOKASI']) ? (int)$data['KD_LOKASI'] : $snapshot['KD_LOKASI'],
+                'KD_GOLONGAN'       => $kdGolongan,
+                'KD_PANGKAT'        => $kdPangkat,
+                'KD_JENIS_PEGAWAI'  => $kdJenisPegawai,
+                'KD_LOKASI'         => $kdLokasi,
                 'TGL_CATATAN'       => $tglCatatan,
-                'KETERANGAN'        => $data['KETERANGAN'] ?? '-',
-                'FILE'              => $data['FILE'] ?? ''
+                'KETERANGAN'        => $data['KETERANGAN'] ?? $data['keterangan'] ?? '-',
+                'FILE'              => $data['FILE'] ?? $data['file'] ?? ''
             ];
 
             if (empty($kd)) {

@@ -1,442 +1,1047 @@
 <style>
-  .table-vcatatan-card {
-    border-radius: 0.5rem;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  /* Form input & EvoSelector styling - high contrast, fully visible & interactive */
+  #form-catatan {
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 5;
+  }
+
+  #form-catatan input.form-control,
+  #form-catatan textarea.form-control,
+  #form-catatan select.form-select,
+  .card-body input.form-control,
+  .card-body textarea.form-control,
+  [data-role="selector"] input.form-control {
+    background-color: #ffffff !important;
+    color: #1e293b !important;
+    border: 1px solid #cbd5e1 !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    cursor: text !important;
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  #form-catatan input.form-control:focus,
+  #form-catatan textarea.form-control:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25) !important;
+    background-color: #ffffff !important;
+    color: #1e293b !important;
+  }
+
+  [data-role="selector"] input.dropdown-toggle {
+    cursor: pointer !important;
+  }
+
+  #sel_nip, #sel_bagian, #sel_golongan, #sel_jenis_catatan, #sel_jabatan, 
+  #sel_pangkat, #sel_ekselon, #sel_jenis_pegawai, #sel_status_pegawai, #sel_lokasi {
+    width: 100%;
+    position: relative;
+    pointer-events: auto !important;
+  }
+
+  [data-role="selector"] {
+    position: relative;
+    width: 100%;
+    pointer-events: auto !important;
+  }
+
+  [data-role="selector"] .dropdown-menu {
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border-radius: 0.375rem;
+    z-index: 1060 !important;
+    max-height: 260px;
+    overflow-y: auto !important;
+  }
+
+  [data-role="selector"] .dropdown-item {
+    font-size: 0.8125rem;
+    padding: 0.4rem 0.75rem;
+    cursor: pointer;
+  }
+
+  [data-role="selector"] .dropdown-item:hover,
+  [data-role="selector"] .dropdown-item:focus {
+    background-color: #edf2f9;
+    color: #12161a;
+  }
+
+  [data-role="selector"] span.fa-chevron-down {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.75rem;
+    color: #94a3b8;
+    pointer-events: none;
+  }
+
+  [data-role="selector"] a[href="#!selectorclose"] {
+    position: absolute;
+    right: 26px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.8rem;
+    color: #94a3b8;
+    text-decoration: none;
+  }
+
+  [data-role="selector"] a[href="#!selectorclose"]:hover {
+    color: #ef4444;
+  }
+
+  .table-catatan th {
+    background-color: #f8fafc;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: #475569;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  .table-catatan td {
+    font-size: 0.8125rem;
+    vertical-align: middle;
+  }
+
+  .btn-action-icon {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
   }
 </style>
 
 <template id="template-vcatatan">
-  <!-- Actions Toolbar -->
-  <div id="vcatatan-actions" class="card mb-3 shadow-none border">
-    <div class="card-body p-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <div class="d-flex align-items-center gap-2">
-        <h5 class="mb-0 text-secondary fw-bold"><i class="fas fa-clipboard-list me-2"></i>Catatan & Histori Pegawai</h5>
-        <span class="badge bg-soft-secondary text-secondary ms-2" id="vcatatan-total-badge">0 Data</span>
-      </div>
-      <div class="d-flex align-items-center gap-2 flex-wrap">
-        <div class="input-group input-group-sm" style="width: 240px;">
-          <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-          <input type="text" class="form-control form-control-sm border-start-0" id="vcatatan-search" placeholder="Cari NIP, nama, jenis catatan...">
+  <div class="container-fluid p-0">
+    <!-- Breadcrumb & Header -->
+    <div class="row mb-3">
+      <div class="col-12">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <h4 class="mb-1 text-800 fw-bold">
+              <i class="fas fa-sticky-note text-warning me-2"></i>Catatan Pegawai
+            </h4>
+            <nav aria-label="breadcrumb">
+              <ol class="breadcrumb fs--1 mb-0">
+                <li class="breadcrumb-item"><a href="#!home">Kepegawaian</a></li>
+                <li class="breadcrumb-item"><a href="#!pegawai">Perubahan Status</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Catatan</li>
+              </ol>
+            </nav>
+          </div>
         </div>
-        <button type="button" class="btn btn-sm btn-secondary" id="btn-tambah-catatan">
-          <i class="fas fa-plus me-1"></i> Tambah Catatan
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-refresh-catatan">
-          <i class="fas fa-sync-alt me-1"></i> Refresh
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-success" id="btn-export-catatan">
-          <i class="fas fa-file-excel me-1"></i> Ekspor CSV
-        </button>
+      </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="card mb-3 shadow-none border">
+      <div class="card-header bg-light py-2">
+        <div class="row align-items-center">
+          <div class="col">
+            <h6 class="mb-0 text-primary fw-semi-bold">
+              <i class="fas fa-pen-nib me-2"></i>Form Catatan Pegawai
+            </h6>
+          </div>
+          <div class="col-auto d-flex align-items-center gap-2">
+            <span id="form-mode-badge" class="badge bg-soft-primary text-primary fs--2">Mode Tambah</span>
+            <span class="fs--1 text-muted" id="form-catatan-status"></span>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-reset-catatan-top" title="Reset Form">
+              <i class="fas fa-undo me-1"></i> Reset
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="card-body p-3">
+        <form id="form-catatan" autocomplete="off">
+          <input type="hidden" id="catatan_kd_catatan" name="kd_catatan" value="" />
+          <input type="hidden" id="catatan_id_pegawai" name="id_pegawai" value="" />
+          <input type="hidden" id="catatan_nip" name="nip" value="" />
+          <input type="hidden" id="catatan_existing_file" name="existing_file" value="" />
+
+          <div class="row g-3">
+            <!-- 1. No Surat -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1" for="catatan_no_surat">
+                No Surat : <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-control form-control-sm" id="catatan_no_surat" name="no_surat" placeholder="*Masukkan Nomer Surat..." required />
+            </div>
+
+            <!-- 2. NIP -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                NIP : <span class="text-danger">*</span>
+              </label>
+              <div id="sel_nip" placeholder="Pilih NIK / NIP Pegawai..."></div>
+            </div>
+
+            <!-- 3. Nama -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1" for="catatan_nama">
+                Nama : <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-control form-control-sm bg-light" id="catatan_nama" name="nama" placeholder="*Masukkan Nama..." readonly required />
+            </div>
+
+            <!-- 4. Tgl Surat -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1" for="catatan_tgl_surat">
+                Tgl Surat : <span class="text-danger">*</span>
+              </label>
+              <input type="date" class="form-control form-control-sm" id="catatan_tgl_surat" name="tgl_surat" placeholder="mm/dd/yyyy" required />
+            </div>
+
+            <!-- 5. Bagian -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Bagian :
+              </label>
+              <div id="sel_bagian" placeholder="Pilih Bagian"></div>
+            </div>
+
+            <!-- 6. Golongan -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Golongan :
+              </label>
+              <div id="sel_golongan" placeholder="Pilih Golongan"></div>
+            </div>
+
+            <!-- 7. Jenis Catatan -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Jenis Catatan : <span class="text-danger">*</span>
+              </label>
+              <div id="sel_jenis_catatan" placeholder="Pilih Jenis Catatan"></div>
+            </div>
+
+            <!-- 8. Jabatan -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Jabatan :
+              </label>
+              <div id="sel_jabatan" placeholder="Pilih Jabatan"></div>
+            </div>
+
+            <!-- 9. Pangkat -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Pangkat :
+              </label>
+              <div id="sel_pangkat" placeholder="Pilih Pangkat"></div>
+            </div>
+
+            <!-- 10. Tgl Catatan -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1" for="catatan_tgl_catatan">
+                Tgl Catatan : <span class="text-danger">*</span>
+              </label>
+              <input type="date" class="form-control form-control-sm" id="catatan_tgl_catatan" name="tgl_catatan" placeholder="mm/dd/yyyy" required />
+            </div>
+
+            <!-- 11. Ekselon -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Ekselon :
+              </label>
+              <div id="sel_ekselon" placeholder="Pilih Ekselon"></div>
+            </div>
+
+            <!-- 12. Jenis Pegawai -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Jenis Pegawai :
+              </label>
+              <div id="sel_jenis_pegawai" placeholder="Pilih Jenis Pegawai"></div>
+            </div>
+
+            <!-- 13. Status Pegawai -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Status Pegawai :
+              </label>
+              <div id="sel_status_pegawai" placeholder="Pilih Status Pegawai"></div>
+            </div>
+
+            <!-- 14. Lokasi -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Lokasi :
+              </label>
+              <div id="sel_lokasi" placeholder="Pilih Lokasi"></div>
+            </div>
+
+            <!-- 15. Keterangan -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1" for="catatan_keterangan">
+                Keterangan :
+              </label>
+              <input type="text" class="form-control form-control-sm" id="catatan_keterangan" name="keterangan" placeholder="Masukkan Keterangan..." />
+            </div>
+
+            <!-- 16. Upload File -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1" for="catatan_file">
+                Upload File :
+              </label>
+              <input type="file" class="form-control form-control-sm" id="catatan_file" name="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
+              <div id="file_preview_badge" class="mt-1 fs--2 text-muted"></div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="col-12 mt-3 pt-2 border-top d-flex justify-content-end align-items-center">
+              <button type="button" class="btn btn-sm btn-outline-secondary px-3 me-2" id="btn-reset-catatan">
+                <i class="fas fa-undo me-1"></i> Batal / Reset
+              </button>
+              <button type="submit" class="btn btn-sm btn-primary px-4 fw-semi-bold" id="btn-save-catatan">
+                <i class="fas fa-save me-1"></i> Simpan Catatan
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- History Table Card -->
+    <div class="card mb-3 shadow-none border table-catatan-container">
+      <div class="card-header bg-light py-2">
+        <div class="row align-items-center justify-content-between">
+          <div class="col-auto d-flex align-items-center gap-2">
+            <h6 class="mb-0 text-primary fw-semi-bold">
+              <i class="fas fa-history me-2"></i>Riwayat Catatan Pegawai
+            </h6>
+            <span class="badge bg-soft-info text-info fs--2" id="badge-total-catatan">0 Data</span>
+          </div>
+          <div class="col-auto">
+            <div class="d-flex align-items-center gap-2">
+              <div class="input-group input-group-sm" style="max-width: 320px;">
+                <input type="text" class="form-control" id="txtcari_catatan" placeholder="Cari..." />
+                <button class="btn btn-outline-primary" type="button" id="btn-search-catatan" title="Cari Data">
+                  <i class="fas fa-search me-1"></i> Cari
+                </button>
+                <button class="btn btn-outline-secondary" type="button" id="btn-clear-catatan" title="Hapus Pencarian">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              <button class="btn btn-sm btn-outline-primary" type="button" id="btn-refresh-catatan" title="Segarkan Data">
+                <i class="fas fa-sync-alt"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-success" type="button" id="btn-export-catatan" title="Ekspor CSV">
+                <i class="fas fa-file-excel me-1"></i> Ekspor
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-striped table-sm mb-0 table-catatan">
+            <thead>
+              <tr>
+                <th class="text-center py-2" style="width: 40px;">No.</th>
+                <th class="py-2">NIP</th>
+                <th class="py-2">Nama</th>
+                <th class="py-2">No. Surat</th>
+                <th class="py-2">Tgl Surat</th>
+                <th class="py-2">Jenis Catatan</th>
+                <th class="py-2">Tgl Catatan</th>
+                <th class="py-2">Bagian</th>
+                <th class="py-2">Jabatan</th>
+                <th class="py-2">Pangkat</th>
+                <th class="py-2">Keterangan</th>
+                <th class="py-2 text-center">File</th>
+                <th class="py-2 text-center" style="width: 80px;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tb_catatan_body">
+              <tr>
+                <td colspan="13" class="text-center py-4 text-muted">
+                  <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                  Memuat data riwayat catatan...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card-footer bg-light py-2 d-flex flex-wrap justify-content-between align-items-center">
+        <small class="text-muted" id="catatan-pagination-info">Menampilkan 0 - 0 dari 0 data</small>
+        <ul class="pagination pagination-sm mb-0" id="catatan-pagination"></ul>
       </div>
     </div>
   </div>
-
-  <!-- Entries Table -->
-  <div id="vcatatan-entries" class="card shadow-sm border table-vcatatan-card">
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-sm table-striped table-hover fs--1 mb-0 align-middle" id="table-vcatatan">
-          <thead class="bg-200 text-800 text-uppercase">
-            <tr>
-              <th class="text-center py-2" style="width: 50px;">#</th>
-              <th class="py-2" style="min-width: 140px;">NIP / Pegawai</th>
-              <th class="text-center py-2" style="min-width: 110px;">Tgl Catatan</th>
-              <th class="py-2" style="min-width: 140px;">Jenis Catatan</th>
-              <th class="py-2" style="min-width: 130px;">No. Dokumen</th>
-              <th class="py-2" style="min-width: 180px;">Isi / Uraian Catatan</th>
-              <th class="text-center py-2" style="width: 140px;">Aksi</th>
-            </tr>
-          </thead>
-          <tbody class="list">
-            <tr>
-              <td colspan="7" class="text-center py-4 text-muted">
-                <span class="spinner-border spinner-border-sm me-2"></span>Memuat data catatan...
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div class="card-footer d-flex justify-content-between align-items-center py-2 bg-light border-top">
-      <span class="pagination-info fs--1 text-muted" id="vcatatan-pagination-info">Menampilkan 0 data</span>
-      <ul class="pagination pagination-sm mb-0" id="vcatatan-pagination"></ul>
-    </div>
-  </div>
-
-  <!-- Container Anchor for EvoPopup -->
-  <div id="vcatatan-popup-dialog"></div>
 </template>
 
 <script type="module" defer>
   import { httpGet, httpPost } from './assets/js/core/http.js';
-  import { showDialog } from './assets/js/core/helpers.js';
   import EvoSelector from './components/EvoSelector.js';
-  import EvoPopup from './components/EvoPopup.js';
 
   const apiUrl = (typeof config !== 'undefined' && config.api_url) 
     ? config.api_url 
     : `${window.location.origin}/evoHRIS_v2.1/api`;
 
-  let allData = [];
-  let filteredData = [];
-  let refData = { jenis_catatan: [] };
-  let lookupPegawai = [];
-  let currentPage = 1;
-  const rowsPerPage = 10;
+  let selNip = null;
+  let selBagian = null;
+  let selGolongan = null;
+  let selJenisCatatan = null;
+  let selJabatan = null;
+  let selPangkat = null;
+  let selEkselon = null;
+  let selJenisPegawai = null;
+  let selStatusPegawai = null;
+  let selLokasi = null;
 
-  // Web Components
-  let evoPopup = null;
-  let selectorPegawai = null;
-  let selectorJenisCatatan = null;
+  let allPegawai = [];
+  let allCatatan = [];
+  let filteredCatatan = [];
+  let currentPage = 1;
+  const pageSize = 10;
+  let isEditMode = false;
+
+  function initEvoSelectors() {
+    selNip = new EvoSelector('sel_nip', [{ text: 'Pilih NIK / NIP Pegawai...', value: '-' }]);
+    selBagian = new EvoSelector('sel_bagian', [{ text: 'Pilih Bagian', value: '-' }]);
+    selGolongan = new EvoSelector('sel_golongan', [{ text: 'Pilih Golongan', value: '-' }]);
+    selJenisCatatan = new EvoSelector('sel_jenis_catatan', [{ text: 'Pilih Jenis Catatan', value: '-' }]);
+    selJabatan = new EvoSelector('sel_jabatan', [{ text: 'Pilih Jabatan', value: '-' }]);
+    selPangkat = new EvoSelector('sel_pangkat', [{ text: 'Pilih Pangkat', value: '-' }]);
+    selEkselon = new EvoSelector('sel_ekselon', [{ text: 'Pilih Ekselon', value: '-' }]);
+    selJenisPegawai = new EvoSelector('sel_jenis_pegawai', [{ text: 'Pilih Jenis Pegawai', value: '-' }]);
+    selStatusPegawai = new EvoSelector('sel_status_pegawai', [{ text: 'Pilih Status Pegawai', value: '-' }]);
+    selLokasi = new EvoSelector('sel_lokasi', [{ text: 'Pilih Lokasi', value: '-' }]);
+  }
+
+  function makeOptions(list, idKey, nameKey, placeholder) {
+    const opts = [{ text: placeholder, value: '-' }];
+    if (Array.isArray(list)) {
+      list.forEach(item => {
+        opts.push({
+          text: item[nameKey] || item[idKey],
+          value: String(item[idKey])
+        });
+      });
+    }
+    return opts;
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr || dateStr === '0000-00-00') return '-';
+    const parts = dateStr.substring(0, 10).split('-');
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    return dateStr;
+  }
+
+  function toInputDate(dateStr) {
+    if (!dateStr || dateStr === '0000-00-00') return '';
+    return dateStr.substring(0, 10);
+  }
+
+  function setDefaultDates() {
+    const today = new Date().toISOString().substring(0, 10);
+    const tglSuratEl = document.querySelector('#catatan_tgl_surat');
+    const tglCatatanEl = document.querySelector('#catatan_tgl_catatan');
+    if (tglSuratEl && !tglSuratEl.value) tglSuratEl.value = today;
+    if (tglCatatanEl && !tglCatatanEl.value) tglCatatanEl.value = today;
+  }
 
   async function loadMasterData() {
     try {
-      const [refRes, lookupRes] = await Promise.all([
-        httpGet(`${apiUrl}/pegawai/ref_data`),
-        httpGet(`${apiUrl}/pegawai/lookup`)
-      ]);
-
-      if (refRes && refRes.code === 200 && refRes.data) refData = refRes.data;
-      if (lookupRes && lookupRes.code === 200 && Array.isArray(lookupRes.data)) lookupPegawai = lookupRes.data;
-    } catch (e) {
-      console.warn('Gagal memuat master data catatan:', e);
+      const res = await httpGet(`${apiUrl}/pegawai/ref_data`);
+      if (res && res.code === 200 && res.data) {
+        const d = res.data;
+        if (selBagian && d.bagian) selBagian.addOptions(makeOptions(d.bagian, 'KD_BAGIAN', 'BAGIAN', 'Pilih Bagian'));
+        if (selGolongan && d.golongan) selGolongan.addOptions(makeOptions(d.golongan, 'KD_GOLONGAN', 'GOLONGAN', 'Pilih Golongan'));
+        if (selJenisCatatan && d.jenis_catatan) selJenisCatatan.addOptions(makeOptions(d.jenis_catatan, 'KD_JENIS_CATATAN', 'JENIS_CATATAN', 'Pilih Jenis Catatan'));
+        if (selJabatan && d.jabatan) selJabatan.addOptions(makeOptions(d.jabatan, 'KD_JABATAN', 'JABATAN', 'Pilih Jabatan'));
+        if (selPangkat && d.pangkat) selPangkat.addOptions(makeOptions(d.pangkat, 'KD_PANGKAT', 'PANGKAT', 'Pilih Pangkat'));
+        if (selEkselon && d.ekselon) selEkselon.addOptions(makeOptions(d.ekselon, 'KD_EKSELON', 'EKSELON', 'Pilih Ekselon'));
+        if (selJenisPegawai && d.jenis_pegawai) selJenisPegawai.addOptions(makeOptions(d.jenis_pegawai, 'KD_JENIS_PEGAWAI', 'JENIS_PEGAWAI', 'Pilih Jenis Pegawai'));
+        if (selStatusPegawai && d.status_pegawai) selStatusPegawai.addOptions(makeOptions(d.status_pegawai, 'KD_STATUS_PEGAWAI', 'STATUS_PEGAWAI', 'Pilih Status Pegawai'));
+        if (selLokasi && d.lokasi) selLokasi.addOptions(makeOptions(d.lokasi, 'KD_LOKASI', 'LOKASI', 'Pilih Lokasi'));
+      }
+    } catch (err) {
+      console.warn('Gagal memuat master data:', err);
     }
   }
 
-  async function loadData() {
-    const tableBody = document.querySelector('#table-vcatatan tbody.list');
-    if (tableBody) {
-      tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data catatan...</td></tr>';
+  async function loadPegawaiList() {
+    try {
+      const res = await httpGet(`${apiUrl}/pegawai/list?limit=1000`);
+      if (res && res.code === 200 && Array.isArray(res.data)) {
+        allPegawai = res.data;
+        const opts = [{ text: 'Pilih NIK / NIP Pegawai...', value: '-' }];
+        allPegawai.forEach(p => {
+          const nik = (p.NO_IDENTITAS || '').trim();
+          const nip = (p.NIP || '').trim();
+          const nama = (p.NAMA || '').trim();
+
+          let label = '';
+          if (nik && nip) {
+            label = `${nik} - ${nip} - ${nama}`;
+          } else if (nip) {
+            label = `${nip} - ${nama}`;
+          } else if (nik) {
+            label = `${nik} - ${nama}`;
+          } else {
+            label = nama || 'Pegawai';
+          }
+
+          opts.push({
+            text: label,
+            value: nip || String(p.ID_PEGAWAI),
+            values: {
+              id_pegawai: p.ID_PEGAWAI,
+              nip: nip,
+              nik: nik,
+              nama: nama
+            }
+          });
+        });
+        if (selNip) {
+          selNip.addOptions(opts);
+        }
+      }
+    } catch (err) {
+      console.warn('Gagal memuat daftar pegawai:', err);
+    }
+  }
+
+  async function autofillPegawai(nip) {
+    if (!nip || nip === '-') return;
+    try {
+      const res = await httpGet(`${apiUrl}/pegawai/snapshot/${encodeURIComponent(nip)}`);
+      if (res && res.code === 200 && res.data) {
+        const snap = res.data;
+        const idPegEl = document.querySelector('#catatan_id_pegawai');
+        const namaEl = document.querySelector('#catatan_nama');
+        const nipEl = document.querySelector('#catatan_nip');
+
+        if (idPegEl && snap.ID_PEGAWAI) idPegEl.value = snap.ID_PEGAWAI;
+        if (namaEl && snap.NAMA) namaEl.value = snap.NAMA;
+        if (nipEl && snap.NIP) nipEl.value = snap.NIP;
+
+        if (selBagian && snap.KD_BAGIAN) selBagian.value = String(snap.KD_BAGIAN);
+        if (selGolongan && snap.KD_GOLONGAN) selGolongan.value = String(snap.KD_GOLONGAN);
+        if (selJabatan && snap.KD_JABATAN) selJabatan.value = String(snap.KD_JABATAN);
+        if (selPangkat && snap.KD_PANGKAT) selPangkat.value = String(snap.KD_PANGKAT);
+        if (selEkselon && snap.KD_EKSELON) selEkselon.value = String(snap.KD_EKSELON);
+        if (selJenisPegawai && snap.KD_JENIS_PEGAWAI) selJenisPegawai.value = String(snap.KD_JENIS_PEGAWAI);
+        if (selStatusPegawai && snap.KD_STATUS_PEGAWAI) selStatusPegawai.value = String(snap.KD_STATUS_PEGAWAI);
+        if (selLokasi && snap.KD_LOKASI) selLokasi.value = String(snap.KD_LOKASI);
+      }
+    } catch (err) {
+      console.warn('Gagal memuat snapshot pegawai:', err);
+    }
+  }
+
+  function setupEventListeners() {
+    if (selNip) {
+      selNip.on('selected', (e) => {
+        const detail = e.detail || {};
+        const val = detail.value || (selNip ? selNip.value : '');
+        const values = detail.values || {};
+
+        let nip = values.nip || val;
+        let nama = values.nama || '';
+        let idPeg = values.id_pegawai || '';
+
+        const match = allPegawai.find(p => 
+          (nip && String(p.NIP) === String(nip)) || 
+          (val && (String(p.NIP) === String(val) || String(p.ID_PEGAWAI) === String(val) || String(p.NO_IDENTITAS) === String(val)))
+        );
+
+        if (match) {
+          nip = match.NIP || nip;
+          nama = match.NAMA || nama;
+          idPeg = match.ID_PEGAWAI || idPeg;
+        }
+
+        const nipInput = document.querySelector('#catatan_nip');
+        const namaInput = document.querySelector('#catatan_nama');
+        const idInput = document.querySelector('#catatan_id_pegawai');
+
+        if (nipInput) nipInput.value = nip || '';
+        if (namaInput) namaInput.value = nama || '';
+        if (idInput) idInput.value = idPeg || '';
+
+        if (nip && nip !== '-') {
+          autofillPegawai(nip);
+        }
+      });
+    }
+
+    const btnReset = document.querySelector('#btn-reset-catatan');
+    if (btnReset) btnReset.addEventListener('click', resetForm);
+    const btnResetTop = document.querySelector('#btn-reset-catatan-top');
+    if (btnResetTop) btnResetTop.addEventListener('click', resetForm);
+
+    const form = document.querySelector('#form-catatan');
+    if (form) form.addEventListener('submit', handleFormSubmit);
+
+    const searchInput = document.querySelector('#txtcari_catatan');
+    const searchBtn = document.querySelector('#btn-search-catatan');
+    const clearBtn = document.querySelector('#btn-clear-catatan');
+
+    if (searchBtn) {
+      searchBtn.addEventListener('click', () => {
+        applyFilter(searchInput ? searchInput.value : '');
+      });
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') applyFilter(searchInput.value);
+      });
+      searchInput.addEventListener('input', () => {
+        if (!searchInput.value) applyFilter('');
+      });
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        applyFilter('');
+      });
+    }
+
+    const refreshBtn = document.querySelector('#btn-refresh-catatan');
+    if (refreshBtn) refreshBtn.addEventListener('click', loadCatatanTable);
+
+    const exportBtn = document.querySelector('#btn-export-catatan');
+    if (exportBtn) exportBtn.addEventListener('click', exportCSV);
+
+    const tbody = document.querySelector('#tb_catatan_body');
+    if (tbody) {
+      tbody.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('.btn-edit-catatan');
+        if (editBtn) {
+          const id = editBtn.getAttribute('data-id');
+          editCatatan(id);
+          return;
+        }
+
+        const delBtn = e.target.closest('.btn-delete-catatan');
+        if (delBtn) {
+          const id = delBtn.getAttribute('data-id');
+          const surat = delBtn.getAttribute('data-surat') || '';
+          deleteCatatan(id, surat);
+          return;
+        }
+      });
+    }
+  }
+
+  async function handleFormSubmit(e) {
+    e.preventDefault();
+
+    let nipVal = selNip ? selNip.value : '';
+    if (!nipVal || nipVal === '-') {
+      nipVal = document.querySelector('#catatan_nip').value;
+    }
+    if (!nipVal || nipVal === '-') {
+      alert('Silakan pilih NIK / NIP Pegawai terlebih dahulu!');
+      return;
+    }
+
+    const noSurat = document.querySelector('#catatan_no_surat').value.trim();
+    if (!noSurat) {
+      alert('Nomor Surat wajib diisi!');
+      return;
+    }
+
+    const jenisCatatanVal = selJenisCatatan ? selJenisCatatan.value : '';
+    if (!jenisCatatanVal || jenisCatatanVal === '-') {
+      alert('Jenis Catatan wajib dipilih!');
+      return;
+    }
+
+    const kdCatatan = document.querySelector('#catatan_kd_catatan').value;
+    const idPegawai = document.querySelector('#catatan_id_pegawai').value;
+    const nama = document.querySelector('#catatan_nama').value.trim();
+    const tglSurat = document.querySelector('#catatan_tgl_surat').value;
+    const tglCatatan = document.querySelector('#catatan_tgl_catatan').value;
+    const keterangan = document.querySelector('#catatan_keterangan').value.trim();
+    const existingFile = document.querySelector('#catatan_existing_file').value;
+
+    const payload = {
+      KD_CATATAN: kdCatatan || '',
+      ID_PEGAWAI: idPegawai || '',
+      NIP: nipVal,
+      NAMA: nama,
+      NO_SURAT: noSurat,
+      TGL_SURAT: tglSurat,
+      TGL_CATATAN: tglCatatan,
+      KD_JENIS_CATATAN: jenisCatatanVal,
+      KD_BAGIAN: (selBagian && selBagian.value !== '-') ? selBagian.value : '',
+      KD_GOLONGAN: (selGolongan && selGolongan.value !== '-') ? selGolongan.value : '',
+      KD_JABATAN: (selJabatan && selJabatan.value !== '-') ? selJabatan.value : '',
+      KD_PANGKAT: (selPangkat && selPangkat.value !== '-') ? selPangkat.value : '',
+      KD_EKSELON: (selEkselon && selEkselon.value !== '-') ? selEkselon.value : '',
+      KD_JENIS_PEGAWAI: (selJenisPegawai && selJenisPegawai.value !== '-') ? selJenisPegawai.value : '',
+      KD_STATUS_PEGAWAI: (selStatusPegawai && selStatusPegawai.value !== '-') ? selStatusPegawai.value : '',
+      KD_LOKASI: (selLokasi && selLokasi.value !== '-') ? selLokasi.value : '',
+      KETERANGAN: keterangan,
+      EXISTING_FILE: existingFile
+    };
+
+    if (!payload.FILE && existingFile) {
+      payload.FILE = existingFile;
+    }
+
+    const btnSave = document.querySelector('#btn-save-catatan');
+    if (btnSave) btnSave.disabled = true;
+
+    try {
+      const fileInput = document.querySelector('#catatan_file');
+      let res;
+      if (fileInput && fileInput.files && fileInput.files[0]) {
+        const formData = new FormData();
+        Object.keys(payload).forEach(k => formData.append(k, payload[k]));
+        formData.append('file', fileInput.files[0]);
+
+        const token = localStorage.getItem('token') || '';
+        const response = await fetch(`${apiUrl}/pegawai/catatan/save`, {
+          method: 'POST',
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+          body: formData
+        });
+        res = await response.json();
+      } else {
+        res = await httpPost(`${apiUrl}/pegawai/catatan/save`, payload);
+      }
+
+      if (res && (res.code === 200 || res.status === true || res.status === 'ok')) {
+        alert(res.message || 'Data catatan berhasil disimpan');
+        resetForm();
+        loadCatatanTable();
+      } else {
+        alert(res?.message || 'Gagal menyimpan data catatan');
+      }
+    } catch (err) {
+      alert(`Terjadi kesalahan: ${err.message}`);
+    } finally {
+      if (btnSave) btnSave.disabled = false;
+    }
+  }
+
+  async function deleteCatatan(id, surat) {
+    if (!id) return;
+    if (!confirm(`Yakin ingin menghapus catatan No. Surat "${surat || id}"?`)) return;
+
+    try {
+      const res = await httpPost(`${apiUrl}/pegawai/catatan/delete`, { id: id, KD_CATATAN: id });
+      if (res && (res.code === 200 || res.status === true || res.status === 'ok')) {
+        alert(res.message || 'Data catatan berhasil dihapus');
+        loadCatatanTable();
+      } else {
+        alert(res?.message || 'Gagal menghapus data catatan');
+      }
+    } catch (err) {
+      alert(`Terjadi kesalahan: ${err.message}`);
+    }
+  }
+
+  function editCatatan(id) {
+    const item = allCatatan.find(c => String(c.KD_CATATAN) === String(id));
+    if (!item) return;
+
+    isEditMode = true;
+    document.querySelector('#catatan_kd_catatan').value = item.KD_CATATAN || '';
+    document.querySelector('#catatan_id_pegawai').value = item.ID_PEGAWAI || '';
+    document.querySelector('#catatan_nip').value = item.NIP || '';
+    document.querySelector('#catatan_nama').value = item.NAMA_PEGAWAI || item.NAMA || '';
+    document.querySelector('#catatan_no_surat').value = item.NO_SURAT || '';
+    document.querySelector('#catatan_tgl_surat').value = toInputDate(item.TGL_SURAT);
+    document.querySelector('#catatan_tgl_catatan').value = toInputDate(item.TGL_CATATAN);
+    document.querySelector('#catatan_keterangan').value = item.KETERANGAN || '';
+    document.querySelector('#catatan_existing_file').value = item.FILE || '';
+
+    const previewBadge = document.querySelector('#file_preview_badge');
+    if (previewBadge) {
+      if (item.FILE) {
+        previewBadge.innerHTML = `<span class="badge bg-soft-info text-info"><i class="fas fa-file me-1"></i>File tersimpan: ${item.FILE}</span>`;
+      } else {
+        previewBadge.innerHTML = '';
+      }
+    }
+
+    if (selNip) selNip.value = item.NIP || item.ID_PEGAWAI || '-';
+    if (selBagian) selBagian.value = item.KD_BAGIAN ? String(item.KD_BAGIAN) : '-';
+    if (selGolongan) selGolongan.value = item.KD_GOLONGAN ? String(item.KD_GOLONGAN) : '-';
+    if (selJenisCatatan) selJenisCatatan.value = item.KD_JENIS_CATATAN ? String(item.KD_JENIS_CATATAN) : '-';
+    if (selJabatan) selJabatan.value = item.KD_JABATAN ? String(item.KD_JABATAN) : '-';
+    if (selPangkat) selPangkat.value = item.KD_PANGKAT ? String(item.KD_PANGKAT) : '-';
+    if (selEkselon) selEkselon.value = item.KD_EKSELON ? String(item.KD_EKSELON) : '-';
+    if (selJenisPegawai) selJenisPegawai.value = item.KD_JENIS_PEGAWAI ? String(item.KD_JENIS_PEGAWAI) : '-';
+    if (selStatusPegawai) selStatusPegawai.value = item.KD_STATUS_PEGAWAI ? String(item.KD_STATUS_PEGAWAI) : '-';
+    if (selLokasi) selLokasi.value = item.KD_LOKASI ? String(item.KD_LOKASI) : '-';
+
+    document.querySelector('#form-mode-badge').textContent = 'Mode Edit';
+    document.querySelector('#form-mode-badge').className = 'badge bg-soft-warning text-warning fs--2 ms-2';
+    document.querySelector('#btn-save-catatan').innerHTML = '<i class="fas fa-save me-1"></i> Perbarui Catatan';
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function resetForm() {
+    isEditMode = false;
+    const form = document.querySelector('#form-catatan');
+    if (form) form.reset();
+
+    document.querySelector('#catatan_kd_catatan').value = '';
+    document.querySelector('#catatan_id_pegawai').value = '';
+    document.querySelector('#catatan_nip').value = '';
+    document.querySelector('#catatan_nama').value = '';
+    document.querySelector('#catatan_existing_file').value = '';
+
+    const previewBadge = document.querySelector('#file_preview_badge');
+    if (previewBadge) previewBadge.innerHTML = '';
+
+    document.querySelector('#form-mode-badge').textContent = 'Mode Tambah';
+    document.querySelector('#form-mode-badge').className = 'badge bg-soft-primary text-primary fs--2 ms-2';
+    document.querySelector('#btn-save-catatan').innerHTML = '<i class="fas fa-save me-1"></i> Simpan Catatan';
+
+    setDefaultDates();
+
+    if (selNip) selNip.value = '-';
+    if (selBagian) selBagian.value = '-';
+    if (selGolongan) selGolongan.value = '-';
+    if (selJenisCatatan) selJenisCatatan.value = '-';
+    if (selJabatan) selJabatan.value = '-';
+    if (selPangkat) selPangkat.value = '-';
+    if (selEkselon) selEkselon.value = '-';
+    if (selJenisPegawai) selJenisPegawai.value = '-';
+    if (selStatusPegawai) selStatusPegawai.value = '-';
+    if (selLokasi) selLokasi.value = '-';
+  }
+
+  async function loadCatatanTable() {
+    const tbody = document.querySelector('#tb_catatan_body');
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="13" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat data riwayat catatan...</td></tr>`;
     }
 
     try {
-      const res = await httpGet(`${apiUrl}/pegawai/catatan`);
-      allData = (res && res.code === 200 && Array.isArray(res.data)) ? res.data : [];
+      const res = await httpGet(`${apiUrl}/pegawai/catatan?limit=1000`);
+      if (res && res.code === 200 && Array.isArray(res.data)) {
+        allCatatan = res.data;
+        const searchInput = document.querySelector('#txtcari_catatan');
+        const q = searchInput ? searchInput.value.trim() : '';
+        applyFilter(q);
+      } else {
+        allCatatan = [];
+        filteredCatatan = [];
+        renderTable();
+      }
     } catch (err) {
-      console.error('Error loadData catatan:', err);
-      allData = [];
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="13" class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Gagal memuat data: ${err.message}</td></tr>`;
+      }
     }
-
-    applyFilter();
   }
 
-  function applyFilter() {
-    const searchInput = document.getElementById('vcatatan-search');
-    const q = (searchInput ? searchInput.value : '').toLowerCase().trim();
-
+  function applyFilter(keyword) {
+    const q = (keyword || '').toLowerCase().trim();
     if (!q) {
-      filteredData = [...allData];
+      filteredCatatan = [...allCatatan];
     } else {
-      filteredData = allData.filter(item => {
+      filteredCatatan = allCatatan.filter(item => {
         return (
           (item.NIP && item.NIP.toLowerCase().includes(q)) ||
-          (item.NAMA && item.NAMA.toLowerCase().includes(q)) ||
+          ((item.NAMA_PEGAWAI || item.NAMA) && (item.NAMA_PEGAWAI || item.NAMA).toLowerCase().includes(q)) ||
           (item.NO_SURAT && item.NO_SURAT.toLowerCase().includes(q)) ||
           (item.JENIS_CATATAN && item.JENIS_CATATAN.toLowerCase().includes(q)) ||
+          (item.BAGIAN && item.BAGIAN.toLowerCase().includes(q)) ||
+          (item.JABATAN && item.JABATAN.toLowerCase().includes(q)) ||
           (item.KETERANGAN && item.KETERANGAN.toLowerCase().includes(q))
         );
       });
     }
-
     currentPage = 1;
     renderTable();
   }
 
   function renderTable() {
-    const tableBody = document.querySelector('#table-vcatatan tbody.list');
-    const badge = document.getElementById('vcatatan-total-badge');
-    const pagInfo = document.getElementById('vcatatan-pagination-info');
-    const pagList = document.getElementById('vcatatan-pagination');
+    const tbody = document.querySelector('#tb_catatan_body');
+    const badgeTotal = document.querySelector('#badge-total-catatan');
+    if (badgeTotal) badgeTotal.textContent = `${filteredCatatan.length} Data`;
 
-    if (badge) badge.textContent = `${filteredData.length} Data`;
-    if (!tableBody) return;
+    if (!tbody) return;
 
-    if (filteredData.length === 0) {
-      tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Belum ada data catatan pegawai</td></tr>';
-      if (pagInfo) pagInfo.textContent = 'Menampilkan 0 data';
-      if (pagList) pagList.innerHTML = '';
+    if (filteredCatatan.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="13" class="text-center py-4 text-muted"><i class="fas fa-inbox fa-2x mb-2 d-block text-secondary"></i>Belum ada data catatan pegawai</td></tr>`;
+      renderPagination(0, 0, 0);
       return;
     }
 
-    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+    const totalPages = Math.ceil(filteredCatatan.length / pageSize) || 1;
     if (currentPage > totalPages) currentPage = totalPages;
     if (currentPage < 1) currentPage = 1;
 
-    const startIdx = (currentPage - 1) * rowsPerPage;
-    const endIdx = Math.min(startIdx + rowsPerPage, filteredData.length);
-    const pageItems = filteredData.slice(startIdx, endIdx);
+    const startIdx = (currentPage - 1) * pageSize;
+    const endIdx = Math.min(startIdx + pageSize, filteredCatatan.length);
+    const pageRows = filteredCatatan.slice(startIdx, endIdx);
 
     let html = '';
-    pageItems.forEach((row, i) => {
+    pageRows.forEach((row, i) => {
       const no = startIdx + i + 1;
-      const tgl = row.TGL_CATATAN ? row.TGL_CATATAN.substring(0, 10) : '-';
-      const idVal = row.KD_CATATAN || row.ID_CATATAN || '';
+      const nip = row.NIP || '-';
+      const nama = row.NAMA_PEGAWAI || row.NAMA || '-';
+      const noSurat = row.NO_SURAT || '-';
+      const tglSurat = formatDate(row.TGL_SURAT);
+      const jenisCatatan = row.JENIS_CATATAN || '-';
+      const tglCatatan = formatDate(row.TGL_CATATAN);
+      const bagian = row.BAGIAN || '-';
+      const jabatan = row.JABATAN || '-';
+      const pangkat = row.PANGKAT || '-';
+      const keterangan = row.KETERANGAN || '-';
+      
+      let fileCell = '<span class="text-muted fs--2">-</span>';
+      if (row.FILE) {
+        fileCell = `<a href="uploads/${encodeURIComponent(row.FILE)}" target="_blank" class="badge bg-soft-info text-info text-decoration-none" title="Unduh / Lihat File"><i class="fas fa-file-download me-1"></i>Unduh</a>`;
+      }
 
       html += `
         <tr>
-          <td class="text-center fw-semi-bold">${no}</td>
-          <td>
-            <div class="fw-bold text-dark">${row.NAMA || '-'}</div>
-            <div class="text-muted small">NIP: ${row.NIP || '-'}</div>
-          </td>
-          <td class="text-center">${tgl}</td>
-          <td><span class="badge bg-secondary">${row.JENIS_CATATAN || '-'}</span></td>
-          <td><span class="badge bg-light text-dark border">${row.NO_SURAT || '-'}</span></td>
-          <td class="small text-muted">${row.KETERANGAN || '-'}</td>
+          <td class="text-center">${no}</td>
+          <td class="fw-semi-bold">${nip}</td>
+          <td>${nama}</td>
+          <td>${noSurat}</td>
+          <td>${tglSurat}</td>
+          <td><span class="badge bg-soft-primary text-primary">${jenisCatatan}</span></td>
+          <td>${tglCatatan}</td>
+          <td>${bagian}</td>
+          <td>${jabatan}</td>
+          <td>${pangkat}</td>
+          <td>${keterangan}</td>
+          <td class="text-center">${fileCell}</td>
           <td class="text-center">
-            <button class="btn btn-sm btn-outline-secondary btn-edit-row py-1 px-2 me-1" data-id="${idVal}">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-danger btn-delete-row py-1 px-2" data-id="${idVal}">
-              <i class="fas fa-trash"></i>
-            </button>
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-action-icon btn-outline-warning btn-edit-catatan" data-id="${row.KD_CATATAN}" title="Edit Catatan">
+                <i class="fas fa-pencil-alt fs--2"></i>
+              </button>
+              <button class="btn btn-action-icon btn-outline-danger btn-delete-catatan" data-id="${row.KD_CATATAN}" data-surat="${noSurat}" title="Hapus Catatan">
+                <i class="fas fa-trash-alt fs--2"></i>
+              </button>
+            </div>
           </td>
         </tr>
       `;
     });
 
-    tableBody.innerHTML = html;
-
-    if (pagInfo) {
-      pagInfo.textContent = `Menampilkan ${startIdx + 1} - ${endIdx} dari ${filteredData.length} data`;
-    }
-
-    renderPagination(totalPages);
-    attachRowActions();
+    tbody.innerHTML = html;
+    renderPagination(filteredCatatan.length, startIdx + 1, endIdx);
   }
 
-  function renderPagination(totalPages) {
-    const pagList = document.getElementById('vcatatan-pagination');
-    if (!pagList) return;
+  function renderPagination(total, from, to) {
+    const paginationInfo = document.querySelector('#catatan-pagination-info');
+    const paginationUl = document.querySelector('#catatan-pagination');
 
-    if (totalPages <= 1) {
-      pagList.innerHTML = '';
-      return;
+    if (paginationInfo) {
+      paginationInfo.textContent = total > 0 ? `Menampilkan ${from} - ${to} dari ${total} data` : 'Menampilkan 0 - 0 dari 0 data';
     }
 
-    let pHtml = `
-      <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-        <a class="page-link" href="#" data-page="${currentPage - 1}">&laquo;</a>
-      </li>
-    `;
+    if (!paginationUl) return;
+    paginationUl.innerHTML = '';
 
+    if (total <= pageSize) return;
+
+    const totalPages = Math.ceil(total / pageSize);
+
+    // Prev Button
+    const prevLi = document.createElement('li');
+    prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+    prevLi.innerHTML = `<a class="page-link" href="javascript:void(0)">&laquo;</a>`;
+    if (currentPage > 1) {
+      prevLi.addEventListener('click', () => {
+        currentPage--;
+        renderTable();
+      });
+    }
+    paginationUl.appendChild(prevLi);
+
+    // Page numbers
     for (let p = 1; p <= totalPages; p++) {
-      if (p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)) {
-        pHtml += `
-          <li class="page-item ${p === currentPage ? 'active' : ''}">
-            <a class="page-link" href="#" data-page="${p}">${p}</a>
-          </li>
-        `;
-      } else if (p === currentPage - 2 || p === currentPage + 2) {
-        pHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      if (totalPages > 7 && Math.abs(p - currentPage) > 2 && p !== 1 && p !== totalPages) {
+        continue;
       }
-    }
-
-    pHtml += `
-      <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-        <a class="page-link" href="#" data-page="${currentPage + 1}">&raquo;</a>
-      </li>
-    `;
-
-    pagList.innerHTML = pHtml;
-
-    pagList.querySelectorAll('a.page-link').forEach(a => {
-      a.addEventListener('click', (e) => {
-        e.preventDefault();
-        const p = parseInt(a.getAttribute('data-page'));
-        if (p && p >= 1 && p <= totalPages && p !== currentPage) {
-          currentPage = p;
-          renderTable();
-        }
+      const li = document.createElement('li');
+      li.className = `page-item ${p === currentPage ? 'active' : ''}`;
+      li.innerHTML = `<a class="page-link" href="javascript:void(0)">${p}</a>`;
+      li.addEventListener('click', () => {
+        currentPage = p;
+        renderTable();
       });
-    });
-  }
+      paginationUl.appendChild(li);
+    }
 
-  function attachRowActions() {
-    document.querySelectorAll('#table-vcatatan .btn-edit-row').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idVal = btn.getAttribute('data-id');
-        const item = allData.find(d => (d.KD_CATATAN == idVal || d.ID_CATATAN == idVal));
-        if (item) openFormPopup('edit', item);
+    // Next Button
+    const nextLi = document.createElement('li');
+    nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+    nextLi.innerHTML = `<a class="page-link" href="javascript:void(0)">&raquo;</a>`;
+    if (currentPage < totalPages) {
+      nextLi.addEventListener('click', () => {
+        currentPage++;
+        renderTable();
       });
-    });
-
-    document.querySelectorAll('#table-vcatatan .btn-delete-row').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idVal = btn.getAttribute('data-id');
-        confirmDelete(idVal);
-      });
-    });
-  }
-
-  function openFormPopup(mode, data = null) {
-    if (!evoPopup) {
-      evoPopup = new EvoPopup('vcatatan-popup-dialog');
     }
-
-    const title = mode === 'edit' 
-      ? '<i class="fas fa-edit text-secondary me-2"></i>Edit Catatan Pegawai' 
-      : '<i class="fas fa-clipboard-list text-secondary me-2"></i>Form Catatan & Evaluasi Pegawai';
-
-    const formHtml = `
-      <form id="form-catatan-modal" class="p-2">
-        <input type="hidden" id="catatan_kd_catatan" value="${data ? (data.KD_CATATAN || data.ID_CATATAN || '') : ''}">
-        <div class="row g-3">
-          <div class="col-12">
-            <label class="form-label fw-bold small">Pilih Pegawai <span class="text-danger">*</span></label>
-            <select id="sel_pegawai_catatan" class="form-select form-select-sm" required></select>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-bold small">Jenis Catatan <span class="text-danger">*</span></label>
-            <select id="sel_jenis_catatan" class="form-select form-select-sm" required></select>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-bold small">Tanggal Catatan <span class="text-danger">*</span></label>
-            <input type="date" class="form-control form-control-sm" id="catatan_tgl" value="${data ? (data.TGL_CATATAN ? data.TGL_CATATAN.substring(0, 10) : '') : ''}" required>
-          </div>
-          <div class="col-12">
-            <label class="form-label fw-bold small">Nomor Dokumen / Referensi</label>
-            <input type="text" class="form-control form-control-sm" id="catatan_no_surat" value="${data ? (data.NO_SURAT || '') : ''}" placeholder="Nomor surat / memo referensi">
-          </div>
-          <div class="col-12">
-            <label class="form-label fw-bold small">Isi / Uraian Catatan Evaluasi <span class="text-danger">*</span></label>
-            <textarea class="form-control form-control-sm" id="catatan_keterangan" rows="3" placeholder="Tuliskan catatan kejadian, evaluasi kerja, atau catatan penting..." required>${data ? (data.KETERANGAN || '') : ''}</textarea>
-          </div>
-        </div>
-      </form>
-    `;
-
-    evoPopup.open({
-      size: 'large'
-    }, {
-      title: title,
-      content: formHtml,
-      buttons: [
-        {
-          label: 'Batal',
-          class: 'btn-secondary btn-sm',
-          onClick: () => evoPopup.close()
-        },
-        {
-          label: '<i class="fas fa-save me-1"></i> Simpan',
-          class: 'btn-secondary btn-sm',
-          onClick: () => saveCatatan()
-        }
-      ]
-    });
-
-    setTimeout(() => {
-      selectorPegawai = new EvoSelector('sel_pegawai_catatan');
-      const optPegawai = lookupPegawai.map(p => ({
-        text: `[${p.NIP || '-'}] ${p.NAMA || '-'}`,
-        value: p.ID_PEGAWAI
-      }));
-      selectorPegawai.addOptions(optPegawai);
-      if (data && data.ID_PEGAWAI) {
-        const el = document.getElementById('sel_pegawai_catatan');
-        if (el) el.value = data.ID_PEGAWAI;
-      }
-
-      selectorJenisCatatan = new EvoSelector('sel_jenis_catatan');
-      const optCatatan = (refData.jenis_catatan || []).map(c => ({
-        text: c.JENIS_CATATAN,
-        value: c.KD_JENIS_CATATAN
-      }));
-      selectorJenisCatatan.addOptions(optCatatan);
-      if (data && data.KD_JENIS_CATATAN) {
-        const el = document.getElementById('sel_jenis_catatan');
-        if (el) el.value = data.KD_JENIS_CATATAN;
-      }
-    }, 100);
-  }
-
-  async function saveCatatan() {
-    const idPegawai = document.getElementById('sel_pegawai_catatan')?.value;
-    const kdJenis = document.getElementById('sel_jenis_catatan')?.value;
-    const tgl = document.getElementById('catatan_tgl')?.value;
-    const noSurat = document.getElementById('catatan_no_surat')?.value;
-    const ket = document.getElementById('catatan_keterangan')?.value;
-    const kdCatatan = document.getElementById('catatan_kd_catatan')?.value;
-
-    if (!idPegawai) {
-      alert('Pilih pegawai terlebih dahulu!');
-      return;
-    }
-    if (!kdJenis) {
-      alert('Pilih jenis catatan!');
-      return;
-    }
-    if (!tgl) {
-      alert('Tanggal catatan wajib diisi!');
-      return;
-    }
-    if (!ket) {
-      alert('Uraian catatan wajib diisi!');
-      return;
-    }
-
-    const payload = {
-      KD_CATATAN: kdCatatan || '',
-      ID_PEGAWAI: idPegawai,
-      KD_JENIS_CATATAN: kdJenis,
-      TGL_CATATAN: tgl,
-      NO_SURAT: noSurat,
-      KETERANGAN: ket
-    };
-
-    try {
-      const res = await httpPost(`${apiUrl}/pegawai/catatan/save`, payload);
-      if (res && res.code === 200) {
-        if (evoPopup) evoPopup.close();
-        await loadData();
-      } else {
-        alert(res?.message || 'Gagal menyimpan data catatan');
-      }
-    } catch (err) {
-      console.error('Error saveCatatan:', err);
-      alert('Terjadi kesalahan koneksi server');
-    }
-  }
-
-  async function confirmDelete(idVal) {
-    if (!confirm('Apakah Anda yakin ingin menghapus data catatan ini?')) return;
-
-    try {
-      const res = await httpPost(`${apiUrl}/pegawai/catatan/delete`, { KD_CATATAN: idVal, ID: idVal });
-      if (res && res.code === 200) {
-        await loadData();
-      } else {
-        alert(res?.message || 'Gagal menghapus data catatan');
-      }
-    } catch (err) {
-      console.error('Error deleteCatatan:', err);
-      alert('Terjadi kesalahan saat menghapus data');
-    }
+    paginationUl.appendChild(nextLi);
   }
 
   function exportCSV() {
-    if (filteredData.length === 0) {
+    if (!filteredCatatan || filteredCatatan.length === 0) {
       alert('Tidak ada data untuk diekspor!');
       return;
     }
-    let csv = 'No,NIP,Nama,Tgl Catatan,Jenis Catatan,No Dokumen,Isi Catatan\n';
-    filteredData.forEach((r, i) => {
-      csv += `"${i+1}","${r.NIP||''}","${r.NAMA||''}","${r.TGL_CATATAN||''}","${r.JENIS_CATATAN||''}","${r.NO_SURAT||''}","${(r.KETERANGAN||'').replace(/"/g, '""')}"\n`;
-    });
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+
+    const headers = ['No', 'NIP', 'Nama', 'No Surat', 'Tgl Surat', 'Jenis Catatan', 'Tgl Catatan', 'Bagian', 'Jabatan', 'Pangkat', 'Keterangan', 'File'];
+    const rows = filteredCatatan.map((r, i) => [
+      i + 1,
+      `"${(r.NIP || '').replace(/"/g, '""')}"`,
+      `"${(r.NAMA_PEGAWAI || r.NAMA || '').replace(/"/g, '""')}"`,
+      `"${(r.NO_SURAT || '').replace(/"/g, '""')}"`,
+      `"${formatDate(r.TGL_SURAT)}"`,
+      `"${(r.JENIS_CATATAN || '').replace(/"/g, '""')}"`,
+      `"${formatDate(r.TGL_CATATAN)}"`,
+      `"${(r.BAGIAN || '').replace(/"/g, '""')}"`,
+      `"${(r.JABATAN || '').replace(/"/g, '""')}"`,
+      `"${(r.PANGKAT || '').replace(/"/g, '""')}"`,
+      `"${(r.KETERANGAN || '').replace(/"/g, '""')}"`,
+      `"${(r.FILE || '').replace(/"/g, '""')}"`
+    ]);
+
+    let csvContent = '\uFEFF' + headers.join(',') + '\n' + rows.map(e => e.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute('download', `Catatan_Pegawai_${new Date().toISOString().substring(0,10)}.csv`);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `data_catatan_pegawai_${new Date().toISOString().substring(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   }
 
-  document.getElementById('btn-tambah-catatan')?.addEventListener('click', () => openFormPopup('add'));
-  document.getElementById('btn-refresh-catatan')?.addEventListener('click', () => loadData());
-  document.getElementById('btn-export-catatan')?.addEventListener('click', exportCSV);
-  document.getElementById('vcatatan-search')?.addEventListener('input', applyFilter);
+  async function init() {
+    initEvoSelectors();
+    setDefaultDates();
+    setupEventListeners();
+    await Promise.all([
+      loadMasterData(),
+      loadPegawaiList(),
+      loadCatatanTable()
+    ]);
+  }
 
-  await loadMasterData();
-  await loadData();
+  window.status_catatan = { loadData: loadCatatanTable, init: init };
+  document.status_catatan = { loadData: loadCatatanTable, init: init };
+
+  init();
 </script>

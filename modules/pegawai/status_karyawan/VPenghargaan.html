@@ -1,139 +1,593 @@
 <style>
-  .table-vpenghargaan-card {
-    border-radius: 0.5rem;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  /* Styling EvoSelector Searchable Dropdown */
+  #sel_bagian, #sel_golongan, #sel_jenis_penghargaan, #sel_jabatan, 
+  #sel_pangkat, #sel_ekselon, #sel_status_pegawai, #sel_lokasi {
+    width: 100%;
+  }
+
+  .evoselector-container {
+    position: relative;
+    width: 100%;
+  }
+
+  [data-role="selector"] .dropdown-menu {
+    border: 1px solid #d8e2ef;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    border-radius: 0.375rem;
+    z-index: 1060 !important;
+  }
+
+  [data-role="selector"] .dropdown-item {
+    font-size: 0.8125rem;
+    padding: 0.35rem 0.75rem;
+    cursor: pointer;
+  }
+
+  [data-role="selector"] .dropdown-item:hover,
+  [data-role="selector"] .dropdown-item:focus {
+    background-color: #edf2f9;
+    color: #12161a;
+  }
+
+  [data-role="selector"] span.fa-chevron-down {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.75rem;
+    color: #9da9bb;
+    pointer-events: none;
+  }
+
+  [data-role="selector"] a[href="#!selectorclose"] {
+    position: absolute;
+    right: 26px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.8rem;
+    color: #9da9bb;
+    text-decoration: none;
+  }
+
+  [data-role="selector"] a[href="#!selectorclose"]:hover {
+    color: #e63757;
+  }
+
+  .table-penghargaan th {
+    background-color: #f9fbfd;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: #5e6e82;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  .table-penghargaan td {
+    font-size: 0.8125rem;
+    vertical-align: middle;
+  }
+
+  #form-penghargaan {
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 5;
+  }
+
+  #form-penghargaan input.form-control,
+  #form-penghargaan textarea.form-control,
+  #form-penghargaan select.form-select,
+  .card-body input.form-control,
+  [data-role="selector"] input.form-control {
+    background-color: #ffffff !important;
+    color: #1e293b !important;
+    border: 1px solid #cbd5e1 !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    cursor: text !important;
+    display: block !important;
+    visibility: visible !important;
   }
 </style>
 
 <template id="template-vpenghargaan">
-  <!-- Actions Toolbar -->
-  <div id="vpenghargaan-actions" class="card mb-3 shadow-none border">
-    <div class="card-body p-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <div class="d-flex align-items-center gap-2">
-        <h5 class="mb-0 text-primary fw-bold"><i class="fas fa-award me-2"></i>Penghargaan & Prestasi Pegawai</h5>
-        <span class="badge bg-soft-primary text-primary ms-2" id="vpenghargaan-total-badge">0 Data</span>
-      </div>
-      <div class="d-flex align-items-center gap-2 flex-wrap">
-        <div class="input-group input-group-sm" style="width: 240px;">
-          <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-          <input type="text" class="form-control form-control-sm border-start-0" id="vpenghargaan-search" placeholder="Cari NIP, nama, penghargaan, piagam...">
+  <div class="container-fluid p-0">
+    <!-- Breadcrumb & Header -->
+    <div class="row mb-3">
+      <div class="col-12">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <h4 class="mb-1 text-800 fw-bold">
+              <i class="fas fa-award text-warning me-2"></i>Penghargaan Pegawai
+            </h4>
+            <nav aria-label="breadcrumb">
+              <ol class="breadcrumb fs--1 mb-0">
+                <li class="breadcrumb-item"><a href="#!home">Kepegawaian</a></li>
+                <li class="breadcrumb-item"><a href="#!pegawai">Perubahan Status</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Penghargaan</li>
+              </ol>
+            </nav>
+          </div>
         </div>
-        <button type="button" class="btn btn-sm btn-primary" id="btn-tambah-penghargaan">
-          <i class="fas fa-plus me-1"></i> Tambah Penghargaan
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-refresh-penghargaan">
-          <i class="fas fa-sync-alt me-1"></i> Refresh
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-success" id="btn-export-penghargaan">
-          <i class="fas fa-file-excel me-1"></i> Ekspor CSV
-        </button>
       </div>
     </div>
-  </div>
 
-  <!-- Entries Table -->
-  <div id="vpenghargaan-entries" class="card shadow-sm border table-vpenghargaan-card">
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-sm table-striped table-hover fs--1 mb-0 align-middle" id="table-vpenghargaan">
-          <thead class="bg-200 text-800 text-uppercase">
-            <tr>
-              <th class="text-center py-2" style="width: 50px;">#</th>
-              <th class="py-2" style="min-width: 140px;">NIP / Pegawai</th>
-              <th class="text-center py-2" style="min-width: 110px;">Tgl Terima</th>
-              <th class="py-2" style="min-width: 140px;">Jenis Penghargaan</th>
-              <th class="py-2" style="min-width: 130px;">No. Piagam / SK</th>
-              <th class="py-2" style="min-width: 160px;">Uraian / Keterangan</th>
-              <th class="text-center py-2" style="width: 140px;">Aksi</th>
-            </tr>
-          </thead>
-          <tbody class="list">
-            <tr>
-              <td colspan="7" class="text-center py-4 text-muted">
-                <span class="spinner-border spinner-border-sm me-2"></span>Memuat data penghargaan...
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- Form Penghargaan Pegawai -->
+    <div class="card mb-3 shadow-none border">
+      <div class="card-header bg-light py-2">
+        <div class="row align-items-center">
+          <div class="col">
+            <h6 class="mb-0 text-primary fw-semi-bold">
+              <i class="fas fa-pen-nib me-2"></i>Form Penghargaan Pegawai
+            </h6>
+          </div>
+          <div class="col-auto">
+            <span id="form-mode-badge" class="badge bg-soft-primary text-primary fs--2">Mode Tambah</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-body p-3">
+        <form id="form-penghargaan" autocomplete="off">
+          <input type="hidden" id="replacement_kd_penghargaan" name="kd_penghargaan" value="" />
+          <input type="hidden" id="replacement_id_pegawai" name="id_pegawai" value="" />
+
+          <div class="row g-3">
+            <!-- 1. No Surat -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1" for="replacement_no_surat">
+                No Surat : <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-control form-control-sm" id="replacement_no_surat" name="no_surat" placeholder="*Masukkan Nomer Surat..." required />
+            </div>
+
+            <!-- 2. NIP -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                NIP : <span class="text-danger">*</span>
+              </label>
+              <div id="sel_nip" placeholder="Pilih NIK / NIP Pegawai..."></div>
+            </div>
+
+            <!-- 3. Nama -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1" for="replacement_nama">
+                Nama : <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-control form-control-sm bg-light" id="replacement_nama" name="nama" placeholder="*Masukkan Nama..." readonly required />
+            </div>
+
+            <!-- 4. Tgl Surat -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1" for="replacement_tanggal_surat">
+                Tgl Surat : <span class="text-danger">*</span>
+              </label>
+              <input type="date" class="form-control form-control-sm" id="replacement_tanggal_surat" name="tgl_surat" placeholder="mm/dd/yyyy" required />
+            </div>
+
+            <!-- 5. Bagian -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Bagian :
+              </label>
+              <div id="sel_bagian" placeholder="Pilih Bagian"></div>
+            </div>
+
+            <!-- 6. Golongan -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Golongan :
+              </label>
+              <div id="sel_golongan" placeholder="Pilih Golongan"></div>
+            </div>
+
+            <!-- 7. Jenis Penghargaan -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Jenis Penghargaan : <span class="text-danger">*</span>
+              </label>
+              <div id="sel_jenis_penghargaan" placeholder="Pilih Jenis Penghargaan"></div>
+            </div>
+
+            <!-- 8. Jabatan -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Jabatan :
+              </label>
+              <div id="sel_jabatan" placeholder="Pilih Jabatan"></div>
+            </div>
+
+            <!-- 9. Pangkat -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Pangkat :
+              </label>
+              <div id="sel_pangkat" placeholder="Pilih Pangkat"></div>
+            </div>
+
+            <!-- 10. Tgl Penghargaan -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1" for="replacement_tanggal_penghargaan">
+                Tgl Penghargaan : <span class="text-danger">*</span>
+              </label>
+              <input type="date" class="form-control form-control-sm" id="replacement_tanggal_penghargaan" name="tgl_penghargaan" placeholder="mm/dd/yyyy" required />
+            </div>
+
+            <!-- 11. Ekselon -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Ekselon :
+              </label>
+              <div id="sel_ekselon" placeholder="Pilih Ekselon"></div>
+            </div>
+
+            <!-- 12. Status Pegawai -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Status Pegawai :
+              </label>
+              <div id="sel_status_pegawai" placeholder="Pilih Status Pegawai"></div>
+            </div>
+
+            <!-- 13. Lokasi -->
+            <div class="col-md-3 col-sm-6">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1">
+                Lokasi :
+              </label>
+              <div id="sel_lokasi" placeholder="Pilih Lokasi"></div>
+            </div>
+
+            <!-- 14. Keterangan -->
+            <div class="col-md-9 col-sm-12">
+              <label class="form-label fs--1 fw-semi-bold text-700 mb-1" for="replacement_keterangan">
+                Keterangan :
+              </label>
+              <textarea class="form-control form-control-sm" id="replacement_keterangan" name="keterangan" rows="1" placeholder="Masukkan Keterangan..."></textarea>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center justify-content-between mt-3 pt-2 border-top">
+            <div>
+              <button type="submit" class="btn btn-sm btn-primary px-3 fw-semi-bold" id="btn-save-penghargaan">
+                <i class="fas fa-save me-1"></i> Simpan
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary px-3 ms-1" id="btn-reset-penghargaan">
+                <i class="fas fa-undo me-1"></i> Reset
+              </button>
+              <span class="fs--1 text-muted ms-2" id="form-penghargaan-status"></span>
+            </div>
+            <div class="text-muted fs--2">
+              <span class="text-danger">*</span> Wajib diisi
+            </div>
+          </div>
+        </form>
       </div>
     </div>
-    <div class="card-footer d-flex justify-content-between align-items-center py-2 bg-light border-top">
-      <span class="pagination-info fs--1 text-muted" id="vpenghargaan-pagination-info">Menampilkan 0 data</span>
-      <ul class="pagination pagination-sm mb-0" id="vpenghargaan-pagination"></ul>
+
+    <!-- Riwayat Data Penghargaan Pegawai -->
+    <div class="card shadow-none border">
+      <div class="card-header bg-light py-2">
+        <div class="row g-2 align-items-center justify-content-between">
+          <div class="col-12 col-md-auto d-flex align-items-center">
+            <h6 class="mb-0 text-700 fw-semi-bold me-2">
+              <i class="fas fa-list-alt me-1 text-primary"></i>Riwayat Penghargaan Pegawai
+            </h6>
+            <span class="badge bg-soft-primary text-primary" id="badge-total-penghargaan">0 Data</span>
+          </div>
+          <div class="col-12 col-md-auto">
+            <div class="d-flex align-items-center gap-2">
+              <div class="input-group input-group-sm" style="max-width: 320px;">
+                <span class="input-group-text bg-white border-end-0 text-muted">
+                  Cari
+                </span>
+                <input type="text" class="form-control border-start-0" id="txtcari_penghargaan" placeholder="Cari..." />
+                <button class="btn btn-outline-secondary" type="button" id="btn-cari-penghargaan" title="Cari">
+                  <i class="fas fa-search"></i>
+                </button>
+                <button class="btn btn-outline-secondary" type="button" id="btn-clear-penghargaan" title="Reset Pencarian">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              <button class="btn btn-sm btn-outline-primary" type="button" id="btn-refresh-penghargaan" title="Segarkan Data">
+                <i class="fas fa-sync-alt"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive scrollbar">
+          <table class="table table-sm table-striped table-hover table-penghargaan mb-0">
+            <thead>
+              <tr>
+                <th class="text-center" style="width: 45px;">No.</th>
+                <th>NIP</th>
+                <th>Nama</th>
+                <th>No. Surat</th>
+                <th>Tgl Surat</th>
+                <th>Jenis Penghargaan</th>
+                <th>Tgl Penghargaan</th>
+                <th>Bagian</th>
+                <th>Jabatan</th>
+                <th>Pangkat</th>
+                <th>Keterangan</th>
+                <th class="text-center" style="width: 80px;"><i class="fas fa-cog"></i></th>
+              </tr>
+            </thead>
+            <tbody id="tb_penghargaan_body">
+              <tr>
+                <td colspan="12" class="text-center py-4 text-muted">
+                  <i class="fas fa-spinner fa-spin me-2"></i>Memuat data riwayat penghargaan...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card-footer bg-light py-2 d-flex align-items-center justify-content-between">
+        <div class="fs--1 text-muted" id="penghargaan-pagination-info">Menampilkan 0 data</div>
+        <ul class="pagination pagination-sm mb-0" id="penghargaan-pagination"></ul>
+      </div>
+    </div>
+
     </div>
   </div>
-
-  <!-- Container Anchor for EvoPopup -->
-  <div id="vpenghargaan-popup-dialog"></div>
 </template>
 
 <script type="module" defer>
   import { httpGet, httpPost } from './assets/js/core/http.js';
-  import { showDialog } from './assets/js/core/helpers.js';
   import EvoSelector from './components/EvoSelector.js';
-  import EvoPopup from './components/EvoPopup.js';
 
   const apiUrl = (typeof config !== 'undefined' && config.api_url) 
     ? config.api_url 
     : `${window.location.origin}/evoHRIS_v2.1/api`;
 
-  let allData = [];
-  let filteredData = [];
-  let refData = { jenis_penghargaan: [] };
-  let lookupPegawai = [];
+  // State Management
+  let allPegawai = [];
+  let allPenghargaan = [];
+  let filteredPenghargaan = [];
   let currentPage = 1;
-  const rowsPerPage = 10;
+  const pageSize = 10;
+  let lookupModalInstance = null;
+  let isEditMode = false;
 
-  // Web Components
-  let evoPopup = null;
-  let selectorPegawai = null;
-  let selectorJenisPenghargaan = null;
+  // EvoSelector instances
+  let selNip = null;
+  let selBagian = null;
+  let selGolongan = null;
+  let selJenisPenghargaan = null;
+  let selJabatan = null;
+  let selPangkat = null;
+  let selEkselon = null;
+  let selStatusPegawai = null;
+  let selLokasi = null;
 
+  // Helper untuk membuat opsi EvoSelector
+  function makeOptions(items, valKey, textKey, placeholder) {
+    const opts = [{ text: placeholder, value: '-' }];
+    if (Array.isArray(items)) {
+      items.forEach(it => {
+        const v = it[valKey];
+        const t = it[textKey] || it.NAMA || v;
+        if (v !== undefined && v !== null) {
+          opts.push({ text: String(t), value: String(v) });
+        }
+      });
+    }
+    return opts;
+  }
+
+  // Format Tanggal DD/MM/YYYY
+  function formatDate(dateStr) {
+    if (!dateStr || dateStr === '0000-00-00') return '-';
+    const parts = dateStr.substring(0, 10).split('-');
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    return dateStr;
+  }
+
+  // Format Tanggal YYYY-MM-DD
+  function toInputDate(dateStr) {
+    if (!dateStr || dateStr === '0000-00-00') return '';
+    return dateStr.substring(0, 10);
+  }
+
+  // Set default dates
+  function setDefaultDates() {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+
+    const tglSuratEl = document.querySelector('#replacement_tanggal_surat');
+    const tglPenghargaanEl = document.querySelector('#replacement_tanggal_penghargaan');
+
+    if (tglSuratEl && !tglSuratEl.value) tglSuratEl.value = todayStr;
+    if (tglPenghargaanEl && !tglPenghargaanEl.value) tglPenghargaanEl.value = todayStr;
+  }
+
+  // Inisialisasi seluruh EvoSelector
+  function initEvoSelectors() {
+    selNip = new EvoSelector('sel_nip', [{ text: 'Pilih NIK / NIP Pegawai...', value: '-' }]);
+    selBagian = new EvoSelector('sel_bagian', [{ text: 'Pilih Bagian', value: '-' }]);
+    selGolongan = new EvoSelector('sel_golongan', [{ text: 'Pilih Golongan', value: '-' }]);
+    selJenisPenghargaan = new EvoSelector('sel_jenis_penghargaan', [{ text: 'Pilih Jenis Penghargaan', value: '-' }]);
+    selJabatan = new EvoSelector('sel_jabatan', [{ text: 'Pilih Jabatan', value: '-' }]);
+    selPangkat = new EvoSelector('sel_pangkat', [{ text: 'Pilih Pangkat', value: '-' }]);
+    selEkselon = new EvoSelector('sel_ekselon', [{ text: 'Pilih Ekselon', value: '-' }]);
+    selStatusPegawai = new EvoSelector('sel_status_pegawai', [{ text: 'Pilih Status Pegawai', value: '-' }]);
+    selLokasi = new EvoSelector('sel_lokasi', [{ text: 'Pilih Lokasi', value: '-' }]);
+
+    selNip.on('selected', (e) => {
+      const nip = e.values ? (e.values.nip || e.value) : e.value;
+      if (nip && nip !== '-') {
+        autofillPegawai(nip);
+      }
+    });
+  }
+
+  // Load Master Data (refData)
   async function loadMasterData() {
     try {
-      const [refRes, lookupRes] = await Promise.all([
-        httpGet(`${apiUrl}/pegawai/ref_data`),
-        httpGet(`${apiUrl}/pegawai/lookup`)
-      ]);
-
-      if (refRes && refRes.code === 200 && refRes.data) refData = refRes.data;
-      if (lookupRes && lookupRes.code === 200 && Array.isArray(lookupRes.data)) lookupPegawai = lookupRes.data;
-    } catch (e) {
-      console.warn('Gagal memuat master data penghargaan:', e);
+      const res = await httpGet(`${apiUrl}/pegawai/ref_data`);
+      if (res && res.data) {
+        const d = res.data;
+        if (selBagian && d.bagian) selBagian.addOptions(makeOptions(d.bagian, 'KD_BAGIAN', 'BAGIAN', 'Pilih Bagian'));
+        if (selGolongan && d.golongan) selGolongan.addOptions(makeOptions(d.golongan, 'KD_GOLONGAN', 'GOLONGAN', 'Pilih Golongan'));
+        if (selJenisPenghargaan && d.jenis_penghargaan) selJenisPenghargaan.addOptions(makeOptions(d.jenis_penghargaan, 'KD_JENIS_PENGHARGAAN', 'JENIS_PENGHARGAAN', 'Pilih Jenis Penghargaan'));
+        if (selJabatan && d.jabatan) selJabatan.addOptions(makeOptions(d.jabatan, 'KD_JABATAN', 'JABATAN', 'Pilih Jabatan'));
+        if (selPangkat && d.pangkat) selPangkat.addOptions(makeOptions(d.pangkat, 'KD_PANGKAT', 'PANGKAT', 'Pilih Pangkat'));
+        if (selEkselon && d.ekselon) selEkselon.addOptions(makeOptions(d.ekselon, 'KD_EKSELON', 'EKSELON', 'Pilih Ekselon'));
+        if (selStatusPegawai && d.status_pegawai) selStatusPegawai.addOptions(makeOptions(d.status_pegawai, 'KD_STATUS_PEGAWAI', 'STATUS_PEGAWAI', 'Pilih Status Pegawai'));
+        if (selLokasi && d.lokasi) selLokasi.addOptions(makeOptions(d.lokasi, 'KD_LOKASI', 'LOKASI', 'Pilih Lokasi'));
+      }
+    } catch (err) {
+      console.warn('Gagal memuat master data:', err);
     }
   }
 
-  async function loadData() {
-    const tableBody = document.querySelector('#table-vpenghargaan tbody.list');
-    if (tableBody) {
-      tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data penghargaan...</td></tr>';
+  // Load Pegawai List untuk EvoSelector
+  async function loadPegawaiList() {
+    try {
+      const res = await httpGet(`${apiUrl}/pegawai/list?limit=1000`);
+      let list = [];
+      if (res && Array.isArray(res.data)) list = res.data;
+      else if (res && res.data && Array.isArray(res.data.pegawai)) list = res.data.pegawai;
+
+      allPegawai = list;
+
+      const opts = [{ text: 'Pilih NIK / NIP Pegawai...', value: '-' }];
+      list.forEach(p => {
+        const nik = (p.NO_IDENTITAS || '').trim();
+        const nip = (p.NIP || '').trim();
+        const nama = (p.NAMA || '').trim();
+
+        let label = '';
+        if (nik && nip) {
+          label = `${nik} - ${nip} - ${nama}`;
+        } else if (nip) {
+          label = `${nip} - ${nama}`;
+        } else if (nik) {
+          label = `${nik} - ${nama}`;
+        } else {
+          label = nama || 'Pegawai';
+        }
+
+        opts.push({
+          text: label,
+          value: nip || String(p.ID_PEGAWAI),
+          values: {
+            id_pegawai: p.ID_PEGAWAI,
+            nip: nip,
+            nik: nik,
+            nama: nama
+          }
+        });
+      });
+
+      if (selNip) {
+        selNip.addOptions(opts);
+      }
+    } catch (err) {
+      console.warn('Gagal memuat daftar pegawai:', err);
+    }
+  }
+
+  // Autofill Data Pegawai berdasarkan NIP
+  async function autofillPegawai(nip) {
+    if (!nip) return;
+    const cleanNip = String(nip).trim();
+    if (!cleanNip) return;
+
+    const statusEl = document.querySelector('#form-penghargaan-status');
+    if (statusEl) statusEl.textContent = 'Memuat snapshot pegawai...';
+
+    try {
+      const res = await httpGet(`${apiUrl}/pegawai/snapshot/${encodeURIComponent(cleanNip)}`);
+      if (res && res.data) {
+        const snap = res.data;
+        const idPegEl = document.querySelector('#replacement_id_pegawai');
+        const namaEl = document.querySelector('#replacement_nama');
+
+        if (idPegEl) idPegEl.value = snap.ID_PEGAWAI || '';
+        if (namaEl) namaEl.value = snap.NAMA || '';
+
+        if (selBagian && snap.KD_BAGIAN) selBagian.value = snap.KD_BAGIAN;
+        if (selGolongan && snap.KD_GOLONGAN) selGolongan.value = snap.KD_GOLONGAN;
+        if (selJabatan && (snap.KD_JABATAN !== undefined && snap.KD_JABATAN !== null)) selJabatan.value = snap.KD_JABATAN;
+        if (selPangkat && snap.KD_PANGKAT) selPangkat.value = snap.KD_PANGKAT;
+        if (selEkselon && snap.KD_EKSELON) selEkselon.value = snap.KD_EKSELON;
+        if (selStatusPegawai && (snap.KD_STATUS_PEGAWAI !== undefined && snap.KD_STATUS_PEGAWAI !== null)) selStatusPegawai.value = snap.KD_STATUS_PEGAWAI;
+        if (selLokasi && snap.KD_LOKASI) selLokasi.value = snap.KD_LOKASI;
+
+        if (statusEl) {
+          statusEl.textContent = `Pegawai ditemukan: ${snap.NAMA || cleanNip}`;
+          statusEl.className = 'fs--1 text-success ms-2';
+        }
+        return;
+      }
+    } catch (err) {
+      console.warn('Snapshot endpoint gagal, coba cari di memori:', err);
+    }
+
+    // Fallback pencarian di memori allPegawai
+    const found = allPegawai.find(p => String(p.NIP).trim() === cleanNip);
+    if (found) {
+      const idPegEl = document.querySelector('#replacement_id_pegawai');
+      const namaEl = document.querySelector('#replacement_nama');
+      if (idPegEl) idPegEl.value = found.ID_PEGAWAI || '';
+      if (namaEl) namaEl.value = found.NAMA || '';
+      if (statusEl) {
+        statusEl.textContent = `Pegawai ditemukan: ${found.NAMA || cleanNip}`;
+        statusEl.className = 'fs--1 text-success ms-2';
+      }
+    } else {
+      if (statusEl) {
+        statusEl.textContent = 'Pegawai belum terdaftar di snapshot';
+        statusEl.className = 'fs--1 text-warning ms-2';
+      }
+    }
+  }
+
+  // Load Tabel Penghargaan
+  async function loadPenghargaanTable() {
+    const tbody = document.querySelector('#tb_penghargaan_body');
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="12" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Memuat data riwayat penghargaan...</td></tr>';
     }
 
     try {
       const res = await httpGet(`${apiUrl}/pegawai/penghargaan`);
-      allData = (res && res.code === 200 && Array.isArray(res.data)) ? res.data : [];
+      if (res && Array.isArray(res.data)) {
+        allPenghargaan = res.data;
+      } else {
+        allPenghargaan = [];
+      }
     } catch (err) {
-      console.error('Error loadData penghargaan:', err);
-      allData = [];
+      console.warn('Gagal memuat riwayat penghargaan:', err);
+      allPenghargaan = [];
     }
 
     applyFilter();
   }
 
+  // Filter Tabel Penghargaan
   function applyFilter() {
-    const searchInput = document.getElementById('vpenghargaan-search');
-    const q = (searchInput ? searchInput.value : '').toLowerCase().trim();
-
-    if (!q) {
-      filteredData = [...allData];
+    const keyword = (document.querySelector('#txtcari_penghargaan')?.value || '').trim().toLowerCase();
+    if (!keyword) {
+      filteredPenghargaan = [...allPenghargaan];
     } else {
-      filteredData = allData.filter(item => {
+      filteredPenghargaan = allPenghargaan.filter(row => {
         return (
-          (item.NIP && item.NIP.toLowerCase().includes(q)) ||
-          (item.NAMA && item.NAMA.toLowerCase().includes(q)) ||
-          (item.NO_SURAT && item.NO_SURAT.toLowerCase().includes(q)) ||
-          (item.JENIS_PENGHARGAAN && item.JENIS_PENGHARGAAN.toLowerCase().includes(q)) ||
-          (item.KETERANGAN && item.KETERANGAN.toLowerCase().includes(q))
+          (row.NIP && row.NIP.toLowerCase().includes(keyword)) ||
+          (row.NAMA_PEGAWAI && row.NAMA_PEGAWAI.toLowerCase().includes(keyword)) ||
+          (row.NAMA && row.NAMA.toLowerCase().includes(keyword)) ||
+          (row.NO_SURAT && row.NO_SURAT.toLowerCase().includes(keyword)) ||
+          (row.JENIS_PENGHARGAAN && row.JENIS_PENGHARGAAN.toLowerCase().includes(keyword)) ||
+          (row.BAGIAN && row.BAGIAN.toLowerCase().includes(keyword)) ||
+          (row.JABATAN && row.JABATAN.toLowerCase().includes(keyword)) ||
+          (row.PANGKAT && row.PANGKAT.toLowerCase().includes(keyword)) ||
+          (row.KETERANGAN && row.KETERANGAN.toLowerCase().includes(keyword))
         );
       });
     }
@@ -142,297 +596,393 @@
     renderTable();
   }
 
+  // Render Tabel Penghargaan
   function renderTable() {
-    const tableBody = document.querySelector('#table-vpenghargaan tbody.list');
-    const badge = document.getElementById('vpenghargaan-total-badge');
-    const pagInfo = document.getElementById('vpenghargaan-pagination-info');
-    const pagList = document.getElementById('vpenghargaan-pagination');
+    const tbody = document.querySelector('#tb_penghargaan_body');
+    const badgeTotal = document.querySelector('#badge-total-penghargaan');
+    const infoEl = document.querySelector('#penghargaan-pagination-info');
+    if (!tbody) return;
 
-    if (badge) badge.textContent = `${filteredData.length} Data`;
-    if (!tableBody) return;
+    if (badgeTotal) badgeTotal.textContent = `${filteredPenghargaan.length} Data`;
 
-    if (filteredData.length === 0) {
-      tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Belum ada data penghargaan pegawai</td></tr>';
-      if (pagInfo) pagInfo.textContent = 'Menampilkan 0 data';
-      if (pagList) pagList.innerHTML = '';
+    if (filteredPenghargaan.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="12" class="text-center py-4 text-muted">Belum ada data riwayat penghargaan pegawai</td></tr>';
+      if (infoEl) infoEl.textContent = 'Menampilkan 0 data';
+      renderPagination(0);
       return;
     }
 
-    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+    const totalPages = Math.ceil(filteredPenghargaan.length / pageSize);
     if (currentPage > totalPages) currentPage = totalPages;
     if (currentPage < 1) currentPage = 1;
 
-    const startIdx = (currentPage - 1) * rowsPerPage;
-    const endIdx = Math.min(startIdx + rowsPerPage, filteredData.length);
-    const pageItems = filteredData.slice(startIdx, endIdx);
+    const startIdx = (currentPage - 1) * pageSize;
+    const endIdx = Math.min(startIdx + pageSize, filteredPenghargaan.length);
+    const pageRows = filteredPenghargaan.slice(startIdx, endIdx);
 
     let html = '';
-    pageItems.forEach((row, i) => {
-      const no = startIdx + i + 1;
-      const tgl = row.TGL_PENGHARGAAN ? row.TGL_PENGHARGAAN.substring(0, 10) : '-';
-      const idVal = row.KD_PENGHARGAAN || row.ID_PENGHARGAAN || '';
+    pageRows.forEach((row, idx) => {
+      const rowNum = startIdx + idx + 1;
+      const nip = row.NIP || '-';
+      const nama = row.NAMA_PEGAWAI || row.NAMA || '-';
+      const noSurat = row.NO_SURAT || '-';
+      const tglSurat = formatDate(row.TGL_SURAT);
+      const jenisPenghargaan = row.JENIS_PENGHARGAAN || '-';
+      const tglPenghargaan = formatDate(row.TGL_PENGHARGAAN);
+      const bagian = row.BAGIAN || '-';
+      const jabatan = row.JABATAN || '-';
+      const pangkat = row.PANGKAT || '-';
+      const keterangan = row.KETERANGAN || '-';
+      const kdPenghargaan = row.KD_PENGHARGAAN || '';
 
       html += `
         <tr>
-          <td class="text-center fw-semi-bold">${no}</td>
-          <td>
-            <div class="fw-bold text-dark">${row.NAMA || '-'}</div>
-            <div class="text-muted small">NIP: ${row.NIP || '-'}</div>
-          </td>
-          <td class="text-center">${tgl}</td>
-          <td><span class="badge bg-soft-primary text-primary border border-primary-subtle">${row.JENIS_PENGHARGAAN || '-'}</span></td>
-          <td><span class="badge bg-light text-dark border">${row.NO_SURAT || '-'}</span></td>
-          <td class="small text-muted">${row.KETERANGAN || '-'}</td>
-          <td class="text-center">
-            <button class="btn btn-sm btn-outline-primary btn-edit-row py-1 px-2 me-1" data-id="${idVal}">
+          <td class="text-center fw-semi-bold text-muted">${rowNum}</td>
+          <td class="fw-semi-bold">${nip}</td>
+          <td>${nama}</td>
+          <td><span class="badge bg-soft-secondary text-dark font-monospace">${noSurat}</span></td>
+          <td>${tglSurat}</td>
+          <td><span class="badge bg-soft-warning text-dark"><i class="fas fa-trophy text-warning me-1"></i>${jenisPenghargaan}</span></td>
+          <td>${tglPenghargaan}</td>
+          <td>${bagian}</td>
+          <td>${jabatan}</td>
+          <td>${pangkat}</td>
+          <td class="text-truncate" style="max-width: 180px;" title="${keterangan}">${keterangan}</td>
+          <td class="text-center text-nowrap">
+            <button class="btn btn-sm btn-outline-primary py-0 px-2 btn-edit-penghargaan" data-id="${kdPenghargaan}" title="Edit Data">
               <i class="fas fa-edit"></i>
             </button>
-            <button class="btn btn-sm btn-outline-danger btn-delete-row py-1 px-2" data-id="${idVal}">
-              <i class="fas fa-trash"></i>
+            <button class="btn btn-sm btn-outline-danger py-0 px-2 ms-1 btn-delete-penghargaan" data-id="${kdPenghargaan}" data-surat="${noSurat}" title="Hapus Data">
+              <i class="fas fa-trash-alt"></i>
             </button>
           </td>
         </tr>
       `;
     });
 
-    tableBody.innerHTML = html;
-
-    if (pagInfo) {
-      pagInfo.textContent = `Menampilkan ${startIdx + 1} - ${endIdx} dari ${filteredData.length} data`;
-    }
-
+    tbody.innerHTML = html;
+    if (infoEl) infoEl.textContent = `Menampilkan ${startIdx + 1} - ${endIdx} dari ${filteredPenghargaan.length} data`;
     renderPagination(totalPages);
-    attachRowActions();
   }
 
+  // Render Pagination Penghargaan
   function renderPagination(totalPages) {
-    const pagList = document.getElementById('vpenghargaan-pagination');
-    if (!pagList) return;
+    const ul = document.querySelector('#penghargaan-pagination');
+    if (!ul) return;
+    ul.innerHTML = '';
+    if (totalPages <= 1) return;
 
-    if (totalPages <= 1) {
-      pagList.innerHTML = '';
-      return;
-    }
-
-    let pHtml = `
-      <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-        <a class="page-link" href="#" data-page="${currentPage - 1}">&laquo;</a>
-      </li>
-    `;
-
-    for (let p = 1; p <= totalPages; p++) {
-      if (p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)) {
-        pHtml += `
-          <li class="page-item ${p === currentPage ? 'active' : ''}">
-            <a class="page-link" href="#" data-page="${p}">${p}</a>
-          </li>
-        `;
-      } else if (p === currentPage - 2 || p === currentPage + 2) {
-        pHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+    // Tombol Prev
+    const prevLi = document.createElement('li');
+    prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+    prevLi.innerHTML = '<a class="page-link" href="#" aria-label="Previous">&laquo;</a>';
+    prevLi.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (currentPage > 1) {
+        currentPage--;
+        renderTable();
       }
-    }
+    });
+    ul.appendChild(prevLi);
 
-    pHtml += `
-      <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-        <a class="page-link" href="#" data-page="${currentPage + 1}">&raquo;</a>
-      </li>
-    `;
-
-    pagList.innerHTML = pHtml;
-
-    pagList.querySelectorAll('a.page-link').forEach(a => {
-      a.addEventListener('click', (e) => {
-        e.preventDefault();
-        const p = parseInt(a.getAttribute('data-page'));
-        if (p && p >= 1 && p <= totalPages && p !== currentPage) {
-          currentPage = p;
+    // Nomor Halaman
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+        const li = document.createElement('li');
+        li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+        li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+        li.addEventListener('click', (e) => {
+          e.preventDefault();
+          currentPage = i;
           renderTable();
-        }
-      });
-    });
-  }
-
-  function attachRowActions() {
-    document.querySelectorAll('#table-vpenghargaan .btn-edit-row').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idVal = btn.getAttribute('data-id');
-        const item = allData.find(d => (d.KD_PENGHARGAAN == idVal || d.ID_PENGHARGAAN == idVal));
-        if (item) openFormPopup('edit', item);
-      });
-    });
-
-    document.querySelectorAll('#table-vpenghargaan .btn-delete-row').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idVal = btn.getAttribute('data-id');
-        confirmDelete(idVal);
-      });
-    });
-  }
-
-  function openFormPopup(mode, data = null) {
-    if (!evoPopup) {
-      evoPopup = new EvoPopup('vpenghargaan-popup-dialog');
-    }
-
-    const title = mode === 'edit' 
-      ? '<i class="fas fa-edit text-primary me-2"></i>Edit Data Penghargaan' 
-      : '<i class="fas fa-award text-primary me-2"></i>Form Penghargaan Pegawai';
-
-    const formHtml = `
-      <form id="form-penghargaan-modal" class="p-2">
-        <input type="hidden" id="penghargaan_kd_penghargaan" value="${data ? (data.KD_PENGHARGAAN || data.ID_PENGHARGAAN || '') : ''}">
-        <div class="row g-3">
-          <div class="col-12">
-            <label class="form-label fw-bold small">Pilih Pegawai <span class="text-danger">*</span></label>
-            <select id="sel_pegawai_penghargaan" class="form-select form-select-sm" required></select>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-bold small">Jenis Penghargaan <span class="text-danger">*</span></label>
-            <select id="sel_jenis_penghargaan" class="form-select form-select-sm" required></select>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-bold small">Tanggal Penerimaan <span class="text-danger">*</span></label>
-            <input type="date" class="form-control form-control-sm" id="penghargaan_tgl" value="${data ? (data.TGL_PENGHARGAAN ? data.TGL_PENGHARGAAN.substring(0, 10) : '') : ''}" required>
-          </div>
-          <div class="col-12">
-            <label class="form-label fw-bold small">Nomor SK / Piagam Penghargaan</label>
-            <input type="text" class="form-control form-control-sm" id="penghargaan_no_surat" value="${data ? (data.NO_SURAT || '') : ''}" placeholder="Nomor piagam / SK penghargaan">
-          </div>
-          <div class="col-12">
-            <label class="form-label fw-bold small">Keterangan / Uraian Prestasi</label>
-            <textarea class="form-control form-control-sm" id="penghargaan_keterangan" rows="3" placeholder="Deskripsi prestasi kerja, inovasi, atau instansi pemberi...">${data ? (data.KETERANGAN || '') : ''}</textarea>
-          </div>
-        </div>
-      </form>
-    `;
-
-    evoPopup.open({
-      size: 'large'
-    }, {
-      title: title,
-      content: formHtml,
-      buttons: [
-        {
-          label: 'Batal',
-          class: 'btn-secondary btn-sm',
-          onClick: () => evoPopup.close()
-        },
-        {
-          label: '<i class="fas fa-save me-1"></i> Simpan',
-          class: 'btn-primary btn-sm',
-          onClick: () => savePenghargaan()
-        }
-      ]
-    });
-
-    setTimeout(() => {
-      selectorPegawai = new EvoSelector('sel_pegawai_penghargaan');
-      const optPegawai = lookupPegawai.map(p => ({
-        text: `[${p.NIP || '-'}] ${p.NAMA || '-'}`,
-        value: p.ID_PEGAWAI
-      }));
-      selectorPegawai.addOptions(optPegawai);
-      if (data && data.ID_PEGAWAI) {
-        const el = document.getElementById('sel_pegawai_penghargaan');
-        if (el) el.value = data.ID_PEGAWAI;
+        });
+        ul.appendChild(li);
+      } else if (i === currentPage - 3 || i === currentPage + 3) {
+        const dots = document.createElement('li');
+        dots.className = 'page-item disabled';
+        dots.innerHTML = '<span class="page-link">...</span>';
+        ul.appendChild(dots);
       }
+    }
 
-      selectorJenisPenghargaan = new EvoSelector('sel_jenis_penghargaan');
-      const optPenghargaan = (refData.jenis_penghargaan || []).map(p => ({
-        text: p.JENIS_PENGHARGAAN,
-        value: p.KD_JENIS_PENGHARGAAN
-      }));
-      selectorJenisPenghargaan.addOptions(optPenghargaan);
-      if (data && data.KD_JENIS_PENGHARGAAN) {
-        const el = document.getElementById('sel_jenis_penghargaan');
-        if (el) el.value = data.KD_JENIS_PENGHARGAAN;
+    // Tombol Next
+    const nextLi = document.createElement('li');
+    nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+    nextLi.innerHTML = '<a class="page-link" href="#" aria-label="Next">&raquo;</a>';
+    nextLi.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderTable();
       }
-    }, 100);
+    });
+    ul.appendChild(nextLi);
   }
 
-  async function savePenghargaan() {
-    const idPegawai = document.getElementById('sel_pegawai_penghargaan')?.value;
-    const kdJenis = document.getElementById('sel_jenis_penghargaan')?.value;
-    const tgl = document.getElementById('penghargaan_tgl')?.value;
-    const noSurat = document.getElementById('penghargaan_no_surat')?.value;
-    const ket = document.getElementById('penghargaan_keterangan')?.value;
-    const kdPenghargaan = document.getElementById('penghargaan_kd_penghargaan')?.value;
+  // Reset Form
+  function resetForm() {
+    isEditMode = false;
+    const form = document.querySelector('#form-penghargaan');
+    if (form) form.reset();
 
-    if (!idPegawai) {
-      alert('Pilih pegawai terlebih dahulu!');
-      return;
+    const kdEl = document.querySelector('#replacement_kd_penghargaan');
+    const idPegEl = document.querySelector('#replacement_id_pegawai');
+    const badgeMode = document.querySelector('#form-mode-badge');
+    const btnSave = document.querySelector('#btn-save-penghargaan');
+    const statusEl = document.querySelector('#form-penghargaan-status');
+
+    if (kdEl) kdEl.value = '';
+    if (idPegEl) idPegEl.value = '';
+    if (badgeMode) {
+      badgeMode.textContent = 'Mode Tambah';
+      badgeMode.className = 'badge bg-soft-primary text-primary fs--2';
     }
-    if (!kdJenis) {
-      alert('Pilih jenis penghargaan!');
-      return;
+    if (btnSave) {
+      btnSave.innerHTML = '<i class="fas fa-save me-1"></i> Simpan';
+      btnSave.className = 'btn btn-sm btn-primary px-3 fw-semi-bold';
     }
-    if (!tgl) {
-      alert('Tanggal penghargaan wajib diisi!');
+    if (statusEl) {
+      statusEl.textContent = '';
+      statusEl.className = 'fs--1 text-muted ms-2';
+    }
+
+    if (selNip) selNip.value = '-';
+    if (selBagian) selBagian.value = '-';
+    if (selGolongan) selGolongan.value = '-';
+    if (selJenisPenghargaan) selJenisPenghargaan.value = '-';
+    if (selJabatan) selJabatan.value = '-';
+    if (selPangkat) selPangkat.value = '-';
+    if (selEkselon) selEkselon.value = '-';
+    if (selStatusPegawai) selStatusPegawai.value = '-';
+    if (selLokasi) selLokasi.value = '-';
+
+    setDefaultDates();
+  }
+
+  // Edit Penghargaan
+  function editPenghargaan(kdPenghargaan) {
+    const row = allPenghargaan.find(r => String(r.KD_PENGHARGAAN) === String(kdPenghargaan));
+    if (!row) {
+      alert('Data penghargaan tidak ditemukan');
       return;
     }
 
-    const payload = {
-      KD_PENGHARGAAN: kdPenghargaan || '',
-      ID_PEGAWAI: idPegawai,
-      KD_JENIS_PENGHARGAAN: kdJenis,
-      TGL_PENGHARGAAN: tgl,
-      NO_SURAT: noSurat,
-      KETERANGAN: ket
-    };
+    isEditMode = true;
+    const kdEl = document.querySelector('#replacement_kd_penghargaan');
+    const idPegEl = document.querySelector('#replacement_id_pegawai');
+    const noSuratEl = document.querySelector('#replacement_no_surat');
+    const nipEl = document.querySelector('#replacement_NIP');
+    const namaEl = document.querySelector('#replacement_nama');
+    const tglSuratEl = document.querySelector('#replacement_tanggal_surat');
+    const tglPenghargaanEl = document.querySelector('#replacement_tanggal_penghargaan');
+    const keteranganEl = document.querySelector('#replacement_keterangan');
+
+    const badgeMode = document.querySelector('#form-mode-badge');
+    const btnSave = document.querySelector('#btn-save-penghargaan');
+    const statusEl = document.querySelector('#form-penghargaan-status');
+
+    if (kdEl) kdEl.value = row.KD_PENGHARGAAN || '';
+    if (idPegEl) idPegEl.value = row.ID_PEGAWAI || '';
+    if (noSuratEl) noSuratEl.value = row.NO_SURAT || '';
+    if (nipEl) nipEl.value = row.NIP || '';
+    if (selNip) selNip.value = row.NIP || '-';
+    if (namaEl) namaEl.value = row.NAMA_PEGAWAI || row.NAMA || '';
+    if (tglSuratEl) tglSuratEl.value = toInputDate(row.TGL_SURAT);
+    if (tglPenghargaanEl) tglPenghargaanEl.value = toInputDate(row.TGL_PENGHARGAAN);
+    if (keteranganEl) keteranganEl.value = row.KETERANGAN || '';
+
+    if (selBagian) selBagian.value = row.KD_BAGIAN || '-';
+    if (selGolongan) selGolongan.value = row.KD_GOLONGAN || '-';
+    if (selJenisPenghargaan) selJenisPenghargaan.value = row.KD_JENIS_PENGHARGAAN || '-';
+    if (selJabatan) selJabatan.value = row.KD_JABATAN !== undefined ? row.KD_JABATAN : '-';
+    if (selPangkat) selPangkat.value = row.KD_PANGKAT || '-';
+    if (selEkselon) selEkselon.value = row.KD_EKSELON || '-';
+    if (selStatusPegawai) selStatusPegawai.value = row.KD_STATUS_PEGAWAI !== undefined ? row.KD_STATUS_PEGAWAI : '-';
+    if (selLokasi) selLokasi.value = row.KD_LOKASI || '-';
+
+    if (badgeMode) {
+      badgeMode.textContent = `Mode Edit: ${row.NO_SURAT || kdPenghargaan}`;
+      badgeMode.className = 'badge bg-soft-warning text-warning fs--2';
+    }
+    if (btnSave) {
+      btnSave.innerHTML = '<i class="fas fa-save me-1"></i> Update Penghargaan';
+      btnSave.className = 'btn btn-sm btn-warning px-3 fw-semi-bold';
+    }
+    if (statusEl) {
+      statusEl.textContent = 'Silakan ubah data di atas lalu klik Update Penghargaan';
+      statusEl.className = 'fs--1 text-info ms-2';
+    }
+
+    const formCard = document.querySelector('#form-penghargaan');
+    if (formCard) formCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // Hapus Penghargaan
+  async function deletePenghargaan(kdPenghargaan, noSurat) {
+    const msg = `Apakah Anda yakin ingin menghapus data penghargaan No. Surat "${noSurat}"?`;
+    if (!confirm(msg)) return;
 
     try {
-      const res = await httpPost(`${apiUrl}/pegawai/penghargaan/save`, payload);
-      if (res && res.code === 200) {
-        if (evoPopup) evoPopup.close();
-        await loadData();
-      } else {
-        alert(res?.message || 'Gagal menyimpan data penghargaan');
-      }
-    } catch (err) {
-      console.error('Error savePenghargaan:', err);
-      alert('Terjadi kesalahan koneksi server');
-    }
-  }
-
-  async function confirmDelete(idVal) {
-    if (!confirm('Apakah Anda yakin ingin menghapus data penghargaan ini?')) return;
-
-    try {
-      const res = await httpPost(`${apiUrl}/pegawai/penghargaan/delete`, { KD_PENGHARGAAN: idVal, ID: idVal });
-      if (res && res.code === 200) {
-        await loadData();
+      const res = await httpPost(`${apiUrl}/pegawai/penghargaan/delete/${kdPenghargaan}`, {});
+      if (res && (res.code === 200 || res.status === true || res.status === 'ok')) {
+        alert(res.message || 'Data penghargaan berhasil dihapus');
+        loadPenghargaanTable();
       } else {
         alert(res?.message || 'Gagal menghapus data penghargaan');
       }
     } catch (err) {
-      console.error('Error deletePenghargaan:', err);
-      alert('Terjadi kesalahan saat menghapus data');
+      alert(`Terjadi kesalahan saat menghapus data: ${err.message}`);
     }
   }
 
-  function exportCSV() {
-    if (filteredData.length === 0) {
-      alert('Tidak ada data untuk diekspor!');
+  // Simpan / Update Penghargaan
+  async function savePenghargaan(e) {
+    e.preventDefault();
+
+    const kdPenghargaan = document.querySelector('#replacement_kd_penghargaan')?.value || '';
+    const idPegawai = document.querySelector('#replacement_id_pegawai')?.value || '';
+    const nip = (selNip?.value && selNip.value !== '-' ? selNip.value : '').trim();
+    const nama = (document.querySelector('#replacement_nama')?.value || '').trim();
+    const noSurat = (document.querySelector('#replacement_no_surat')?.value || '').trim();
+    const tglSurat = document.querySelector('#replacement_tanggal_surat')?.value || '';
+    const tglPenghargaan = document.querySelector('#replacement_tanggal_penghargaan')?.value || '';
+    const keterangan = (document.querySelector('#replacement_keterangan')?.value || '').trim();
+
+    const kdBagian = selBagian?.value !== '-' ? selBagian?.value : '';
+    const kdGolongan = selGolongan?.value !== '-' ? selGolongan?.value : '';
+    const kdJenisPenghargaan = selJenisPenghargaan?.value !== '-' ? selJenisPenghargaan?.value : '';
+    const kdJabatan = selJabatan?.value !== '-' ? selJabatan?.value : '';
+    const kdPangkat = selPangkat?.value !== '-' ? selPangkat?.value : '';
+    const kdEkselon = selEkselon?.value !== '-' ? selEkselon?.value : '';
+    const kdStatusPegawai = selStatusPegawai?.value !== '-' ? selStatusPegawai?.value : '';
+    const kdLokasi = selLokasi?.value !== '-' ? selLokasi?.value : '';
+
+    if (!nip) {
+      alert('NIP wajib diisi');
+      /* selNip focus */
       return;
     }
-    let csv = 'No,NIP,Nama,Tgl Terima,Jenis Penghargaan,No Piagam/SK,Keterangan\n';
-    filteredData.forEach((r, i) => {
-      csv += `"${i+1}","${r.NIP||''}","${r.NAMA||''}","${r.TGL_PENGHARGAAN||''}","${r.JENIS_PENGHARGAAN||''}","${r.NO_SURAT||''}","${(r.KETERANGAN||'').replace(/"/g, '""')}"\n`;
-    });
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute('download', `Penghargaan_Pegawai_${new Date().toISOString().substring(0,10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (!noSurat) {
+      alert('Nomor Surat wajib diisi');
+      document.querySelector('#replacement_no_surat')?.focus();
+      return;
+    }
+    if (!kdJenisPenghargaan) {
+      alert('Jenis Penghargaan wajib dipilih');
+      return;
+    }
+
+    const payload = {
+      KD_PENGHARGAAN: kdPenghargaan,
+      ID_PEGAWAI: idPegawai,
+      NIP: nip,
+      NAMA: nama,
+      NO_SURAT: noSurat,
+      TGL_SURAT: tglSurat,
+      TGL_PENGHARGAAN: tglPenghargaan,
+      KD_BAGIAN: kdBagian,
+      KD_GOLONGAN: kdGolongan,
+      KD_JENIS_PENGHARGAAN: kdJenisPenghargaan,
+      KD_JABATAN: kdJabatan,
+      KD_PANGKAT: kdPangkat,
+      KD_EKSELON: kdEkselon,
+      KD_STATUS_PEGAWAI: kdStatusPegawai,
+      KD_LOKASI: kdLokasi,
+      KETERANGAN: keterangan
+    };
+
+    const statusEl = document.querySelector('#form-penghargaan-status');
+    const btnSave = document.querySelector('#btn-save-penghargaan');
+    if (btnSave) btnSave.disabled = true;
+    if (statusEl) {
+      statusEl.textContent = 'Menyimpan data penghargaan...';
+      statusEl.className = 'fs--1 text-info ms-2';
+    }
+
+    try {
+      const res = await httpPost(`${apiUrl}/pegawai/penghargaan/save`, payload);
+      if (res && (res.code === 200 || res.status === true || res.status === 'ok')) {
+        alert(res.message || 'Data penghargaan berhasil disimpan');
+        resetForm();
+        loadPenghargaanTable();
+      } else {
+        alert(res?.message || 'Gagal menyimpan data penghargaan');
+        if (statusEl) {
+          statusEl.textContent = res?.message || 'Gagal menyimpan';
+          statusEl.className = 'fs--1 text-danger ms-2';
+        }
+      }
+    } catch (err) {
+      alert(`Terjadi kesalahan: ${err.message}`);
+      if (statusEl) {
+        statusEl.textContent = err.message;
+        statusEl.className = 'fs--1 text-danger ms-2';
+      }
+    } finally {
+      if (btnSave) btnSave.disabled = false;
+    }
   }
 
-  document.getElementById('btn-tambah-penghargaan')?.addEventListener('click', () => openFormPopup('add'));
-  document.getElementById('btn-refresh-penghargaan')?.addEventListener('click', () => loadData());
-  document.getElementById('btn-export-penghargaan')?.addEventListener('click', exportCSV);
-  document.getElementById('vpenghargaan-search')?.addEventListener('input', applyFilter);
+  // Setup Event Listeners
+  function setupEventListeners() {
+    // Form submit
+    const form = document.querySelector('#form-penghargaan');
+    if (form) form.addEventListener('submit', savePenghargaan);
 
-  await loadMasterData();
-  await loadData();
+    // Reset button
+    const btnReset = document.querySelector('#btn-reset-penghargaan');
+    if (btnReset) btnReset.addEventListener('click', resetForm);
+
+    // Tabel search & toolbar
+    const searchInput = document.querySelector('#txtcari_penghargaan');
+    const btnCari = document.querySelector('#btn-cari-penghargaan');
+    const btnClear = document.querySelector('#btn-clear-penghargaan');
+    const btnRefresh = document.querySelector('#btn-refresh-penghargaan');
+
+    if (searchInput) {
+      searchInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') applyFilter();
+      });
+    }
+    if (btnCari) btnCari.addEventListener('click', applyFilter);
+    if (btnClear) {
+      btnClear.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        applyFilter();
+      });
+    }
+    if (btnRefresh) btnRefresh.addEventListener('click', loadPenghargaanTable);
+
+    // Delegation tombol Edit & Delete pada tabel
+    const tbody = document.querySelector('#tb_penghargaan_body');
+    if (tbody) {
+      tbody.addEventListener('click', (e) => {
+        const btnEdit = e.target.closest('.btn-edit-penghargaan');
+        if (btnEdit) {
+          editPenghargaan(btnEdit.dataset.id);
+          return;
+        }
+
+        const btnDel = e.target.closest('.btn-delete-penghargaan');
+        if (btnDel) {
+          deletePenghargaan(btnDel.dataset.id, btnDel.dataset.surat);
+          return;
+        }
+      });
+    }
+  }
+
+  // Inisialisasi Halaman
+  async function init() {
+    initEvoSelectors();
+    setDefaultDates();
+    setupEventListeners();
+    await Promise.all([
+      loadMasterData(),
+      loadPegawaiList(),
+      loadPenghargaanTable()
+    ]);
+  }
+
+  init();
 </script>

@@ -585,6 +585,18 @@ class Pegawai extends BaseController
     public function save_sanksi()
     {
         $data = $this->getPayload();
+
+        $file = $this->request->getFile('file') ?? $this->request->getFile('upload_file') ?? $this->request->getFile('berkas');
+        if ($file && $file->isValid() && !$file->hasMoved()) {
+            $newName = 'sanksi_' . time() . '_' . $file->getRandomName();
+            $uploadPath = ROOTPATH . '../uploads';
+            if (!is_dir($uploadPath)) {
+                @mkdir($uploadPath, 0777, true);
+            }
+            $file->move($uploadPath, $newName);
+            $data['FILE'] = $newName;
+        }
+
         $res = $this->mPegawai->saveSanksi($data);
         return sendResponse($res['code'], $res, $res['message']);
     }
@@ -672,6 +684,18 @@ class Pegawai extends BaseController
     public function save_catatan()
     {
         $data = $this->getPayload();
+
+        $file = $this->request->getFile('file') ?? $this->request->getFile('upload_file') ?? $this->request->getFile('berkas');
+        if ($file && $file->isValid() && !$file->hasMoved()) {
+            $newName = 'catatan_' . time() . '_' . $file->getRandomName();
+            $uploadPath = ROOTPATH . '../uploads';
+            if (!is_dir($uploadPath)) {
+                @mkdir($uploadPath, 0777, true);
+            }
+            $file->move($uploadPath, $newName);
+            $data['FILE'] = $newName;
+        }
+
         $res = $this->mPegawai->saveCatatan($data);
         return sendResponse($res['code'], $res, $res['message']);
     }
