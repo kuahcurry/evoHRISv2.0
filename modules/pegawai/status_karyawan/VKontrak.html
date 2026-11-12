@@ -462,10 +462,56 @@
     selLokasi = new EvoSelector('sel_lokasi', [{ text: 'Pilih Lokasi', value: '-' }]);
 
     selNip.on('selected', (e) => {
-      const nip = e.values ? (e.values.nip || e.value) : e.value;
+      const detail = e?.detail || e || {};
+      const values = detail.values || {};
+      const val = detail.value || (selNip ? selNip.value : '');
+
+      let nip = values.nip || detail.nip || val || '';
+      let nama = values.nama || detail.nama || '';
+      let idPeg = values.id_pegawai || detail.id_pegawai || '';
+
+      const list = (typeof allPegawai !== 'undefined' && Array.isArray(allPegawai)) ? allPegawai : [];
+
+      if (list.length > 0) {
+        const match = list.find(p =>
+          (nip && String(p.NIP).trim() === String(nip).trim()) ||
+          (val && (String(p.NIP).trim() === String(val).trim() || String(p.ID_PEGAWAI) === String(val) || (p.NO_IDENTITAS && String(p.NO_IDENTITAS).trim() === String(val).trim())))
+        );
+        if (match) {
+          nip = match.NIP || nip;
+          nama = match.NAMA || nama;
+          idPeg = match.ID_PEGAWAI || idPeg;
+        }
+      }
+
+      const namaEl = document.querySelector('#replacement_nama');
+      const nipEl = document.querySelector('#replacement_NIP');
+      const idEl = document.querySelector('#replacement_id_pegawai');
+
+      if (nama && namaEl) {
+        namaEl.value = nama;
+        namaEl.dispatchEvent(new Event('input', { bubbles: true }));
+        namaEl.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      if (nip && nipEl) nipEl.value = nip;
+      if (idPeg && idEl) idEl.value = idPeg;
+
       if (nip && nip !== '-') {
         autofillPegawai(nip);
       }
+    });
+
+    selNip.on('cleared', () => {
+      const namaEl = document.querySelector('#replacement_nama');
+      const nipEl = document.querySelector('#replacement_NIP');
+      const idEl = document.querySelector('#replacement_id_pegawai');
+      if (namaEl) {
+        namaEl.value = '';
+        namaEl.dispatchEvent(new Event('input', { bubbles: true }));
+        namaEl.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      if (nipEl) nipEl.value = '';
+      if (idEl) idEl.value = '';
     });
   }
 

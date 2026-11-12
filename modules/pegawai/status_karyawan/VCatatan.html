@@ -188,7 +188,7 @@
               <label class="form-label fs--1 fw-semi-bold text-700 mb-1" for="catatan_nama">
                 Nama : <span class="text-danger">*</span>
               </label>
-              <input type="text" class="form-control form-control-sm bg-light" id="catatan_nama" name="nama" placeholder="*Masukkan Nama..." readonly required />
+              <input type="text" class="form-control form-control-sm" id="catatan_nama" name="nama" placeholder="*Masukkan Nama..." required />
             </div>
 
             <!-- 4. Tgl Surat -->
@@ -575,6 +575,19 @@
         if (nip && nip !== '-') {
           autofillPegawai(nip);
         }
+      });
+
+      selNip.on('cleared', () => {
+        const nipInput = document.querySelector('#catatan_nip');
+        const namaInput = document.querySelector('#catatan_nama');
+        const idInput = document.querySelector('#catatan_id_pegawai');
+        if (nipInput) nipInput.value = '';
+        if (namaInput) {
+          namaInput.value = '';
+          namaInput.dispatchEvent(new Event('input', { bubbles: true }));
+          namaInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        if (idInput) idInput.value = '';
       });
     }
 
