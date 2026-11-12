@@ -1,178 +1,216 @@
 <template id="template-konfig-kelompok">
-  <div class="row mb-3">
-    <div class="col">
-      <div class="card bg-100 shadow-none border">
-        <div class="card-body py-3">
-          <div class="row justify-content-between align-items-center">
-            <div class="col-auto">
-              <h5 class="mb-1 text-primary fw-bold"><i class="fas fa-user-shield me-2"></i>Level & Kelompok Pengguna</h5>
-              <div class="text-secondary small">Konfigurasi struktur hierarki peran akses (Role Level) dan kelompok kerja unit fungsional RS.</div>
-            </div>
-            <div class="col-auto">
-              <button class="btn btn-sm btn-falcon-default me-1" id="btn-refresh-all">
-                <i class="fas fa-sync-alt me-1"></i>Refresh
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+    <div class="container-fluid py-4 px-3 px-md-4">
 
-  <!-- Navigation Tabs -->
-  <ul class="nav nav-tabs mb-3" id="kelompokTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-      <button class="nav-link active fw-bold" id="tab-roles-link" data-bs-toggle="tab" data-bs-target="#tab-roles" type="button" role="tab">
-        <i class="fas fa-user-tag me-2"></i>Peran & Level Akses (<span id="badge-total-roles">0</span>)
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link fw-bold" id="tab-kelompok-link" data-bs-toggle="tab" data-bs-target="#tab-kelompok" type="button" role="tab">
-        <i class="fas fa-layer-group me-2"></i>Kelompok Kerja Shift (<span id="badge-total-kelompok">0</span>)
-      </button>
-    </li>
-  </ul>
+        <!-- HEADER -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+            <div>
+                <h3 class="fw-bold text-dark mb-1">Level & Kelompok Pengguna</h3>
+                <p class="text-secondary mb-0">Konfigurasi struktur hierarki peran akses (Role Level) dan kelompok kerja unit fungsional RS.</p>
+            </div>
+            <div>
+                <button class="btn btn-white border border-secondary-subtle shadow-sm rounded-pill px-3 py-2 text-dark fw-semibold" id="btn-refresh-all">
+                    <i class="fas fa-sync-alt text-primary me-2"></i>Refresh Data
+                </button>
+            </div>
+        </div>
 
-  <!-- Tab Contents -->
-  <div class="tab-content" id="kelompokTabsContent">
-    <!-- TAB 1: ROLES / LEVEL AKSES -->
-    <div class="tab-pane fade show active" id="tab-roles" role="tabpanel">
-      <div class="card mb-3">
-        <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
-          <h6 class="mb-0 text-dark fw-bold"><i class="fas fa-list me-2 text-primary"></i>Daftar Peran & Level Sistem</h6>
-          <button class="btn btn-sm btn-primary" id="btn-add-role">
-            <i class="fas fa-plus me-1"></i>Tambah Level Peran
-          </button>
+        <!-- TABS NAVIGATION -->
+        <div class="bg-white rounded-5 shadow-sm border p-1 d-inline-flex gap-1 mb-4">
+            <ul class="nav nav-pills border-0" id="kelompokTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-semibold rounded-5 px-4 py-2" id="tab-roles-link" data-bs-toggle="tab" data-bs-target="#tab-roles" type="button" role="tab">
+                        <i class="fas fa-user-tag me-2"></i>Peran & Level 
+                        <span id="badge-total-roles" class="badge bg-secondary ms-2 rounded-pill">0</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold rounded-5 px-4 py-2" id="tab-kelompok-link" data-bs-toggle="tab" data-bs-target="#tab-kelompok" type="button" role="tab">
+                        <i class="fas fa-layer-group me-2"></i>Kelompok Kerja
+                        <span id="badge-total-kelompok" class="badge bg-secondary ms-2 rounded-pill">0</span>
+                    </button>
+                </li>
+            </ul>
         </div>
-        <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-sm table-striped table-hover mb-0 fs--1">
-              <thead class="bg-200 text-900">
-                <tr>
-                  <th class="text-center py-2" style="width: 50px;">#</th>
-                  <th class="py-2" style="width: 100px;">Kode Level</th>
-                  <th class="py-2">Nama Peran / Level Akses</th>
-                  <th class="py-2">Bagian / Unit</th>
-                  <th class="py-2">Sub Bagian</th>
-                  <th class="text-center py-2" style="width: 140px;">Jumlah Akun</th>
-                  <th class="text-end py-2 pe-3" style="width: 120px;">Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="roles-table-body">
-                <tr>
-                  <td colspan="7" class="text-center py-4 text-muted">
-                    <div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat peran pengguna...
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+
+        <!-- TAB CONTENT -->
+        <div class="tab-content" id="kelompokTabsContent">
+            
+            <!-- ========================================== -->
+            <!-- TAB 1: PERAN & LEVEL                       -->
+            <!-- ========================================== -->
+            <div class="tab-pane fade show active" id="tab-roles" role="tabpanel">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                    <div class="card-header bg-white pt-4 px-4 pb-3 border-bottom-0 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                            <i class="fas fa-list text-primary"></i> Daftar Peran & Level Sistem
+                        </h5>
+                        <button class="btn btn-primary rounded-pill px-3 py-2 fw-semibold shadow-sm d-flex align-items-center gap-2" id="btn-add-role">
+                            <i class="fas fa-plus"></i> Tambah Level
+                        </button>
+                    </div>
+                    
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-borderless align-middle mb-0">
+                                <thead class="bg-light text-secondary">
+                                    <tr>
+                                        <th class="py-3 px-4 text-uppercase small fw-bold text-center" style="width: 60px;">#</th>
+                                        <th class="py-3 text-uppercase small fw-bold" style="width: 120px;">Kode Level</th>
+                                        <th class="py-3 text-uppercase small fw-bold">Nama Peran / Level</th>
+                                        <th class="py-3 text-uppercase small fw-bold">Bagian / Unit</th>
+                                        <th class="py-3 text-uppercase small fw-bold">Sub Bagian</th>
+                                        <th class="py-3 text-uppercase small fw-bold text-center">Jumlah Akun</th>
+                                        <th class="py-3 px-4 text-uppercase small fw-bold text-center" style="width: 100px;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="roles-table-body">
+                                    <tr>
+                                        <td colspan="7" class="text-center py-5 text-muted">
+                                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div> Memuat peran pengguna...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- TAB 2: KELOMPOK KERJA                      -->
+            <!-- ========================================== -->
+            <div class="tab-pane fade" id="tab-kelompok" role="tabpanel">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                    <div class="card-header bg-white pt-4 px-4 pb-3 border-bottom-0 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                            <i class="fas fa-layer-group text-primary"></i> Daftar Kelompok Kerja
+                        </h5>
+                        <button class="btn btn-primary rounded-pill px-3 py-2 fw-semibold shadow-sm d-flex align-items-center gap-2" id="btn-add-kelompok">
+                            <i class="fas fa-plus"></i> Tambah Kelompok
+                        </button>
+                    </div>
+                    
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-borderless align-middle mb-0">
+                                <thead class="bg-light text-secondary">
+                                    <tr>
+                                        <th class="py-3 px-4 text-uppercase small fw-bold text-center" style="width: 60px;">#</th>
+                                        <th class="py-3 text-uppercase small fw-bold" style="width: 150px;">Kode Kelompok</th>
+                                        <th class="py-3 text-uppercase small fw-bold">Nama Kelompok Kerja</th>
+                                        <th class="py-3 text-uppercase small fw-bold text-center">Jadwal Shift Aktif</th>
+                                        <th class="py-3 px-4 text-uppercase small fw-bold text-center" style="width: 100px;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="kelompok-table-body">
+                                    <tr>
+                                        <td colspan="5" class="text-center py-5 text-muted">
+                                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div> Memuat kelompok kerja...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
-      </div>
     </div>
 
-    <!-- TAB 2: KELOMPOK KERJA -->
-    <div class="tab-pane fade" id="tab-kelompok" role="tabpanel">
-      <div class="card mb-3">
-        <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
-          <h6 class="mb-0 text-dark fw-bold"><i class="fas fa-layer-group me-2 text-primary"></i>Daftar Kelompok Kerja Fungsional</h6>
-          <button class="btn btn-sm btn-primary" id="btn-add-kelompok">
-            <i class="fas fa-plus me-1"></i>Tambah Kelompok Kerja
-          </button>
-        </div>
-        <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-sm table-striped table-hover mb-0 fs--1">
-              <thead class="bg-200 text-900">
-                <tr>
-                  <th class="text-center py-2" style="width: 60px;">#</th>
-                  <th class="py-2" style="width: 140px;">Kode Kelompok</th>
-                  <th class="py-2">Nama Kelompok Kerja</th>
-                  <th class="text-center py-2" style="width: 160px;">Jadwal Shift Aktif</th>
-                  <th class="text-end py-2 pe-3" style="width: 120px;">Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="kelompok-table-body">
-                <tr>
-                  <td colspan="5" class="text-center py-4 text-muted">
-                    <div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat kelompok kerja...
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+    <!-- ========================================== -->
+    <!-- MODAL: ROLE FORM                           -->
+    <!-- ========================================== -->
+    <div class="modal fade" id="modal-role-form" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <form id="form-role">
+                    
+                    <div class="modal-header bg-white border-bottom-0 px-4 pt-4 pb-0">
+                        <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="modal-role-title">
+                            <i class="fas fa-user-tag text-primary"></i> Tambah Peran Akses
+                        </h5>
+                        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
 
-  <!-- Modal Tambah / Edit Role -->
-  <div class="modal fade" id="modal-role-form" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header bg-light">
-          <h5 class="modal-title" id="modal-role-title"><i class="fas fa-user-tag me-2 text-primary"></i>Tambah Peran Akses</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <form id="form-role">
-          <input type="hidden" id="form-role-id" name="ID">
-          <div class="modal-body">
-            <div class="mb-3">
-              <label class="form-label fw-bold">Kode Level <span class="text-danger">*</span></label>
-              <input type="number" class="form-control" id="form-role-kd" name="KD_LEVEL" required min="1" placeholder="Contoh: 1, 2, 3">
-              <div class="form-text">Angka urutan tingkatan level otoritas di sistem.</div>
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-bold">Nama Level / Peran <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" id="form-role-name" name="LEVEL" required placeholder="Contoh: Administrator, Staf Medis, Ka. Ruangan">
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-bold">Bagian / Bidang</label>
-              <input type="text" class="form-control" id="form-role-bagian" name="BAGIAN" placeholder="Bagian unit (opsional)">
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-bold">Sub Bagian</label>
-              <input type="text" class="form-control" id="form-role-subbagian" name="SUB_BAGIAN" placeholder="Sub Bagian unit (opsional)">
-            </div>
-          </div>
-          <div class="modal-footer bg-light">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-            <button type="submit" class="btn btn-primary" id="btn-save-role">
-              <i class="fas fa-save me-1"></i>Simpan Peran
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
+                    <div class="modal-body p-4">
+                        <input type="hidden" id="form-role-id" name="ID">
+                        
+                        <div class="bg-light p-3 rounded-3 mb-3">
+                            <label class="form-label fw-semibold text-secondary small mb-1">Kode Level <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control bg-white border-secondary-subtle shadow-sm rounded-2" id="form-role-kd" name="KD_LEVEL" required min="1" placeholder="Contoh: 1, 2, 3">
+                            <div class="form-text small text-muted mt-1">Angka urutan tingkatan level otoritas di sistem.</div>
+                        </div>
 
-  <!-- Modal Tambah / Edit Kelompok -->
-  <div class="modal fade" id="modal-kelompok-form" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header bg-light">
-          <h5 class="modal-title" id="modal-kelompok-title"><i class="fas fa-layer-group me-2 text-primary"></i>Tambah Kelompok Kerja</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <form id="form-kelompok">
-          <input type="hidden" id="form-kelompok-id" name="KD_KELOMPOK">
-          <div class="modal-body">
-            <div class="mb-3">
-              <label class="form-label fw-bold">Nama Kelompok Kerja <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" id="form-kelompok-name" name="KELOMPOK" required placeholder="Contoh: Rawat Inap, ICU, Farmasi, Security">
-              <div class="form-text">Unit atau kelompok penugasan untuk rotasi shift & jadwal absensi.</div>
+                        <div class="bg-light p-3 rounded-3 mb-3">
+                            <label class="form-label fw-semibold text-secondary small mb-1">Nama Level / Peran <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control bg-white border-secondary-subtle shadow-sm rounded-2" id="form-role-name" name="LEVEL" required placeholder="Contoh: Administrator, Ka. Ruangan">
+                        </div>
+
+                        <div class="row g-3 mb-0">
+                            <div class="col-md-6">
+                                <div class="bg-light p-3 rounded-3 h-100">
+                                    <label class="form-label fw-semibold text-secondary small mb-1">Bagian / Bidang</label>
+                                    <input type="text" class="form-control bg-white border-secondary-subtle shadow-sm rounded-2" id="form-role-bagian" name="BAGIAN" placeholder="Opsional">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="bg-light p-3 rounded-3 h-100">
+                                    <label class="form-label fw-semibold text-secondary small mb-1">Sub Bagian</label>
+                                    <input type="text" class="form-control bg-white border-secondary-subtle shadow-sm rounded-2" id="form-role-subbagian" name="SUB_BAGIAN" placeholder="Opsional">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer bg-light border-top-0 px-4 py-3">
+                        <button type="button" class="btn btn-white border border-secondary-subtle text-dark fw-semibold shadow-sm rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary fw-semibold shadow-sm rounded-pill px-4 d-flex align-items-center gap-2" id="btn-save-role">
+                            <i class="fas fa-save"></i> Simpan Peran
+                        </button>
+                    </div>
+
+                </form>
             </div>
-          </div>
-          <div class="modal-footer bg-light">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-            <button type="submit" class="btn btn-primary" id="btn-save-kelompok">
-              <i class="fas fa-save me-1"></i>Simpan Kelompok
-            </button>
-          </div>
-        </form>
-      </div>
+        </div>
     </div>
-  </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL: KELOMPOK FORM                       -->
+    <!-- ========================================== -->
+    <div class="modal fade" id="modal-kelompok-form" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <form id="form-kelompok">
+                    
+                    <div class="modal-header bg-white border-bottom-0 px-4 pt-4 pb-0">
+                        <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="modal-kelompok-title">
+                            <i class="fas fa-layer-group text-primary"></i> Tambah Kelompok Kerja
+                        </h5>
+                        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <div class="modal-body p-4">
+                        <input type="hidden" id="form-kelompok-id" name="KD_KELOMPOK">
+                        
+                        <div class="bg-light p-3 rounded-3 mb-0">
+                            <label class="form-label fw-semibold text-secondary small mb-1">Nama Kelompok Kerja <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control bg-white border-secondary-subtle shadow-sm rounded-2" id="form-kelompok-name" name="KELOMPOK" required placeholder="Contoh: Rawat Inap, ICU, Farmasi">
+                            <div class="form-text small text-muted mt-1">Unit atau kelompok penugasan untuk rotasi shift & jadwal absensi.</div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer bg-light border-top-0 px-4 py-3">
+                        <button type="button" class="btn btn-white border border-secondary-subtle text-dark fw-semibold shadow-sm rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary fw-semibold shadow-sm rounded-pill px-4 d-flex align-items-center gap-2" id="btn-save-kelompok">
+                            <i class="fas fa-save"></i> Simpan Kelompok
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script type="module" defer>

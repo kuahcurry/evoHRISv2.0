@@ -1,292 +1,543 @@
 <style>
-  .user-badge-valid {
-    background-color: rgba(40, 167, 69, 0.15);
-    color: #28a745;
-    font-weight: 600;
+  /* ==========================================
+     DESIGN SYSTEM & VARIABLES
+     ========================================== */
+  :root {
+    --ui-bg: #f8fafc;
+    --ui-surface: #ffffff;
+    --ui-text-main: #0f172a;
+    --ui-text-muted: #64748b;
+    --ui-primary: #4f46e5;
+    --ui-primary-hover: #4338ca;
+    --ui-border: #e2e8f0;
+    
+    --ui-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --ui-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.025);
+    --ui-shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.025);
+    --ui-shadow-xl: 0 20px 40px -5px rgba(0, 0, 0, 0.08);
+    
+    --ui-radius-md: 0.5rem;
+    --ui-radius-lg: 0.75rem;
+    --ui-radius-xl: 1rem;
   }
 
-  .user-badge-invalid {
-    background-color: rgba(220, 53, 69, 0.15);
-    color: #dc3545;
-    font-weight: 600;
+  .user-config-wrapper {
+    background-color: var(--ui-bg);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 2.5rem 2rem;
+    color: var(--ui-text-main);
   }
 
-  .avatar-user {
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
+  /* ==========================================
+     STAT CARDS (Modern & Colorful)
+     ========================================== */
+  .stat-card-modern {
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-xl);
+    padding: 1.5rem;
+    box-shadow: var(--ui-shadow-sm);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+  }
+
+  .stat-card-modern:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--ui-shadow-lg);
+  }
+
+  .stat-icon-wrapper {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    flex-shrink: 0;
+    transition: transform 0.3s ease;
+  }
+
+  .stat-card-modern:hover .stat-icon-wrapper {
+    transform: scale(1.1) rotate(5deg);
+  }
+
+  .stat-value {
+    font-size: 1.85rem;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin-bottom: 0;
+    color: var(--ui-text-main);
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--ui-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+  }
+
+  /* ==========================================
+     MAIN CARD & TABLE
+     ========================================== */
+  .ui-card {
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-xl);
+    box-shadow: var(--ui-shadow-md);
+    overflow: hidden;
+  }
+
+  .ui-card-header {
+    background: var(--ui-surface);
+    padding: 1.5rem 1.75rem;
+    border-bottom: 1px solid var(--ui-border);
+  }
+
+  .ui-table {
+    width: 100%;
+    margin-bottom: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .ui-table th {
+    background: #f8fafc;
+    color: var(--ui-text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--ui-border);
+    white-space: nowrap;
+  }
+
+  .ui-table td {
+    padding: 1rem 1.5rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--ui-border);
+    color: var(--ui-text-main);
+    font-size: 0.9rem;
+  }
+
+  .ui-table tbody tr {
+    transition: background 0.2s ease;
+  }
+
+  .ui-table tbody tr:hover {
+    background: #f1f5f9;
+  }
+
+  /* ==========================================
+     BADGES & AVATARS
+     ========================================== */
+  .badge-soft-success {
+    background-color: #dcfce7;
+    color: #16a34a;
+    font-weight: 600;
+    border: 1px solid #bbf7d0;
+  }
+
+  .badge-soft-danger {
+    background-color: #fee2e2;
+    color: #dc2626;
+    font-weight: 600;
+    border: 1px solid #fecaca;
+  }
+
+  .avatar-initial {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    color: white;
+    font-weight: 700;
+    font-size: 1.1rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-weight: 700;
-    color: #fff;
-    background: linear-gradient(135deg, #2c7be5 0%, #1a5bb8 100%);
+    box-shadow: 0 2px 5px rgba(79, 70, 229, 0.3);
+  }
+
+  /* ==========================================
+     FORM ELEMENTS & MODALS
+     ========================================== */
+  .ui-input {
+    border-radius: var(--ui-radius-md);
+    border: 1px solid var(--ui-border);
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    background: #f8fafc;
+  }
+
+  .ui-input:focus {
+    border-color: var(--ui-primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+    background: #ffffff;
+  }
+
+  .ui-modal .modal-content {
+    border: none;
+    border-radius: var(--ui-radius-xl);
+    box-shadow: var(--ui-shadow-xl);
+    overflow: hidden;
+  }
+
+  .ui-modal .modal-header {
+    background: var(--ui-surface);
+    border-bottom: 1px solid var(--ui-border);
+    padding: 1.25rem 1.5rem;
+  }
+
+  .ui-modal .modal-body {
+    padding: 1.5rem;
+    background: var(--ui-surface);
+  }
+
+  .ui-modal .modal-footer {
+    background: var(--ui-bg);
+    border-top: 1px solid var(--ui-border);
+    padding: 1rem 1.5rem;
+  }
+
+  /* ==========================================
+     BUTTONS
+     ========================================== */
+  .btn-ui-primary {
+    background: var(--ui-primary);
+    color: white;
+    border: none;
+    border-radius: var(--ui-radius-md);
+    font-weight: 600;
+    padding: 0.6rem 1.25rem;
+    box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+    transition: all 0.2s ease;
+  }
+
+  .btn-ui-primary:hover {
+    background: var(--ui-primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  }
+
+  .btn-ui-white {
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    color: var(--ui-text-main);
+    border-radius: var(--ui-radius-md);
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+
+  .btn-ui-white:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+  }
+  
+  /* Pill Tabs */
+  .pill-tabs-container {
+    background: var(--ui-surface);
+    padding: 0.4rem;
+    border-radius: var(--ui-radius-lg);
+    display: inline-flex;
+    gap: 0.25rem;
+    border: 1px solid var(--ui-border);
+    box-shadow: var(--ui-shadow-sm);
+  }
+  .pill-tabs-container .nav-link {
+    border: none;
+    border-radius: var(--ui-radius-md);
+    color: var(--ui-text-muted);
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+  }
+  .pill-tabs-container .nav-link.active {
+    background: var(--ui-surface);
+    color: var(--ui-primary);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   }
 </style>
 
 <template id="template-konfig-users">
-  <div class="row mb-3">
-    <div class="col">
-      <div class="card bg-100 shadow-none border">
-        <div class="card-body py-3">
-          <div class="row justify-content-between align-items-center">
-            <div class="col-auto">
-              <h5 class="mb-1 text-primary fw-bold"><i class="fas fa-users-cog me-2"></i>Manajemen Akun & Pengguna
-                Sistem</h5>
-              <div class="text-secondary small">Kelola otentikasi login, peran hak akses, dan status akun pengguna SIMRS
-                / HRIS.</div>
-            </div>
-            <div class="col-auto">
-              <button class="btn btn-sm btn-falcon-default me-1" id="btn-refresh-users">
-                <i class="fas fa-sync-alt me-1"></i>Refresh
-              </button>
-              <button class="btn btn-sm btn-primary" id="btn-add-user">
-                <i class="fas fa-user-plus me-1"></i>Tambah Akun Pengguna
-              </button>
-            </div>
-          </div>
-        </div>
+  <div class="user-config-wrapper">
+    
+    <!-- HEADER -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+      <div>
+        <h3 class="fw-bold text-dark mb-1">Manajemen Akun & Pengguna</h3>
+        <p class="text-secondary mb-0">Kelola otentikasi login, peran hak akses, dan status akun pengguna SIMRS / HRIS.</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-ui-white shadow-sm px-3 py-2 d-flex align-items-center gap-2" id="btn-refresh-users">
+          <i class="fas fa-sync-alt text-primary"></i> Refresh
+        </button>
+        <button class="btn btn-ui-primary shadow-sm px-4 py-2 d-flex align-items-center gap-2" id="btn-add-user">
+          <i class="fas fa-user-plus"></i> Tambah Akun
+        </button>
       </div>
     </div>
-  </div>
 
-  <!-- Stat Cards -->
-  <div class="row g-3 mb-3">
-    <div class="col-sm-6 col-md-3">
-      <div class="card overflow-hidden">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="avatar-user me-3 bg-primary"><i class="fas fa-users"></i></div>
+    <!-- STAT CARDS -->
+    <div class="row g-4 mb-4">
+      <!-- Total Akun -->
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card-modern">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon-wrapper" style="background: #eef2ff; color: #4f46e5;">
+              <i class="fas fa-users"></i>
+            </div>
             <div>
-              <h6 class="text-secondary mb-1">Total Akun</h6>
-              <h4 class="mb-0 text-primary fw-bold" id="stat-total-users">0</h4>
+              <div class="stat-label">Total Akun</div>
+              <div class="stat-value" id="stat-total-users">0</div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    <div class="col-sm-6 col-md-3">
-      <div class="card overflow-hidden">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="avatar-user me-3 bg-success"
-              style="background: linear-gradient(135deg, #00d27a 0%, #00864e 100%);"><i class="fas fa-user-check"></i>
+      
+      <!-- Akun Valid -->
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card-modern">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon-wrapper" style="background: #dcfce7; color: #16a34a;">
+              <i class="fas fa-user-check"></i>
             </div>
             <div>
-              <h6 class="text-secondary mb-1">Akun Valid / Aktif</h6>
-              <h4 class="mb-0 text-success fw-bold" id="stat-active-users">0</h4>
+              <div class="stat-label">Akun Valid</div>
+              <div class="stat-value" id="stat-active-users">0</div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    <div class="col-sm-6 col-md-3">
-      <div class="card overflow-hidden">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="avatar-user me-3 bg-danger"
-              style="background: linear-gradient(135deg, #e63757 0%, #a61b34 100%);"><i class="fas fa-user-slash"></i>
+      
+      <!-- Akun Diblokir -->
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card-modern">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon-wrapper" style="background: #fee2e2; color: #dc2626;">
+              <i class="fas fa-user-slash"></i>
             </div>
             <div>
-              <h6 class="text-secondary mb-1">Akun Diblokir</h6>
-              <h4 class="mb-0 text-danger fw-bold" id="stat-blocked-users">0</h4>
+              <div class="stat-label">Diblokir</div>
+              <div class="stat-value" id="stat-blocked-users">0</div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    <div class="col-sm-6 col-md-3">
-      <div class="card overflow-hidden">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="avatar-user me-3 bg-warning"
-              style="background: linear-gradient(135deg, #f5803e 0%, #bf5215 100%);"><i class="fas fa-shield-alt"></i>
+      
+      <!-- Total Peran -->
+      <div class="col-sm-6 col-xl-3">
+        <div class="stat-card-modern">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon-wrapper" style="background: #fef3c7; color: #d97706;">
+              <i class="fas fa-shield-alt"></i>
             </div>
             <div>
-              <h6 class="text-secondary mb-1">Peran / Level Sistem</h6>
-              <h4 class="mb-0 text-warning fw-bold" id="stat-total-roles">0</h4>
+              <div class="stat-label">Peran Sistem</div>
+              <div class="stat-value" id="stat-total-roles">0</div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Filter & Main Card -->
-  <div class="card mb-3">
-    <div class="card-header bg-light">
-      <div class="row g-2 align-items-center">
-        <div class="col-md-5 col-sm-12">
-          <div class="input-group input-group-sm">
-            <span class="input-group-text bg-white"><i class="fas fa-search text-secondary"></i></span>
-            <input type="text" class="form-control" id="user-filter-search"
-              placeholder="Cari NIP atau Nama Pengguna...">
-          </div>
-        </div>
-        <div class="col-md-3 col-sm-6">
-          <select class="form-select form-select-sm" id="user-filter-role">
-            <option value="">-- Semua Peran / Level --</option>
-          </select>
-        </div>
-        <div class="col-md-2 col-sm-6">
-          <select class="form-select form-select-sm" id="user-filter-status">
-            <option value="">-- Semua Status --</option>
-            <option value="valid">Aktif / Valid</option>
-            <option value="non-aktif">Diblokir / Non-Aktif</option>
-          </select>
-        </div>
-        <div class="col-md-2 col-sm-12 text-end">
-          <button class="btn btn-sm btn-falcon-default w-100" id="btn-reset-filters">
-            <i class="fas fa-undo me-1"></i>Reset Filter
-          </button>
         </div>
       </div>
     </div>
 
-    <div class="card-body p-0">
+    <!-- MAIN TABLE & FILTER -->
+    <div class="ui-card">
+      
+      <!-- Filter Toolbar -->
+      <div class="ui-card-header">
+        <div class="row g-3 align-items-center">
+          <div class="col-md-4">
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-search"></i></span>
+              <input type="text" class="form-control ui-input border-start-0 ps-0" id="user-filter-search" placeholder="Cari NIP atau Nama Pengguna...">
+            </div>
+          </div>
+          <div class="col-md-3">
+            <select class="form-select ui-input" id="user-filter-role">
+              <option value="">-- Semua Peran --</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <select class="form-select ui-input" id="user-filter-status">
+              <option value="">-- Semua Status --</option>
+              <option value="valid">Aktif / Valid</option>
+              <option value="non-aktif">Diblokir / Non-Aktif</option>
+            </select>
+          </div>
+          <div class="col-md-2 text-end">
+            <button class="btn btn-ui-white w-100" id="btn-reset-filters">
+              <i class="fas fa-undo text-secondary me-1"></i>Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table -->
       <div class="table-responsive">
-        <table class="table table-sm table-striped table-hover mb-0 fs--1">
-          <thead class="bg-200 text-900">
+        <table class="ui-table">
+          <thead>
             <tr>
-              <th class="text-center py-2" style="width: 50px;">#</th>
-              <th class="py-2">Pegawai & Kredensial</th>
-              <th class="py-2">Peran / Level Akses</th>
-              <th class="py-2">Terakhir Login</th>
-              <th class="text-center py-2">Status Akun</th>
-              <th class="text-center py-2">Koneksi</th>
-              <th class="text-end py-2 pe-3" style="width: 140px;">Aksi</th>
+              <th class="text-center" style="width: 60px;">#</th>
+              <th>Pegawai & Kredensial</th>
+              <th>Peran / Level Akses</th>
+              <th>Terakhir Login</th>
+              <th class="text-center">Status</th>
+              <th class="text-end" style="width: 140px;">Aksi</th>
             </tr>
           </thead>
           <tbody id="user-table-body">
             <tr>
-              <td colspan="7" class="text-center py-4 text-muted">
-                <div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat data akun pengguna...
+              <td colspan="6" class="text-center py-5 text-muted">
+                <div class="spinner-border text-primary mb-2" role="status" style="width: 1.5rem; height: 1.5rem;"></div>
+                <div>Memuat data akun...</div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-    </div>
 
-    <!-- Pagination & Summary Footer -->
-    <div class="card-footer bg-light py-2">
-      <div class="row align-items-center justify-content-between">
-        <div class="col-auto text-secondary small" id="user-page-info">Menampilkan 0 - 0 dari 0 data</div>
-        <div class="col-auto">
-          <ul class="pagination pagination-sm mb-0" id="user-pagination"></ul>
-        </div>
+      <!-- Pagination Footer -->
+      <div class="ui-card-header border-top border-bottom-0 d-flex justify-content-between align-items-center py-3">
+        <div class="text-muted small fw-semibold" id="user-page-info">Menampilkan 0 - 0 dari 0 data</div>
+        <ul class="pagination pagination-sm mb-0 shadow-sm" id="user-pagination"></ul>
       </div>
     </div>
+
   </div>
 
-  <!-- Modal Tambah / Edit Pengguna -->
-  <div class="modal fade" id="modal-user-form" tabindex="-1" aria-hidden="true">
+  <!-- ========================================== -->
+  <!-- MODAL: ADD/EDIT USER                       -->
+  <!-- ========================================== -->
+  <div class="modal fade ui-modal" id="modal-user-form" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content">
-        <div class="modal-header bg-light">
-          <h5 class="modal-title" id="modal-user-title"><i class="fas fa-user-plus me-2 text-primary"></i>Tambah Akun
-            Pengguna</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
         <form id="form-user">
-          <input type="hidden" id="form-user-id" name="id">
+          
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="modal-user-title">
+              <i class="fas fa-user-plus text-primary"></i> Tambah Akun Pengguna
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+
           <div class="modal-body">
-            <div class="row g-3">
+            <input type="hidden" id="form-user-id" name="id">
+            
+            <div class="row g-4">
+              <!-- Pilih Pegawai -->
               <div class="col-md-12">
-                <label class="form-label fw-bold">Pilih Pegawai <span class="text-danger">*</span></label>
-                <select class="form-select" id="form-user-pegawai" required>
+                <label class="form-label fw-semibold text-secondary small">Pilih Pegawai <span class="text-danger">*</span></label>
+                <select class="form-select ui-input" id="form-user-pegawai" required>
                   <option value="">-- Pilih Pegawai --</option>
                 </select>
-                <div class="form-text">Pilih pegawai terdaftar untuk dijadikan akun pengguna sistem.</div>
+                <div class="form-text small text-muted mt-1">Pilih pegawai terdaftar untuk dijadikan akun pengguna.</div>
               </div>
 
+              <!-- NIP & Nama -->
               <div class="col-md-6">
-                <label class="form-label fw-bold">NIP Pegawai <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="form-user-nip" name="nip" readonly required>
+                <label class="form-label fw-semibold text-secondary small">NIP Pegawai</label>
+                <input type="text" class="form-control ui-input bg-light" id="form-user-nip" name="nip" readonly required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold text-secondary small">Nama Lengkap</label>
+                <input type="text" class="form-control ui-input bg-light" id="form-user-nama" name="nama_lengkap" readonly required>
               </div>
 
+              <!-- Peran & Status -->
               <div class="col-md-6">
-                <label class="form-label fw-bold">Nama Lengkap <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="form-user-nama" name="nama_lengkap" readonly required>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label fw-bold">Peran / Level Akses <span class="text-danger">*</span></label>
-                <select class="form-select" id="form-user-role" name="kd_userlevel" required>
+                <label class="form-label fw-semibold text-secondary small">Peran / Level Akses <span class="text-danger">*</span></label>
+                <select class="form-select ui-input" id="form-user-role" name="kd_userlevel" required>
                   <option value="">-- Pilih Peran Akses --</option>
                 </select>
               </div>
-
               <div class="col-md-6">
-                <label class="form-label fw-bold">Status Akun</label>
-                <select class="form-select" id="form-user-status" name="status_user">
+                <label class="form-label fw-semibold text-secondary small">Status Akun</label>
+                <select class="form-select ui-input" id="form-user-status" name="status_user">
                   <option value="valid">Aktif / Valid</option>
                   <option value="non-aktif">Diblokir / Non-Aktif</option>
                 </select>
               </div>
 
-              <div class="col-md-12" id="password-container">
-                <label class="form-label fw-bold">Password Login <span class="text-danger"
-                    id="pwd-required-marker">*</span></label>
+              <!-- Password -->
+              <div class="col-md-12">
+                <label class="form-label fw-semibold text-secondary small">Password Login <span class="text-danger" id="pwd-required-marker">*</span></label>
                 <div class="input-group">
-                  <input type="password" class="form-control" id="form-user-password" name="password"
-                    placeholder="Masukkan password (min. 6 karakter)">
-                  <button class="btn btn-outline-secondary" type="button" id="btn-toggle-pwd"><i
-                      class="fas fa-eye"></i></button>
+                  <input type="password" class="form-control ui-input border-end-0" id="form-user-password" name="password" placeholder="Masukkan password (min. 6 karakter)">
+                  <button class="btn btn-light border border-start-0 text-muted" type="button" id="btn-toggle-pwd" style="border-color: var(--ui-border) !important;">
+                    <i class="fas fa-eye"></i>
+                  </button>
                 </div>
-                <div class="form-text text-muted">Untuk akun baru default adalah <code>123456</code>. Jika mengedit,
-                  biarkan kosong bila tidak ingin mengganti password.</div>
+                <div class="form-text small text-muted mt-1">Untuk akun baru default adalah <code class="bg-light px-1 rounded text-danger">123456</code>.</div>
               </div>
             </div>
           </div>
-          <div class="modal-footer bg-light">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-            <button type="submit" class="btn btn-primary" id="btn-submit-user">
-              <i class="fas fa-save me-1"></i>Simpan Akun
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-ui-white" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-ui-primary" id="btn-submit-user">
+              <i class="fas fa-save me-1"></i> Simpan Akun
             </button>
           </div>
+
         </form>
       </div>
     </div>
   </div>
 
-  <!-- Modal Reset Password -->
-  <div class="modal fade" id="modal-reset-pwd" tabindex="-1" aria-hidden="true">
+  <!-- ========================================== -->
+  <!-- MODAL: RESET PASSWORD                      -->
+  <!-- ========================================== -->
+  <div class="modal fade ui-modal" id="modal-reset-pwd" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header bg-light">
-          <h5 class="modal-title"><i class="fas fa-key me-2 text-warning"></i>Reset Password Akun</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
         <form id="form-reset-pwd">
-          <input type="hidden" id="reset-pwd-id">
+          
+          <div class="modal-header bg-warning bg-opacity-10 border-0">
+            <h5 class="modal-title fw-bold text-warning-emphasis d-flex align-items-center gap-2">
+              <i class="fas fa-key"></i> Reset Password
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+
           <div class="modal-body">
-            <div class="alert alert-info py-2 small mb-3">
+            <input type="hidden" id="reset-pwd-id">
+            
+            <div class="alert alert-warning border-warning-subtle bg-warning bg-opacity-10 py-2 small mb-4 rounded-3">
               Mereset kata sandi untuk akun <b id="reset-pwd-name">-</b> (NIP: <span id="reset-pwd-nip">-</span>).
             </div>
+
             <div class="mb-3">
-              <label class="form-label fw-bold">Password Baru <span class="text-danger">*</span></label>
-              <input type="password" class="form-control" id="reset-pwd-val" required placeholder="Minimal 6 karakter"
-                minlength="6">
+              <label class="form-label fw-semibold text-secondary small">Password Baru <span class="text-danger">*</span></label>
+              <input type="password" class="form-control ui-input" id="reset-pwd-val" required placeholder="Minimal 6 karakter" minlength="6">
             </div>
-            <div class="mb-3">
-              <label class="form-label fw-bold">Konfirmasi Password Baru <span class="text-danger">*</span></label>
-              <input type="password" class="form-control" id="reset-pwd-confirm" required
-                placeholder="Ulangi password baru">
+
+            <div class="mb-4">
+              <label class="form-label fw-semibold text-secondary small">Konfirmasi Password <span class="text-danger">*</span></label>
+              <input type="password" class="form-control ui-input" id="reset-pwd-confirm" required placeholder="Ulangi password baru">
             </div>
-            <div class="form-check">
+
+            <div class="form-check bg-light p-3 rounded-3 border">
               <input class="form-check-input" type="checkbox" id="check-default-pwd">
-              <label class="form-check-label small" for="check-default-pwd">
+              <label class="form-check-label small fw-semibold text-dark" for="check-default-pwd">
                 Gunakan password default SIMRS (<code>123456</code>)
               </label>
             </div>
           </div>
-          <div class="modal-footer bg-light">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-            <button type="submit" class="btn btn-warning" id="btn-submit-reset-pwd">
-              <i class="fas fa-key me-1"></i>Reset Password
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-ui-white" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-warning text-dark fw-bold shadow-sm" id="btn-submit-reset-pwd">
+              <i class="fas fa-key me-1"></i> Reset Sekarang
             </button>
           </div>
+
         </form>
       </div>
     </div>

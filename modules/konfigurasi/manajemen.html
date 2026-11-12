@@ -1,252 +1,296 @@
 <template id="template-konfig-manajemen">
-  <div class="row mb-3">
-    <div class="col-12">
-      <div class="d-flex justify-content-between align-items-center">
-        <div>
-          <h5 class="mb-1 text-primary fw-bold"><i class="fas fa-sliders-h me-2"></i>Manajemen Sistem & Hierarki Approval</h5>
-          <p class="text-muted small mb-0">Konfigurasi pejabat penandatangan dokumen dan alur routing approval berjenjang e-Kinerja.</p>
+    <div class="container-fluid py-4 px-3 px-md-4 bg-light min-vh-100">
+
+        <!-- HEADER -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+            <div>
+                <h3 class="fw-bold text-dark mb-1">Manajemen Sistem & Approval</h3>
+                <p class="text-secondary mb-0">Konfigurasi pejabat penandatangan dokumen dan alur routing persetujuan berjenjang e-Kinerja.</p>
+            </div>
+            <div>
+                <button class="btn btn-white border border-secondary-subtle shadow-sm rounded-pill px-3 py-2 text-dark fw-semibold" id="btn-refresh-all">
+                    <i class="fas fa-sync-alt text-primary me-2"></i>Refresh Data
+                </button>
+            </div>
         </div>
-        <div>
-          <button class="btn btn-sm btn-outline-secondary" id="btn-refresh-all">
-            <i class="fas fa-sync-alt me-1"></i>Refresh Data
-          </button>
+
+        <!-- TABS NAVIGATION -->
+        <div class="bg-white rounded-5 shadow-sm border p-1 d-inline-flex gap-1 mb-4">
+            <ul class="nav nav-pills border-0" id="manajemenTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-semibold rounded-5 px-4 py-2" id="tab-profile-link" data-bs-toggle="tab" data-bs-target="#tab-profile" type="button" role="tab">
+                        <i class="fas fa-stamp me-2"></i>Pejabat Penandatangan
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold rounded-5 px-4 py-2" id="tab-route-link" data-bs-toggle="tab" data-bs-target="#tab-route" type="button" role="tab">
+                        <i class="fas fa-network-wired me-2"></i>Routing Approval 
+                        <span id="badge-total-route" class="badge bg-secondary ms-2 rounded-pill">0</span>
+                    </button>
+                </li>
+            </ul>
         </div>
-      </div>
+
+        <div class="tab-content" id="manajemenTabContent">
+            
+            <!-- ========================================== -->
+            <!-- TAB 1: PROFIL PEJABAT                      -->
+            <!-- ========================================== -->
+            <div class="tab-pane fade show active" id="tab-profile" role="tabpanel">
+                <div class="row g-4">
+                    
+                    <!-- KIRI: Form Input -->
+                    <div class="col-lg-8">
+                        <div class="card border-0 shadow-sm rounded-4">
+                            <div class="card-header bg-white border-bottom-0 pt-4 px-4 pb-0">
+                                <h5 class="fw-bold text-dark d-flex align-items-center gap-2">
+                                    <i class="fas fa-pen-fancy text-primary"></i> Profil Pejabat
+                                </h5>
+                            </div>
+                            <div class="card-body p-4">
+                                <form id="form-pejabat-profile">
+                                    
+                                    <!-- KABID SDM -->
+                                    <div class="bg-light p-3 rounded-3 mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h6 class="fw-bold text-dark mb-0"><i class="fas fa-user-tie text-primary me-2"></i>Kepala Bidang SDM</h6>
+                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill px-2 py-1">KA_BID_SDM</span>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-md-7">
+                                                <label class="form-label fw-semibold text-secondary small mb-1">Nama Lengkap & Gelar</label>
+                                                <input type="text" class="form-control bg-white border-secondary-subtle shadow-sm rounded-2" id="set-kabid-nama" name="kabid_nama" placeholder="Ketik nama pejabat...">
+                                            </div>
+                                            <div class="col-md-5">
+                                                <label class="form-label fw-semibold text-secondary small mb-1">NIP</label>
+                                                <input type="text" class="form-control bg-white border-secondary-subtle shadow-sm rounded-2" id="set-kabid-nip" name="kabid_nip" placeholder="19XXXXXXXXXXXXXX">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- KEPALA INSTALASI -->
+                                    <div class="bg-light p-3 rounded-3 mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h6 class="fw-bold text-dark mb-0"><i class="fas fa-hospital-user text-primary me-2"></i>Kepala Instalasi</h6>
+                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill px-2 py-1">KA_INST</span>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-md-7">
+                                                <label class="form-label fw-semibold text-secondary small mb-1">Nama Lengkap & Gelar</label>
+                                                <input type="text" class="form-control bg-white border-secondary-subtle shadow-sm rounded-2" id="set-kainst-nama" name="kainst_nama" placeholder="Ketik nama pejabat...">
+                                            </div>
+                                            <div class="col-md-5">
+                                                <label class="form-label fw-semibold text-secondary small mb-1">NIP</label>
+                                                <input type="text" class="form-control bg-white border-secondary-subtle shadow-sm rounded-2" id="set-kainst-nip" name="kainst_nip" placeholder="19XXXXXXXXXXXXXX">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- PEJABAT PENILAI -->
+                                    <div class="bg-light p-3 rounded-3 mb-4">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h6 class="fw-bold text-dark mb-0"><i class="fas fa-user-check text-primary me-2"></i>Pejabat Penilai Kinerja</h6>
+                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill px-2 py-1">PEJABAT_PENILAI</span>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-md-7">
+                                                <label class="form-label fw-semibold text-secondary small mb-1">Nama Lengkap & Gelar</label>
+                                                <input type="text" class="form-control bg-white border-secondary-subtle shadow-sm rounded-2" id="set-penilai-nama" name="penilai_nama" placeholder="Ketik nama pejabat...">
+                                            </div>
+                                            <div class="col-md-5">
+                                                <label class="form-label fw-semibold text-secondary small mb-1">NIP</label>
+                                                <input type="text" class="form-control bg-white border-secondary-subtle shadow-sm rounded-2" id="set-penilai-nip" name="penilai_nip" placeholder="19XXXXXXXXXXXXXX">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- KEPALA RUANG -->
+                                    <div class="bg-light p-3 rounded-3 mb-4">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h6 class="fw-bold text-dark mb-0"><i class="fas fa-door-open text-primary me-2"></i>Kepala Ruangan</h6>
+                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill px-2 py-1">KA_RUANG</span>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-md-7">
+                                                <label class="form-label fw-semibold text-secondary small mb-1">Nama Lengkap & Gelar</label>
+                                                <input type="text" class="form-control bg-white border-secondary-subtle shadow-sm rounded-2" id="set-karuang-nama" name="karuang_nama" placeholder="Ketik nama pejabat...">
+                                            </div>
+                                            <div class="col-md-5">
+                                                <label class="form-label fw-semibold text-secondary small mb-1">NIP</label>
+                                                <input type="text" class="form-control bg-white border-secondary-subtle shadow-sm rounded-2" id="set-karuang-nip" name="karuang_nip" placeholder="19XXXXXXXXXXXXXX">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="text-end pt-3 border-top">
+                                        <button type="submit" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold shadow-sm d-inline-flex align-items-center gap-2" id="btn-save-profile">
+                                            <i class="fas fa-save"></i> Simpan Perubahan
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KANAN: Panel Informasi -->
+                    <div class="col-lg-4">
+                        <div class="card border-0 shadow-sm rounded-4 h-100">
+                            <div class="card-header bg-white border-bottom-0 pt-4 px-4 pb-0">
+                                <h5 class="fw-bold text-dark d-flex align-items-center gap-2">
+                                    <i class="fas fa-info-circle text-info"></i> Pedoman
+                                </h5>
+                            </div>
+                            <div class="card-body p-4">
+                                <p class="text-secondary small mb-3">Data penandatangan yang dikonfigurasi digunakan pada:</p>
+                                
+                                <ul class="list-group list-group-flush mb-4">
+                                    <li class="list-group-item px-0 py-2 d-flex gap-2 border-0 bg-transparent">
+                                        <i class="fas fa-check-circle text-success mt-1"></i>
+                                        <span class="text-secondary small">Slip Gaji & Rekapitulasi Bulanan</span>
+                                    </li>
+                                    <li class="list-group-item px-0 py-2 d-flex gap-2 border-0 bg-transparent">
+                                        <i class="fas fa-check-circle text-success mt-1"></i>
+                                        <span class="text-secondary small">Lembar SKP Tahunan</span>
+                                    </li>
+                                    <li class="list-group-item px-0 py-2 d-flex gap-2 border-0 bg-transparent">
+                                        <i class="fas fa-check-circle text-success mt-1"></i>
+                                        <span class="text-secondary small">Form Penilaian Bulanan</span>
+                                    </li>
+                                    <li class="list-group-item px-0 py-2 d-flex gap-2 border-0 bg-transparent">
+                                        <i class="fas fa-check-circle text-success mt-1"></i>
+                                        <span class="text-secondary small">Laporan Presensi & Disiplin</span>
+                                    </li>
+                                </ul>
+
+                                <div class="alert alert-warning border-0 shadow-sm rounded-3 d-flex gap-2 mb-0">
+                                    <i class="fas fa-lightbulb text-warning fs-5 mt-1"></i>
+                                    <div class="small text-dark">
+                                        Perubahan data pejabat akan otomatis diterapkan pada hasil cetak PDF.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- TAB 2: ROUTING APPROVAL                    -->
+            <!-- ========================================== -->
+            <div class="tab-pane fade" id="tab-route" role="tabpanel">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                    <div class="card-header bg-white pt-4 px-4 pb-3 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                            <i class="fas fa-sitemap text-primary"></i> Hierarki Persetujuan
+                        </h5>
+                        <button class="btn btn-primary rounded-pill px-3 py-1.5 fw-semibold shadow-sm d-flex align-items-center gap-2" id="btn-add-route">
+                            <i class="fas fa-plus"></i> Tambah Routing
+                        </button>
+                    </div>
+                    
+                    <div class="card-body p-0">
+                        <!-- Toolbar Search -->
+                        <div class="px-4 pb-3 bg-white">
+                            <div class="row">
+                                <div class="col-md-5">
+                                    <div class="input-group shadow-sm rounded-3">
+                                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-search"></i></span>
+                                        <input type="text" class="form-control bg-light border-start-0" id="search-approval" placeholder="Cari NIP atau nama pegawai...">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tabel -->
+                        <div class="table-responsive">
+                            <table class="table table-hover table-borderless align-middle mb-0">
+                                <thead class="bg-light text-secondary">
+                                    <tr>
+                                        <th class="py-3 px-4 text-uppercase small fw-bold">#</th>
+                                        <th class="py-3 text-uppercase small fw-bold">Pegawai Pemohon</th>
+                                        <th class="py-3 text-uppercase small fw-bold">Atasan Langsung (Penilai)</th>
+                                        <th class="py-3 text-uppercase small fw-bold">Tingkat Approval</th>
+                                        <th class="py-3 px-4 text-uppercase small fw-bold text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="approval-table-body">
+                                    <tr>
+                                        <td colspan="5" class="text-center py-5 text-muted">
+                                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div> Memuat data...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <div class="d-flex justify-content-between align-items-center p-4 border-top">
+                            <div class="small text-secondary fw-semibold" id="approval-page-info">Menampilkan 0 dari 0 data</div>
+                            <nav><ul class="pagination pagination-sm mb-0 shadow-sm" id="approval-pagination"></ul></nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
     </div>
-  </div>
 
-  <!-- Navigation Tabs -->
-  <ul class="nav nav-tabs mb-3" id="manajemenTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="tab-profile-link" data-bs-toggle="tab" data-bs-target="#tab-profile" type="button" role="tab">
-        <i class="fas fa-stamp me-2"></i>Pejabat Penandatangan
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="tab-route-link" data-bs-toggle="tab" data-bs-target="#tab-route" type="button" role="tab">
-        <i class="fas fa-network-wired me-2"></i>Routing Hierarki Approval (<span id="badge-total-route" class="badge bg-primary">0</span>)
-      </button>
-    </li>
-  </ul>
+    <!-- ========================================== -->
+    <!-- MODAL: ADD/EDIT ROUTING                    -->
+    <!-- ========================================== -->
+    <div class="modal fade" id="modal-approval-form" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <form id="form-approval">
+                    
+                    <div class="modal-header bg-white border-bottom-0 px-4 pt-4 pb-0">
+                        <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="modal-approval-title">
+                            <i class="fas fa-sitemap text-primary"></i> Tambah Routing Approval
+                        </h5>
+                        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
 
-  <div class="tab-content" id="manajemenTabContent">
-    <!-- TAB 1: PEJABAT PENANDATANGAN -->
-    <div class="tab-pane fade show active" id="tab-profile" role="tabpanel">
-      <div class="row g-3">
-        <div class="col-lg-8 col-md-12">
-          <div class="card mb-3">
-            <div class="card-header bg-light py-2">
-              <h6 class="mb-0 text-dark fw-bold"><i class="fas fa-stamp me-2 text-primary"></i>Profil Pejabat Penandatangan Dokumen & SK</h6>
+                    <div class="modal-body p-4">
+                        <input type="hidden" id="form-approval-id" name="id_route">
+
+                        <div class="bg-light p-3 rounded-3 mb-3">
+                            <label class="form-label fw-semibold text-secondary small mb-1">Pegawai Pemohon <span class="text-danger">*</span></label>
+                            <select class="form-select bg-white border-secondary-subtle shadow-sm rounded-2" id="form-appr-pemohon" name="nip" required>
+                                <option value="">-- Pilih Pegawai --</option>
+                            </select>
+                            <div class="form-text small text-muted mt-2">Pegawai yang mengajukan target SKP.</div>
+                        </div>
+
+                        <div class="bg-light p-3 rounded-3 mb-3">
+                            <label class="form-label fw-semibold text-secondary small mb-1">Atasan Langsung (Penilai) <span class="text-danger">*</span></label>
+                            <select class="form-select bg-white border-secondary-subtle shadow-sm rounded-2" id="form-appr-atasan1" name="nip_atasan" required>
+                                <option value="">-- Pilih Atasan --</option>
+                            </select>
+                            <div class="form-text small text-muted mt-2">Pejabat yang berwenang menyetujui.</div>
+                        </div>
+
+                        <div class="bg-light p-3 rounded-3 mb-0">
+                            <label class="form-label fw-semibold text-secondary small mb-1">Tingkat Level Approval</label>
+                            <select class="form-select bg-white border-secondary-subtle shadow-sm rounded-2" id="form-appr-level" name="level_atasan">
+                                <option value="1">Level 1 (Atasan Langsung)</option>
+                                <option value="2">Level 2 (Pejabat Penilai / Kasie)</option>
+                                <option value="3">Level 3 (Kepala Bidang / Direktur)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer bg-light border-top-0 px-4 py-3">
+                        <button type="button" class="btn btn-white border border-secondary-subtle text-dark fw-semibold shadow-sm rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary fw-semibold shadow-sm rounded-pill px-4 d-flex align-items-center gap-2" id="btn-save-route">
+                            <i class="fas fa-save"></i> Simpan Routing
+                        </button>
+                    </div>
+
+                </form>
             </div>
-            <div class="card-body">
-              <form id="form-pejabat-profile">
-                <!-- Kepala Bidang SDM -->
-                <div class="border rounded p-3 mb-3 bg-white">
-                  <h6 class="fw-bold text-primary mb-3"><i class="fas fa-user-tie me-2"></i>Kepala Bidang SDM (KA_BID_SDM)</h6>
-                  <div class="row g-2">
-                    <div class="col-md-7">
-                      <label class="form-label small fw-bold">Nama Lengkap & Gelar</label>
-                      <input type="text" class="form-control form-control-sm" id="set-kabid-nama" name="kabid_nama" placeholder="Nama Lengkap Pejabat">
-                    </div>
-                    <div class="col-md-5">
-                      <label class="form-label small fw-bold">NIP</label>
-                      <input type="text" class="form-control form-control-sm" id="set-kabid-nip" name="kabid_nip" placeholder="19XXXXXXXXXXXXXX">
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Kepala Instalasi -->
-                <div class="border rounded p-3 mb-3 bg-white">
-                  <h6 class="fw-bold text-primary mb-3"><i class="fas fa-hospital-user me-2"></i>Kepala Instalasi (KA_INST)</h6>
-                  <div class="row g-2">
-                    <div class="col-md-7">
-                      <label class="form-label small fw-bold">Nama Lengkap & Gelar</label>
-                      <input type="text" class="form-control form-control-sm" id="set-kainst-nama" name="kainst_nama" placeholder="Nama Lengkap Pejabat">
-                    </div>
-                    <div class="col-md-5">
-                      <label class="form-label small fw-bold">NIP</label>
-                      <input type="text" class="form-control form-control-sm" id="set-kainst-nip" name="kainst_nip" placeholder="19XXXXXXXXXXXXXX">
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Pejabat Penilai Kinerja -->
-                <div class="border rounded p-3 mb-3 bg-white">
-                  <h6 class="fw-bold text-primary mb-3"><i class="fas fa-user-check me-2"></i>Pejabat Penilai Kinerja (PEJABAT_PENILAI)</h6>
-                  <div class="row g-2">
-                    <div class="col-md-7">
-                      <label class="form-label small fw-bold">Nama Lengkap & Gelar</label>
-                      <input type="text" class="form-control form-control-sm" id="set-penilai-nama" name="penilai_nama" placeholder="Nama Lengkap Pejabat">
-                    </div>
-                    <div class="col-md-5">
-                      <label class="form-label small fw-bold">NIP</label>
-                      <input type="text" class="form-control form-control-sm" id="set-penilai-nip" name="penilai_nip" placeholder="19XXXXXXXXXXXXXX">
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Kepala Ruang -->
-                <div class="border rounded p-3 mb-3 bg-white">
-                  <h6 class="fw-bold text-primary mb-3"><i class="fas fa-door-open me-2"></i>Kepala Ruangan (KA_RUANG)</h6>
-                  <div class="row g-2">
-                    <div class="col-md-7">
-                      <label class="form-label small fw-bold">Nama Lengkap & Gelar</label>
-                      <input type="text" class="form-control form-control-sm" id="set-karuang-nama" name="karuang_nama" placeholder="Nama Lengkap Pejabat">
-                    </div>
-                    <div class="col-md-5">
-                      <label class="form-label small fw-bold">NIP</label>
-                      <input type="text" class="form-control form-control-sm" id="set-karuang-nip" name="karuang_nip" placeholder="19XXXXXXXXXXXXXX">
-                    </div>
-                  </div>
-                </div>
-
-                <div class="text-end">
-                  <button type="submit" class="btn btn-primary" id="btn-save-profile">
-                    <i class="fas fa-save me-1"></i>Simpan Konfigurasi Pejabat
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
         </div>
-
-        <div class="col-lg-4 col-md-12">
-          <!-- Information Card -->
-          <div class="card mb-3">
-            <div class="card-header bg-light py-2">
-              <h6 class="mb-0 text-dark fw-bold"><i class="fas fa-info-circle me-2 text-info"></i>Pedoman Pejabat</h6>
-            </div>
-            <div class="card-body small">
-              <p class="text-muted">Data penandatangan di samping digunakan sebagai pencetak default pada:</p>
-              <ul class="ps-3 text-muted mb-3">
-                <li>Slip Gaji & Rekapitulasi Penggajian Bulanan</li>
-                <li>Lembar Sasaran Kinerja Pegawai (SKP) Tahunan</li>
-                <li>Formulir Penilaian Capaian Bulanan</li>
-                <li>Laporan Rekapitulasi Presensi & Disiplin</li>
-              </ul>
-              <div class="alert alert-info py-2 px-3 small mb-0">
-                <i class="fas fa-lightbulb me-1"></i> Perubahan data pejabat langsung diterapkan saat mencetak dokumen PDF.
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
-
-    <!-- TAB 2: ROUTING APPROVAL HIERARCHY -->
-    <div class="tab-pane fade" id="tab-route" role="tabpanel">
-      <div class="card">
-        <div class="card-header bg-light py-2">
-          <div class="row align-items-center">
-            <div class="col">
-              <h6 class="mb-0 text-dark fw-bold"><i class="fas fa-network-wired me-2 text-primary"></i>Hierarki Alur Persetujuan Sasaran & Aktifitas Kinerja</h6>
-            </div>
-            <div class="col-auto">
-              <button class="btn btn-sm btn-primary" id="btn-add-route">
-                <i class="fas fa-plus me-1"></i>Tambah Routing Approval
-              </button>
-            </div>
-          </div>
-        </div>
-        <div class="card-body p-0">
-          <!-- Filter & Search Toolbar -->
-          <div class="p-3 border-bottom bg-light">
-            <div class="row g-2 align-items-center">
-              <div class="col-md-5">
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text bg-white"><i class="fas fa-search"></i></span>
-                  <input type="text" class="form-control" id="search-approval" placeholder="Cari NIP atau nama pemohon / atasan...">
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Table Routing -->
-          <div class="table-responsive">
-            <table class="table table-sm table-striped table-hover mb-0 align-middle">
-              <thead class="bg-200 text-800">
-                <tr>
-                  <th style="width: 50px;" class="text-center">#</th>
-                  <th>Pegawai Pemohon</th>
-                  <th>Atasan Langsung (Penilai)</th>
-                  <th style="width: 150px;">Tingkat Approval</th>
-                  <th style="width: 120px;" class="text-end pe-3">Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="approval-table-body">
-                <tr>
-                  <td colspan="5" class="text-center py-4 text-muted">
-                    <div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat routing approval...
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Pagination -->
-          <div class="d-flex justify-content-between align-items-center p-3 border-top">
-            <div class="small text-muted" id="approval-page-info">Menampilkan 0 dari 0 data</div>
-            <nav>
-              <ul class="pagination pagination-sm mb-0" id="approval-pagination"></ul>
-            </nav>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: ADD / EDIT ROUTING APPROVAL -->
-  <div class="modal fade" id="modal-approval-form" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <form id="form-approval">
-          <div class="modal-header bg-light py-2">
-            <h6 class="modal-title fw-bold" id="modal-approval-title">
-              <i class="fas fa-network-wired me-2 text-primary"></i>Tambah Routing Approval
-            </h6>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <input type="hidden" id="form-approval-id" name="id_route">
-
-            <!-- Pegawai Pemohon -->
-            <div class="mb-3">
-              <label class="form-label small fw-bold">Pegawai Pemohon <span class="text-danger">*</span></label>
-              <select class="form-select form-select-sm" id="form-appr-pemohon" name="nip" required>
-                <option value="">-- Pilih Pegawai Pemohon --</option>
-              </select>
-              <div class="form-text small">Pegawai yang mengajukan target SKP / realisasi kegiatan.</div>
-            </div>
-
-            <!-- Atasan Langsung (Penilai) -->
-            <div class="mb-3">
-              <label class="form-label small fw-bold">Atasan Langsung (Penilai) <span class="text-danger">*</span></label>
-              <select class="form-select form-select-sm" id="form-appr-atasan1" name="nip_atasan" required>
-                <option value="">-- Pilih Atasan Langsung --</option>
-              </select>
-              <div class="form-text small">Pejabat atau atasan yang berwenang menyetujui.</div>
-            </div>
-
-            <!-- Tingkat Level Approval -->
-            <div class="mb-3">
-              <label class="form-label small fw-bold">Tingkat Level Approval</label>
-              <select class="form-select form-select-sm" id="form-appr-level" name="level_atasan">
-                <option value="1">Level 1 (Atasan Langsung)</option>
-                <option value="2">Level 2 (Pejabat Penilai / Kasie)</option>
-                <option value="3">Level 3 (Kepala Bidang / Direktur)</option>
-              </select>
-            </div>
-          </div>
-          <div class="modal-footer bg-light py-2">
-            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
-            <button type="submit" class="btn btn-sm btn-primary" id="btn-save-route">
-              <i class="fas fa-save me-1"></i>Simpan Routing
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
 </template>
 
 <script type="module" defer>
