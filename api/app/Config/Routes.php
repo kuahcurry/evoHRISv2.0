@@ -167,8 +167,14 @@ $routes->post('/pegawai/cuti/delete/(:segment)', 'Pegawai::delete_cuti/$1');
 $routes->get('/cTambahPegawai', 'cTambahPegawai::index');
 $routes->get('/cTambahPegawai/index', 'cTambahPegawai::index');
 $routes->get('/cTambahPegawai/index/(:segment)', 'cTambahPegawai::index/$1');
-$routes->get('/cTambahPegawai/cetak_riwayat', 'cTambahPegawai::cetak_riwayat');
-$routes->get('/cTambahPegawai/cetak_riwayat/(:segment)', 'cTambahPegawai::cetak_riwayat/$1');
+$routes->match(['get', 'post'], '/cTambahPegawai/cetak_riwayat', 'cTambahPegawai::cetak_riwayat');
+$routes->match(['get', 'post'], '/cTambahPegawai/cetak_riwayat/(:segment)', 'cTambahPegawai::cetak_riwayat/$1');
+$routes->match(['get', 'post'], '/cTambahPegawai/print', 'cTambahPegawai::print');
+$routes->match(['get', 'post'], '/cTambahPegawai/print/(:segment)', 'cTambahPegawai::print/$1');
+$routes->match(['get', 'post'], '/pegawai/pegawai/print', 'cTambahPegawai::print');
+$routes->match(['get', 'post'], '/pegawai/pegawai/print/(:segment)', 'cTambahPegawai::print/$1');
+$routes->match(['get', 'post'], '/pegawai/pegawai/cetak_riwayat', 'cTambahPegawai::cetak_riwayat');
+$routes->match(['get', 'post'], '/pegawai/pegawai/cetak_riwayat/(:segment)', 'cTambahPegawai::cetak_riwayat/$1');
 $routes->get('/cTambahPegawai/get_data_pegawai', 'cTambahPegawai::get_data_pegawai');
 
 $routes->get('/cPegawai', 'cPegawai::master');

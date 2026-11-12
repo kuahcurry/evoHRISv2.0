@@ -436,9 +436,29 @@
     }
   }
 
-  function bukaCetakRiwayat(id) {
+  async function bukaCetakRiwayat(id) {
     if (!id) return;
-    window.open(`./modules/pegawai/pegawai/VcetakRiwayat.html?id=${id}`, '_blank');
+    try {
+      if (typeof showLoader === 'function') showLoader();
+      const rs = await httpPost(`${config.api_url}/cTambahPegawai/print/${id}`, { id: id });
+      if (typeof hideLoader === 'function') hideLoader();
+      if (rs && rs.code === 200 && rs.data && rs.data.length > 0 && rs.data[0].file) {
+        window.open(rs.data[0].file, '_blank');
+      } else {
+        const msg = (rs && rs.message) ? rs.message : 'Gagal mencetak riwayat pegawai.';
+        if (typeof showDialog === 'function') {
+          showDialog({ ui: 'interactive', size: 'large', type: 'warning', label: `<span class="text-danger">${msg}</span>` });
+        } else if (typeof Swal !== 'undefined') {
+          Swal.fire('Cetak Gagal', msg, 'warning');
+        } else {
+          alert(msg);
+        }
+      }
+    } catch (err) {
+      if (typeof hideLoader === 'function') hideLoader();
+      console.error('Error saat mencetak riwayat:', err);
+      window.open(`${config.api_url}/cTambahPegawai/print/${id}`, '_blank');
+    }
   }
 
   async function konfirmasiHapusPegawai(id, nama) {
