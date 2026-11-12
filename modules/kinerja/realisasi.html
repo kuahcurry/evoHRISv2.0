@@ -1,22 +1,536 @@
-<style>
-  .kinerja-realisasi .card {
-    border: none;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
-    border-radius: 0.5rem;
-  }
-  .kinerja-realisasi .table th {
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    background-color: #f8f9fa;
-    color: #495057;
-    font-weight: 600;
-  }
-  .kinerja-realisasi .table td {
-    vertical-align: middle;
-    font-size: 0.85rem;
-  }
-</style>
+<template>
+  <style>
+    /* ==========================================
+       DESIGN SYSTEM & VARIABLES
+       ========================================== */
+    :root {
+      --ui-bg: #f8fafc;
+      --ui-surface: #ffffff;
+      --ui-text-main: #0f172a;
+      --ui-text-muted: #64748b;
+      --ui-primary: #4f46e5; /* Warna Indigo/Blue */
+      --ui-primary-hover: #4338ca;
+      --ui-border: #e2e8f0;
+      
+      --ui-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --ui-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.025);
+      --ui-shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.025);
+      
+      --ui-radius-md: 0.5rem;
+      --ui-radius-lg: 0.75rem;
+      --ui-radius-xl: 1rem;
+    }
+
+    .realisasi-wrapper {
+      background-color: var(--ui-bg);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 2.5rem 2rem;
+      min-height: 100vh;
+      color: var(--ui-text-main);
+    }
+
+    /* ==========================================
+       STAT CARDS
+       ========================================== */
+    .stat-card {
+      background: var(--ui-surface);
+      border: 1px solid var(--ui-border);
+      border-radius: var(--ui-radius-xl);
+      padding: 1.5rem;
+      box-shadow: var(--ui-shadow-sm);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      height: 100%;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--ui-shadow-lg);
+    }
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--ui-radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+    
+    .icon-primary { background: #eef2ff; color: #4f46e5; }
+    .icon-info    { background: #e0f2fe; color: #0284c7; }
+    .icon-success { background: #dcfce7; color: #16a34a; }
+    .icon-warning { background: #fef3c7; color: #d97706; }
+
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      margin-bottom: 0;
+      color: var(--ui-text-main);
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--ui-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.25rem;
+    }
+
+    /* ==========================================
+       UI CARDS & TABLES
+       ========================================== */
+    .ui-card {
+      background: var(--ui-surface);
+      border: 1px solid var(--ui-border);
+      border-radius: var(--ui-radius-xl);
+      box-shadow: var(--ui-shadow-md);
+      overflow: hidden;
+    }
+
+    .ui-card-header {
+      background: var(--ui-surface);
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--ui-border);
+    }
+
+    .ui-input {
+      border-radius: var(--ui-radius-md);
+      border: 1px solid var(--ui-border);
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+      background: #f8fafc;
+    }
+
+    .ui-input:focus {
+      border-color: var(--ui-primary);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+      background: #ffffff;
+    }
+
+    .ui-table {
+      width: 100%;
+      margin-bottom: 0;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .ui-table th {
+      background: #f8fafc;
+      color: var(--ui-text-muted);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--ui-border);
+      white-space: nowrap;
+    }
+
+    .ui-table td {
+      padding: 1rem 1.25rem;
+      vertical-align: middle;
+      border-bottom: 1px solid var(--ui-border);
+      color: var(--ui-text-main);
+      font-size: 0.85rem;
+    }
+
+    .ui-table tbody tr {
+      transition: background 0.2s ease;
+    }
+
+    .ui-table tbody tr:hover {
+      background: #f1f5f9;
+    }
+
+    /* ==========================================
+       BUTTONS
+       ========================================== */
+    .btn-ui-primary {
+      background: var(--ui-primary);
+      color: white;
+      border: none;
+      border-radius: var(--ui-radius-md);
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-ui-primary:hover {
+      background: var(--ui-primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+      color: white;
+    }
+
+    .btn-ui-white {
+      background: var(--ui-surface);
+      border: 1px solid var(--ui-border);
+      color: var(--ui-text-main);
+      border-radius: var(--ui-radius-md);
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      box-shadow: var(--ui-shadow-sm);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-ui-white:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      transform: translateY(-1px);
+      box-shadow: var(--ui-shadow-md);
+      color: var(--ui-text-main);
+    }
+
+    /* ==========================================
+       MODAL STYLING
+       ========================================== */
+    .ui-modal .modal-content {
+      border: none;
+      border-radius: var(--ui-radius-xl);
+      box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+
+    .ui-modal .modal-header {
+      background: var(--ui-surface);
+      border-bottom: 1px solid var(--ui-border);
+      padding: 1.25rem 1.5rem;
+    }
+
+    .ui-modal .modal-body {
+      padding: 1.5rem;
+      background: var(--ui-surface);
+    }
+
+    .ui-modal .modal-footer {
+      background: var(--ui-bg);
+      border-top: 1px solid var(--ui-border);
+      padding: 1rem 1.5rem;
+    }
+
+    /* ==========================================
+       MISC (Predikat & Capaian)
+       ========================================== */
+    .score-badge {
+      font-size: 1rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 0.5rem;
+      font-weight: 800;
+    }
+    .bg-score-excellent { background: #dcfce7; color: #16a34a; }
+    .bg-score-good      { background: #e0f2fe; color: #0284c7; }
+    .bg-score-fair      { background: #fef3c7; color: #d97706; }
+    .bg-score-poor      { background: #fee2e2; color: #dc2626; }
+  </style>
+
+  <div class="realisasi-wrapper">
+    
+    <!-- HEADER -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon icon-primary" style="width: 56px; height: 56px; font-size: 1.5rem; border-radius: var(--ui-radius-lg);">
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <div>
+          <h3 class="fw-bold text-dark mb-1">Capaian & Realisasi SKP</h3>
+          <p class="text-secondary mb-0">Evaluasi pencapaian target kerja pegawai, perhitungan efisiensi output, kualitas mutu, dan waktu.</p>
+        </div>
+      </div>
+      
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-semibold" id="badge-total-realisasi">Memuat...</span>
+        <button class="btn btn-ui-white" id="btn-refresh-realisasi">
+          <i class="fas fa-sync-alt text-primary"></i> Refresh
+        </button>
+        <button class="btn btn-ui-primary" id="btn-tambah-realisasi">
+          <i class="fas fa-plus"></i> Input Realisasi
+        </button>
+      </div>
+    </div>
+
+    <!-- STAT CARDS -->
+    <div class="row g-4 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon icon-primary"><i class="fas fa-percentage"></i></div>
+            <div>
+              <div class="stat-label">Rata-rata Capaian</div>
+              <div class="stat-value" id="card-stat-real-avg">0%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon icon-info"><i class="fas fa-tasks"></i></div>
+            <div>
+              <div class="stat-label">Total Terlapor</div>
+              <div class="stat-value" id="card-stat-real-total">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon icon-success"><i class="fas fa-medal"></i></div>
+            <div>
+              <div class="stat-label">Predikat Baik</div>
+              <div class="stat-value" id="card-stat-real-good">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon icon-warning"><i class="fas fa-hourglass-half"></i></div>
+            <div>
+              <div class="stat-label">Menunggu Review</div>
+              <div class="stat-value" id="card-stat-real-pending">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILTER CARD -->
+    <div class="ui-card mb-4">
+      <div class="ui-card-header">
+        <div class="row g-3 align-items-center">
+          <div class="col-md-4">
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-search"></i></span>
+              <input type="text" class="form-control ui-input border-start-0 ps-0" id="search-realisasi" placeholder="Cari nama, NIP, atau target SKP...">
+            </div>
+          </div>
+          <div class="col-md-3">
+            <select class="form-select ui-input" id="filter-tahun-realisasi">
+              <option value="">-- Semua Tahun --</option>
+              <option value="2026">2026</option>
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <select class="form-select ui-input" id="filter-bagian-realisasi">
+              <option value="">-- Semua Unit / Bagian --</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button class="btn btn-ui-white w-100 justify-content-center" id="btn-filter-realisasi">
+              <i class="fas fa-filter text-primary"></i> Filter
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN TABLE CARD -->
+    <div class="ui-card">
+      <div class="ui-card-header d-flex justify-content-between align-items-center border-bottom-0">
+        <h5 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+          <i class="fas fa-chart-bar text-primary"></i> Laporan Capaian Realisasi
+        </h5>
+        <div class="spinner-border spinner-border-sm text-primary d-none" id="loading-realisasi" role="status"></div>
+      </div>
+      
+      <div class="table-responsive">
+        <table class="ui-table">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 50px;">No</th>
+              <th style="width: 210px;">Pegawai & Unit</th>
+              <th>Target SKP</th>
+              <th style="width: 140px;">Target (Out/Mutu/Wkt)</th>
+              <th style="width: 140px;">Realisasi</th>
+              <th class="text-center" style="width: 110px;">Capaian SKP</th>
+              <th class="text-center" style="width: 110px;">Predikat</th>
+              <th class="text-center" style="width: 100px;">Status</th>
+              <th class="text-center" style="width: 80px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-realisasi">
+            <tr>
+              <td colspan="9" class="text-center py-5 text-muted">
+                <div class="spinner-border text-primary mb-2" role="status" style="width: 1.5rem; height: 1.5rem;"></div>
+                <div>Memuat data realisasi...</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="ui-card-header border-top border-bottom-0 d-flex flex-column flex-md-row justify-content-between align-items-center py-3">
+        <div class="small text-muted fw-semibold mb-2 mb-md-0" id="pagination-info-realisasi">Menampilkan 0 data</div>
+        <ul class="pagination pagination-sm mb-0 shadow-sm" id="pagination-realisasi"></ul>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL DETAIL REALISASI SKP                 -->
+  <!-- ========================================== -->
+  <div class="modal fade ui-modal" id="modal-realisasi-detail" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        
+        <div class="modal-header bg-primary bg-opacity-10 border-0">
+          <h5 class="modal-title fw-bold text-primary d-flex align-items-center gap-2">
+            <i class="fas fa-calculator"></i> Rincian & Formula Capaian
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body p-4">
+          
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <div class="text-muted small text-uppercase fw-semibold mb-1">Pegawai</div>
+              <h5 class="fw-bold text-dark mb-0" id="modal-detail-real-nama">-</h5>
+              <div class="text-secondary small">NIP: <span id="modal-detail-real-nip">-</span></div>
+            </div>
+            <div class="col-md-6">
+              <div class="text-muted small text-uppercase fw-semibold mb-1">Unit Kerja</div>
+              <h6 class="fw-bold text-primary mb-0" id="modal-detail-real-bagian">-</h6>
+            </div>
+          </div>
+
+          <div class="bg-light p-4 rounded-3 mb-4 border">
+            <div class="text-muted small text-uppercase fw-semibold mb-1">Sasaran Kerja Pegawai</div>
+            <div class="fs-6 fw-bold text-dark" id="modal-detail-real-target">-</div>
+          </div>
+
+          <div class="table-responsive mb-4">
+            <table class="table table-bordered text-center align-middle rounded-3 overflow-hidden">
+              <thead class="bg-light">
+                <tr>
+                  <th class="text-start">Aspek Penilaian</th>
+                  <th>Target</th>
+                  <th>Realisasi</th>
+                  <th>Nilai Aspek</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="text-start fw-semibold text-secondary"><i class="fas fa-boxes me-2 text-info"></i>Kuantitas / Output</td>
+                  <td id="modal-detail-real-tgt-out">0</td>
+                  <td id="modal-detail-real-act-out">0</td>
+                  <td class="fw-bold text-primary" id="modal-detail-real-calc-out">0%</td>
+                </tr>
+                <tr>
+                  <td class="text-start fw-semibold text-secondary"><i class="fas fa-award me-2 text-success"></i>Kualitas / Mutu</td>
+                  <td id="modal-detail-real-tgt-mutu">100%</td>
+                  <td id="modal-detail-real-act-mutu">0%</td>
+                  <td class="fw-bold text-success" id="modal-detail-real-calc-mutu">0%</td>
+                </tr>
+                <tr>
+                  <td class="text-start fw-semibold text-secondary"><i class="fas fa-clock me-2 text-warning"></i>Waktu Pelaksanaan</td>
+                  <td id="modal-detail-real-tgt-waktu">0</td>
+                  <td id="modal-detail-real-act-waktu">0</td>
+                  <td class="fw-bold text-warning" id="modal-detail-real-calc-waktu">0%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="bg-primary bg-opacity-10 p-4 rounded-4 text-center border border-primary-subtle">
+            <div class="row align-items-center">
+              <div class="col-6 border-end border-primary-subtle">
+                <div class="text-secondary small fw-semibold mb-1">Nilai Akhir</div>
+                <h2 class="fw-bold text-primary mb-0" id="modal-detail-real-score">0%</h2>
+              </div>
+              <div class="col-6">
+                <div class="text-secondary small fw-semibold mb-1">Predikat</div>
+                <h3 class="fw-bold text-dark mb-0" id="modal-detail-real-predikat">-</h3>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ui-white" data-bs-dismiss="modal">Tutup</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL FORM INPUT REALISASI                 -->
+  <!-- ========================================== -->
+  <div class="modal fade ui-modal" id="modal-realisasi-form" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2">
+            <i class="fas fa-edit text-primary"></i> Input Capaian Realisasi
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body p-4">
+          
+          <div class="mb-4">
+            <label class="form-label fw-semibold text-secondary small">Pilih Target SKP <span class="text-danger">*</span></label>
+            <select class="form-select ui-input" id="modal-real-target">
+              <option value="">-- Pilih Target SKP Pegawai --</option>
+            </select>
+          </div>
+
+          <div class="row g-4 mb-4">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold text-secondary small">Realisasi Output <span class="text-danger">*</span></label>
+              <input type="number" class="form-control ui-input" id="modal-real-output" value="1">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold text-secondary small">Realisasi Mutu (%) <span class="text-danger">*</span></label>
+              <input type="number" class="form-control ui-input" id="modal-real-mutu" value="100">
+            </div>
+          </div>
+
+          <div class="row g-4 mb-0">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold text-secondary small">Realisasi Waktu <span class="text-danger">*</span></label>
+              <input type="number" class="form-control ui-input" id="modal-real-waktu" value="1">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold text-secondary small">Anggaran Biaya (Rp)</label>
+              <input type="number" class="form-control ui-input" id="modal-real-biaya" value="0">
+            </div>
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ui-white" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-ui-primary" id="btn-save-realisasi">
+            <i class="fas fa-save"></i> Simpan Realisasi
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</template>
 
 <script type="module" defer>
   import { httpGet, httpPost } from './assets/js/core/http.js';
@@ -359,273 +873,3 @@
 
   initModule();
 </script>
-
-<template>
-  <div class="container-fluid py-3 kinerja-realisasi">
-    <!-- Header -->
-    <div class="row align-items-center mb-3">
-      <div class="col-md-7">
-        <div class="d-flex align-items-center">
-          <div class="avatar bg-soft-primary text-primary p-3 rounded-circle me-3">
-            <i class="fas fa-chart-line fa-2x"></i>
-          </div>
-          <div>
-            <h4 class="mb-0 fw-bold">Capaian & Realisasi SKP</h4>
-            <p class="text-muted small mb-0">Evaluasi pencapaian target kerja pegawai, perhitungan efisiensi output, kualitas mutu, dan waktu</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-5 text-md-end mt-2 mt-md-0">
-        <span class="badge bg-primary px-3 py-2 me-2" id="badge-total-realisasi">Memuat...</span>
-        <button class="btn btn-outline-secondary btn-sm me-2" id="btn-refresh-realisasi" title="Segarkan Data">
-          <i class="fas fa-sync-alt"></i>
-        </button>
-        <button class="btn btn-primary btn-sm" id="btn-tambah-realisasi">
-          <i class="fas fa-plus me-1"></i>Input Realisasi Baru
-        </button>
-      </div>
-    </div>
-
-    <!-- Summary Cards -->
-    <div class="row g-3 mb-3">
-      <div class="col-6 col-md-3">
-        <div class="card p-3 border-start border-4 border-primary">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Rata-rata Capaian SKP</div>
-              <h4 class="mb-0 fw-bold text-primary" id="card-stat-real-avg">0%</h4>
-            </div>
-            <i class="fas fa-percentage fa-2x text-primary opacity-25"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card p-3 border-start border-4 border-info">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Total Realisasi Terlapor</div>
-              <h4 class="mb-0 fw-bold text-info" id="card-stat-real-total">0</h4>
-            </div>
-            <i class="fas fa-tasks fa-2x text-info opacity-25"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card p-3 border-start border-4 border-success">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Predikat Baik / Sangat Baik</div>
-              <h4 class="mb-0 fw-bold text-success" id="card-stat-real-good">0</h4>
-            </div>
-            <i class="fas fa-medal fa-2x text-success opacity-25"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card p-3 border-start border-4 border-warning">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Menunggu Review</div>
-              <h4 class="mb-0 fw-bold text-warning" id="card-stat-real-pending">0</h4>
-            </div>
-            <i class="fas fa-hourglass-half fa-2x text-warning opacity-25"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Filter Card -->
-    <div class="card p-3 mb-3">
-      <div class="row g-2 align-items-center">
-        <div class="col-md-4">
-          <div class="input-group input-group-sm">
-            <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
-            <input type="text" class="form-control" id="search-realisasi" placeholder="Cari nama, NIP, atau target SKP...">
-          </div>
-        </div>
-        <div class="col-md-3">
-          <select class="form-select form-select-sm" id="filter-tahun-realisasi">
-            <option value="">-- Semua Tahun --</option>
-            <option value="2026">Tahun 2026</option>
-            <option value="2025">Tahun 2025</option>
-            <option value="2024">Tahun 2024</option>
-            <option value="2023">Tahun 2023</option>
-          </select>
-        </div>
-        <div class="col-md-3">
-          <select class="form-select form-select-sm" id="filter-bagian-realisasi">
-            <option value="">-- Semua Unit / Bagian --</option>
-          </select>
-        </div>
-        <div class="col-md-2 text-end">
-          <button class="btn btn-outline-primary btn-sm w-100" id="btn-filter-realisasi">
-            <i class="fas fa-filter me-1"></i>Filter
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Table Card -->
-    <div class="card">
-      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-chart-bar me-2 text-primary"></i>Laporan Capaian Realisasi Sasaran Kerja Pegawai</h6>
-        <div class="spinner-border spinner-border-sm text-primary d-none" id="loading-realisasi"></div>
-      </div>
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead>
-            <tr>
-              <th class="text-center" style="width: 45px;">No</th>
-              <th style="width: 210px;">Pegawai & Unit</th>
-              <th>Target SKP</th>
-              <th style="width: 140px;">Target (Out/Mutu/Wkt)</th>
-              <th style="width: 140px;">Realisasi</th>
-              <th class="text-center" style="width: 110px;">Capaian SKP</th>
-              <th class="text-center" style="width: 110px;">Predikat</th>
-              <th class="text-center" style="width: 100px;">Status</th>
-              <th class="text-center" style="width: 70px;">Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="tbody-realisasi">
-            <tr>
-              <td colspan="9" class="text-center py-4 text-muted">
-                <span class="spinner-border spinner-border-sm me-2"></span>Memuat data...
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="card-footer bg-white d-flex flex-column flex-md-row justify-content-between align-items-center py-2">
-        <div class="text-muted small mb-2 mb-md-0" id="pagination-info-realisasi">Menampilkan 0 data</div>
-        <ul class="pagination pagination-sm mb-0" id="pagination-realisasi"></ul>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Detail Realisasi SKP -->
-  <div class="modal fade" id="modal-realisasi-detail" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content">
-        <div class="modal-header bg-primary text-white">
-          <h5 class="modal-title"><i class="fas fa-calculator me-2"></i>Rincian & Formula Perhitungan Capaian SKP</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body p-4">
-          <div class="row g-3 mb-3">
-            <div class="col-md-6">
-              <label class="text-muted small d-block">Pegawai</label>
-              <h5 class="fw-bold text-dark mb-0" id="modal-detail-real-nama">-</h5>
-              <div class="text-muted small">NIP: <span id="modal-detail-real-nip">-</span></div>
-            </div>
-            <div class="col-md-6">
-              <label class="text-muted small d-block">Unit Kerja</label>
-              <h6 class="fw-semibold text-primary mb-0" id="modal-detail-real-bagian">-</h6>
-            </div>
-          </div>
-
-          <div class="card bg-light p-3 mb-4">
-            <label class="text-muted small">Sasaran Kerja Pegawai</label>
-            <div class="fs-6 fw-bold text-dark" id="modal-detail-real-target">-</div>
-          </div>
-
-          <div class="table-responsive mb-4">
-            <table class="table table-bordered text-center align-middle">
-              <thead class="bg-light">
-                <tr>
-                  <th>Aspek Penilaian</th>
-                  <th>Target</th>
-                  <th>Realisasi</th>
-                  <th>Nilai Aspek (%)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="text-start fw-semibold"><i class="fas fa-boxes me-2 text-info"></i>Kuantitas / Output</td>
-                  <td id="modal-detail-real-tgt-out">0</td>
-                  <td id="modal-detail-real-act-out">0</td>
-                  <td class="fw-bold text-primary" id="modal-detail-real-calc-out">0%</td>
-                </tr>
-                <tr>
-                  <td class="text-start fw-semibold"><i class="fas fa-award me-2 text-success"></i>Kualitas / Mutu</td>
-                  <td id="modal-detail-real-tgt-mutu">100%</td>
-                  <td id="modal-detail-real-act-mutu">0%</td>
-                  <td class="fw-bold text-success" id="modal-detail-real-calc-mutu">0%</td>
-                </tr>
-                <tr>
-                  <td class="text-start fw-semibold"><i class="fas fa-clock me-2 text-warning"></i>Waktu Pelaksanaan</td>
-                  <td id="modal-detail-real-tgt-waktu">0</td>
-                  <td id="modal-detail-real-act-waktu">0</td>
-                  <td class="fw-bold text-warning" id="modal-detail-real-calc-waktu">0%</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="card bg-soft-primary p-3 text-center border-0">
-            <div class="row align-items-center">
-              <div class="col-6 border-end">
-                <div class="text-muted small">Nilai Akhir Capaian SKP</div>
-                <h2 class="fw-bold text-primary mb-0" id="modal-detail-real-score">0%</h2>
-              </div>
-              <div class="col-6">
-                <div class="text-muted small">Predikat Hasil Kinerja</div>
-                <h3 class="fw-bold text-dark mb-0" id="modal-detail-real-predikat">-</h3>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Form Input Realisasi -->
-  <div class="modal fade" id="modal-realisasi-form" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content">
-        <div class="modal-header bg-primary text-white">
-          <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Input Capaian Realisasi SKP</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body p-4">
-          <div class="mb-3">
-            <label class="form-label fw-bold small">Pilih Sasaran Kerja Pegawai (SKP) <span class="text-danger">*</span></label>
-            <select class="form-select form-select-sm" id="modal-real-target">
-              <option value="">-- Pilih Target SKP Pegawai --</option>
-            </select>
-          </div>
-
-          <div class="row g-3 mb-3">
-            <div class="col-md-6">
-              <label class="form-label fw-bold small">Realisasi Output / Volume <span class="text-danger">*</span></label>
-              <input type="number" class="form-control form-control-sm" id="modal-real-output" value="1">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-bold small">Realisasi Kualitas / Mutu (%) <span class="text-danger">*</span></label>
-              <input type="number" class="form-control form-control-sm" id="modal-real-mutu" value="100">
-            </div>
-          </div>
-
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label fw-bold small">Realisasi Waktu Pelaksanaan <span class="text-danger">*</span></label>
-              <input type="number" class="form-control form-control-sm" id="modal-real-waktu" value="1">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-bold small">Realisasi Anggaran Biaya (Rp)</label>
-              <input type="number" class="form-control form-control-sm" id="modal-real-biaya" value="0">
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-          <button type="button" class="btn btn-primary btn-sm" id="btn-save-realisasi">
-            <i class="fas fa-save me-1"></i>Simpan Realisasi SKP
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>

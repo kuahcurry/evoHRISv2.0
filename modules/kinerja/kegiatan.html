@@ -1,23 +1,391 @@
-<style>
-  .kinerja-kegiatan .card {
-    border: none;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
-    border-radius: 0.5rem;
-  }
-  .kinerja-kegiatan .table th {
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    background-color: #f8f9fa;
-    color: #495057;
-    font-weight: 600;
-  }
-  .kinerja-kegiatan .table td {
-    vertical-align: middle;
-    font-size: 0.85rem;
-  }
-</style>
+<template>
+    <style>
+        /* ==========================================
+           DESIGN SYSTEM & VARIABLES
+           ========================================== */
+        :root {
+            --ui-bg: #f8fafc;
+            --ui-surface: #ffffff;
+            --ui-text-main: #0f172a;
+            --ui-text-muted: #64748b;
+            --ui-primary: #4f46e5;
+            --ui-primary-hover: #4338ca;
+            --ui-border: #e2e8f0;
+            
+            --ui-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --ui-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.025);
+            --ui-shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.025);
+            
+            --ui-radius-md: 0.5rem;
+            --ui-radius-lg: 0.75rem;
+            --ui-radius-xl: 1rem;
+        }
 
+        .saas-wrapper {
+            background-color: var(--ui-bg);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            padding: 2.5rem 2rem;
+            min-height: 100vh;
+            color: var(--ui-text-main);
+        }
+
+        /* ==========================================
+           STAT CARDS
+           ========================================== */
+        .stat-card {
+            background: var(--ui-surface);
+            border: 1px solid var(--ui-border);
+            border-radius: var(--ui-radius-xl);
+            padding: 1.5rem;
+            box-shadow: var(--ui-shadow-sm);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            height: 100%;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--ui-shadow-lg);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--ui-radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+        
+        .icon-primary { background: #eef2ff; color: var(--ui-primary); }
+        .icon-success { background: #dcfce7; color: #16a34a; }
+        .icon-info { background: #e0f2fe; color: #0284c7; }
+
+        .stat-value {
+            font-size: 1.85rem;
+            font-weight: 800;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+            margin-bottom: 0;
+            color: var(--ui-text-main);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--ui-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        /* ==========================================
+           UI CARDS & FILTERS
+           ========================================== */
+        .ui-card {
+            background: var(--ui-surface);
+            border: 1px solid var(--ui-border);
+            border-radius: var(--ui-radius-xl);
+            box-shadow: var(--ui-shadow-md);
+            overflow: hidden;
+        }
+
+        .ui-card-header {
+            background: var(--ui-surface);
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--ui-border);
+        }
+
+        .ui-input {
+            border-radius: var(--ui-radius-md);
+            border: 1px solid var(--ui-border);
+            padding: 0.6rem 1rem;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            background: #f8fafc;
+        }
+
+        .ui-input:focus {
+            border-color: var(--ui-primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+            background: #ffffff;
+        }
+
+        /* ==========================================
+           TABLE
+           ========================================== */
+        .ui-table {
+            width: 100%;
+            margin-bottom: 0;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .ui-table th {
+            background: #f8fafc;
+            color: var(--ui-text-muted);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--ui-border);
+            white-space: nowrap;
+        }
+
+        .ui-table td {
+            padding: 1rem 1.5rem;
+            vertical-align: middle;
+            border-bottom: 1px solid var(--ui-border);
+            color: var(--ui-text-main);
+            font-size: 0.9rem;
+        }
+
+        .ui-table tbody tr {
+            transition: background 0.2s ease;
+        }
+
+        .ui-table tbody tr:hover {
+            background: #f1f5f9;
+        }
+
+        /* ==========================================
+           BUTTONS
+           ========================================== */
+        .btn-ui-primary {
+            background: var(--ui-primary);
+            color: white;
+            border: none;
+            border-radius: var(--ui-radius-md);
+            font-weight: 600;
+            padding: 0.6rem 1.25rem;
+            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-ui-primary:hover {
+            background: var(--ui-primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+            color: white;
+        }
+
+        .btn-ui-white {
+            background: var(--ui-surface);
+            border: 1px solid var(--ui-border);
+            color: var(--ui-text-main);
+            border-radius: var(--ui-radius-md);
+            font-weight: 600;
+            padding: 0.6rem 1.25rem;
+            box-shadow: var(--ui-shadow-sm);
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-ui-white:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+            transform: translateY(-1px);
+            box-shadow: var(--ui-shadow-md);
+            color: var(--ui-text-main);
+        }
+
+        /* ==========================================
+           MODAL
+           ========================================== */
+        .ui-modal .modal-content {
+            border: none;
+            border-radius: var(--ui-radius-xl);
+            box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        .ui-modal .modal-header {
+            background: var(--ui-surface);
+            border-bottom: 1px solid var(--ui-border);
+            padding: 1.25rem 1.5rem;
+        }
+
+        .ui-modal .modal-body {
+            padding: 1.5rem;
+            background: var(--ui-surface);
+        }
+
+        .ui-modal .modal-footer {
+            background: var(--ui-bg);
+            border-top: 1px solid var(--ui-border);
+            padding: 1rem 1.5rem;
+        }
+    </style>
+
+    <div class="saas-wrapper">
+        
+        <!-- HEADER -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon" style="width: 56px; height: 56px; background: #eef2ff; color: var(--ui-primary); font-size: 1.5rem;">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">Program Kerja & Kegiatan</h3>
+                    <p class="text-secondary mb-0">Master perencanaan kegiatan rumah sakit sebagai payung program Sasaran Kerja Pegawai (SKP).</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- STAT CARDS -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-icon icon-primary"><i class="fas fa-tasks"></i></div>
+                        <div>
+                            <div class="stat-label">Total Program</div>
+                            <div class="stat-value" id="card-stat-kgt-total">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-icon icon-success"><i class="fas fa-hospital"></i></div>
+                        <div>
+                            <div class="stat-label">Unit Terlibat</div>
+                            <div class="stat-value" id="card-stat-kgt-unit">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-icon icon-info"><i class="fas fa-check-circle"></i></div>
+                        <div>
+                            <div class="stat-label">Program Aktif</div>
+                            <div class="stat-value" id="card-stat-kgt-active">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FILTER & SEARCH CARD -->
+        <div class="ui-card mb-4">
+            <div class="ui-card-header">
+                <div class="row g-3 align-items-center">
+                    <div class="col-lg-4">
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-search"></i></span>
+                            <input type="text" class="form-control ui-input border-start-0 ps-0" id="search-kegiatan" placeholder="Cari uraian program, unit, atau PIC...">
+                        </div>
+                    </div>
+                    <div class="col-lg-3">
+                        <select class="form-select ui-input" id="filter-bagian-kgt">
+                            <option value="">-- Semua Unit / Bagian --</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-5 d-flex justify-content-lg-end align-items-center gap-2 flex-wrap">
+                        <button type="button" class="btn btn-ui-white py-2" id="btn-refresh-kgt">
+                            <i class="fas fa-sync-alt text-primary"></i> Refresh
+                        </button>
+                        <button type="button" class="btn btn-ui-white py-2" id="btn-filter-kgt">
+                            <i class="fas fa-filter text-primary"></i> Terapkan
+                        </button>
+                        <button type="button" class="btn btn-ui-primary py-2" id="btn-tambah-kgt">
+                            <i class="fas fa-plus"></i> Tambah Program
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN TABLE CARD -->
+        <div class="ui-card">
+            <div class="ui-card-header d-flex justify-content-between align-items-center border-bottom-0">
+                <h5 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                    <i class="fas fa-list text-primary"></i> Daftar Master Program Kerja
+                </h5>
+                <div class="spinner-border spinner-border-sm text-primary d-none" id="loading-kegiatan" role="status"></div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="ui-table">
+                    <thead>
+                        <tr>
+                            <th class="text-center" style="width: 60px;">No</th>
+                            <th style="width: 250px;">Unit / Bagian</th>
+                            <th>Uraian Program Kerja</th>
+                            <th style="width: 220px;">PIC Pegawai</th>
+                            <th class="text-center" style="width: 120px;">Status</th>
+                            <th class="text-center" style="width: 120px;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-kegiatan">
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <div class="spinner-border text-primary mb-2" role="status" style="width: 1.5rem; height: 1.5rem;"></div>
+                                <div>Memuat data program kerja...</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="ui-card-header border-top border-bottom-0 d-flex flex-column flex-md-row justify-content-between align-items-center py-3">
+                <div class="small text-muted fw-semibold mb-2 mb-md-0" id="pagination-info-kegiatan">Menampilkan 0 data</div>
+                <ul class="pagination pagination-sm mb-0 shadow-sm" id="pagination-kegiatan"></ul>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL: FORM PROGRAM KERJA                  -->
+    <!-- ========================================== -->
+    <div class="modal fade ui-modal" id="modal-kegiatan-form" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="modal-kgt-title">
+                        <i class="fas fa-clipboard-list text-primary"></i> Program Kerja
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                
+                <div class="modal-body">
+                    <input type="hidden" id="modal-kgt-id">
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-secondary small">Unit / Bagian Penanggung Jawab <span class="text-danger">*</span></label>
+                        <select class="form-select ui-input" id="modal-kgt-bagian">
+                            <option value="">-- Pilih Unit / Bagian --</option>
+                        </select>
+                        <div class="form-text small text-muted mt-1">Pilih unit rumah sakit yang membawahi program ini.</div>
+                    </div>
+                    
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold text-secondary small">Uraian Program Kerja <span class="text-danger">*</span></label>
+                        <textarea class="form-control ui-input" id="modal-kgt-desc" rows="4" placeholder="Contoh: Pemeliharaan Perangkat Keras dan Jaringan IT Rumah Sakit..."></textarea>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ui-white" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-ui-primary" id="btn-save-kgt">
+                        <i class="fas fa-save"></i> Simpan Program
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
 <script type="module" defer>
   import { httpGet, httpPost } from './assets/js/core/http.js';
 
@@ -265,9 +633,9 @@
 
     try {
       const res = await httpPost(`${config.api_url}/kinerja/program-kerja/save`, {
-        id_kgt: id,
-        desc_kgt: desc,
-        kd_bagian: kdBagian
+        ID_KGT: id,
+        DESC_KGT: desc,
+        KD_BAGIAN: kdBagian
       });
 
       if (res && res.code === 200) {
@@ -293,7 +661,7 @@
     if (!confirm(`Apakah Anda yakin ingin menghapus program kerja "${title}"?`)) return;
 
     try {
-      const res = await httpPost(`${config.api_url}/kinerja/program-kerja/delete`, { id_kgt: id });
+      const res = await httpPost(`${config.api_url}/kinerja/program-kerja/delete`, { ID_KGT: id });
       if (res && res.code === 200) {
         await loadData();
       } else {
@@ -331,162 +699,3 @@
 
   initModule();
 </script>
-
-<template>
-  <div class="container-fluid py-3 kinerja-kegiatan">
-    <!-- Header -->
-    <div class="row align-items-center mb-3">
-      <div class="col-md-7">
-        <div class="d-flex align-items-center">
-          <div class="avatar bg-soft-primary text-primary p-3 rounded-circle me-3">
-            <i class="fas fa-clipboard-list fa-2x"></i>
-          </div>
-          <div>
-            <h4 class="mb-0 fw-bold">Program Kerja & Kegiatan Tahunan</h4>
-            <p class="text-muted small mb-0">Master perencanaan kegiatan rumah sakit sebagai payung program Sasaran Kerja Pegawai (SKP)</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Summary Cards -->
-    <div class="row g-3 mb-3">
-      <div class="col-6 col-md-4">
-        <div class="card p-3 border-start border-4 border-primary">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Total Program Kerja</div>
-              <h4 class="mb-0 fw-bold" id="card-stat-kgt-total">0</h4>
-            </div>
-            <i class="fas fa-tasks fa-2x text-primary opacity-25"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4">
-        <div class="card p-3 border-start border-4 border-success">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Unit Terlibat</div>
-              <h4 class="mb-0 fw-bold text-success" id="card-stat-kgt-unit">0</h4>
-            </div>
-            <i class="fas fa-hospital fa-2x text-success opacity-25"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-12 col-md-4">
-        <div class="card p-3 border-start border-4 border-info">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Program Aktif</div>
-              <h4 class="mb-0 fw-bold text-info" id="card-stat-kgt-active">0</h4>
-            </div>
-            <i class="fas fa-check-circle fa-2x text-info opacity-25"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Filter Card -->
-    <div class="card shadow-sm p-3 mb-3">
-      <div class="row g-2 align-items-center">
-        <!-- 1. Pencarian -->
-        <div class="col-lg-4 col-md-4 col-12">
-          <div class="input-group input-group-sm">
-            <span class="input-group-text bg-white text-muted"><i class="fas fa-search"></i></span>
-            <input type="text" class="form-control bg-white" id="search-kegiatan" placeholder="Cari uraian program kerja, unit, atau PIC...">
-          </div>
-        </div>
-
-        <!-- 2. Unit / Bagian -->
-        <div class="col-lg-3 col-md-3 col-12">
-          <select class="form-select form-select-sm bg-white" id="filter-bagian-kgt">
-            <option value="">-- Semua Unit / Bagian --</option>
-          </select>
-        </div>
-
-        <!-- 3. Grup Tombol Aksi (Refresh, Terapkan Filter, dan Tambah sejajar) -->
-        <div class="col-lg-5 col-md-5 col-12 d-flex justify-content-md-end align-items-center gap-2">
-          <button type="button" class="btn btn-outline-secondary btn-sm px-3 d-inline-flex align-items-center gap-1 shadow-sm text-nowrap" id="btn-refresh-kgt" title="Segarkan Data">
-            <i class="fas fa-sync-alt"></i>
-            <span>Refresh</span>
-          </button>
-
-          <button type="button" class="btn btn-outline-primary btn-sm px-3 d-inline-flex align-items-center gap-1 shadow-sm text-nowrap" id="btn-filter-kgt">
-            <i class="fas fa-filter"></i>
-            <span>Terapkan Filter</span>
-          </button>
-
-          <button type="button" class="btn btn-primary btn-sm px-3 d-inline-flex align-items-center gap-1 shadow-sm text-nowrap" id="btn-tambah-kgt">
-            <i class="fas fa-plus"></i>
-            <span>Tambah Program Kerja</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Table Card -->
-    <div class="card">
-      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-list me-2 text-primary"></i>Daftar Master Program Kerja</h6>
-        <div class="spinner-border spinner-border-sm text-primary d-none" id="loading-kegiatan"></div>
-      </div>
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead>
-            <tr>
-              <th class="text-center" style="width: 50px;">No</th>
-              <th style="width: 250px;">Unit / Bagian</th>
-              <th>Uraian Program Kerja</th>
-              <th style="width: 220px;">PIC Pegawai</th>
-              <th class="text-center" style="width: 120px;">Status</th>
-              <th class="text-center" style="width: 120px;">Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="tbody-kegiatan">
-            <tr>
-              <td colspan="6" class="text-center py-4 text-muted">
-                <span class="spinner-border spinner-border-sm me-2"></span>Memuat data...
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="card-footer bg-white d-flex flex-column flex-md-row justify-content-between align-items-center py-2">
-        <div class="text-muted small mb-2 mb-md-0" id="pagination-info-kegiatan">Menampilkan 0 data</div>
-        <ul class="pagination pagination-sm mb-0" id="pagination-kegiatan"></ul>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Form Program Kerja -->
-  <div class="modal fade" id="modal-kegiatan-form" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header bg-primary text-white">
-          <h5 class="modal-title" id="modal-kgt-title">Program Kerja</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <input type="hidden" id="modal-kgt-id">
-          <div class="mb-3">
-            <label class="form-label fw-bold small">Unit / Bagian Penanggung Jawab</label>
-            <select class="form-select form-select-sm" id="modal-kgt-bagian">
-              <option value="">-- Pilih Unit / Bagian --</option>
-            </select>
-            <div class="form-text">Pilih unit rumah sakit yang membawahi program ini</div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold small">Uraian Program Kerja <span class="text-danger">*</span></label>
-            <textarea class="form-control" id="modal-kgt-desc" rows="4" placeholder="Contoh: Pemeliharaan Perangkat Keras dan Jaringan IT Rumah Sakit..."></textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-          <button type="button" class="btn btn-primary btn-sm" id="btn-save-kgt">
-            <i class="fas fa-save me-1"></i>Simpan Program Kerja
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
