@@ -1,0 +1,1049 @@
+<!-- View Promosi Pegawai: Tata Letak Sesuai Spesifikasi Form Inline & Tabel 2 Tingkat -->
+<style>
+  .promosi-section-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-bottom: 0.35rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 2px solid;
+  }
+  .promosi-dari-title {
+    color: #2c7be5;
+    border-color: rgba(44, 123, 229, 0.25);
+  }
+  .promosi-menjadi-title {
+    color: #00d27a;
+    border-color: rgba(0, 210, 122, 0.25);
+  }
+  .table-promosi th {
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .table-promosi td {
+    font-size: 0.775rem;
+    white-space: nowrap;
+  }
+  /* Styling EvoSelector Searchable Dropdown */
+  div[data-role="selector"] {
+    position: relative;
+    width: 100%;
+  }
+  div[data-role="selector"] > input.dropdown-toggle {
+    padding-right: 26px;
+    background-color: #fff;
+    cursor: pointer;
+  }
+  div[data-role="selector"] > input.dropdown-toggle::after {
+    display: none !important;
+  }
+  div[data-role="selector"] > span.fa-chevron-down,
+  div[data-role="selector"] > span.fa-solid,
+  div[data-role="selector"] > svg {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    font-size: 11px;
+    color: #748194;
+    pointer-events: none;
+    z-index: 2;
+  }
+  div[data-role="selector"] > a[href="#!selectorclose"] {
+    position: absolute;
+    top: 50%;
+    right: 24px;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: #e63757;
+    z-index: 3;
+    text-decoration: none;
+  }
+  div[data-role="selector"] .dropdown-menu {
+    max-height: 220px;
+    overflow-y: auto;
+    width: 100% !important;
+    font-size: 0.8rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    border: 1px solid rgba(0,0,0,0.15);
+    z-index: 1060;
+  }
+  div[data-role="selector"] .dropdown-item {
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    white-space: normal;
+  }
+  div[data-role="selector"] .dropdown-item:hover,
+  div[data-role="selector"] .dropdown-item:focus {
+    background-color: #edf2f9;
+    color: #2c7be5;
+  }
+
+  #form-promosi {
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 5;
+  }
+
+  #form-promosi input.form-control,
+  #form-promosi textarea.form-control,
+  #form-promosi select.form-select,
+  .card-body input.form-control,
+  [data-role="selector"] input.form-control {
+    background-color: #ffffff !important;
+    color: #1e293b !important;
+    border: 1px solid #cbd5e1 !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    cursor: text !important;
+    display: block !important;
+    visibility: visible !important;
+  }
+</style>
+
+<template id="template-vpromosi">
+  <div class="container-fluid p-0">
+    <!-- Header Halaman -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h4 class="mb-1 text-800 fw-bold">
+          <i class="fas fa-level-up-alt text-primary me-2"></i>PROMOSI
+        </h4>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb fs--1 mb-0">
+            <li class="breadcrumb-item"><a href="#dashboard">Home</a></li>
+            <li class="breadcrumb-item">Perubahan Status Karyawan</li>
+            <li class="breadcrumb-item active" aria-current="page">Promosi</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+
+    <!-- FORM PROMOSI (INLINE SESUAI SPESIFIKASI) -->
+    <div class="card mb-4 shadow-sm border">
+      <div class="card-header bg-light py-2">
+        <h6 class="mb-0 fw-bold text-700">
+          <i class="fas fa-edit me-1 text-primary"></i> Form Promosi Karyawan
+        </h6>
+      </div>
+      <div class="card-body p-3">
+        <form id="form-promosi" autocomplete="off">
+          <input type="hidden" id="replacement_id_pegawai" name="replacement_id_pegawai">
+          <input type="hidden" id="replacement_kd_promosi_dari" name="replacement_kd_promosi_dari">
+          <input type="hidden" id="replacement_kd_promosi_menjadi" name="replacement_kd_promosi_menjadi">
+
+          <!-- BAGIAN 1: DARI -->
+          <div class="promosi-section-title promosi-dari-title">Dari</div>
+          <div class="row g-2 mb-3">
+            <!-- Row 1: NIP, BAGIAN, Golongan, Nama -->
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1">NIP :</label>
+              <div id="sel_nip" placeholder="Pilih NIK / NIP Pegawai..."></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_dari_bagian">BAGIAN :</label>
+              <div id="sel_dari_bagian" placeholder="Pilih Bagian"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_dari_golongan">Golongan :</label>
+              <div id="sel_dari_golongan" placeholder="Pilih Golongan"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_nama">Nama :</label>
+              <input type="text" class="form-control form-control-sm" id="replacement_nama" name="replacement_nama" placeholder="*Masukkan Nama...">
+            </div>
+
+            <!-- Row 2: Jabatan, Pangkat, No Surat, ekselon -->
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_dari_jabatan">Jabatan :</label>
+              <div id="sel_dari_jabatan" placeholder="Pilih Jabatan"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_dari_pangkat">Pangkat :</label>
+              <div id="sel_dari_pangkat" placeholder="Pilih Pangkat"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_no_surat">No Surat :</label>
+              <input type="text" class="form-control form-control-sm" id="replacement_no_surat" name="replacement_no_surat" placeholder="*Masukkan No surat...">
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_dari_ekselon">ekselon :</label>
+              <div id="sel_dari_ekselon" placeholder="Pilih Ekselon"></div>
+            </div>
+
+            <!-- Row 3: Jenis Pegawai, Tgl Surat, Status Pegawai, Lokasi -->
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_dari_jenis_pegawai">Jenis Pegawai :</label>
+              <div id="sel_dari_jenis_pegawai" placeholder="Pilih Jenis Pegawai"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_tanggal_surat">Tgl Surat :</label>
+              <input type="date" class="form-control form-control-sm" id="replacement_tanggal_surat" name="replacement_tanggal_surat" placeholder="mm/dd/yyyy">
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_dari_status_pegawai">Status Pegawai :</label>
+              <div id="sel_dari_status_pegawai" placeholder="Pilih Status Pegawai"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_dari_lokasi">Lokasi :</label>
+              <div id="sel_dari_lokasi" placeholder="Pilih Lokasi"></div>
+            </div>
+          </div>
+
+          <!-- BAGIAN 2: MENJADI -->
+          <div class="promosi-section-title promosi-menjadi-title mt-4">Menjadi</div>
+          <div class="row g-2 mb-3">
+            <!-- Row 1: NIP pimpinan, BAGIAN, Golongan, Nama Pimpinan -->
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_NIP_pimpinan">NIP pimpinan :</label>
+              <input type="text" class="form-control form-control-sm" id="replacement_NIP_pimpinan" name="replacement_NIP_pimpinan" placeholder="*Masukkan NIP pimpinan...">
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_menjadi_bagian">BAGIAN :</label>
+              <div id="sel_menjadi_bagian" placeholder="Pilih Bagian"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_menjadi_golongan">Golongan :</label>
+              <div id="sel_menjadi_golongan" placeholder="Pilih Golongan"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_nama_pimpinan">Nama Pimpinan :</label>
+              <input type="text" class="form-control form-control-sm" id="replacement_nama_pimpinan" name="replacement_nama_pimpinan" placeholder="*Masukkan Nama Pimpinan...">
+            </div>
+
+            <!-- Row 2: Jabatan, Pangkat, Tgl promosi, ekselon -->
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_menjadi_jabatan">Jabatan :</label>
+              <div id="sel_menjadi_jabatan" placeholder="Pilih Jabatan"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_menjadi_pangkat">Pangkat :</label>
+              <div id="sel_menjadi_pangkat" placeholder="Pilih Pangkat"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_tanggal_promosi">Tgl promosi :</label>
+              <input type="date" class="form-control form-control-sm" id="replacement_tanggal_promosi" name="replacement_tanggal_promosi" placeholder="mm/dd/yyyy">
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_menjadi_ekselon">ekselon :</label>
+              <div id="sel_menjadi_ekselon" placeholder="Pilih Ekselon"></div>
+            </div>
+
+            <!-- Row 3: Jenis Pegawai, Status Pegawai, Lokasi, Keterangan -->
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_menjadi_jenis_pegawai">Jenis Pegawai :</label>
+              <div id="sel_menjadi_jenis_pegawai" placeholder="Pilih Jenis Pegawai"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_menjadi_status_pegawai">Status Pegawai :</label>
+              <div id="sel_menjadi_status_pegawai" placeholder="Pilih Status Pegawai"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_menjadi_lokasi">Lokasi :</label>
+              <div id="sel_menjadi_lokasi" placeholder="Pilih Lokasi"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_keterangan">Keterangan :</label>
+              <textarea class="form-control form-control-sm" id="replacement_keterangan" name="replacement_keterangan" rows="1" placeholder="Masukkan Keterangan..."></textarea>
+            </div>
+          </div>
+
+          <!-- BUTTON SIMPAN & RESET -->
+          <div class="mt-3 pt-3 border-top d-flex gap-2 align-items-center">
+            <button type="submit" class="btn btn-sm btn-primary px-3" id="btn-save-promosi">
+              <i class="fas fa-save me-1"></i> Simpan
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary px-3" id="btn-reset-promosi">
+              <i class="fas fa-undo me-1"></i> Reset
+            </button>
+            <span class="fs--1 text-muted ms-2" id="form-promosi-status"></span>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TABEL RIWAYAT PROMOSI DENGAN HEADER 2 TINGKAT -->
+    <div class="card shadow-sm border mb-4">
+      <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap gap-2 py-2">
+        <div class="d-flex align-items-center gap-2">
+          <h6 class="mb-0 fw-bold text-700">
+            <i class="fas fa-history me-1 text-primary"></i> Daftar Riwayat Promosi
+          </h6>
+          <span class="badge bg-soft-primary text-primary" id="badge-total-promosi">0 Data</span>
+        </div>
+
+        <!-- SEARCH / CARI TOOLBAR -->
+        <div class="d-flex align-items-center gap-2">
+          <label class="form-label mb-0 fs--1 fw-bold text-muted" for="txtcari_promosi">Cari</label>
+          <div class="input-group input-group-sm" style="width: 260px;">
+            <input type="text" class="form-control form-control-sm" id="txtcari_promosi" placeholder="NIP, nama, atau no surat...">
+            <button class="btn btn-primary" type="button" id="btn-cari-promosi" title="Cari">
+              <i class="fas fa-search"></i>
+            </button>
+            <button class="btn btn-outline-secondary" type="button" id="btn-clear-promosi" title="Hapus Filter">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-refresh-promosi" title="Muat Ulang Data">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered table-striped table-hover table-promosi mb-0" id="tb_level">
+            <thead class="bg-200 text-800 text-center align-middle">
+              <tr>
+                <th rowspan="2" style="width: 45px; text-align: center;">NO.</th>
+                <th colspan="7" class="bg-soft-primary text-primary" style="text-align: center;">Dari</th>
+                <th colspan="6" class="bg-soft-success text-success" style="text-align: center;">Menjadi</th>
+                <th rowspan="2" style="width: 80px; text-align: center;"><i class="fas fa-cog"></i></th>
+              </tr>
+              <tr>
+                <!-- Kolom Dari -->
+                <th style="text-align: center;">NIP</th>
+                <th style="text-align: center;">Nama</th>
+                <th style="text-align: center;">Bagian</th>
+                <th style="text-align: center;">Jabatan</th>
+                <th style="text-align: center;">Pangkat</th>
+                <th style="text-align: center;">Ekselon</th>
+                <th style="text-align: center;">No Surat</th>
+                <!-- Kolom Menjadi -->
+                <th style="text-align: center;">Bagian</th>
+                <th style="text-align: center;">Jabatan</th>
+                <th style="text-align: center;">Pangkat</th>
+                <th style="text-align: center;">Ekselon</th>
+                <th style="text-align: center;">Tgl Promosi</th>
+                <th style="text-align: center;">Keterangan</th>
+              </tr>
+            </thead>
+            <tbody id="tb_promosi_body" class="align-middle">
+              <tr>
+                <td colspan="15" class="text-center py-4 text-muted">Belum ada data riwayat promosi</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- FOOTER PAGINASI -->
+      <div class="card-footer d-flex justify-content-between align-items-center py-2 bg-light border-top">
+        <span class="pagination-info fs--1 text-muted" id="promosi-pagination-info">Menampilkan 0 data</span>
+        <ul class="pagination pagination-sm mb-0" id="promosi-pagination"></ul>
+      </div>
+    </div>
+
+    </div>
+  </div>
+</template>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+  import EvoSelector from './components/EvoSelector.js';
+
+  const apiUrl = (typeof config !== 'undefined' && config.api_url) 
+    ? config.api_url 
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  let allPromosi = [];
+  let filteredPromosi = [];
+  let refData = {
+    bagian: [],
+    golongan: [],
+    jabatan: [],
+    pangkat: [],
+    ekselon: [],
+    jenis_pegawai: [],
+    status_pegawai: [],
+    lokasi: []
+  };
+  let lookupPegawai = [];
+  let currentPage = 1;
+  const rowsPerPage = 10;
+  let lookupModalInstance = null;
+
+  // EvoSelector instances
+  let selNip = null;
+  let selDariBagian = null;
+  let selDariGolongan = null;
+  let selDariJabatan = null;
+  let selDariPangkat = null;
+  let selDariEkselon = null;
+  let selDariJenisPegawai = null;
+  let selDariStatusPegawai = null;
+  let selDariLokasi = null;
+
+  let selMenjadiBagian = null;
+  let selMenjadiGolongan = null;
+  let selMenjadiJabatan = null;
+  let selMenjadiPangkat = null;
+  let selMenjadiEkselon = null;
+  let selMenjadiJenisPegawai = null;
+  let selMenjadiStatusPegawai = null;
+  let selMenjadiLokasi = null;
+
+  // Helper untuk membuat opsi EvoSelector dengan baris kosong/placeholder '-'
+  function createOptList(items, valKey, textKey, defaultText) {
+    const list = [{ text: defaultText, value: '-' }];
+    if (Array.isArray(items)) {
+      items.forEach(item => {
+        const val = item[valKey] !== undefined ? String(item[valKey]) : '';
+        const txt = item[textKey] !== undefined ? String(item[textKey]) : val;
+        list.push({ text: txt, value: val });
+      });
+    }
+    return list;
+  }
+
+  // Inisialisasi seluruh EvoSelector Dari dan Menjadi (tampil instan)
+  function initEvoSelectors() {
+    selNip = new EvoSelector('sel_nip', [{ text: 'Pilih NIK / NIP Pegawai...', value: '-' }]);
+    selDariBagian = new EvoSelector('sel_dari_bagian', [{ text: 'Pilih Bagian', value: '-' }]);
+    selDariGolongan = new EvoSelector('sel_dari_golongan', [{ text: 'Pilih Golongan', value: '-' }]);
+    selDariJabatan = new EvoSelector('sel_dari_jabatan', [{ text: 'Pilih Jabatan', value: '-' }]);
+    selDariPangkat = new EvoSelector('sel_dari_pangkat', [{ text: 'Pilih Pangkat', value: '-' }]);
+    selDariEkselon = new EvoSelector('sel_dari_ekselon', [{ text: 'Pilih Ekselon', value: '-' }]);
+    selDariJenisPegawai = new EvoSelector('sel_dari_jenis_pegawai', [{ text: 'Pilih Jenis Pegawai', value: '-' }]);
+    selDariStatusPegawai = new EvoSelector('sel_dari_status_pegawai', [{ text: 'Pilih Status Pegawai', value: '-' }]);
+    selDariLokasi = new EvoSelector('sel_dari_lokasi', [{ text: 'Pilih Lokasi', value: '-' }]);
+
+    selMenjadiBagian = new EvoSelector('sel_menjadi_bagian', [{ text: 'Pilih Bagian', value: '-' }]);
+    selMenjadiGolongan = new EvoSelector('sel_menjadi_golongan', [{ text: 'Pilih Golongan', value: '-' }]);
+    selMenjadiJabatan = new EvoSelector('sel_menjadi_jabatan', [{ text: 'Pilih Jabatan', value: '-' }]);
+    selMenjadiPangkat = new EvoSelector('sel_menjadi_pangkat', [{ text: 'Pilih Pangkat', value: '-' }]);
+    selMenjadiEkselon = new EvoSelector('sel_menjadi_ekselon', [{ text: 'Pilih Ekselon', value: '-' }]);
+    selMenjadiJenisPegawai = new EvoSelector('sel_menjadi_jenis_pegawai', [{ text: 'Pilih Jenis Pegawai', value: '-' }]);
+    selMenjadiStatusPegawai = new EvoSelector('sel_menjadi_status_pegawai', [{ text: 'Pilih Status Pegawai', value: '-' }]);
+    selMenjadiLokasi = new EvoSelector('sel_menjadi_lokasi', [{ text: 'Pilih Lokasi', value: '-' }]);
+
+    selNip.on('selected', (e) => {
+      const detail = e?.detail || e || {};
+      const values = detail.values || {};
+      const val = detail.value || (selNip ? selNip.value : '');
+
+      let nip = values.nip || detail.nip || val || '';
+      let nama = values.nama || detail.nama || '';
+      let idPeg = values.id_pegawai || detail.id_pegawai || '';
+
+      const list = (typeof lookupPegawai !== 'undefined' && Array.isArray(lookupPegawai) && lookupPegawai.length > 0)
+        ? lookupPegawai
+        : ((typeof allPegawai !== 'undefined' && Array.isArray(allPegawai)) ? allPegawai : []);
+
+      if (list.length > 0) {
+        const match = list.find(p =>
+          (nip && String(p.NIP).trim() === String(nip).trim()) ||
+          (val && (String(p.NIP).trim() === String(val).trim() || String(p.ID_PEGAWAI) === String(val) || (p.NO_IDENTITAS && String(p.NO_IDENTITAS).trim() === String(val).trim())))
+        );
+        if (match) {
+          nip = match.NIP || nip;
+          nama = match.NAMA || nama;
+          idPeg = match.ID_PEGAWAI || idPeg;
+        }
+      }
+
+      const namaEl = document.querySelector('#replacement_nama');
+      const nipEl = document.querySelector('#replacement_NIP');
+      const idEl = document.querySelector('#replacement_id_pegawai');
+
+      if (nama && namaEl) {
+        namaEl.value = nama;
+        namaEl.dispatchEvent(new Event('input', { bubbles: true }));
+        namaEl.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      if (nip && nipEl) nipEl.value = nip;
+      if (idPeg && idEl) idEl.value = idPeg;
+
+      if (nip && nip !== '-') {
+        fetchAndApplySnapshot(nip);
+      }
+    });
+
+    selNip.on('cleared', () => {
+      const namaEl = document.querySelector('#replacement_nama');
+      const nipEl = document.querySelector('#replacement_NIP');
+      const idEl = document.querySelector('#replacement_id_pegawai');
+      if (namaEl) {
+        namaEl.value = '';
+        namaEl.dispatchEvent(new Event('input', { bubbles: true }));
+        namaEl.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      if (nipEl) nipEl.value = '';
+      if (idEl) idEl.value = '';
+    });
+  }
+
+  // Update opsi dropdown dari data master database
+  function updateEvoSelectorOptions() {
+    const optBagian = createOptList(refData.bagian, 'KD_BAGIAN', 'BAGIAN', 'Pilih Bagian');
+    const optGolongan = createOptList(refData.golongan, 'KD_GOLONGAN', 'GOLONGAN', 'Pilih Golongan');
+    const optJabatan = createOptList(refData.jabatan, 'KD_JABATAN', 'JABATAN', 'Pilih Jabatan');
+    const optPangkat = createOptList(refData.pangkat, 'KD_PANGKAT', 'PANGKAT', 'Pilih Pangkat');
+    const optEkselon = createOptList(refData.ekselon, 'KD_EKSELON', 'EKSELON', 'Pilih Ekselon');
+    const optJenisPegawai = createOptList(refData.jenis_pegawai, 'KD_JENIS_PEGAWAI', 'JENIS_PEGAWAI', 'Pilih Jenis Pegawai');
+    const optStatusPegawai = createOptList(refData.status_pegawai, 'KD_STATUS_PEGAWAI', 'STATUS_PEGAWAI', 'Pilih Status Pegawai');
+    const optLokasi = createOptList(refData.lokasi, 'KD_LOKASI', 'LOKASI', 'Pilih Lokasi');
+
+    selDariBagian?.addOptions(optBagian);
+    selDariGolongan?.addOptions(optGolongan);
+    selDariJabatan?.addOptions(optJabatan);
+    selDariPangkat?.addOptions(optPangkat);
+    selDariEkselon?.addOptions(optEkselon);
+    selDariJenisPegawai?.addOptions(optJenisPegawai);
+    selDariStatusPegawai?.addOptions(optStatusPegawai);
+    selDariLokasi?.addOptions(optLokasi);
+
+    selMenjadiBagian?.addOptions(optBagian);
+    selMenjadiGolongan?.addOptions(optGolongan);
+    selMenjadiJabatan?.addOptions(optJabatan);
+    selMenjadiPangkat?.addOptions(optPangkat);
+    selMenjadiEkselon?.addOptions(optEkselon);
+    selMenjadiJenisPegawai?.addOptions(optJenisPegawai);
+    selMenjadiStatusPegawai?.addOptions(optStatusPegawai);
+    selMenjadiLokasi?.addOptions(optLokasi);
+  }
+
+  // Isi datalist NIP untuk autocomplete cepat
+  function populateNipDatalist() {
+    const datalist = document.querySelector('#datalist-nip-pegawai');
+    if (!datalist) return;
+    let html = '';
+    lookupPegawai.forEach(p => {
+      html += `<option value="${p.NIP}">${p.NAMA}</option>`;
+    });
+    datalist.innerHTML = html;
+  }
+
+  // Muat Master Referensi & Lookup Pegawai dari Database
+  async function loadMasterData() {
+    try {
+      let refRes = await httpGet(`${apiUrl}/cPegawai/master`);
+      if (!refRes || refRes.code !== 200 || !refRes.data) {
+        refRes = await httpGet(`${apiUrl}/pegawai/ref_data`);
+      }
+      const lookupRes = await httpGet(`${apiUrl}/pegawai/lookup`);
+
+      if (refRes && refRes.code === 200 && refRes.data) {
+        refData = { ...refData, ...refRes.data };
+      }
+      if (lookupRes && lookupRes.code === 200 && Array.isArray(lookupRes.data)) {
+        lookupPegawai = lookupRes.data;
+      }
+
+      try {
+        const listRes = await httpGet(`${apiUrl}/pegawai/list?limit=1000`);
+        if (listRes && listRes.code === 200 && Array.isArray(listRes.data)) {
+          lookupPegawai = listRes.data;
+          const opts = [{ text: 'Pilih NIK / NIP Pegawai...', value: '-' }];
+          listRes.data.forEach(p => {
+            const nik = (p.NO_IDENTITAS || '').trim();
+            const nip = (p.NIP || '').trim();
+            const nama = (p.NAMA || '').trim();
+            let label = nik && nip ? `${nik} - ${nip} - ${nama}` : (nip ? `${nip} - ${nama}` : (nik ? `${nik} - ${nama}` : (nama || 'Pegawai')));
+            opts.push({
+              text: label,
+              value: nip || String(p.ID_PEGAWAI),
+              values: { id_pegawai: p.ID_PEGAWAI, nip: nip, nik: nik, nama: nama }
+            });
+          });
+          if (selNip) selNip.addOptions(opts);
+        }
+      } catch (eList) {
+        console.warn('Gagal memuat list pegawai untuk selector:', eList);
+      }
+
+      updateEvoSelectorOptions();
+    } catch (err) {
+      console.warn('Gagal memuat master data promosi:', err);
+    }
+  }
+
+  // Muat Snapshot Pegawai dan isi otomatis sisi "Dari"
+  async function fetchAndApplySnapshot(nipOrId) {
+    if (!nipOrId) return;
+    const statusEl = document.querySelector('#form-promosi-status');
+    if (statusEl) statusEl.textContent = 'Memuat snapshot pegawai...';
+
+    try {
+      const res = await httpGet(`${apiUrl}/pegawai/snapshot/${encodeURIComponent(nipOrId)}`);
+      if (res && res.code === 200 && res.data) {
+        const d = res.data;
+        document.querySelector('#replacement_id_pegawai').value = d.ID_PEGAWAI || '';
+        document.querySelector('#replacement_NIP').value = d.NIP || nipOrId;
+        document.querySelector('#replacement_nama').value = d.NAMA || '';
+
+        // Otomatis pilih nilai dropdown asal (Dari) via EvoSelector
+        if (selDariBagian) selDariBagian.value = d.KD_BAGIAN || '';
+        if (selDariGolongan) selDariGolongan.value = d.KD_GOLONGAN || '';
+        if (selDariJabatan) selDariJabatan.value = d.KD_JABATAN || '';
+        if (selDariPangkat) selDariPangkat.value = d.KD_PANGKAT || '';
+        if (selDariEkselon) selDariEkselon.value = d.KD_EKSELON || '';
+        if (selDariJenisPegawai) selDariJenisPegawai.value = d.KD_JENIS_PEGAWAI || '';
+        if (selDariStatusPegawai) selDariStatusPegawai.value = d.KD_STATUS_PEGAWAI || '';
+        if (selDariLokasi) selDariLokasi.value = d.KD_LOKASI || '';
+
+        // Auto isi nama pimpinan bila masih kosong
+        const pimpinanNamaEl = document.querySelector('#replacement_nama_pimpinan');
+        if (pimpinanNamaEl && !pimpinanNamaEl.value) {
+          pimpinanNamaEl.value = d.NAMA || '';
+        }
+
+        if (statusEl) statusEl.textContent = `Data pegawai [${d.NAMA}] berhasil dimuat.`;
+        setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
+      } else {
+        if (statusEl) statusEl.textContent = 'Pegawai tidak ditemukan dalam snapshot.';
+      }
+    } catch (e) {
+      console.warn('Gagal snapshot pegawai:', e);
+      if (statusEl) statusEl.textContent = 'Gagal memuat snapshot pegawai.';
+    }
+  }
+
+  // Muat Data Riwayat Promosi dari Database
+  async function loadData() {
+    try {
+      const res = await httpGet(`${apiUrl}/pegawai/promosi`);
+      if (res && res.code === 200 && Array.isArray(res.data) && res.data.length > 0) {
+        allPromosi = res.data;
+      } else {
+        allPromosi = [];
+      }
+    } catch (err) {
+      console.warn('Gagal mengambil data promosi:', err);
+      allPromosi = [];
+    }
+
+    applyFilter();
+  }
+
+  // Filter pencarian tabel
+  function applyFilter() {
+    const keyword = (document.querySelector('#txtcari_promosi')?.value || '').trim().toLowerCase();
+    if (!keyword) {
+      filteredPromosi = [...allPromosi];
+    } else {
+      filteredPromosi = allPromosi.filter(row => {
+        return (
+          (row.NIP && row.NIP.toLowerCase().includes(keyword)) ||
+          (row.NAMA_PEGAWAI && row.NAMA_PEGAWAI.toLowerCase().includes(keyword)) ||
+          (row.NO_SURAT && row.NO_SURAT.toLowerCase().includes(keyword)) ||
+          (row.BAGIAN_ASAL && row.BAGIAN_ASAL.toLowerCase().includes(keyword)) ||
+          (row.BAGIAN_BARU && row.BAGIAN_BARU.toLowerCase().includes(keyword)) ||
+          (row.JABATAN_ASAL && row.JABATAN_ASAL.toLowerCase().includes(keyword)) ||
+          (row.JABATAN_BARU && row.JABATAN_BARU.toLowerCase().includes(keyword))
+        );
+      });
+    }
+
+    currentPage = 1;
+    renderTable();
+  }
+
+  // Render Tabel Bertingkat 2 Baris
+  function renderTable() {
+    const tbody = document.querySelector('#tb_promosi_body');
+    const badgeTotal = document.querySelector('#badge-total-promosi');
+    const infoEl = document.querySelector('#promosi-pagination-info');
+    if (!tbody) return;
+
+    if (badgeTotal) badgeTotal.textContent = `${filteredPromosi.length} Data`;
+
+    if (filteredPromosi.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="15" class="text-center py-4 text-muted">Belum ada data riwayat promosi</td></tr>';
+      if (infoEl) infoEl.textContent = 'Menampilkan 0 data';
+      renderPagination(0);
+      return;
+    }
+
+    const totalPages = Math.ceil(filteredPromosi.length / rowsPerPage);
+    if (currentPage > totalPages) currentPage = totalPages;
+
+    const startIdx = (currentPage - 1) * rowsPerPage;
+    const endIdx = Math.min(startIdx + rowsPerPage, filteredPromosi.length);
+    const pageRows = filteredPromosi.slice(startIdx, endIdx);
+
+    let html = '';
+    pageRows.forEach((row, i) => {
+      const no = startIdx + i + 1;
+      const nip = row.NIP || '-';
+      const nama = row.NAMA_PEGAWAI || row.NAMA || '-';
+      const bagianDari = row.BAGIAN_ASAL || '-';
+      const jabatanDari = row.JABATAN_ASAL || '-';
+      const pangkatDari = row.PANGKAT_ASAL || '-';
+      const ekselonDari = row.EKSELON_ASAL || '-';
+      const noSurat = row.NO_SURAT || '-';
+
+      const bagianMenjadi = row.BAGIAN_BARU || '-';
+      const jabatanMenjadi = row.JABATAN_BARU || '-';
+      const pangkatMenjadi = row.PANGKAT_BARU || '-';
+      const ekselonMenjadi = row.EKSELON_BARU || '-';
+      const tglPromosi = row.TGL_PROMOSI || '-';
+      const keterangan = row.KETERANGAN || '-';
+
+      html += `
+        <tr>
+          <td class="text-center fw-semi-bold">${no}</td>
+          <!-- Dari -->
+          <td><span class="badge bg-soft-primary text-primary fw-medium">${nip}</span></td>
+          <td class="fw-semi-bold">${nama}</td>
+          <td>${bagianDari}</td>
+          <td>${jabatanDari}</td>
+          <td>${pangkatDari}</td>
+          <td>${ekselonDari}</td>
+          <td>${noSurat}</td>
+          <!-- Menjadi -->
+          <td class="fw-semi-bold text-success">${bagianMenjadi}</td>
+          <td>${jabatanMenjadi}</td>
+          <td>${pangkatMenjadi}</td>
+          <td>${ekselonMenjadi}</td>
+          <td>${tglPromosi}</td>
+          <td class="text-break" style="max-width: 150px;">${keterangan}</td>
+          <!-- Aksi -->
+          <td class="text-center">
+            <div class="btn-group btn-group-sm">
+              <button type="button" class="btn btn-link text-600 btn-edit-promosi p-1" data-id="${row.KD_PROMOSI_DARI || ''}" title="Edit Data">
+                <i class="fas fa-edit text-warning"></i>
+              </button>
+              <button type="button" class="btn btn-link text-600 btn-delete-promosi p-1" data-id="${row.KD_PROMOSI_DARI || ''}" data-nama="${nama}" title="Hapus Data">
+                <i class="fas fa-trash text-danger"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+
+    if (infoEl) {
+      infoEl.textContent = `Menampilkan ${startIdx + 1} - ${endIdx} dari ${filteredPromosi.length} data`;
+    }
+
+    renderPagination(totalPages);
+    attachRowActions();
+  }
+
+  // Render Tombol Paginasi
+  function renderPagination(totalPages) {
+    const ul = document.querySelector('#promosi-pagination');
+    if (!ul) return;
+    if (totalPages <= 1) {
+      ul.innerHTML = '';
+      return;
+    }
+
+    let html = `
+      <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+        <a class="page-link" href="javascript:void(0)" data-page="${currentPage - 1}"><i class="fas fa-chevron-left"></i></a>
+      </li>
+    `;
+
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) {
+        html += `
+          <li class="page-item ${p === currentPage ? 'active' : ''}">
+            <a class="page-link" href="javascript:void(0)" data-page="${p}">${p}</a>
+          </li>
+        `;
+      } else if (p === currentPage - 3 || p === currentPage + 3) {
+        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      }
+    }
+
+    html += `
+      <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+        <a class="page-link" href="javascript:void(0)" data-page="${currentPage + 1}"><i class="fas fa-chevron-right"></i></a>
+      </li>
+    `;
+
+    ul.innerHTML = html;
+    ul.querySelectorAll('a.page-link').forEach(a => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const page = parseInt(a.getAttribute('data-page'));
+        if (page && page >= 1 && page <= totalPages && page !== currentPage) {
+          currentPage = page;
+          renderTable();
+        }
+      });
+    });
+  }
+
+  // Event Edit & Hapus pada baris tabel
+  function attachRowActions() {
+    // Edit
+    document.querySelectorAll('.btn-edit-promosi').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const row = allPromosi.find(r => String(r.KD_PROMOSI_DARI) === String(id));
+        if (row) {
+          fillFormForEdit(row);
+        }
+      });
+    });
+
+    // Delete
+    document.querySelectorAll('.btn-delete-promosi').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const nama = btn.getAttribute('data-nama') || 'Pegawai';
+        if (!id) return;
+
+        const konfirmasi = confirm(`Apakah Anda yakin ingin menghapus data promosi untuk [${nama}]?`);
+        if (!konfirmasi) return;
+
+        try {
+          const res = await httpPost(`${apiUrl}/pegawai/promosi/delete/${id}`, {});
+          if (res && (res.code === 200 || res.status === 'ok')) {
+            alert('Data promosi berhasil dihapus!');
+            loadData();
+          } else {
+            alert(res?.message || 'Gagal menghapus data promosi.');
+          }
+        } catch (e) {
+          console.error('Error delete promosi:', e);
+          alert('Terjadi kesalahan saat menghapus data promosi.');
+        }
+      });
+    });
+  }
+
+  // Isi data baris ke formulir (Mode Edit)
+  function fillFormForEdit(row) {
+    document.querySelector('#replacement_id_pegawai').value = row.ID_PEGAWAI || '';
+    document.querySelector('#replacement_kd_promosi_dari').value = row.KD_PROMOSI_DARI || '';
+    document.querySelector('#replacement_kd_promosi_menjadi').value = row.KD_PROMOSI_MENJADI || '';
+
+    // Sisi Dari
+    document.querySelector('#replacement_NIP')?.setAttribute('value', row.NIP || '');
+    if (selNip) selNip.value = row.NIP || '-';
+    document.querySelector('#replacement_nama').value = row.NAMA_PEGAWAI || row.NAMA || '';
+    document.querySelector('#replacement_no_surat').value = row.NO_SURAT || '';
+    document.querySelector('#replacement_tanggal_surat').value = row.TGL_SURAT || '';
+
+    if (selDariBagian) selDariBagian.value = row.KD_BAGIAN || '';
+    if (selDariGolongan) selDariGolongan.value = row.KD_GOLONGAN || '';
+    if (selDariJabatan) selDariJabatan.value = row.KD_JABATAN || '';
+    if (selDariPangkat) selDariPangkat.value = row.KD_PANGKAT || '';
+    if (selDariEkselon) selDariEkselon.value = row.KD_EKSELON || '';
+    if (selDariJenisPegawai) selDariJenisPegawai.value = row.KD_JENIS_PEGAWAI || '';
+    if (selDariStatusPegawai) selDariStatusPegawai.value = row.KD_STATUS_PEGAWAI || '';
+    if (selDariLokasi) selDariLokasi.value = row.KD_LOKASI || '';
+
+    // Sisi Menjadi
+    document.querySelector('#replacement_NIP_pimpinan').value = row.NIP_PIMPINAN || '';
+    document.querySelector('#replacement_nama_pimpinan').value = row.NAMA_PIMPINAN || '';
+    document.querySelector('#replacement_tanggal_promosi').value = row.TGL_PROMOSI || '';
+    document.querySelector('#replacement_keterangan').value = row.KETERANGAN || '';
+
+    if (selMenjadiBagian) selMenjadiBagian.value = row.KD_BAGIAN_BARU || '';
+    if (selMenjadiGolongan) selMenjadiGolongan.value = row.KD_GOLONGAN_BARU || '';
+    if (selMenjadiJabatan) selMenjadiJabatan.value = row.KD_JABATAN_BARU || '';
+    if (selMenjadiPangkat) selMenjadiPangkat.value = row.KD_PANGKAT_BARU || '';
+    if (selMenjadiEkselon) selMenjadiEkselon.value = row.KD_EKSELON_BARU || '';
+    if (selMenjadiJenisPegawai) selMenjadiJenisPegawai.value = row.KD_JENIS_PEGAWAI_BARU || '';
+    if (selMenjadiStatusPegawai) selMenjadiStatusPegawai.value = row.KD_STATUS_PEGAWAI_BARU || '';
+    if (selMenjadiLokasi) selMenjadiLokasi.value = row.KD_LOKASI_BARU || '';
+
+    // Ubah label tombol Simpan menjadi Update
+    const btnSave = document.querySelector('#btn-save-promosi');
+    if (btnSave) {
+      btnSave.innerHTML = '<i class="fas fa-edit me-1"></i> Update Promosi';
+      btnSave.classList.replace('btn-primary', 'btn-warning');
+    }
+
+    // Scroll ke atas formulir
+    document.querySelector('#form-promosi')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // Reset Formulir
+  function resetForm() {
+    const form = document.querySelector('#form-promosi');
+    if (form) form.reset();
+    document.querySelector('#replacement_id_pegawai').value = '';
+    if (selNip) selNip.value = '-';
+    document.querySelector('#replacement_kd_promosi_dari').value = '';
+    document.querySelector('#replacement_kd_promosi_menjadi').value = '';
+
+    // Reset EvoSelectors
+    if (selDariBagian) selDariBagian.value = '';
+    if (selDariGolongan) selDariGolongan.value = '';
+    if (selDariJabatan) selDariJabatan.value = '';
+    if (selDariPangkat) selDariPangkat.value = '';
+    if (selDariEkselon) selDariEkselon.value = '';
+    if (selDariJenisPegawai) selDariJenisPegawai.value = '';
+    if (selDariStatusPegawai) selDariStatusPegawai.value = '';
+    if (selDariLokasi) selDariLokasi.value = '';
+
+    if (selMenjadiBagian) selMenjadiBagian.value = '';
+    if (selMenjadiGolongan) selMenjadiGolongan.value = '';
+    if (selMenjadiJabatan) selMenjadiJabatan.value = '';
+    if (selMenjadiPangkat) selMenjadiPangkat.value = '';
+    if (selMenjadiEkselon) selMenjadiEkselon.value = '';
+    if (selMenjadiJenisPegawai) selMenjadiJenisPegawai.value = '';
+    if (selMenjadiStatusPegawai) selMenjadiStatusPegawai.value = '';
+    if (selMenjadiLokasi) selMenjadiLokasi.value = '';
+
+    const btnSave = document.querySelector('#btn-save-promosi');
+    if (btnSave) {
+      btnSave.innerHTML = '<i class="fas fa-save me-1"></i> Simpan';
+      btnSave.classList.replace('btn-warning', 'btn-primary');
+    }
+
+    const statusEl = document.querySelector('#form-promosi-status');
+    if (statusEl) statusEl.textContent = '';
+  }
+
+  // Simpan Formulir Promosi
+  async function handleFormSubmit(e) {
+    e.preventDefault();
+    const btnSave = document.querySelector('#btn-save-promosi');
+    const statusEl = document.querySelector('#form-promosi-status');
+
+    const nip = (selNip?.value && selNip.value !== '-' ? selNip.value : '').trim();
+    if (!nip) {
+      alert('Silakan pilih atau masukkan NIP Pegawai terlebih dahulu!');
+      return;
+    }
+
+    const payload = {
+      replacement_kd_promosi_dari: document.querySelector('#replacement_kd_promosi_dari')?.value || '',
+      replacement_kd_promosi_menjadi: document.querySelector('#replacement_kd_promosi_menjadi')?.value || '',
+      replacement_id_pegawai: document.querySelector('#replacement_id_pegawai')?.value || '',
+      replacement_NIP: nip,
+      replacement_nama: document.querySelector('#replacement_nama')?.value || '',
+      replacement_bagian: selDariBagian?.value || '',
+      replacement_golongan: selDariGolongan?.value || '',
+      replacement_jabatan: selDariJabatan?.value || '',
+      replacement_pangkat: selDariPangkat?.value || '',
+      replacement_no_surat: document.querySelector('#replacement_no_surat')?.value || '',
+      replacement_ekselon: selDariEkselon?.value || '',
+      replacement_jenis_pegawai: selDariJenisPegawai?.value || '',
+      replacement_tanggal_surat: document.querySelector('#replacement_tanggal_surat')?.value || '',
+      replacement_status_pegawai: selDariStatusPegawai?.value || '',
+      replacement_lokasi: selDariLokasi?.value || '',
+
+      // Menjadi
+      replacement_NIP_pimpinan: document.querySelector('#replacement_NIP_pimpinan')?.value || '',
+      replacement_bagian_menjadi: selMenjadiBagian?.value || '',
+      replacement_golongan_menjadi: selMenjadiGolongan?.value || '',
+      replacement_nama_pimpinan: document.querySelector('#replacement_nama_pimpinan')?.value || '',
+      replacement_jabatan_menjadi: selMenjadiJabatan?.value || '',
+      replacement_pangkat_menjadi: selMenjadiPangkat?.value || '',
+      replacement_tanggal_promosi: document.querySelector('#replacement_tanggal_promosi')?.value || '',
+      replacement_ekselon_menjadi: selMenjadiEkselon?.value || '',
+      replacement_jenis_pegawai_menjadi: selMenjadiJenisPegawai?.value || '',
+      replacement_status_pegawai_menjadi: selMenjadiStatusPegawai?.value || '',
+      replacement_lokasi_menjadi: selMenjadiLokasi?.value || '',
+      replacement_keterangan: document.querySelector('#replacement_keterangan')?.value || ''
+    };
+
+    if (btnSave) {
+      btnSave.disabled = true;
+      btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
+    }
+    if (statusEl) statusEl.textContent = 'Menyimpan data promosi ke server...';
+
+    try {
+      const res = await httpPost(`${apiUrl}/pegawai/promosi/save`, payload);
+      if (res && (res.code === 200 || res.status === 'ok')) {
+        alert('Data promosi berhasil disimpan!');
+        resetForm();
+        await loadData();
+      } else {
+        alert(res?.message || 'Gagal menyimpan data promosi.');
+      }
+    } catch (err) {
+      console.error('Error saat simpan promosi:', err);
+      alert('Terjadi kesalahan koneksi saat menyimpan promosi.');
+    } finally {
+      if (btnSave) {
+        btnSave.disabled = false;
+        btnSave.innerHTML = '<i class="fas fa-save me-1"></i> Simpan';
+        btnSave.classList.replace('btn-warning', 'btn-primary');
+      }
+      if (statusEl) statusEl.textContent = '';
+    }
+  }
+
+  // Binding Event Handlers Utama
+  function initEvents() {
+    // Submit Form
+    const form = document.querySelector('#form-promosi');
+    if (form) {
+      form.addEventListener('submit', handleFormSubmit);
+    }
+
+    // Reset Form
+    const btnReset = document.querySelector('#btn-reset-promosi');
+    if (btnReset) {
+      btnReset.addEventListener('click', resetForm);
+    }
+
+    // Toolbar Pencarian Tabel
+    const searchTable = document.querySelector('#txtcari_promosi');
+    const btnCari = document.querySelector('#btn-cari-promosi');
+    const btnClear = document.querySelector('#btn-clear-promosi');
+    const btnRefresh = document.querySelector('#btn-refresh-promosi');
+
+    if (btnCari) btnCari.addEventListener('click', applyFilter);
+    if (searchTable) {
+      searchTable.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          applyFilter();
+        }
+      });
+    }
+    if (btnClear) {
+      btnClear.addEventListener('click', () => {
+        if (searchTable) searchTable.value = '';
+        applyFilter();
+      });
+    }
+    if (btnRefresh) {
+      btnRefresh.addEventListener('click', () => {
+        loadData();
+      });
+    }
+  }
+
+  // Export ke window & document untuk integrasi sidebar menu
+  const modObj = {
+    id: 'status_promosi',
+    loadData: loadData,
+    reload: loadData
+  };
+  window['status_promosi'] = modObj;
+  document['status_promosi'] = modObj;
+  window['vpromosi'] = modObj;
+  document['vpromosi'] = modObj;
+
+  // Eksekusi Awal Saat Komponen Dimuat
+  initEvents();
+  initEvoSelectors();
+  await loadMasterData();
+  await loadData();
+</script>

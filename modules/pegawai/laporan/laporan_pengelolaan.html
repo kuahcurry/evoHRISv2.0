@@ -1,0 +1,137 @@
+<style>
+  .report-page-header {
+    background: #fff;
+    border-radius: 0.5rem;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    margin-bottom: 1.25rem;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  .metric-card {
+    background: #fff;
+    border-radius: 0.5rem;
+    border: 1px solid #e2e8f0;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+  .metric-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .metric-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+  }
+</style>
+
+<script type="module">
+  console.log('Laporan Pengelolaan Ketenagaan ready');
+</script>
+
+<template>
+  <div class="container-fluid p-0">
+    <div class="report-page-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div>
+        <h4 class="mb-1 text-dark fw-bold"><i class="fas fa-tasks text-primary me-2"></i>Laporan Pengelolaan Ketenagaan</h4>
+        <p class="text-muted small mb-0">Evaluasi masa kontrak, sertifikasi, kredensial klinis, dan pengembangan karir SDM</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()">
+          <i class="fas fa-print me-1"></i> Cetak
+        </button>
+        <button class="btn btn-success btn-sm">
+          <i class="fas fa-file-excel me-1"></i> Export Excel
+        </button>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-md-4">
+        <div class="metric-card border-start border-4 border-warning">
+          <div class="metric-label">Kontrak Berakhir &le; 30 Hari</div>
+          <div class="metric-value text-warning mt-1">8</div>
+          <div class="small text-muted mt-1"><i class="fas fa-clock me-1"></i>Perlu evaluasi perpanjangan PKWT</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="metric-card border-start border-4 border-danger">
+          <div class="metric-label">STR / SIP Mendekati Kadaluarsa</div>
+          <div class="metric-value text-danger mt-1">5</div>
+          <div class="small text-muted mt-1"><i class="fas fa-exclamation-triangle me-1"></i>Masa berlaku izin praktik &le; 60 hari</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="metric-card border-start border-4 border-success">
+          <div class="metric-label">Kredensial Selesai / Terverifikasi</div>
+          <div class="metric-value text-success mt-1">94.2%</div>
+          <div class="small text-muted mt-1"><i class="fas fa-check-circle me-1"></i>Kepatuhan kredensial Komite Medis & Keperawatan</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-user-check me-2"></i>Daftar Pemantauan Pengelolaan Masa Tugas Pegawai</h6>
+        <div class="d-flex gap-2">
+          <select class="form-select form-select-sm" style="width: 180px;">
+            <option value="">Semua Kategori</option>
+            <option value="kontrak">Kontrak Berakhir</option>
+            <option value="str">Perpanjangan STR/SIP</option>
+            <option value="pensiun">Menjelang Pensiun</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover table-striped align-middle mb-0" style="font-size: 0.85rem;">
+          <thead class="table-light">
+            <tr>
+              <th class="text-center" style="width: 50px;">No</th>
+              <th>NIP</th>
+              <th>Nama Pegawai</th>
+              <th>Jabatan & Unit</th>
+              <th>Status Kerja</th>
+              <th>Tgl. Berakhir Kontrak</th>
+              <th>Status STR / SIP</th>
+              <th>Tindakan Rekomendasi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-center">1</td>
+              <td>199607142023012005</td>
+              <td><strong class="text-dark">Ahmad Farhan, A.Md.Kep</strong></td>
+              <td>Perawat Pelaksana - IGD</td>
+              <td><span class="badge bg-warning text-dark">Kontrak PKWT II</span></td>
+              <td><span class="text-danger fw-bold">30-04-2026</span> (20 hari lagi)</td>
+              <td><span class="badge bg-success">Aktif s/d 2028</span></td>
+              <td><button class="btn btn-outline-primary btn-xs py-0 px-2">Evaluasi Kinerja</button></td>
+            </tr>
+            <tr>
+              <td class="text-center">2</td>
+              <td>199103252018021004</td>
+              <td><strong class="text-dark">dr. Maya Safitri</strong></td>
+              <td>Dokter Umum - Rawat Inap</td>
+              <td><span class="badge bg-primary">Pegawai Tetap</span></td>
+              <td>-</td>
+              <td><span class="badge bg-danger">SIP Expired 15-05-2026</span></td>
+              <td><button class="btn btn-outline-danger btn-xs py-0 px-2">Pemberitahuan SIP</button></td>
+            </tr>
+            <tr>
+              <td class="text-center">3</td>
+              <td>196805121994031001</td>
+              <td><strong class="text-dark">H. Bambang Irawan, SKM</strong></td>
+              <td>Kepala Bagian Umum & RT</td>
+              <td><span class="badge bg-primary">PNS / Tetap</span></td>
+              <td>-</td>
+              <td>-</td>
+              <td><span class="badge bg-secondary">Persiapan MPP / Pensiun</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</template>

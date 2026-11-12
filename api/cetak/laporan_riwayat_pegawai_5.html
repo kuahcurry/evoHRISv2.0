@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Riwayat Pegawai - Hafid Naser, A.Md.Kep</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body {
+            font-size: 11px;
+            color: #111;
+            margin: 0;
+            padding: 10px 15px;
+            background-color: #fff;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .header-table {
+            margin-bottom: 8px;
+        }
+
+        .header-table td {
+            vertical-align: middle;
+        }
+
+        .identitas-card {
+            border: 1.5px solid #222;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 10.5px;
+            background: #fff;
+        }
+
+        .identitas-card td {
+            padding: 1.5px 4px;
+            vertical-align: top;
+        }
+
+        .title-bar {
+            border: 1.5px solid #222;
+            background-color: #f1f3f5;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+            padding: 7px 4px;
+            letter-spacing: 0.5px;
+            margin: 8px 0 12px 0;
+            text-transform: uppercase;
+        }
+
+        .section-header {
+            background-color: #e9ecef;
+            border: 1px solid #333;
+            border-bottom: none;
+            padding: 5px 8px;
+            font-weight: bold;
+            font-size: 11px;
+            margin-top: 10px;
+            text-transform: uppercase;
+        }
+
+        .table-data {
+            border: 1px solid #333;
+            width: 100%;
+            margin-bottom: 4px;
+            font-size: 10.5px;
+        }
+
+        .table-data th {
+            border: 1px solid #333;
+            background-color: #f8f9fa;
+            padding: 5px 6px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .table-data td {
+            border: 1px solid #333;
+            padding: 4px 6px;
+            vertical-align: top;
+        }
+
+        .table-profile {
+            border: 1px solid #333;
+            width: 100%;
+            margin-bottom: 6px;
+            font-size: 10.5px;
+        }
+
+        .table-profile td {
+            border: 1px solid #333;
+            padding: 4px 6px;
+            vertical-align: top;
+        }
+
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-bold { font-weight: bold; }
+        .text-muted { color: #555; }
+
+        .sign-area {
+            margin-top: 20px;
+            page-break-inside: avoid;
+            width: 100%;
+        }
+
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 10mm 12mm 12mm 12mm;
+            }
+
+            body {
+                padding: 0;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- KOP & KARTU IDENTITAS RINGKAS (STYLE LAPORAN CURETAGE EVOTEK) -->
+    <table class="header-table">
+        <tr>
+            <td style="width: 58%; vertical-align: top;">
+                <table style="width: 100%;">
+                    <tr>
+                        <td style="width: 75px; vertical-align: middle;">
+                            <img src="http://127.0.0.1:8099/evoHRIS_v2.1/api/assets/logo_bobong.png" width="70" alt="Logo" style="display: block; max-height: 75px; object-fit: contain;">
+                        </td>
+                        <td style="vertical-align: middle; padding-left: 10px;">
+                            <div style="font-size: 11px; font-weight: bold; color: #222;">PEMERINTAH KABUPATEN PULAU TALIABU</div>
+                            <div style="font-size: 14px; font-weight: bold; color: #000; text-transform: uppercase;">UOBK RUMAH SAKIT UMUM DAERAH</div>
+                            <div style="font-size: 9px; color: #333; margin-top: 2px;">Jl. Lintas Selatan, Desa Ratahaya, Kecamatan Taliabu Barat , Kabupaten Pulau Taliabu, Provinsi Maluku Utara</div>
+                            <div style="font-size: 9px; color: #333;">Telp: 085211917591 | Email: rsud.pulautaliabu@gmail.com</div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+            <td style="width: 42%; vertical-align: top;">
+                <div class="identitas-card">
+                    <table style="width: 100%;">
+                        <tr>
+                            <td style="width: 75px; font-weight: bold;">NIP</td>
+                            <td style="width: 8px;">:</td>
+                            <td><b>198801012011011000</b></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Nama</td>
+                            <td>:</td>
+                            <td><b>Hafid Naser, A.Md.Kep</b></td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">NIK / KTP</td>
+                            <td>:</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">TTL / JK</td>
+                            <td>:</td>
+                            <td>Buli, - / Laki-laki</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: bold;">Unit Kerja</td>
+                            <td>:</td>
+                            <td>-</td>
+                        </tr>
+                    </table>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- JUDUL DOKUMEN -->
+    <div class="title-bar">
+        LAPORAN DATA RIWAYAT PEGAWAI
+    </div>
+
+    <!-- I. DATA POKOK KEPEGAWAIAN -->
+    <div class="section-header">I. DATA POKOK & PROFIL KEPEGAWAIAN</div>
+    <table class="table-profile">
+        <tr>
+            <td style="width: 18%; font-weight: bold; background-color: #fafafa;">Nama Lengkap</td>
+            <td style="width: 32%;">Hafid Naser, A.Md.Kep</td>
+            <td style="width: 18%; font-weight: bold; background-color: #fafafa;">Status Pegawai</td>
+            <td style="width: 32%;">-</td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold; background-color: #fafafa;">NIP / No. Induk</td>
+            <td>198801012011011000</td>
+            <td style="font-weight: bold; background-color: #fafafa;">Pangkat / Golongan</td>
+            <td>- / -</td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold; background-color: #fafafa;">Tempat, Tgl Lahir</td>
+            <td>Buli, -</td>
+            <td style="font-weight: bold; background-color: #fafafa;">Jabatan Sekarang</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold; background-color: #fafafa;">Jenis Kelamin / Agama</td>
+            <td>Laki-laki / ISLAM</td>
+            <td style="font-weight: bold; background-color: #fafafa;">Unit Kerja / Bagian</td>
+            <td>- - -</td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold; background-color: #fafafa;">Status Pernikahan</td>
+            <td>-</td>
+            <td style="font-weight: bold; background-color: #fafafa;">Pendidikan Terakhir</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold; background-color: #fafafa;">Golongan Darah</td>
+            <td>-</td>
+            <td style="font-weight: bold; background-color: #fafafa;">TMT Mulai Bekerja</td>
+            <td>- (-)</td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold; background-color: #fafafa;">Alamat Lengkap</td>
+            <td colspan="3">-, Kel. TELUKJAMBE, Kec. TELUKJAMBE TIMUR, KABUPATEN KARAWANG, JAWA BARAT</td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold; background-color: #fafafa;">No. Telepon / HP</td>
+            <td>-</td>
+            <td style="font-weight: bold; background-color: #fafafa;">Email</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td style="font-weight: bold; background-color: #fafafa;">NPWP</td>
+            <td>-</td>
+            <td style="font-weight: bold; background-color: #fafafa;">BPJS (TK / Kes)</td>
+            <td>TK: - | Kes: -</td>
+        </tr>
+    </table>
+
+    <!-- II. RIWAYAT PENEMPATAN & JABATAN -->
+    <div class="section-header">II. RIWAYAT PENEMPATAN & JABATAN</div>
+    <table class="table-data">
+        <thead>
+            <tr>
+                <th style="width: 30px;">No</th>
+                <th>Unit Kerja / Bagian</th>
+                <th>Sub Bagian</th>
+                <th>Jabatan</th>
+                <th>Pangkat / Gol</th>
+                <th>Status Pegawai</th>
+                <th>Tgl SK / No SK</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td colspan="7" class="text-center text-muted" style="padding: 10px;">- Belum ada data riwayat penempatan -</td></tr>
+        </tbody>
+    </table>
+
+    <!-- III. RIWAYAT PENDIDIKAN FORMAL -->
+    <div class="section-header">III. RIWAYAT PENDIDIKAN FORMAL</div>
+    <table class="table-data">
+        <thead>
+            <tr>
+                <th style="width: 30px;">No</th>
+                <th style="width: 70px;">Jenjang</th>
+                <th>Nama Institusi / Lembaga</th>
+                <th>Jurusan</th>
+                <th style="width: 80px;">Tahun Lulus</th>
+                <th style="width: 90px;">Status</th>
+                <th>No Ijazah</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td colspan="7" class="text-center text-muted" style="padding: 10px;">- Belum ada data riwayat pendidikan formal -</td></tr>
+        </tbody>
+    </table>
+
+    <!-- IV. RIWAYAT PELATIHAN, KURSUS & WORKSHOP -->
+    <div class="section-header">IV. RIWAYAT PELATIHAN, KURSUS & WORKSHOP</div>
+    <table class="table-data">
+        <thead>
+            <tr>
+                <th style="width: 30px;">No</th>
+                <th>Nama Pelatihan / Kursus</th>
+                <th>Penyelenggara</th>
+                <th style="width: 130px;">Tanggal Pelaksanaan</th>
+                <th style="width: 60px;">Durasi</th>
+                <th>No Sertifikat</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td colspan="6" class="text-center text-muted" style="padding: 10px;">- Belum ada riwayat pelatihan atau kursus -</td></tr>
+        </tbody>
+    </table>
+
+    <!-- V. RIWAYAT KELUARGA -->
+    <div class="section-header">V. DATA SUSUNAN KELUARGA</div>
+    <table class="table-data">
+        <thead>
+            <tr>
+                <th style="width: 30px;">No</th>
+                <th>Nama Anggota Keluarga</th>
+                <th style="width: 110px;">Hubungan</th>
+                <th style="width: 110px;">Tgl Lahir / Umur</th>
+                <th>Pekerjaan</th>
+                <th style="width: 80px;">Status Tunjangan</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td colspan="6" class="text-center text-muted" style="padding: 10px;">- Belum ada data susunan keluarga -</td></tr>
+        </tbody>
+    </table>
+
+    <!-- VI. RIWAYAT PROMOSI, MUTASI & SANKSI -->
+    <div class="section-header">VI. RIWAYAT PROMOSI, MUTASI, PENGHARGAAN & SANKSI</div>
+    <table class="table-data">
+        <thead>
+            <tr>
+                <th style="width: 30px;">No</th>
+                <th style="width: 100px;">Kategori</th>
+                <th>Keterangan / Deskripsi</th>
+                <th style="width: 110px;">Nomor SK</th>
+                <th style="width: 100px;">Tanggal SK / TMT</th>
+                <th style="width: 90px;">Pejabat Penetap</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td colspan="6" class="text-center text-muted" style="padding: 10px;">- Belum ada catatan promosi, mutasi, penghargaan atau sanksi -</td></tr>
+        </tbody>
+    </table>
+
+    <!-- PENGESAHAN / TANDA TANGAN (STYLE LAPORAN CURETAGE) -->
+    <table class="sign-area">
+        <tr>
+            <td style="width: 60%;">
+                <div style="font-size: 9.5px; color: #666; margin-top: 15px;">
+                    <i>Dokumen ini dicetak otomatis dari Sistem HRIS Rumah Sakit (UOBK RUMAH SAKIT UMUM DAERAH) pada 12-11-2026 15:32 WIB.</i>
+                </div>
+            </td>
+            <td style="width: 40%; text-align: center; vertical-align: top;">
+                <div style="font-size: 11px;">PULAU TALIABU, 12 November 2026</div>
+                <div style="font-size: 11px; font-weight: bold; margin-top: 2px;">Mengetahui,<br>Kepala Bagian SDM / HRD</div>
+                <div style="height: 65px;"></div>
+                <div style="font-size: 11.5px; font-weight: bold; text-decoration: underline;">Drs. H. M. Ridwan, M.Si</div>
+                <div style="font-size: 10.5px;">NIP. 19750815 199903 1 004</div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- AUTO PRINT TRIGGER -->
+    <script>
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                window.print();
+            }, 350);
+        });
+    </script>
+</body>
+</html>

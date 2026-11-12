@@ -630,12 +630,33 @@
         return;
       }
       if (typeof loadModule === 'function') {
-        loadModule('modules/pegawai/Vpegawai', '#container-isi');
+        loadModule('modules/pegawai/pegawai/Vpegawai', '#container-isi');
       }
     });
 
-    document.getElementById('btn-cetak-riwayat-a4')?.addEventListener('click', () => {
-      window.open(`./modules/pegawai/VcetakRiwayat.html?id=${currentPegawaiId}`, '_blank');
+    document.getElementById('btn-cetak-riwayat-a4')?.addEventListener('click', async () => {
+      if (!currentPegawaiId) return;
+      try {
+        if (typeof showLoader === 'function') showLoader();
+        const rs = await httpPost(`${config.api_url}/cTambahPegawai/print/${currentPegawaiId}`, { id: currentPegawaiId });
+        if (typeof hideLoader === 'function') hideLoader();
+        if (rs && rs.code === 200 && rs.data && rs.data.length > 0 && rs.data[0].file) {
+          window.open(rs.data[0].file, '_blank');
+        } else {
+          const msg = (rs && rs.message) ? rs.message : 'Gagal mencetak riwayat pegawai.';
+          if (typeof showDialog === 'function') {
+            showDialog({ ui: 'interactive', size: 'large', type: 'warning', label: `<span class="text-danger">${msg}</span>` });
+          } else if (typeof Swal !== 'undefined') {
+            Swal.fire('Cetak Gagal', msg, 'warning');
+          } else {
+            alert(msg);
+          }
+        }
+      } catch (err) {
+        if (typeof hideLoader === 'function') hideLoader();
+        console.error('Error saat mencetak riwayat:', err);
+        window.open(`${config.api_url}/cTambahPegawai/print/${currentPegawaiId}`, '_blank');
+      }
     });
 
     document.getElementById('form-edit-profil-pegawai')?.addEventListener('submit', submitUpdateProfil);
@@ -971,7 +992,7 @@
     <!-- Main Content -->
     <div id="detail-main-content" class="d-none">
       <!-- Profile Hero Card -->
-      <div class="profile-hero-card mb-3">
+      <div class="profile-hero-card">
         <div class="profile-cover position-relative">
           <div class="position-absolute top-0 end-0 p-3">
             <button type="button" class="btn btn-light btn-sm shadow-sm" id="btn-kembali-ke-direktori">
@@ -1004,7 +1025,7 @@
                 <i class="fas fa-key me-1"></i> Ganti Password
               </button>
               <button type="button" class="btn btn-primary btn-sm" id="btn-cetak-riwayat-a4">
-                <i class="fas fa-print me-1"></i> Cetak Resume A4
+                <i class="fas fa-print me-1"></i> Cetak Riwayat Pegawai
               </button>
             </div>
           </div>

@@ -63,6 +63,10 @@ var handleNavbarVerticalCollapsed = function handleNavbarVerticalCollapsed() {
 
     window.dispatchEvent(new Event('resize'));
     window.dispatchEvent(new CustomEvent('navbar.vertical.toggle'));
+    clearTimeout(window.__sidebarResizeTimer);
+    window.__sidebarResizeTimer = setTimeout(function () {
+      window.dispatchEvent(new Event('resize'));
+    }, 230);
   };
 
   var toggleButtons = document.querySelectorAll('.navbar-vertical-toggle, .navbar-top .navbar-toggler');

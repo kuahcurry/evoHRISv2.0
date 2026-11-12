@@ -170,11 +170,13 @@ export default class EvoSelector extends BaseComponent {
     const mode = this.#config.dropdownMode;
     if (mode == 'grid') dataset = e.target.parentElement.dataset;  
     if (dataset.value == '' || dataset.value == '-') return false;
-    const input = this.#element.querySelector('input[class$="dropdown-toggle show"]');
-    input.value = dataset.text;
-    input.dataset.text = dataset.text;
-    input.dataset.value = dataset.value;
-    input.focus();
+    const input = this.#element.querySelector('input[class$="dropdown-toggle show"]') || this.#element.querySelector('input.dropdown-toggle') || this.#element.querySelector('input');
+    if (input) {
+      input.value = dataset.text;
+      input.dataset.text = dataset.text;
+      input.dataset.value = dataset.value;
+      input.focus();
+    }
     this.onSelected(dataset);
    })
   })
@@ -199,12 +201,18 @@ export default class EvoSelector extends BaseComponent {
     }
    }
   })
-  input.addEventListener('keydown', e => {
+  const handleFilter = (e) => {
    const mode = this.#config.dropdownMode;
    if (mode == 'grid') this.#_setHeader();
-   let filteredItems = this.#options.filter(o => (o.text).toLowerCase().includes((e.target.value).toLowerCase()));
+   const q = (e.target.value || '').toLowerCase().trim();
+   let filteredItems = this.#options.filter(o => (o.text || '').toLowerCase().includes(q));
    this.#_setOptions(filteredItems);
-  });
+   const ul = this.#element.querySelector('.dropdown-menu');
+   if (ul && !ul.classList.contains('show')) {
+     ul.classList.add('show');
+   }
+  };
+  input.addEventListener('input', handleFilter);
   input.addEventListener('keyup', e => this.#_upEvent(e));
   btnclose.addEventListener('click', e => {
    this.#_reset();
@@ -223,10 +231,18 @@ export default class EvoSelector extends BaseComponent {
   if (mode == 'grid') {
    firsta = this.#element.querySelector('div[class^="grid-body"] > ul > li');
   }
-  if (firsta.dataset.value == '-') return false;
-  input.value = firsta.textContent;
-  input.dataset.text = firsta.dataset.text;
-  input.dataset.value = firsta.dataset.value;
+  if (firsta && firsta.dataset.value != '-') {
+    input.value = firsta.textContent;
+    input.dataset.text = firsta.dataset.text;
+    input.dataset.value = firsta.dataset.value;
+  }
+  try {
+    Object.defineProperty(this.#element, 'value', {
+      get: () => this.value,
+      set: (val) => { this.value = val; },
+      configurable: true
+    });
+  } catch (err) {}
  }
  #_reset(inputText = null) {
   const input = this.#element.querySelector('input[class$="dropdown-toggle"]');
@@ -244,23 +260,25 @@ export default class EvoSelector extends BaseComponent {
  addOptions(items) {
   const mode = this.#config.dropdownMode;
   if (mode == 'grid') this.#_setHeader();
+  this.#options = Array.isArray(items) ? Array.from(items) : [];
   this.#_setOptions(items);
  }
  clearOptions() {
+  this.#options = [];
   this.#_setOptions([]);
  }
  set value(data) {
   const mode = this.#config.dropdownMode;
   let aliul = this.#element.querySelectorAll('.dropdown-menu > li a[class^="dropdown-item"]');
   if (mode == 'grid') aliul = this.#element.querySelectorAll('div[class^="grid-body"] > ul');
-  const input = this.#element.querySelector('input[class$="dropdown-toggle"]');
-  const text = Array.from(aliul).filter(a => a.dataset.value.toLowerCase() == data.toLowerCase());
-  if (text.length > 0) {
-   input.value = text[0].dataset.text;
-   input.dataset.text = text[0].dataset.text;
-   input.dataset.value = text[0].dataset.value;
-   input.focus();
-  }else if (data == '' || data == '-') {
+  const input = this.#element.querySelector('input.dropdown-toggle') || this.#element.querySelector('input[class$="dropdown-toggle"]');
+  const targetVal = (data == null) ? '' : String(data).trim().toLowerCase();
+  const matched = Array.from(aliul).find(a => (a.dataset.value || '').trim().toLowerCase() === targetVal);
+  if (matched && input) {
+   input.value = matched.dataset.text || matched.textContent;
+   input.dataset.text = matched.dataset.text || matched.textContent;
+   input.dataset.value = matched.dataset.value;
+  } else if (!data || data === '-' || data === '') {
    this.#_reset();
   }
   return true;

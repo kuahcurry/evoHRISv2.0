@@ -439,3 +439,10 @@ export const generateRandom = (min = 0, max = 100, unique = true) => {
  }
  return {num, numbers};
 }
+
+export const showDialog = (...args) => {
+ if (typeof window !== 'undefined' && typeof window.showDialog === 'function') {
+  return window.showDialog(...args);
+ }
+};
+

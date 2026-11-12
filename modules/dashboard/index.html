@@ -14,7 +14,12 @@
     padding-top: 1.25rem;
     padding-bottom: 2rem;
     width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
     box-sizing: border-box;
+  }
+  .dash-container .row > [class*="col-"] {
+    min-width: 0;
   }
   @media (min-width: 768px) {
     .dash-container {
@@ -162,9 +167,14 @@
     border: 1px solid rgba(226, 232, 240, 0.85);
     background: #ffffff;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    min-width: 0;
   }
   .dash-chart-container {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
     position: relative;
   }
 
@@ -217,6 +227,31 @@
 
   let clockInterval = null;
   const chartInstances = {};
+  const chartObservers = {};
+  let resizeRafId = null;
+
+  function resizeAllCharts() {
+    if (resizeRafId) cancelAnimationFrame(resizeRafId);
+    resizeRafId = requestAnimationFrame(() => {
+      Object.values(chartInstances).forEach(c => {
+        try { c && c.resize && c.resize(); } catch (e) {}
+      });
+    });
+  }
+
+  if (window.__dashResizeHandler) {
+    window.removeEventListener('resize', window.__dashResizeHandler);
+  }
+  if (window.__dashSidebarHandler) {
+    window.removeEventListener('navbar.vertical.toggle', window.__dashSidebarHandler);
+  }
+  window.__dashResizeHandler = resizeAllCharts;
+  window.__dashSidebarHandler = () => {
+    resizeAllCharts();
+    setTimeout(resizeAllCharts, 230);
+  };
+  window.addEventListener('resize', window.__dashResizeHandler);
+  window.addEventListener('navbar.vertical.toggle', window.__dashSidebarHandler);
   const apiUrl = (typeof config !== 'undefined' && config.api_url) 
     ? config.api_url 
     : ((typeof window !== 'undefined' && window.location.pathname.startsWith('/evoHRIS_v2.1')) ? `${window.location.origin}/evoHRIS_v2.1/api` : `${window.location.origin}/api`);
@@ -301,14 +336,22 @@
   function initChart(domId) {
     const el = document.getElementById(domId);
     if (!el || typeof echarts === 'undefined') return null;
+    if (chartObservers[domId]) {
+      try { chartObservers[domId].disconnect(); } catch (e) {}
+      delete chartObservers[domId];
+    }
     if (chartInstances[domId]) {
       try { chartInstances[domId].dispose(); } catch (e) {}
     }
     const chart = echarts.init(el);
     chartInstances[domId] = chart;
-    window.addEventListener('resize', () => {
-      try { chart.resize(); } catch (e) {}
-    });
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(() => {
+        try { chart.resize(); } catch (e) {}
+      });
+      ro.observe(el);
+      chartObservers[domId] = ro;
+    }
     return chart;
   }
 

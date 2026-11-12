@@ -1,0 +1,251 @@
+<div style="margin-bottom: 20px;">
+    <div style="display: inline-block; width: 90px; vertical-align: top;">
+        <img src="{logo_rs}" width="80px" />
+    </div>
+    <div style="display: inline-block; vertical-align: top;">
+        <div style="font-weight: bold; margin-bottom: 5px; font-size: large;">RUMAH SAKIT</div>
+        <div style="font-weight: bold; margin-bottom: 5px; font-size: large;">PKU MUHAMMADIYAH GOMBONG</div>
+        <div style="font-size: 15px;">Jl. Yos Sudarso No. 461 Gombong 54412</div>
+    </div>
+    <div style="float: right; margin-bottom: 10px; font-size: 13px;">
+        <div style="border: 1px solid black; border-radius: 18px; padding: 13px 7px;">
+            <div style="margin-bottom: 5px;">
+                <div style="display: inline-block; vertical-align:top; width: 80px;">Nomor RM</div>
+                <div style="display: inline-block; vertical-align:top; width: 1%;">: </div>
+                <div style="display: inline-block; vertical-align:top; width: 210px;">{no_medicalrecord}</div>
+            </div>
+            <div style="margin-bottom: 5px;">
+                <div style="display: inline-block; vertical-align:top; width: 80px;">Nama</div>
+                <div style="display: inline-block; vertical-align:top; width: 1%;">: </div>
+                <div style="display: inline-block; vertical-align:top; width: 210px;">{nama_pasien} </div>
+            </div>
+            <div style="margin-bottom: 5px;">
+                <div style="display: inline-block; vertical-align:top; width: 80px;">Tgl Lahir</div>
+                <div style="display: inline-block; vertical-align:top; width: 1%;">: </div>
+                <div style="display: inline-block; vertical-align:top; width: 210px;">{tgl_lahir} ({jenis_kelamin}) </div>
+            </div>
+            <div style="margin-bottom: 5px;">
+                <div style="display: inline-block; vertical-align:top; width: 80px;">Alamat</div>
+                <div style="display: inline-block; vertical-align:top; width: 1%;">: </div>
+                <div style="display: inline-block; vertical-align:top; width: 210px;">{alamat} </div>
+            </div>
+            <div style="margin-bottom: 5px;">
+                <div style="display: inline-block; vertical-align:top; width: 80px;">NIK</div>
+                <div style="display: inline-block; vertical-align:top; width: 1%;">: </div>
+                <div style="display: inline-block; vertical-align:top; width: 210px;">{nik} </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- <div style="float: right; margin-right: 10px; margin-bottom: 20px;"><i>Hal dari 1 dari 2</i></div> -->
+<table width=100% style="border-collapse: collapse; font-size:15px; margin-bottom: 15px;">
+    <tr>
+        <td style="border: 1px solid black; padding: 5px; font-size: 20px; font-weight: bold; text-align: center;">
+            LAPORAN CURETAGE</td>
+    </tr>
+</table>
+<table width=100% style="border-collapse: collapse; font-size: 14px; margin-bottom: 1000px;">
+    <tr>
+        <td style="border: 1px solid black; padding: 5px; width: 33%;">
+            <div style="margin-left: 7px;">
+                <div>DPJP Obsgyn : <br>{nm_dpjp_obgyn}</div>
+            </div>
+        </td>
+        <td style="border: 1px solid black; padding: 5px; width: 33%;">
+            <div style="margin-left: 7px;">
+                <div>Operator 1 : <br>{nm_dokter_operator}</div>
+            </div>
+        </td>
+        <td style="border: 1px solid black; padding: 5px; width: 33%;">
+            <div style="margin-left: 7px;">
+                <div>Asisten Operator : <br>{nm_asisten_operator}</div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td style="border: 1px solid black; padding: 5px; width: 33%;">
+            <div style="margin-left: 7px;">
+                <div>DPJP Anestesi : <br>{nm_dokter_anestesi}</div>
+            </div>
+        </td>
+        <td colspan="2" style="border: 1px solid black; padding: 5px; width: 33%;">
+            <div style="margin-left: 7px;">
+                <div>Asisten Anestesi : <br>{nm_asisten_anestesi}</div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2" style="border: 1px solid black; padding: 5px; width: 33%;">
+            <div style="margin-left: 7px;">
+                <div>Diagnosis Medis : <br>{diagnosis_pra_ops}</div>
+            </div>
+        </td>
+        <td style="border: 1px solid black; padding: 5px; width: 33%;">
+            <div style="margin-left: 7px;">
+                <div style="margin-bottom: 7px;">Tgl Curetage : {tgl_ops}</div>
+                <div>Jam Mulai : {jam_ops}</div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2" style="border: 1px solid black; padding: 5px; width: 33%;">
+            <div style="margin-left: 7px;">
+                <div>Diagnosis Pasca Curetage : <br>{diagnosis_pasca_ops}</div>
+            </div>
+        </td>
+        <td style="border: 1px solid black; padding: 5px; width: 33%;">
+            <div style="margin-left: 7px;">
+                <div style="margin-bottom: 7px;">Lama Curetage : {lama_ops}</div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2" style="border: 1px solid black; border-right: none; padding: 5px; ">
+            <div style="margin-bottom: 10px;">Tindakan Curetage</div>
+            <div style="margin-bottom: 5px; margin-left: 10px;">{tindakan_ops}</div>
+        </td>
+        <td style="border: 1px solid black; border-left: none; padding: 5px; vertical-align: middle;">
+            <div>{jenis_tindakan_ops}</div>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="3" style="border: 1px solid black; padding: 5px; ">
+            <div style="margin-left: 10px; margin-bottom: 7px;">
+                <div style="display: inline-block; width: 13%;">Jenis Curetage</div>
+                <div style="display: inline-block; width: 70%;">{jenis_ops}</div>
+            </div>
+            <div style="margin-left: 10px; margin-bottom: 7px;">
+                <div style="display: inline-block; width: 13%;">Curetage Ke -</div>
+                <div style="display: inline-block; width: 70%;">{operasi_ke}</div>
+            </div>
+            <div style="margin-left: 10px; margin-bottom: 7px;">
+                <div style="display: inline-block; width: 13%;">Profilaksis</div>
+                <div style="display: inline-block; width: 70%;">{profilaksis}</div>
+            </div>
+            <div style="margin-left: 10px; margin-bottom: 7px;">
+                <div style="display: inline-block; width: 22%;">Antiobotik yang diberikan :</div>
+                <div style="display: inline-block; width: 70%;">{antibiotik}</div>
+            </div>
+            <div style="margin-left: 10px;">
+                <div style="display: inline-block; width: 16%;">Waktu pemberian :</div>
+                <div style="display: inline-block; width: 70%;">{waktu_antibiotik} jam sebelum operasi</div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="3" style="border: 1px solid black; padding: 5px; ">
+            <div style="margin-left: 25px; padding-top: 20px; padding-bottom: 20px;">
+                <div style="margin-bottom: 7px;">LAPORAN CURETAGE</div>
+                <div style="margin-bottom: 7px;">
+                    <div style="display: inline-block; width: 2%;">1.</div>
+                    <div style="display: inline-block; width: 80%;">Dalam stadium narkose, dilakukan toilet medan
+                        tindakan sesuai prosedur</div>
+                </div>
+                <div style="margin-bottom: 7px;">
+                    <div style="display: inline-block; width: 2%;">2.</div>
+                    <div style="display: inline-block; width: 70%;">Kateterisasi keluar urine {txt_keteterisasi} cc,
+                        pasang duk steril</div>
+                </div>
+                <div style="margin-bottom: 7px;">
+                    <div style="display: inline-block; width: 2%;">3.</div>
+                    <div style="display: inline-block; width: 80%;">Dilakukan periksa dalam {periksa},ukuran
+                        :{txt_periksa}</div>
+                </div>
+                <div style="margin-bottom: 7px;">
+                    <div style="display: inline-block; width: 2%;">4.</div>
+                    <div style="display: inline-block; width: 70%;">Pasang sym spekulum, portio dicunam dengan cunam
+                        portio</div>
+                </div>
+                <div style="margin-bottom: 7px;">
+                    <div style="display: inline-block; width: 2%;">5.</div>
+                    <div style="display: inline-block; width: 55%;">Sondase sampai angka {txt_sondase_awal},
+                        {rad_sondase}</div>
+                    <div style="display: inline-block; width: 30%;">{txt_sondase_akhir}</div>
+                </div>
+                <div style="margin-bottom: 7px;">
+                    <div style="display: inline-block; width: 2%;">6.</div>
+                    <div style="display: inline-block; width: 80%;">Dilakukan kuretase dengan sendok kuret
+                        {rad_kuretage}: {txt_kuretage}</div>
+                </div>
+
+                <div style="margin-bottom: 7px;">
+                    <div style="display: inline-block; width: 2%;">7.</div>
+                    <div style="display: inline-block; width: 70%;">Keluar jaringan {txt_keluar_jaringan}, sebanyak
+                        {txt_keluar_jaringan2} cc,
+                        sampai dengan kesan bersih</div>
+                </div>
+                <div style="margin-bottom: 7px;">
+                    <div style="display: inline-block; width: 2%;">8.</div>
+                    <div style="display: inline-block; width: 70%;">Keluar jaringan {txt_keluar_jaringan3} cc,
+                        pendarahan
+                        {txt_jaringan_pendarah} cc</div>
+                </div>
+                <div style="margin-bottom: 7px;">
+                    <div style="display: inline-block; width: 2%;">9.</div>
+                    <div style="display: inline-block; width: 70%;">Pasang tampon {txt_pasang_tampon}</div>
+                </div>
+                <div style="margin-bottom: 7px;">
+                    <div style="display: inline-block; width: 2%;">10.</div>
+                    <div style="display: inline-block; width: 70%;">Kondisi ibu sebelum, selama, sesudah operasi baik.
+                    </div>
+                </div>
+
+            </div>
+        </td>
+    </tr>
+</table>
+<!-- Halaman 2 -->
+<!-- <div style="margin-bottom: 100px; padding-bottom: 100px;">
+    <div style="display: inline-block; float: left;">
+        <div style="display: inline-block; width: 100px;height: 100px;background: #dac52c;border-radius: 50%;"></div>
+        <div style="display: inline-block; vertical-align: top; margin-top: 20px;">
+            <div style="font-size: 18px; font-weight: bold;">RUMAH SAKIT</div>
+            <div style="font-size: 18px; font-weight: bold;">MUHAMMADIYAH GOMBONG</div>
+            <div style="font-size: 18px; font-weight: bold;">Jl. Yos Sudarsono No.461 Gombong 54412</div>
+        </div>
+    </div>
+
+    <div style="display: inline-block; float: right;">
+        <div style="padding: 3px; margin-left: 5px; border: 1px solid black; border-radius: 10px;">
+            <div style="padding: 6px;">NomorRM:..........................................................</div>
+            <div style="padding: 6px;">Nama : {nama_pasien}</div>
+            <div style="padding: 6px;">Tgl. Lahir: {tgl_lahir}&nbsp;&nbsp;&nbsp;{jenis_kelamin}</div>
+            <div style="padding: 6px;">Alamat:{alamat}</div>
+            <div style="padding: 6px;">NIK:...................................................................</div>
+        </div>
+    </div>
+</div>
+<div style="margin-left: 2%;">
+    <div style="margin-bottom: 5px; margin-top: -6%;"><b>RM. 10.6</b></div>
+    <div><b>Revisi: </b>03/09/2022</div>
+</div> -->
+<!-- <div style="float: right; margin-right: 10px; margin-bottom: 20px;"><i>Hal dari 2 dari 2</i></div><br> -->
+<table width=100% style="border-collapse: collapse; font-size:14px;">
+    <tr>
+        <td style="border: 1px solid black;">
+            <div style="padding: 5px; border-bottom: 1px solid black; font-size: 16px; font-weight: bold;">
+                <div style="margin-left: 20px;">Laporan Curetage</div>
+            </div>
+            <div style="padding: 5px; min-height: 250px;">{laporan_ops_curetage}</div>
+        </td>
+    </tr>
+    <tr>
+        <td style="border: 1px solid black; padding: 5px; font-size: 16px; font-weight: bold;">
+            <div style="margin-left: 20px;">
+                Instruksi Pasca Curetage
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td style="border: 1px solid black; padding: 5px; padding: 5px; padding-bottom: 20px;">
+            <div style="min-height: 250px;">{instruksi_pasca_ops}</div>
+            <div style="float: right; margin-right: 4%; margin-top: 50px;">
+                <div style="text-align: center;">Operator,</div><br><br>
+                <!-- <div style="text-align: center;">{nm_asisten_operator}</div>
+                <div style="text-align: center;"><sub>Tanda tangan & Nama lengkap</sub></div> -->
+                <div style="text-align: center;">{img_dokter}</div><br>
+                <div style="text-align: center; width: auto; white-space: nowrap;">{nm_dokter_operator}</div>
+            </div>
+        </td>
+    </tr>
+</table>

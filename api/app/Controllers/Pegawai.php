@@ -198,6 +198,16 @@ class Pegawai extends BaseController
         return sendResponse(200, $this->mPegawai->getPegawaiLookup());
     }
 
+    public function snapshot($id = null)
+    {
+        $idPegawai = $id ?? $this->request->getGet('id') ?? $this->request->getGet('nip');
+        if (empty($idPegawai)) {
+            return sendResponse(400, null, 'ID atau NIP diperlukan');
+        }
+        $snapshot = $this->mPegawai->getPegawaiSnapshot($idPegawai);
+        return sendResponse(200, $snapshot);
+    }
+
     public function getRefData()
     {
         return sendResponse(200, $this->mPegawai->getRefData());
@@ -388,22 +398,35 @@ class Pegawai extends BaseController
     {
         $data = $this->getPayload();
 
+        $idPegawai = $data['ID_PEGAWAI'] ?? $data['replacement_id_pegawai'] ?? $data['id_pegawai'] ?? null;
+        if (empty($idPegawai) && !empty($data['replacement_NIP'] ?? $data['NIP'] ?? null)) {
+            $nip = trim($data['replacement_NIP'] ?? $data['NIP']);
+            $pRow = $this->mPegawai->db->table('pegawai')->where('NIP', $nip)->get()->getRowArray();
+            if ($pRow) {
+                $idPegawai = $pRow['ID_PEGAWAI'];
+            }
+        }
+        $data['ID_PEGAWAI'] = $idPegawai;
+
         if (empty($data['ID_PEGAWAI'])) {
             return sendResponse(422, null, 'Pegawai wajib dipilih');
         }
 
-        $kdBagianBaru = $data['KD_BAGIAN_BARU'] ?? $data['KD_BAGIAN_TUJUAN'] ?? $data['KD_BAGIAN'] ?? null;
-        if (empty($kdBagianBaru)) {
+        $kdBagianBaru = $data['KD_BAGIAN_BARU'] ?? $data['KD_BAGIAN_TUJUAN'] ?? $data['KD_BAGIAN'] ?? $data['replacement_bagian_menjadi'] ?? null;
+        if (empty($kdBagianBaru) || $kdBagianBaru === '-') {
             return sendResponse(422, null, 'Bagian / Unit Baru wajib dipilih');
         }
+        $data['KD_BAGIAN_BARU'] = $kdBagianBaru;
 
-        $kdJabatanBaru = $data['KD_JABATAN_BARU'] ?? $data['KD_JABATAN_TUJUAN'] ?? $data['KD_JABATAN'] ?? null;
-        if ($kdJabatanBaru === null || $kdJabatanBaru === '') {
+        $kdJabatanBaru = $data['KD_JABATAN_BARU'] ?? $data['KD_JABATAN_TUJUAN'] ?? $data['KD_JABATAN'] ?? $data['replacement_jabatan_menjadi'] ?? null;
+        if ($kdJabatanBaru === null || $kdJabatanBaru === '' || $kdJabatanBaru === '-') {
             return sendResponse(422, null, 'Jabatan Baru wajib dipilih');
         }
+        $data['KD_JABATAN_BARU'] = $kdJabatanBaru;
 
-        if (!empty($data['TGL_MUTASI'])) {
-            $normalizedMutasi = $this->normalizeDateInput($data['TGL_MUTASI']);
+        $tglMutasiInput = $data['TGL_MUTASI'] ?? $data['replacement_tanggal_mutasi'] ?? null;
+        if (!empty($tglMutasiInput)) {
+            $normalizedMutasi = $this->normalizeDateInput($tglMutasiInput);
             if (!$normalizedMutasi) {
                 return sendResponse(422, null, 'Format tanggal mutasi tidak valid (gunakan DD-MM-YYYY)');
             }
@@ -412,8 +435,9 @@ class Pegawai extends BaseController
             $data['TGL_MUTASI'] = date('Y-m-d');
         }
 
-        if (!empty($data['TGL_SURAT'])) {
-            $normalizedSurat = $this->normalizeDateInput($data['TGL_SURAT']);
+        $tglSuratInput = $data['TGL_SURAT'] ?? $data['replacement_tanggal_surat'] ?? null;
+        if (!empty($tglSuratInput)) {
+            $normalizedSurat = $this->normalizeDateInput($tglSuratInput);
             $data['TGL_SURAT'] = $normalizedSurat ?: $data['TGL_MUTASI'];
         } else {
             $data['TGL_SURAT'] = $data['TGL_MUTASI'];
@@ -561,6 +585,18 @@ class Pegawai extends BaseController
     public function save_sanksi()
     {
         $data = $this->getPayload();
+
+        $file = $this->request->getFile('file') ?? $this->request->getFile('upload_file') ?? $this->request->getFile('berkas');
+        if ($file && $file->isValid() && !$file->hasMoved()) {
+            $newName = 'sanksi_' . time() . '_' . $file->getRandomName();
+            $uploadPath = ROOTPATH . '../uploads';
+            if (!is_dir($uploadPath)) {
+                @mkdir($uploadPath, 0777, true);
+            }
+            $file->move($uploadPath, $newName);
+            $data['FILE'] = $newName;
+        }
+
         $res = $this->mPegawai->saveSanksi($data);
         return sendResponse($res['code'], $res, $res['message']);
     }
@@ -648,6 +684,18 @@ class Pegawai extends BaseController
     public function save_catatan()
     {
         $data = $this->getPayload();
+
+        $file = $this->request->getFile('file') ?? $this->request->getFile('upload_file') ?? $this->request->getFile('berkas');
+        if ($file && $file->isValid() && !$file->hasMoved()) {
+            $newName = 'catatan_' . time() . '_' . $file->getRandomName();
+            $uploadPath = ROOTPATH . '../uploads';
+            if (!is_dir($uploadPath)) {
+                @mkdir($uploadPath, 0777, true);
+            }
+            $file->move($uploadPath, $newName);
+            $data['FILE'] = $newName;
+        }
+
         $res = $this->mPegawai->saveCatatan($data);
         return sendResponse($res['code'], $res, $res['message']);
     }

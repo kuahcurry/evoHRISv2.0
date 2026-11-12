@@ -1,0 +1,992 @@
+<!-- View Sanksi Pegawai: Tata Letak Sesuai Spesifikasi Form & Tabel Riwayat -->
+<style>
+  .table-sanksi th {
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .table-sanksi td {
+    font-size: 0.775rem;
+    white-space: nowrap;
+  }
+  /* Styling EvoSelector Searchable Dropdown */
+  div[data-role="selector"] {
+    position: relative;
+    width: 100%;
+  }
+  div[data-role="selector"] > input.dropdown-toggle {
+    padding-right: 26px;
+    background-color: #fff;
+    cursor: pointer;
+  }
+  div[data-role="selector"] > input.dropdown-toggle::after {
+    display: none !important;
+  }
+  div[data-role="selector"] > span.fa-chevron-down,
+  div[data-role="selector"] > span.fa-solid,
+  div[data-role="selector"] > svg {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    font-size: 11px;
+    color: #748194;
+    pointer-events: none;
+    z-index: 2;
+  }
+  div[data-role="selector"] > a[href="#!selectorclose"] {
+    position: absolute;
+    top: 50%;
+    right: 24px;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: #e63757;
+    z-index: 3;
+    text-decoration: none;
+  }
+  div[data-role="selector"] .dropdown-menu {
+    max-height: 220px;
+    overflow-y: auto;
+    width: 100% !important;
+    font-size: 0.8rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    border: 1px solid rgba(0,0,0,0.15);
+    z-index: 1060;
+  }
+  div[data-role="selector"] .dropdown-item {
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    white-space: normal;
+  }
+  div[data-role="selector"] .dropdown-item:hover,
+  div[data-role="selector"] .dropdown-item:focus {
+    background-color: #edf2f9;
+    color: #2c7be5;
+  }
+
+  #form-sanksi {
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 5;
+  }
+
+  #form-sanksi input.form-control,
+  #form-sanksi textarea.form-control,
+  #form-sanksi select.form-select,
+  .card-body input.form-control,
+  [data-role="selector"] input.form-control {
+    background-color: #ffffff !important;
+    color: #1e293b !important;
+    border: 1px solid #cbd5e1 !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    cursor: text !important;
+    display: block !important;
+    visibility: visible !important;
+  }
+</style>
+
+<template id="template-vsanksi">
+  <div class="container-fluid p-0">
+    <!-- Header Halaman -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h4 class="mb-1 text-800 fw-bold">
+          <i class="fas fa-exclamation-triangle text-danger me-2"></i>SANKSI
+        </h4>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb fs--1 mb-0">
+            <li class="breadcrumb-item"><a href="#dashboard">Home</a></li>
+            <li class="breadcrumb-item">Perubahan Status Karyawan</li>
+            <li class="breadcrumb-item active" aria-current="page">Sanksi</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+
+    <!-- FORM SANKSI (SESUAI SPESIFIKASI PERSIS) -->
+    <div class="card mb-4 shadow-sm border">
+      <div class="card-header bg-light py-2">
+        <h6 class="mb-0 fw-bold text-700">
+          <i class="fas fa-edit me-1 text-primary"></i> Form Sanksi Pegawai
+        </h6>
+      </div>
+      <div class="card-body p-3">
+        <form id="form-sanksi" autocomplete="off">
+          <input type="hidden" id="replacement_kd_sanksi" name="replacement_kd_sanksi">
+          <input type="hidden" id="replacement_id_pegawai" name="replacement_id_pegawai">
+          <input type="hidden" id="replacement_ekselon" name="replacement_ekselon">
+          <input type="hidden" id="replacement_jenis_pegawai" name="replacement_jenis_pegawai">
+          <input type="hidden" id="existing_file_name" name="existing_file_name">
+
+          <div class="row g-2 mb-2">
+            <!-- Row 1: No Surat, NIP, Nama, Tgl Surat -->
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_no_surat">No Surat :</label>
+              <input type="text" class="form-control form-control-sm" id="replacement_no_surat" name="replacement_no_surat" placeholder="*Masukkan Nomer Surat..." required>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1">NIP :</label>
+              <div id="sel_nip" placeholder="Pilih NIK / NIP Pegawai..."></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_nama">Nama :</label>
+              <input type="text" class="form-control form-control-sm" id="replacement_nama" name="replacement_nama" placeholder="*Masukkan Nama...">
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_tanggal_surat">Tgl Surat :</label>
+              <input type="date" class="form-control form-control-sm" id="replacement_tanggal_surat" name="replacement_tanggal_surat" placeholder="mm/dd/yyyy">
+            </div>
+
+            <!-- Row 2: Bagian, Golongan, Jenis Sanksi, Jabatan -->
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_bagian">Bagian :</label>
+              <div id="sel_bagian" placeholder="Pilih Bagian"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_golongan">Golongan :</label>
+              <div id="sel_golongan" placeholder="Pilih Golongan"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_jenis_sanksi">Jenis Sanksi :</label>
+              <div id="sel_jenis_sanksi" placeholder="Pilih Jenis Sanksi"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_jabatan">Jabatan :</label>
+              <div id="sel_jabatan" placeholder="Pilih Jabatan"></div>
+            </div>
+
+            <!-- Row 3: Pangkat, Tgl Sanksi, Status Pegawai, Lokasi -->
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_pangkat">Pangkat :</label>
+              <div id="sel_pangkat" placeholder="Pilih Pangkat"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_tanggal_sanksi">Tgl Sanksi :</label>
+              <input type="date" class="form-control form-control-sm" id="replacement_tanggal_sanksi" name="replacement_tanggal_sanksi" placeholder="mm/dd/yyyy">
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_status_pegawai">Status Pegawai :</label>
+              <div id="sel_status_pegawai" placeholder="Pilih Status Pegawai"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_lokasi">Lokasi :</label>
+              <div id="sel_lokasi" placeholder="Pilih Lokasi"></div>
+            </div>
+
+            <!-- Row 4: Berlaku Mulai, Berlaku Selesei, Keterangan, Upload File -->
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_berlaku_mulai">Berlaku Mulai :</label>
+              <input type="date" class="form-control form-control-sm" id="replacement_berlaku_mulai" name="replacement_berlaku_mulai" placeholder="mm/dd/yyyy">
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_berlaku_selesai">Berlaku Selesei :</label>
+              <input type="date" class="form-control form-control-sm" id="replacement_berlaku_selesai" name="replacement_berlaku_selesai" placeholder="mm/dd/yyyy">
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_keterangan">Keterangan :</label>
+              <textarea class="form-control form-control-sm" id="replacement_keterangan" name="replacement_keterangan" rows="1" placeholder="Masukkan Keterangan..."></textarea>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="upload_file">Upload File :</label>
+              <input type="file" class="form-control form-control-sm" id="upload_file" name="upload_file">
+              <div id="current_file_preview" class="fs--2 text-muted mt-1" style="display: none;"></div>
+            </div>
+          </div>
+
+          <!-- BUTTON SIMPAN & RESET -->
+          <div class="mt-3 pt-3 border-top d-flex gap-2 align-items-center">
+            <button type="submit" class="btn btn-sm btn-primary px-3 fw-semi-bold" id="btn-save-sanksi">
+              <i class="fas fa-save me-1"></i> Simpan
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary px-3" id="btn-reset-sanksi">
+              <i class="fas fa-undo me-1"></i> Reset
+            </button>
+            <span class="fs--1 text-muted ms-2" id="form-sanksi-status"></span>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TABEL RIWAYAT SANKSI -->
+    <div class="card shadow-sm border mb-4">
+      <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap gap-2 py-2">
+        <div class="d-flex align-items-center gap-2">
+          <h6 class="mb-0 fw-bold text-700">
+            <i class="fas fa-history me-1 text-primary"></i> Daftar Riwayat Sanksi
+          </h6>
+          <span class="badge bg-soft-primary text-primary" id="badge-total-sanksi">0 Data</span>
+        </div>
+
+        <!-- SEARCH / CARI TOOLBAR -->
+        <div class="d-flex align-items-center gap-2">
+          <label class="form-label mb-0 fs--1 fw-bold text-muted" for="txtcari_sanksi">Cari</label>
+          <div class="input-group input-group-sm" style="width: 260px;">
+            <input type="text" class="form-control form-control-sm" id="txtcari_sanksi" placeholder="NIP, nama, atau no surat...">
+            <button class="btn btn-primary" type="button" id="btn-cari-sanksi" title="Cari">
+              <i class="fas fa-search"></i>
+            </button>
+            <button class="btn btn-outline-secondary" type="button" id="btn-clear-sanksi" title="Hapus Filter">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-refresh-sanksi" title="Muat Ulang Data">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered table-striped table-hover table-sanksi mb-0" id="tb_sanksi">
+            <thead class="bg-200 text-800 text-center align-middle">
+              <tr>
+                <th style="width: 45px; text-align: center;">No.</th>
+                <th style="text-align: center;">NIP</th>
+                <th style="text-align: center;">Nama</th>
+                <th style="text-align: center;">No. Surat</th>
+                <th style="text-align: center;">Tgl Surat</th>
+                <th style="text-align: center;">Jenis Sanksi</th>
+                <th style="text-align: center;">Tgl Sanksi</th>
+                <th style="text-align: center;">Bagian</th>
+                <th style="text-align: center;">Jabatan</th>
+                <th style="text-align: center;">Pangkat</th>
+                <th style="text-align: center;">Keterangan</th>
+                <th style="width: 70px; text-align: center;">File</th>
+                <th style="width: 80px; text-align: center;"><i class="fas fa-cog"></i></th>
+              </tr>
+            </thead>
+            <tbody id="tb_sanksi_body" class="align-middle">
+              <tr>
+                <td colspan="13" class="text-center py-4 text-muted">Belum ada data riwayat sanksi</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- FOOTER PAGINASI -->
+      <div class="card-footer d-flex justify-content-between align-items-center py-2 bg-light border-top">
+        <span class="pagination-info fs--1 text-muted" id="sanksi-pagination-info">Menampilkan 0 data</span>
+        <ul class="pagination pagination-sm mb-0" id="sanksi-pagination"></ul>
+      </div>
+    </div>
+
+    </div>
+  </div>
+</template>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+  import EvoSelector from './components/EvoSelector.js';
+
+  const apiUrl = (typeof config !== 'undefined' && config.api_url) 
+    ? config.api_url 
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  let allSanksi = [];
+  let filteredSanksi = [];
+  let refData = {
+    bagian: [],
+    golongan: [],
+    jabatan: [],
+    pangkat: [],
+    jenis_sanksi: [],
+    status_pegawai: [],
+    lokasi: []
+  };
+  let lookupPegawai = [];
+  let currentPage = 1;
+  const rowsPerPage = 10;
+  let lookupModalInstance = null;
+
+  // EvoSelector instances
+  let selNip = null;
+  let selBagian = null;
+  let selGolongan = null;
+  let selJenisSanksi = null;
+  let selJabatan = null;
+  let selPangkat = null;
+  let selStatusPegawai = null;
+  let selLokasi = null;
+
+  // Helper untuk membuat opsi EvoSelector dengan baris placeholder '-'
+  function createOptList(items, valKey, textKey, defaultText) {
+    const list = [{ text: defaultText, value: '-' }];
+    if (Array.isArray(items)) {
+      items.forEach(item => {
+        const val = item[valKey] !== undefined ? String(item[valKey]) : '';
+        const txt = item[textKey] !== undefined ? String(item[textKey]) : val;
+        list.push({ text: txt, value: val });
+      });
+    }
+    return list;
+  }
+
+  // Inisialisasi seluruh EvoSelector (tampil instan)
+  function initEvoSelectors() {
+    selNip = new EvoSelector('sel_nip', [{ text: 'Pilih NIK / NIP Pegawai...', value: '-' }]);
+    selBagian = new EvoSelector('sel_bagian', [{ text: 'Pilih Bagian', value: '-' }]);
+    selGolongan = new EvoSelector('sel_golongan', [{ text: 'Pilih Golongan', value: '-' }]);
+    selJenisSanksi = new EvoSelector('sel_jenis_sanksi', [{ text: 'Pilih Jenis Sanksi', value: '-' }]);
+    selJabatan = new EvoSelector('sel_jabatan', [{ text: 'Pilih Jabatan', value: '-' }]);
+    selPangkat = new EvoSelector('sel_pangkat', [{ text: 'Pilih Pangkat', value: '-' }]);
+    selStatusPegawai = new EvoSelector('sel_status_pegawai', [{ text: 'Pilih Status Pegawai', value: '-' }]);
+    selLokasi = new EvoSelector('sel_lokasi', [{ text: 'Pilih Lokasi', value: '-' }]);
+
+    selNip.on('selected', (e) => {
+      const detail = e?.detail || e || {};
+      const values = detail.values || {};
+      const val = detail.value || (selNip ? selNip.value : '');
+
+      let nip = values.nip || detail.nip || val || '';
+      let nama = values.nama || detail.nama || '';
+      let idPeg = values.id_pegawai || detail.id_pegawai || '';
+
+      const list = (typeof lookupPegawai !== 'undefined' && Array.isArray(lookupPegawai) && lookupPegawai.length > 0)
+        ? lookupPegawai
+        : ((typeof allPegawai !== 'undefined' && Array.isArray(allPegawai)) ? allPegawai : []);
+
+      if (list.length > 0) {
+        const match = list.find(p =>
+          (nip && String(p.NIP).trim() === String(nip).trim()) ||
+          (val && (String(p.NIP).trim() === String(val).trim() || String(p.ID_PEGAWAI) === String(val) || (p.NO_IDENTITAS && String(p.NO_IDENTITAS).trim() === String(val).trim())))
+        );
+        if (match) {
+          nip = match.NIP || nip;
+          nama = match.NAMA || nama;
+          idPeg = match.ID_PEGAWAI || idPeg;
+        }
+      }
+
+      const namaEl = document.querySelector('#replacement_nama');
+      const nipEl = document.querySelector('#replacement_NIP');
+      const idEl = document.querySelector('#replacement_id_pegawai');
+
+      if (nama && namaEl) {
+        namaEl.value = nama;
+        namaEl.dispatchEvent(new Event('input', { bubbles: true }));
+        namaEl.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      if (nip && nipEl) nipEl.value = nip;
+      if (idPeg && idEl) idEl.value = idPeg;
+
+      if (nip && nip !== '-') {
+        fetchAndApplySnapshot(nip);
+      }
+    });
+
+    selNip.on('cleared', () => {
+      const namaEl = document.querySelector('#replacement_nama');
+      const nipEl = document.querySelector('#replacement_NIP');
+      const idEl = document.querySelector('#replacement_id_pegawai');
+      if (namaEl) {
+        namaEl.value = '';
+        namaEl.dispatchEvent(new Event('input', { bubbles: true }));
+        namaEl.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      if (nipEl) nipEl.value = '';
+      if (idEl) idEl.value = '';
+    });
+  }
+
+  // Update opsi dropdown dari data master database
+  function updateEvoSelectorOptions() {
+    const optBagian = createOptList(refData.bagian, 'KD_BAGIAN', 'BAGIAN', 'Pilih Bagian');
+    const optGolongan = createOptList(refData.golongan, 'KD_GOLONGAN', 'GOLONGAN', 'Pilih Golongan');
+    const optJenisSanksi = createOptList(refData.jenis_sanksi, 'KD_JENIS_SANKSI', 'JENIS_SANKSI', 'Pilih Jenis Sanksi');
+    const optJabatan = createOptList(refData.jabatan, 'KD_JABATAN', 'JABATAN', 'Pilih Jabatan');
+    const optPangkat = createOptList(refData.pangkat, 'KD_PANGKAT', 'PANGKAT', 'Pilih Pangkat');
+    const optStatusPegawai = createOptList(refData.status_pegawai, 'KD_STATUS_PEGAWAI', 'STATUS_PEGAWAI', 'Pilih Status Pegawai');
+    const optLokasi = createOptList(refData.lokasi, 'KD_LOKASI', 'LOKASI', 'Pilih Lokasi');
+
+    selBagian?.addOptions(optBagian);
+    selGolongan?.addOptions(optGolongan);
+    selJenisSanksi?.addOptions(optJenisSanksi);
+    selJabatan?.addOptions(optJabatan);
+    selPangkat?.addOptions(optPangkat);
+    selStatusPegawai?.addOptions(optStatusPegawai);
+    selLokasi?.addOptions(optLokasi);
+  }
+
+  // Isi datalist NIP untuk autocomplete cepat
+  function populateNipDatalist() {
+    const datalist = document.querySelector('#datalist-nip-pegawai');
+    if (!datalist) return;
+    let html = '';
+    lookupPegawai.forEach(p => {
+      html += `<option value="${p.NIP}">${p.NAMA}</option>`;
+    });
+    datalist.innerHTML = html;
+  }
+
+  // Muat Master Referensi & Lookup Pegawai dari Database
+  async function loadMasterData() {
+    try {
+      let refRes = await httpGet(`${apiUrl}/cPegawai/master`);
+      if (!refRes || refRes.code !== 200 || !refRes.data) {
+        refRes = await httpGet(`${apiUrl}/pegawai/ref_data`);
+      }
+      const lookupRes = await httpGet(`${apiUrl}/pegawai/lookup`);
+
+      if (refRes && refRes.code === 200 && refRes.data) {
+        refData = { ...refData, ...refRes.data };
+      }
+      if (lookupRes && lookupRes.code === 200 && Array.isArray(lookupRes.data)) {
+        lookupPegawai = lookupRes.data;
+      }
+
+      try {
+        const listRes = await httpGet(`${apiUrl}/pegawai/list?limit=1000`);
+        if (listRes && listRes.code === 200 && Array.isArray(listRes.data)) {
+          lookupPegawai = listRes.data;
+          const opts = [{ text: 'Pilih NIK / NIP Pegawai...', value: '-' }];
+          listRes.data.forEach(p => {
+            const nik = (p.NO_IDENTITAS || '').trim();
+            const nip = (p.NIP || '').trim();
+            const nama = (p.NAMA || '').trim();
+            let label = nik && nip ? `${nik} - ${nip} - ${nama}` : (nip ? `${nip} - ${nama}` : (nik ? `${nik} - ${nama}` : (nama || 'Pegawai')));
+            opts.push({
+              text: label,
+              value: nip || String(p.ID_PEGAWAI),
+              values: { id_pegawai: p.ID_PEGAWAI, nip: nip, nik: nik, nama: nama }
+            });
+          });
+          if (selNip) selNip.addOptions(opts);
+        }
+      } catch (eList) {
+        console.warn('Gagal memuat list pegawai untuk selector:', eList);
+      }
+
+      updateEvoSelectorOptions();
+    } catch (err) {
+      console.warn('Gagal memuat master data sanksi:', err);
+    }
+  }
+
+  // Muat Snapshot Pegawai dan isi otomatis ke formulir
+  async function fetchAndApplySnapshot(nipOrId) {
+    if (!nipOrId) return;
+    const statusEl = document.querySelector('#form-sanksi-status');
+    if (statusEl) statusEl.textContent = 'Memuat snapshot pegawai...';
+
+    try {
+      const res = await httpGet(`${apiUrl}/pegawai/snapshot/${encodeURIComponent(nipOrId)}`);
+      if (res && res.code === 200 && res.data) {
+        const d = res.data;
+        document.querySelector('#replacement_id_pegawai').value = d.ID_PEGAWAI || '';
+        document.querySelector('#replacement_NIP').value = d.NIP || nipOrId;
+        document.querySelector('#replacement_nama').value = d.NAMA || '';
+        document.querySelector('#replacement_ekselon').value = d.KD_EKSELON || '';
+        document.querySelector('#replacement_jenis_pegawai').value = d.KD_JENIS_PEGAWAI || '';
+
+        // Otomatis pilih nilai dropdown via EvoSelector
+        if (selBagian) selBagian.value = d.KD_BAGIAN || '';
+        if (selGolongan) selGolongan.value = d.KD_GOLONGAN || '';
+        if (selJabatan) selJabatan.value = d.KD_JABATAN || '';
+        if (selPangkat) selPangkat.value = d.KD_PANGKAT || '';
+        if (selStatusPegawai) selStatusPegawai.value = d.KD_STATUS_PEGAWAI || '';
+        if (selLokasi) selLokasi.value = d.KD_LOKASI || '';
+
+        if (statusEl) statusEl.textContent = `Data pegawai [${d.NAMA}] berhasil dimuat.`;
+        setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
+      } else {
+        if (statusEl) statusEl.textContent = 'Pegawai tidak ditemukan dalam snapshot.';
+      }
+    } catch (e) {
+      console.warn('Gagal snapshot pegawai:', e);
+      if (statusEl) statusEl.textContent = 'Gagal memuat snapshot pegawai.';
+    }
+  }
+
+  // Muat Data Riwayat Sanksi dari Database
+  async function loadData() {
+    try {
+      const res = await httpGet(`${apiUrl}/pegawai/sanksi`);
+      if (res && res.code === 200 && Array.isArray(res.data) && res.data.length > 0) {
+        allSanksi = res.data;
+      } else {
+        allSanksi = [];
+      }
+    } catch (err) {
+      console.warn('Gagal mengambil data sanksi:', err);
+      allSanksi = [];
+    }
+
+    applyFilter();
+  }
+
+  // Filter pencarian tabel
+  function applyFilter() {
+    const keyword = (document.querySelector('#txtcari_sanksi')?.value || '').trim().toLowerCase();
+    if (!keyword) {
+      filteredSanksi = [...allSanksi];
+    } else {
+      filteredSanksi = allSanksi.filter(row => {
+        return (
+          (row.NIP && row.NIP.toLowerCase().includes(keyword)) ||
+          (row.NAMA_PEGAWAI && row.NAMA_PEGAWAI.toLowerCase().includes(keyword)) ||
+          (row.NAMA && row.NAMA.toLowerCase().includes(keyword)) ||
+          (row.NO_SURAT && row.NO_SURAT.toLowerCase().includes(keyword)) ||
+          (row.JENIS_SANKSI && row.JENIS_SANKSI.toLowerCase().includes(keyword)) ||
+          (row.BAGIAN && row.BAGIAN.toLowerCase().includes(keyword)) ||
+          (row.JABATAN && row.JABATAN.toLowerCase().includes(keyword)) ||
+          (row.PANGKAT && row.PANGKAT.toLowerCase().includes(keyword))
+        );
+      });
+    }
+
+    currentPage = 1;
+    renderTable();
+  }
+
+  // Render Tabel Riwayat Sanksi
+  function renderTable() {
+    const tbody = document.querySelector('#tb_sanksi_body');
+    const badgeTotal = document.querySelector('#badge-total-sanksi');
+    const infoEl = document.querySelector('#sanksi-pagination-info');
+    if (!tbody) return;
+
+    if (badgeTotal) badgeTotal.textContent = `${filteredSanksi.length} Data`;
+
+    if (filteredSanksi.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="13" class="text-center py-4 text-muted">Belum ada data riwayat sanksi</td></tr>';
+      if (infoEl) infoEl.textContent = 'Menampilkan 0 data';
+      renderPagination(0);
+      return;
+    }
+
+    const totalPages = Math.ceil(filteredSanksi.length / rowsPerPage);
+    if (currentPage > totalPages) currentPage = totalPages;
+
+    const startIdx = (currentPage - 1) * rowsPerPage;
+    const endIdx = Math.min(startIdx + rowsPerPage, filteredSanksi.length);
+    const pageRows = filteredSanksi.slice(startIdx, endIdx);
+
+    let html = '';
+    pageRows.forEach((row, i) => {
+      const no = startIdx + i + 1;
+      const nip = row.NIP || '-';
+      const nama = row.NAMA_PEGAWAI || row.NAMA || '-';
+      const noSurat = row.NO_SURAT || '-';
+      const tglSurat = row.TGL_SURAT ? row.TGL_SURAT.substring(0, 10) : '-';
+      const jenisSanksi = row.JENIS_SANKSI || '-';
+      const tglSanksi = row.TGL_SANKSI ? row.TGL_SANKSI.substring(0, 10) : '-';
+      const bagian = row.BAGIAN || '-';
+      const jabatan = row.JABATAN || '-';
+      const pangkat = row.PANGKAT || '-';
+      const keterangan = row.KETERANGAN || '-';
+
+      let fileCell = '<span class="text-muted">-</span>';
+      if (row.FILE) {
+        const fileUrl = `${window.location.origin}/evoHRIS_v2.1/uploads/${row.FILE}`;
+        fileCell = `<a href="${fileUrl}" target="_blank" class="badge bg-soft-info text-info text-decoration-none" title="${row.FILE}"><i class="fas fa-file-download me-1"></i>Berkas</a>`;
+      }
+
+      html += `
+        <tr>
+          <td class="text-center fw-semi-bold">${no}</td>
+          <td><span class="badge bg-soft-primary text-primary fw-medium">${nip}</span></td>
+          <td class="fw-semi-bold">${nama}</td>
+          <td>${noSurat}</td>
+          <td>${tglSurat}</td>
+          <td><span class="badge bg-soft-danger text-danger">${jenisSanksi}</span></td>
+          <td>${tglSanksi}</td>
+          <td>${bagian}</td>
+          <td>${jabatan}</td>
+          <td>${pangkat}</td>
+          <td class="text-break" style="max-width: 160px;">${keterangan}</td>
+          <td class="text-center">${fileCell}</td>
+          <!-- Aksi -->
+          <td class="text-center">
+            <div class="btn-group btn-group-sm">
+              <button type="button" class="btn btn-link text-600 btn-edit-sanksi p-1" data-id="${row.KD_SANKSI || ''}" title="Edit Data">
+                <i class="fas fa-edit text-primary"></i>
+              </button>
+              <button type="button" class="btn btn-link text-600 btn-delete-sanksi p-1" data-id="${row.KD_SANKSI || ''}" data-nama="${nama}" title="Hapus Data">
+                <i class="fas fa-trash text-danger"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+
+    if (infoEl) {
+      infoEl.textContent = `Menampilkan ${startIdx + 1} - ${endIdx} dari ${filteredSanksi.length} data`;
+    }
+
+    renderPagination(totalPages);
+    attachRowActions();
+  }
+
+  // Render Tombol Paginasi
+  function renderPagination(totalPages) {
+    const ul = document.querySelector('#sanksi-pagination');
+    if (!ul) return;
+    if (totalPages <= 1) {
+      ul.innerHTML = '';
+      return;
+    }
+
+    let html = `
+      <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+        <a class="page-link" href="javascript:void(0)" data-page="${currentPage - 1}"><i class="fas fa-chevron-left"></i></a>
+      </li>
+    `;
+
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) {
+        html += `
+          <li class="page-item ${p === currentPage ? 'active' : ''}">
+            <a class="page-link" href="javascript:void(0)" data-page="${p}">${p}</a>
+          </li>
+        `;
+      } else if (p === currentPage - 3 || p === currentPage + 3) {
+        html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      }
+    }
+
+    html += `
+      <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+        <a class="page-link" href="javascript:void(0)" data-page="${currentPage + 1}"><i class="fas fa-chevron-right"></i></a>
+      </li>
+    `;
+
+    ul.innerHTML = html;
+    ul.querySelectorAll('a.page-link').forEach(a => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const page = parseInt(a.getAttribute('data-page'));
+        if (page && page >= 1 && page <= totalPages && page !== currentPage) {
+          currentPage = page;
+          renderTable();
+        }
+      });
+    });
+  }
+
+  // Event Edit & Hapus pada baris tabel
+  function attachRowActions() {
+    // Edit
+    document.querySelectorAll('.btn-edit-sanksi').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const row = allSanksi.find(r => String(r.KD_SANKSI) === String(id));
+        if (row) {
+          fillFormForEdit(row);
+        }
+      });
+    });
+
+    // Delete
+    document.querySelectorAll('.btn-delete-sanksi').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const nama = btn.getAttribute('data-nama') || 'Pegawai';
+        if (!id) return;
+
+        const konfirmasi = confirm(`Apakah Anda yakin ingin menghapus data sanksi untuk [${nama}]?`);
+        if (!konfirmasi) return;
+
+        try {
+          const res = await httpPost(`${apiUrl}/pegawai/sanksi/delete/${id}`, { id });
+          if (res && (res.code === 200 || res.status === 'ok')) {
+            alert('Data sanksi berhasil dihapus!');
+            loadData();
+          } else {
+            alert(res?.message || 'Gagal menghapus data sanksi.');
+          }
+        } catch (e) {
+          console.error('Error delete sanksi:', e);
+          alert('Terjadi kesalahan saat menghapus data sanksi.');
+        }
+      });
+    });
+  }
+
+  // Isi data baris ke formulir (Mode Edit)
+  function fillFormForEdit(row) {
+    document.querySelector('#replacement_kd_sanksi').value = row.KD_SANKSI || '';
+    document.querySelector('#replacement_id_pegawai').value = row.ID_PEGAWAI || '';
+    document.querySelector('#replacement_ekselon').value = row.KD_EKSELON || '';
+    document.querySelector('#replacement_jenis_pegawai').value = row.KD_JENIS_PEGAWAI || '';
+
+    document.querySelector('#replacement_no_surat').value = row.NO_SURAT || '';
+    document.querySelector('#replacement_NIP')?.setAttribute('value', row.NIP || '');
+    if (selNip) selNip.value = row.NIP || '-';
+    document.querySelector('#replacement_nama').value = row.NAMA_PEGAWAI || row.NAMA || '';
+    document.querySelector('#replacement_tanggal_surat').value = row.TGL_SURAT ? row.TGL_SURAT.substring(0, 10) : '';
+
+    if (selBagian) selBagian.value = row.KD_BAGIAN || '';
+    if (selGolongan) selGolongan.value = row.KD_GOLONGAN || '';
+    if (selJenisSanksi) selJenisSanksi.value = row.KD_JENIS_SANKSI || '';
+    if (selJabatan) selJabatan.value = row.KD_JABATAN || '';
+    if (selPangkat) selPangkat.value = row.KD_PANGKAT || '';
+
+    document.querySelector('#replacement_tanggal_sanksi').value = row.TGL_SANKSI ? row.TGL_SANKSI.substring(0, 10) : '';
+
+    if (selStatusPegawai) selStatusPegawai.value = row.KD_STATUS_PEGAWAI || '';
+    if (selLokasi) selLokasi.value = row.KD_LOKASI || '';
+
+    const tglMulai = row.MULAI || row.TGL_MULAI || '';
+    const tglSelesai = row.SAMPAI || row.TGL_SELESAI || '';
+    document.querySelector('#replacement_berlaku_mulai').value = tglMulai ? tglMulai.substring(0, 10) : '';
+    document.querySelector('#replacement_berlaku_selesai').value = tglSelesai ? tglSelesai.substring(0, 10) : '';
+
+    document.querySelector('#replacement_keterangan').value = row.KETERANGAN || '';
+
+    // Preview File Eksisting
+    const previewEl = document.querySelector('#current_file_preview');
+    const existingFileEl = document.querySelector('#existing_file_name');
+    if (row.FILE) {
+      existingFileEl.value = row.FILE;
+      if (previewEl) {
+        previewEl.style.display = 'block';
+        previewEl.innerHTML = `<i class="fas fa-paperclip text-info me-1"></i> File saat ini: <strong>${row.FILE}</strong>`;
+      }
+    } else {
+      existingFileEl.value = '';
+      if (previewEl) previewEl.style.display = 'none';
+    }
+
+    // Ubah label tombol Simpan menjadi Update
+    const btnSave = document.querySelector('#btn-save-sanksi');
+    if (btnSave) {
+      btnSave.innerHTML = '<i class="fas fa-edit me-1"></i> Update Sanksi';
+    }
+
+    // Scroll ke atas formulir
+    document.querySelector('#form-sanksi')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // Reset Formulir
+  function resetForm() {
+    const form = document.querySelector('#form-sanksi');
+    if (form) form.reset();
+    document.querySelector('#replacement_kd_sanksi').value = '';
+    if (selNip) selNip.value = '-';
+    document.querySelector('#replacement_id_pegawai').value = '';
+    document.querySelector('#replacement_ekselon').value = '';
+    document.querySelector('#replacement_jenis_pegawai').value = '';
+    document.querySelector('#existing_file_name').value = '';
+
+    const previewEl = document.querySelector('#current_file_preview');
+    if (previewEl) previewEl.style.display = 'none';
+
+    // Reset EvoSelectors
+    if (selBagian) selBagian.value = '';
+    if (selGolongan) selGolongan.value = '';
+    if (selJenisSanksi) selJenisSanksi.value = '';
+    if (selJabatan) selJabatan.value = '';
+    if (selPangkat) selPangkat.value = '';
+    if (selStatusPegawai) selStatusPegawai.value = '';
+    if (selLokasi) selLokasi.value = '';
+
+    const btnSave = document.querySelector('#btn-save-sanksi');
+    if (btnSave) {
+      btnSave.innerHTML = '<i class="fas fa-save me-1"></i> Simpan';
+    }
+
+    const statusEl = document.querySelector('#form-sanksi-status');
+    if (statusEl) statusEl.textContent = '';
+  }
+
+  // Upload berkas jika ada file yang dipilih
+  async function uploadFileIfNeeded() {
+    const fileInput = document.querySelector('#upload_file');
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+      return document.querySelector('#existing_file_name')?.value || '';
+    }
+
+    const formData = new FormData();
+    formData.append('berkas', fileInput.files[0]);
+
+    try {
+      const upRes = await fetch(`${apiUrl}/cPegawai/upload_berkas`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Accept': 'application/json',
+          'Authorization-Key': typeof config !== 'undefined' ? config.auth_key : '12345'
+        }
+      });
+      const jsonRes = await upRes.json();
+      if (jsonRes && (jsonRes.code === 200 || jsonRes.status === 'ok') && jsonRes.data && jsonRes.data.file_name) {
+        return jsonRes.data.file_name;
+      }
+    } catch (e) {
+      console.warn('Gagal upload berkas sanksi:', e);
+    }
+
+    return document.querySelector('#existing_file_name')?.value || '';
+  }
+
+  // Simpan Formulir Sanksi
+  async function handleFormSubmit(e) {
+    e.preventDefault();
+    const btnSave = document.querySelector('#btn-save-sanksi');
+    const statusEl = document.querySelector('#form-sanksi-status');
+
+    const nip = (selNip?.value && selNip.value !== '-' ? selNip.value : '').trim();
+    if (!nip) {
+      alert('Silakan pilih atau masukkan NIP Pegawai terlebih dahulu!');
+      return;
+    }
+
+    const noSurat = document.querySelector('#replacement_no_surat')?.value?.trim();
+    if (!noSurat) {
+      alert('Silakan masukkan Nomor Surat Sanksi terlebih dahulu!');
+      return;
+    }
+
+    if (btnSave) {
+      btnSave.disabled = true;
+      btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
+    }
+    if (statusEl) statusEl.textContent = 'Memproses data dan berkas sanksi...';
+
+    // Unggah file jika ada berkas terpilih
+    const uploadedFileName = await uploadFileIfNeeded();
+
+    const payload = {
+      replacement_kd_sanksi: document.querySelector('#replacement_kd_sanksi')?.value || '',
+      KD_SANKSI: document.querySelector('#replacement_kd_sanksi')?.value || '',
+      replacement_id_pegawai: document.querySelector('#replacement_id_pegawai')?.value || '',
+      ID_PEGAWAI: document.querySelector('#replacement_id_pegawai')?.value || '',
+      replacement_no_surat: noSurat,
+      NO_SURAT: noSurat,
+      replacement_NIP: nip,
+      NIP: nip,
+      replacement_nama: document.querySelector('#replacement_nama')?.value || '',
+      NAMA: document.querySelector('#replacement_nama')?.value || '',
+      replacement_tanggal_surat: document.querySelector('#replacement_tanggal_surat')?.value || '',
+      TGL_SURAT: document.querySelector('#replacement_tanggal_surat')?.value || '',
+      replacement_bagian: selBagian?.value || '',
+      KD_BAGIAN: selBagian?.value || '',
+      replacement_golongan: selGolongan?.value || '',
+      KD_GOLONGAN: selGolongan?.value || '',
+      replacement_jenis_sanksi: selJenisSanksi?.value || '',
+      KD_JENIS_SANKSI: selJenisSanksi?.value || '',
+      replacement_jabatan: selJabatan?.value || '',
+      KD_JABATAN: selJabatan?.value || '',
+      replacement_pangkat: selPangkat?.value || '',
+      KD_PANGKAT: selPangkat?.value || '',
+      replacement_tanggal_sanksi: document.querySelector('#replacement_tanggal_sanksi')?.value || '',
+      TGL_SANKSI: document.querySelector('#replacement_tanggal_sanksi')?.value || '',
+      replacement_status_pegawai: selStatusPegawai?.value || '',
+      KD_STATUS_PEGAWAI: selStatusPegawai?.value || '',
+      replacement_lokasi: selLokasi?.value || '',
+      KD_LOKASI: selLokasi?.value || '',
+      replacement_berlaku_mulai: document.querySelector('#replacement_berlaku_mulai')?.value || '',
+      MULAI: document.querySelector('#replacement_berlaku_mulai')?.value || '',
+      replacement_berlaku_selesai: document.querySelector('#replacement_berlaku_selesai')?.value || '',
+      SAMPAI: document.querySelector('#replacement_berlaku_selesai')?.value || '',
+      replacement_keterangan: document.querySelector('#replacement_keterangan')?.value || '',
+      KETERANGAN: document.querySelector('#replacement_keterangan')?.value || '',
+      replacement_ekselon: document.querySelector('#replacement_ekselon')?.value || '',
+      KD_EKSELON: document.querySelector('#replacement_ekselon')?.value || '',
+      replacement_jenis_pegawai: document.querySelector('#replacement_jenis_pegawai')?.value || '',
+      KD_JENIS_PEGAWAI: document.querySelector('#replacement_jenis_pegawai')?.value || '',
+      FILE: uploadedFileName,
+      file: uploadedFileName
+    };
+
+    try {
+      const res = await httpPost(`${apiUrl}/pegawai/sanksi/save`, payload);
+      if (res && (res.code === 200 || res.status === 'ok')) {
+        alert('Data sanksi berhasil disimpan!');
+        resetForm();
+        await loadData();
+      } else {
+        alert(res?.message || 'Gagal menyimpan data sanksi.');
+      }
+    } catch (err) {
+      console.error('Error saat simpan sanksi:', err);
+      alert('Terjadi kesalahan koneksi saat menyimpan sanksi.');
+    } finally {
+      if (btnSave) {
+        btnSave.disabled = false;
+        btnSave.innerHTML = '<i class="fas fa-save me-1"></i> Simpan';
+      }
+      if (statusEl) statusEl.textContent = '';
+    }
+  }
+
+  // Binding Event Handlers Utama
+  function initEvents() {
+    // Submit Form
+    const form = document.querySelector('#form-sanksi');
+    if (form) {
+      form.addEventListener('submit', handleFormSubmit);
+    }
+
+    // Reset Form
+    const btnReset = document.querySelector('#btn-reset-sanksi');
+    if (btnReset) {
+      btnReset.addEventListener('click', resetForm);
+    }
+
+    // Toolbar Pencarian Tabel
+    const searchTable = document.querySelector('#txtcari_sanksi');
+    const btnCari = document.querySelector('#btn-cari-sanksi');
+    const btnClear = document.querySelector('#btn-clear-sanksi');
+    const btnRefresh = document.querySelector('#btn-refresh-sanksi');
+
+    if (btnCari) btnCari.addEventListener('click', applyFilter);
+    if (searchTable) {
+      searchTable.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          applyFilter();
+        }
+      });
+    }
+    if (btnClear) {
+      btnClear.addEventListener('click', () => {
+        if (searchTable) searchTable.value = '';
+        applyFilter();
+      });
+    }
+    if (btnRefresh) {
+      btnRefresh.addEventListener('click', () => {
+        loadData();
+      });
+    }
+  }
+
+  // Export ke window & document untuk integrasi routing menu
+  const modObj = {
+    id: 'vsanksi',
+    loadData: loadData,
+    reload: loadData
+  };
+  window['vsanksi'] = modObj;
+  document['vsanksi'] = modObj;
+  window['vsanksi'] = modObj;
+  document['vsanksi'] = modObj;
+  window['status_sanksi'] = modObj;
+  document['status_sanksi'] = modObj;
+
+  // Eksekusi Awal Saat Komponen Dimuat
+  initEvents();
+  initEvoSelectors();
+  await loadMasterData();
+  await loadData();
+</script>
