@@ -1,131 +1,384 @@
+<!-- View Demosi Pegawai: Tata Letak Sesuai Spesifikasi Form 2 Kolom (Dari vs Menjadi) & Tabel 2 Tingkat -->
 <style>
-  .table-status_demosi-card {
-    border-radius: 0.5rem;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  .demosi-section-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-bottom: 0.35rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 2px solid;
   }
-  .btn-action-icon {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
+  .demosi-dari-title {
+    color: #2c7be5;
+    border-color: rgba(44, 123, 229, 0.25);
+  }
+  .demosi-menjadi-title {
+    color: #d97706;
+    border-color: rgba(217, 119, 6, 0.25);
+  }
+  .table-demosi th {
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .table-demosi td {
+    font-size: 0.775rem;
+    white-space: nowrap;
+  }
+  /* Styling EvoSelector Searchable Dropdown */
+  div[data-role="selector"] {
+    position: relative;
+    width: 100%;
+  }
+  div[data-role="selector"] > input.dropdown-toggle {
+    padding-right: 26px;
+    background-color: #fff;
+    cursor: pointer;
+  }
+  div[data-role="selector"] > input.dropdown-toggle::after {
+    display: none !important;
+  }
+  div[data-role="selector"] > span.fa-chevron-down,
+  div[data-role="selector"] > span.fa-solid,
+  div[data-role="selector"] > svg {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    font-size: 11px;
+    color: #748194;
+    pointer-events: none;
+    z-index: 2;
+  }
+  div[data-role="selector"] > a[href="#!selectorclose"] {
+    position: absolute;
+    top: 50%;
+    right: 24px;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: #e63757;
+    z-index: 3;
+    text-decoration: none;
+  }
+  div[data-role="selector"] .dropdown-menu {
+    max-height: 220px;
+    overflow-y: auto;
+    width: 100% !important;
+    font-size: 0.8rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    border: 1px solid rgba(0,0,0,0.15);
+    z-index: 1060;
+  }
+  div[data-role="selector"] .dropdown-item {
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    white-space: normal;
+  }
+  div[data-role="selector"] .dropdown-item:hover,
+  div[data-role="selector"] .dropdown-item:focus {
+    background-color: #edf2f9;
+    color: #2c7be5;
   }
 </style>
 
 <template id="template-status_demosi">
-  <!-- Actions Toolbar -->
-  <div id="status_demosi-actions" class="card mb-3 shadow-none border">
-    <div class="card-body p-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <div class="d-flex align-items-center gap-2">
-        <h5 class="mb-0 text-danger fw-bold"><i class="fas fa-level-down-alt me-2"></i>Demosi Pegawai</h5>
-        <span class="badge bg-soft-danger text-danger ms-2" id="status_demosi-total-badge">0 Data</span>
-      </div>
-      <div class="d-flex align-items-center gap-2 flex-wrap">
-        <div class="input-group input-group-sm" style="width: 240px;">
-          <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-          <input type="text" class="form-control form-control-sm border-start-0 search-box" placeholder="Cari NIP, nama, SK, jabatan...">
-        </div>
-        <a href="#!btn-tambah" class="btn btn-sm btn-danger" role="button">
-          <i class="fas fa-plus me-1"></i> Tambah Demosi
-        </a>
-        <a href="#!btn-refresh" class="btn btn-sm btn-outline-secondary" role="button">
-          <i class="fas fa-sync-alt me-1"></i> Refresh
-        </a>
-        <a href="#!btn-export" class="btn btn-sm btn-outline-success" role="button">
-          <i class="fas fa-file-excel me-1"></i> Ekspor CSV
-        </a>
+  <div class="container-fluid p-0">
+    <!-- Header Halaman -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h4 class="mb-1 text-800 fw-bold">
+          <i class="fas fa-level-down-alt text-warning me-2"></i>DEMOSI
+        </h4>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb fs--1 mb-0">
+            <li class="breadcrumb-item"><a href="#dashboard">Home</a></li>
+            <li class="breadcrumb-item">Perubahan Status Karyawan</li>
+            <li class="breadcrumb-item active" aria-current="page">Demosi</li>
+          </ol>
+        </nav>
       </div>
     </div>
-  </div>
 
-  <!-- Entries Table -->
-  <div id="status_demosi-entries" class="card shadow-sm border table-status_demosi-card">
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-sm table-striped table-hover fs--1 mb-0 align-middle">
-          <thead class="bg-200 text-800 text-uppercase">
-            <tr>
-              <th class="text-center py-2" style="width: 50px;">#</th>
-              <th class="py-2" style="min-width: 140px;">NIP / Pegawai</th>
-              <th class="text-center py-2" style="min-width: 110px;">Tgl Demosi</th>
-              <th class="py-2" style="min-width: 130px;">No. Surat / SK</th>
-              <th class="py-2" style="min-width: 130px;">Jabatan Asal</th>
-              <th class="py-2" style="min-width: 140px;">Jabatan Baru</th>
-              <th class="py-2" style="min-width: 140px;">Bagian Baru</th>
-              <th class="py-2" style="min-width: 150px;">Alasan / Keterangan</th>
-              <th class="text-center py-2" style="width: 140px;">Aksi</th>
-            </tr>
-          </thead>
-          <tbody class="list">
-            <tr>
-              <td colspan="9" class="text-center py-4 text-muted">
-                <span class="spinner-border spinner-border-sm me-2"></span>Memuat data demosi...
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- FORM DEMOSI (INLINE SESUAI SPESIFIKASI) -->
+    <div class="card mb-4 shadow-sm border">
+      <div class="card-header bg-light py-2">
+        <h6 class="mb-0 fw-bold text-700">
+          <i class="fas fa-edit me-1 text-warning"></i> Form Demosi Karyawan
+        </h6>
       </div>
-    </div>
-    <div class="card-footer d-flex justify-content-between align-items-center py-2 bg-light border-top">
-      <span class="pagination-info fs--1 text-muted">Menampilkan 0 data</span>
-      <ul class="pagination pagination-sm mb-0"></ul>
-    </div>
-  </div>
+      <div class="card-body p-3">
+        <form id="form-demosi" autocomplete="off">
+          <input type="hidden" id="replacement_id_pegawai" name="replacement_id_pegawai">
+          <input type="hidden" id="replacement_kd_demosi_dari" name="replacement_kd_demosi_dari">
+          <input type="hidden" id="replacement_kd_demosi_menjadi" name="replacement_kd_demosi_menjadi">
 
-  <!-- Modal Form CRUD -->
-  <div class="modal fade" id="status_demosi-modal" tabindex="-1" aria-labelledby="status_demosi-modal-title" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-      <div class="modal-content shadow">
-        <div class="modal-header bg-light">
-          <h5 class="modal-title" id="status_demosi-modal-title">
-            <i class="fas fa-level-down-alt text-danger me-2"></i>Form Data Demosi
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body p-4" id="status_demosi-form">
-          <input type="hidden" data-field="KD_DEMOSI_DARI" data-type="txt">
-          <div class="row g-3">
-            <div class="col-md-12">
-              <label class="form-label fw-semi-bold">Pilih Pegawai <span class="text-danger">*</span></label>
-              <select class="form-select form-select-sm" data-field="ID_PEGAWAI" data-type="sel" required>
-                <option value="">-- Pilih Pegawai --</option>
-              </select>
+          <!-- BAGIAN 1: DARI -->
+          <div class="demosi-section-title demosi-dari-title">Dari</div>
+          <div class="row g-2 mb-3">
+            <!-- Row 1: NIP, BAGIAN, Golongan, Nama -->
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_NIP">NIP :</label>
+              <div class="input-group input-group-sm">
+                <input type="text" class="form-control form-control-sm" id="replacement_NIP" name="replacement_NIP" list="datalist-nip-pegawai" placeholder="*Masukkan NIP..." required>
+                <button type="button" class="btn btn-outline-primary" id="btn-lookup-nip" title="Cari Pegawai">
+                  <i class="fas fa-search"></i>
+                </button>
+              </div>
+              <datalist id="datalist-nip-pegawai"></datalist>
             </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semi-bold">Tgl / TMT Demosi <span class="text-danger">*</span></label>
-              <input type="date" class="form-control form-control-sm" data-field="TGL_DEMOSI" data-type="txt" required>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_dari_bagian">BAGIAN :</label>
+              <div id="sel_dari_bagian" placeholder="Pilih Bagian"></div>
             </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semi-bold">Nomor SK / Surat</label>
-              <input type="text" class="form-control form-control-sm" data-field="NO_SURAT" data-type="txt" placeholder="Nomor surat / SK">
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_dari_golongan">Golongan :</label>
+              <div id="sel_dari_golongan" placeholder="Pilih Golongan"></div>
             </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semi-bold">Bagian Baru</label>
-              <select class="form-select form-select-sm" data-field="KD_BAGIAN_BARU" data-type="sel">
-                <option value="">-- Pilih Bagian Baru --</option>
-              </select>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_nama">Nama :</label>
+              <input type="text" class="form-control form-control-sm" id="replacement_nama" name="replacement_nama" placeholder="*Masukkan Nama...">
             </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semi-bold">Jabatan Baru</label>
-              <select class="form-select form-select-sm" data-field="KD_JABATAN_BARU" data-type="sel">
-                <option value="">-- Pilih Jabatan Baru --</option>
-              </select>
+
+            <!-- Row 2: Jabatan, Pangkat, No Surat, ekselon -->
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_dari_jabatan">Jabatan :</label>
+              <div id="sel_dari_jabatan" placeholder="Pilih Jabatan"></div>
             </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semi-bold">Pangkat / Golongan Baru</label>
-              <select class="form-select form-select-sm" data-field="KD_PANGKAT_BARU" data-type="sel">
-                <option value="">-- Pilih Pangkat Baru --</option>
-              </select>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_dari_pangkat">Pangkat :</label>
+              <div id="sel_dari_pangkat" placeholder="Pilih Pangkat"></div>
             </div>
-            <div class="col-md-12">
-              <label class="form-label fw-semi-bold">Alasan Demosi / Keterangan</label>
-              <textarea class="form-control form-control-sm" data-field="KETERANGAN" data-type="txtarea" rows="3" placeholder="Alasan demosi atau catatan terkait..."></textarea>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_no_surat">No Surat :</label>
+              <input type="text" class="form-control form-control-sm" id="replacement_no_surat" name="replacement_no_surat" placeholder="*Masukkan No surat...">
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_dari_ekselon">ekselon :</label>
+              <div id="sel_dari_ekselon" placeholder="Pilih Ekselon"></div>
+            </div>
+
+            <!-- Row 3: Jenis Pegawai, Tgl Surat, Status Pegawai, Lokasi -->
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_dari_jenis_pegawai">Jenis Pegawai :</label>
+              <div id="sel_dari_jenis_pegawai" placeholder="Pilih Jenis Pegawai"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_tanggal_surat">Tgl Surat :</label>
+              <input type="date" class="form-control form-control-sm" id="replacement_tanggal_surat" name="replacement_tanggal_surat" placeholder="mm/dd/yyyy">
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_dari_status_pegawai">Status Pegawai :</label>
+              <div id="sel_dari_status_pegawai" placeholder="Pilih Status Pegawai"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_dari_lokasi">Lokasi :</label>
+              <div id="sel_dari_lokasi" placeholder="Pilih Lokasi"></div>
             </div>
           </div>
+
+          <!-- BAGIAN 2: MENJADI -->
+          <div class="demosi-section-title demosi-menjadi-title mt-4">Menjadi</div>
+          <div class="row g-2 mb-3">
+            <!-- Row 1: NIP pimpinan, BAGIAN, Golongan, Nama Pimpinan -->
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_NIP_pimpinan">NIP pimpinan :</label>
+              <input type="text" class="form-control form-control-sm" id="replacement_NIP_pimpinan" name="replacement_NIP_pimpinan" placeholder="*Masukkan NIP pimpinan...">
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_menjadi_bagian">BAGIAN :</label>
+              <div id="sel_menjadi_bagian" placeholder="Pilih Bagian"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_menjadi_golongan">Golongan :</label>
+              <div id="sel_menjadi_golongan" placeholder="Pilih Golongan"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_nama_pimpinan">Nama Pimpinan :</label>
+              <input type="text" class="form-control form-control-sm" id="replacement_nama_pimpinan" name="replacement_nama_pimpinan" placeholder="*Masukkan Nama Pimpinan...">
+            </div>
+
+            <!-- Row 2: Jabatan, Pangkat, Tgl Demosi, ekselon -->
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_menjadi_jabatan">Jabatan :</label>
+              <div id="sel_menjadi_jabatan" placeholder="Pilih Jabatan"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_menjadi_pangkat">Pangkat :</label>
+              <div id="sel_menjadi_pangkat" placeholder="Pilih Pangkat"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_tanggal_demosi">Tgl Demosi :</label>
+              <input type="date" class="form-control form-control-sm" id="replacement_tanggal_demosi" name="replacement_tanggal_demosi" placeholder="mm/dd/yyyy">
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_menjadi_ekselon">ekselon :</label>
+              <div id="sel_menjadi_ekselon" placeholder="Pilih Ekselon"></div>
+            </div>
+
+            <!-- Row 3: Jenis Pegawai, Status Pegawai, Lokasi, Keterangan -->
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_menjadi_jenis_pegawai">Jenis Pegawai :</label>
+              <div id="sel_menjadi_jenis_pegawai" placeholder="Pilih Jenis Pegawai"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_menjadi_status_pegawai">Status Pegawai :</label>
+              <div id="sel_menjadi_status_pegawai" placeholder="Pilih Status Pegawai"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="sel_menjadi_lokasi">Lokasi :</label>
+              <div id="sel_menjadi_lokasi" placeholder="Pilih Lokasi"></div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+              <label class="form-label fs--1 fw-semi-bold mb-1" for="replacement_keterangan">Keterangan :</label>
+              <textarea class="form-control form-control-sm" id="replacement_keterangan" name="replacement_keterangan" rows="1" placeholder="Masukkan Keterangan"></textarea>
+            </div>
+          </div>
+
+          <!-- BUTTON SIMPAN & RESET -->
+          <div class="mt-3 pt-3 border-top d-flex gap-2 align-items-center">
+            <button type="submit" class="btn btn-sm btn-warning text-dark px-3 fw-semi-bold" id="btn-save-demosi">
+              <i class="fas fa-save me-1"></i> Simpan
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary px-3" id="btn-reset-demosi">
+              <i class="fas fa-undo me-1"></i> Reset
+            </button>
+            <span class="fs--1 text-muted ms-2" id="form-demosi-status"></span>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TABEL RIWAYAT DEMOSI DENGAN HEADER 2 TINGKAT -->
+    <div class="card shadow-sm border mb-4">
+      <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap gap-2 py-2">
+        <div class="d-flex align-items-center gap-2">
+          <h6 class="mb-0 fw-bold text-700">
+            <i class="fas fa-history me-1 text-warning"></i> Daftar Riwayat Demosi
+          </h6>
+          <span class="badge bg-soft-warning text-warning" id="badge-total-demosi">0 Data</span>
         </div>
-        <div class="modal-footer bg-light py-2">
-          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
-          <a href="#!btn-simpan" class="btn btn-sm btn-danger">
-            <i class="fas fa-save me-1"></i> Simpan
-          </a>
+
+        <!-- SEARCH / CARI TOOLBAR -->
+        <div class="d-flex align-items-center gap-2">
+          <label class="form-label mb-0 fs--1 fw-bold text-muted" for="txtcari_demosi">Cari</label>
+          <div class="input-group input-group-sm" style="width: 260px;">
+            <input type="text" class="form-control form-control-sm" id="txtcari_demosi" placeholder="NIP, nama, atau no surat...">
+            <button class="btn btn-warning text-dark" type="button" id="btn-cari-demosi" title="Cari">
+              <i class="fas fa-search"></i>
+            </button>
+            <button class="btn btn-outline-secondary" type="button" id="btn-clear-demosi" title="Hapus Filter">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-refresh-demosi" title="Muat Ulang Data">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered table-striped table-hover table-demosi mb-0" id="tb_demosi">
+            <thead class="bg-200 text-800 text-center align-middle">
+              <tr>
+                <th rowspan="2" style="width: 45px; text-align: center;">NO.</th>
+                <th colspan="7" class="bg-soft-primary text-primary" style="text-align: center;">Dari</th>
+                <th colspan="6" class="bg-soft-warning text-warning" style="text-align: center;">Menjadi</th>
+                <th rowspan="2" style="width: 80px; text-align: center;"><i class="fas fa-cog"></i></th>
+              </tr>
+              <tr>
+                <!-- Kolom Dari -->
+                <th style="text-align: center;">NIP</th>
+                <th style="text-align: center;">Nama</th>
+                <th style="text-align: center;">Bagian</th>
+                <th style="text-align: center;">Jabatan</th>
+                <th style="text-align: center;">Pangkat</th>
+                <th style="text-align: center;">Ekselon</th>
+                <th style="text-align: center;">No Surat</th>
+                <!-- Kolom Menjadi -->
+                <th style="text-align: center;">Bagian</th>
+                <th style="text-align: center;">Jabatan</th>
+                <th style="text-align: center;">Pangkat</th>
+                <th style="text-align: center;">Ekselon</th>
+                <th style="text-align: center;">Tgl Demosi</th>
+                <th style="text-align: center;">Keterangan</th>
+              </tr>
+            </thead>
+            <tbody id="tb_demosi_body" class="align-middle">
+              <tr>
+                <td colspan="15" class="text-center py-4 text-muted">Belum ada data riwayat demosi</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- FOOTER PAGINASI -->
+      <div class="card-footer d-flex justify-content-between align-items-center py-2 bg-light border-top">
+        <span class="pagination-info fs--1 text-muted" id="demosi-pagination-info">Menampilkan 0 data</span>
+        <ul class="pagination pagination-sm mb-0" id="demosi-pagination"></ul>
+      </div>
+    </div>
+
+    <!-- MODAL LOOKUP PEGAWAI -->
+    <div class="modal fade" id="modalLookupPegawai" tabindex="-1" aria-labelledby="modalLookupPegawaiLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header py-2 bg-light">
+            <h6 class="modal-title fw-bold" id="modalLookupPegawaiLabel">
+              <i class="fas fa-users me-1 text-warning"></i> Pilih Pegawai
+            </h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body p-3">
+            <div class="mb-3">
+              <div class="input-group input-group-sm">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input type="text" class="form-control" id="txtcari_lookup_pegawai" placeholder="Ketik NIP atau Nama Pegawai...">
+              </div>
+            </div>
+            <div class="table-responsive" style="max-height: 380px;">
+              <table class="table table-sm table-hover table-striped align-middle fs--1 mb-0">
+                <thead class="bg-200">
+                  <tr>
+                    <th style="width: 50px;">No</th>
+                    <th>NIP</th>
+                    <th>Nama Pegawai</th>
+                    <th style="width: 80px;" class="text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-lookup-pegawai">
+                  <tr>
+                    <td colspan="4" class="text-center py-3 text-muted">Memuat daftar pegawai...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="modal-footer py-2 bg-light">
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Tutup</button>
+          </div>
         </div>
       </div>
     </div>
@@ -134,485 +387,693 @@
 
 <script type="module" defer>
   import { httpGet, httpPost } from './assets/js/core/http.js';
-  import { getFormEntries, setFormEntries, showDialog } from './assets/js/core/helpers.js';
+  import EvoSelector from './components/EvoSelector.js';
 
-  const id = 'status_demosi';
-  const { actions: frm_actions, entries: frm_entries } = getThisForm(id);
   const apiUrl = (typeof config !== 'undefined' && config.api_url) 
     ? config.api_url 
     : `${window.location.origin}/evoHRIS_v2.1/api`;
 
-  let allData = [];
-  let filteredData = [];
-  let refData = null;
+  let allDemosi = [];
+  let filteredDemosi = [];
+  let refData = {
+    bagian: [],
+    golongan: [],
+    jabatan: [],
+    pangkat: [],
+    ekselon: [],
+    jenis_pegawai: [],
+    status_pegawai: [],
+    lokasi: []
+  };
   let lookupPegawai = [];
   let currentPage = 1;
   const rowsPerPage = 10;
+  let lookupModalInstance = null;
 
-  function getModal() {
-    const modalEl = document.getElementById(`${id}-modal`);
-    if (!modalEl) return null;
-    return window.bootstrap ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+  // EvoSelector instances
+  let selDariBagian = null;
+  let selDariGolongan = null;
+  let selDariJabatan = null;
+  let selDariPangkat = null;
+  let selDariEkselon = null;
+  let selDariJenisPegawai = null;
+  let selDariStatusPegawai = null;
+  let selDariLokasi = null;
+
+  let selMenjadiBagian = null;
+  let selMenjadiGolongan = null;
+  let selMenjadiJabatan = null;
+  let selMenjadiPangkat = null;
+  let selMenjadiEkselon = null;
+  let selMenjadiJenisPegawai = null;
+  let selMenjadiStatusPegawai = null;
+  let selMenjadiLokasi = null;
+
+  // Helper untuk membuat opsi EvoSelector dengan baris kosong/placeholder '-'
+  function createOptList(items, valKey, textKey, defaultText) {
+    const list = [{ text: defaultText, value: '-' }];
+    if (Array.isArray(items)) {
+      items.forEach(item => {
+        const val = item[valKey] !== undefined ? String(item[valKey]) : '';
+        const txt = item[textKey] !== undefined ? String(item[textKey]) : val;
+        list.push({ text: txt, value: val });
+      });
+    }
+    return list;
   }
 
+  // Inisialisasi seluruh EvoSelector Dari dan Menjadi (tampil instan)
+  function initEvoSelectors() {
+    selDariBagian = new EvoSelector('sel_dari_bagian', [{ text: 'Pilih Bagian', value: '-' }]);
+    selDariGolongan = new EvoSelector('sel_dari_golongan', [{ text: 'Pilih Golongan', value: '-' }]);
+    selDariJabatan = new EvoSelector('sel_dari_jabatan', [{ text: 'Pilih Jabatan', value: '-' }]);
+    selDariPangkat = new EvoSelector('sel_dari_pangkat', [{ text: 'Pilih Pangkat', value: '-' }]);
+    selDariEkselon = new EvoSelector('sel_dari_ekselon', [{ text: 'Pilih Ekselon', value: '-' }]);
+    selDariJenisPegawai = new EvoSelector('sel_dari_jenis_pegawai', [{ text: 'Pilih Jenis Pegawai', value: '-' }]);
+    selDariStatusPegawai = new EvoSelector('sel_dari_status_pegawai', [{ text: 'Pilih Status Pegawai', value: '-' }]);
+    selDariLokasi = new EvoSelector('sel_dari_lokasi', [{ text: 'Pilih Lokasi', value: '-' }]);
+
+    selMenjadiBagian = new EvoSelector('sel_menjadi_bagian', [{ text: 'Pilih Bagian', value: '-' }]);
+    selMenjadiGolongan = new EvoSelector('sel_menjadi_golongan', [{ text: 'Pilih Golongan', value: '-' }]);
+    selMenjadiJabatan = new EvoSelector('sel_menjadi_jabatan', [{ text: 'Pilih Jabatan', value: '-' }]);
+    selMenjadiPangkat = new EvoSelector('sel_menjadi_pangkat', [{ text: 'Pilih Pangkat', value: '-' }]);
+    selMenjadiEkselon = new EvoSelector('sel_menjadi_ekselon', [{ text: 'Pilih Ekselon', value: '-' }]);
+    selMenjadiJenisPegawai = new EvoSelector('sel_menjadi_jenis_pegawai', [{ text: 'Pilih Jenis Pegawai', value: '-' }]);
+    selMenjadiStatusPegawai = new EvoSelector('sel_menjadi_status_pegawai', [{ text: 'Pilih Status Pegawai', value: '-' }]);
+    selMenjadiLokasi = new EvoSelector('sel_menjadi_lokasi', [{ text: 'Pilih Lokasi', value: '-' }]);
+  }
+
+  // Update opsi dropdown dari data master database
+  function updateEvoSelectorOptions() {
+    const optBagian = createOptList(refData.bagian, 'KD_BAGIAN', 'BAGIAN', 'Pilih Bagian');
+    const optGolongan = createOptList(refData.golongan, 'KD_GOLONGAN', 'GOLONGAN', 'Pilih Golongan');
+    const optJabatan = createOptList(refData.jabatan, 'KD_JABATAN', 'JABATAN', 'Pilih Jabatan');
+    const optPangkat = createOptList(refData.pangkat, 'KD_PANGKAT', 'PANGKAT', 'Pilih Pangkat');
+    const optEkselon = createOptList(refData.ekselon, 'KD_EKSELON', 'EKSELON', 'Pilih Ekselon');
+    const optJenisPegawai = createOptList(refData.jenis_pegawai, 'KD_JENIS_PEGAWAI', 'JENIS_PEGAWAI', 'Pilih Jenis Pegawai');
+    const optStatusPegawai = createOptList(refData.status_pegawai, 'KD_STATUS_PEGAWAI', 'STATUS_PEGAWAI', 'Pilih Status Pegawai');
+    const optLokasi = createOptList(refData.lokasi, 'KD_LOKASI', 'LOKASI', 'Pilih Lokasi');
+
+    selDariBagian?.addOptions(optBagian);
+    selDariGolongan?.addOptions(optGolongan);
+    selDariJabatan?.addOptions(optJabatan);
+    selDariPangkat?.addOptions(optPangkat);
+    selDariEkselon?.addOptions(optEkselon);
+    selDariJenisPegawai?.addOptions(optJenisPegawai);
+    selDariStatusPegawai?.addOptions(optStatusPegawai);
+    selDariLokasi?.addOptions(optLokasi);
+
+    selMenjadiBagian?.addOptions(optBagian);
+    selMenjadiGolongan?.addOptions(optGolongan);
+    selMenjadiJabatan?.addOptions(optJabatan);
+    selMenjadiPangkat?.addOptions(optPangkat);
+    selMenjadiEkselon?.addOptions(optEkselon);
+    selMenjadiJenisPegawai?.addOptions(optJenisPegawai);
+    selMenjadiStatusPegawai?.addOptions(optStatusPegawai);
+    selMenjadiLokasi?.addOptions(optLokasi);
+  }
+
+  // Isi datalist NIP untuk autocomplete cepat
+  function populateNipDatalist() {
+    const datalist = document.querySelector('#datalist-nip-pegawai');
+    if (!datalist) return;
+    let html = '';
+    lookupPegawai.forEach(p => {
+      html += `<option value="${p.NIP}">${p.NAMA}</option>`;
+    });
+    datalist.innerHTML = html;
+  }
+
+  // Muat Master Referensi & Lookup Pegawai dari Database
   async function loadMasterData() {
     try {
-      const [refRes, lookupRes] = await Promise.all([
-        httpGet(`${apiUrl}/pegawai/ref_data`),
-        httpGet(`${apiUrl}/pegawai/lookup`)
-      ]);
+      let refRes = await httpGet(`${apiUrl}/cPegawai/master`);
+      if (!refRes || refRes.code !== 200 || !refRes.data) {
+        refRes = await httpGet(`${apiUrl}/pegawai/ref_data`);
+      }
+      const lookupRes = await httpGet(`${apiUrl}/pegawai/lookup`);
 
       if (refRes && refRes.code === 200 && refRes.data) {
-        refData = refRes.data;
-        populateSelectOptions();
+        refData = { ...refData, ...refRes.data };
       }
       if (lookupRes && lookupRes.code === 200 && Array.isArray(lookupRes.data)) {
         lookupPegawai = lookupRes.data;
-        populatePegawaiOptions();
       }
-    } catch (e) {
-      console.warn('Gagal memuat master data demosi:', e);
+
+      updateEvoSelectorOptions();
+      populateNipDatalist();
+    } catch (err) {
+      console.warn('Gagal memuat master data demosi:', err);
     }
   }
 
-  function populatePegawaiOptions() {
-    const selPegawai = document.querySelector(`#${id}-form [data-field="ID_PEGAWAI"]`);
-    if (!selPegawai) return;
-    let html = '<option value="">-- Pilih Pegawai --</option>';
-    lookupPegawai.forEach(p => {
-      html += `<option value="${p.ID_PEGAWAI}">[${p.NIP || '-'}] ${p.NAMA || '-'}</option>`;
-    });
-    selPegawai.innerHTML = html;
-  }
-
-  function populateSelectOptions() {
-    if (!refData) return;
-    const formEl = document.getElementById(`${id}-form`);
-    if (!formEl) return;
-
-    const selBagian = formEl.querySelector('[data-field="KD_BAGIAN_BARU"]');
-    if (selBagian && Array.isArray(refData.bagian)) {
-      selBagian.innerHTML = '<option value="">-- Pilih Bagian Baru --</option>' + 
-        refData.bagian.map(b => `<option value="${b.KD_BAGIAN}">${b.BAGIAN}</option>`).join('');
-    }
-
-    const selJabatan = formEl.querySelector('[data-field="KD_JABATAN_BARU"]');
-    if (selJabatan && Array.isArray(refData.jabatan)) {
-      selJabatan.innerHTML = '<option value="">-- Pilih Jabatan Baru --</option>' + 
-        refData.jabatan.map(j => `<option value="${j.KD_JABATAN}">${j.JABATAN}</option>`).join('');
-    }
-
-    const selPangkat = formEl.querySelector('[data-field="KD_PANGKAT_BARU"]');
-    if (selPangkat && Array.isArray(refData.pangkat)) {
-      selPangkat.innerHTML = '<option value="">-- Pilih Pangkat Baru --</option>' + 
-        refData.pangkat.map(p => `<option value="${p.KD_PANGKAT}">${p.PANGKAT}</option>`).join('');
-    }
-  }
-
-  async function loadData() {
-    if (!frm_entries) return;
-    const tableBody = frm_entries.querySelector('tbody.list');
-    if (tableBody) {
-      tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data demosi...</td></tr>';
-    }
+  // Muat Snapshot Pegawai dan isi otomatis sisi "Dari"
+  async function fetchAndApplySnapshot(nipOrId) {
+    if (!nipOrId) return;
+    const statusEl = document.querySelector('#form-demosi-status');
+    if (statusEl) statusEl.textContent = 'Memuat snapshot pegawai...';
 
     try {
-      if (!refData || !lookupPegawai.length) {
-        await loadMasterData();
-      }
+      const res = await httpGet(`${apiUrl}/pegawai/snapshot/${encodeURIComponent(nipOrId)}`);
+      if (res && res.code === 200 && res.data) {
+        const d = res.data;
+        document.querySelector('#replacement_id_pegawai').value = d.ID_PEGAWAI || '';
+        document.querySelector('#replacement_NIP').value = d.NIP || nipOrId;
+        document.querySelector('#replacement_nama').value = d.NAMA || '';
 
-      const res = await httpGet(`${apiUrl}/pegawai/demosi`);
-      if (res && res.code === 200 && Array.isArray(res.data)) {
-        allData = res.data;
+        // Otomatis pilih nilai dropdown asal (Dari) via EvoSelector
+        if (selDariBagian) selDariBagian.value = d.KD_BAGIAN || '';
+        if (selDariGolongan) selDariGolongan.value = d.KD_GOLONGAN || '';
+        if (selDariJabatan) selDariJabatan.value = d.KD_JABATAN || '';
+        if (selDariPangkat) selDariPangkat.value = d.KD_PANGKAT || '';
+        if (selDariEkselon) selDariEkselon.value = d.KD_EKSELON || '';
+        if (selDariJenisPegawai) selDariJenisPegawai.value = d.KD_JENIS_PEGAWAI || '';
+        if (selDariStatusPegawai) selDariStatusPegawai.value = d.KD_STATUS_PEGAWAI || '';
+        if (selDariLokasi) selDariLokasi.value = d.KD_LOKASI || '';
+
+        // Auto isi nama pimpinan bila masih kosong
+        const pimpinanNamaEl = document.querySelector('#replacement_nama_pimpinan');
+        if (pimpinanNamaEl && !pimpinanNamaEl.value) {
+          pimpinanNamaEl.value = d.NAMA || '';
+        }
+
+        if (statusEl) statusEl.textContent = `Data pegawai [${d.NAMA}] berhasil dimuat.`;
+        setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
       } else {
-        allData = [];
+        if (statusEl) statusEl.textContent = 'Pegawai tidak ditemukan dalam snapshot.';
       }
-      filterAndRender();
-    } catch (err) {
-      console.error(err);
-      if (tableBody) {
-        tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-danger">Gagal memuat data dari server.</td></tr>';
-      }
+    } catch (e) {
+      console.warn('Gagal snapshot pegawai:', e);
+      if (statusEl) statusEl.textContent = 'Gagal memuat snapshot pegawai.';
     }
   }
 
-  function filterAndRender() {
-    const searchInput = frm_actions ? frm_actions.querySelector('.search-box') : null;
-    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+  // Muat Data Riwayat Demosi dari Database
+  async function loadData() {
+    try {
+      const res = await httpGet(`${apiUrl}/pegawai/demosi`);
+      if (res && res.code === 200 && Array.isArray(res.data) && res.data.length > 0) {
+        allDemosi = res.data;
+      } else {
+        allDemosi = [];
+      }
+    } catch (err) {
+      console.warn('Gagal mengambil data demosi:', err);
+      allDemosi = [];
+    }
 
-    if (!query) {
-      filteredData = [...allData];
+    applyFilter();
+  }
+
+  // Filter pencarian tabel
+  function applyFilter() {
+    const keyword = (document.querySelector('#txtcari_demosi')?.value || '').trim().toLowerCase();
+    if (!keyword) {
+      filteredDemosi = [...allDemosi];
     } else {
-      filteredData = allData.filter(item => {
-        return (item.NIP && item.NIP.toLowerCase().includes(query)) ||
-          (item.NAMA && item.NAMA.toLowerCase().includes(query)) ||
-          (item.NO_SURAT && item.NO_SURAT.toLowerCase().includes(query)) ||
-          (item.JABATAN_BARU && item.JABATAN_BARU.toLowerCase().includes(query)) ||
-          (item.BAGIAN_BARU && item.BAGIAN_BARU.toLowerCase().includes(query)) ||
-          (item.KETERANGAN && item.KETERANGAN.toLowerCase().includes(query));
+      filteredDemosi = allDemosi.filter(row => {
+        return (
+          (row.NIP && row.NIP.toLowerCase().includes(keyword)) ||
+          (row.NAMA_PEGAWAI && row.NAMA_PEGAWAI.toLowerCase().includes(keyword)) ||
+          (row.NO_SURAT && row.NO_SURAT.toLowerCase().includes(keyword)) ||
+          (row.BAGIAN_ASAL && row.BAGIAN_ASAL.toLowerCase().includes(keyword)) ||
+          (row.BAGIAN_BARU && row.BAGIAN_BARU.toLowerCase().includes(keyword)) ||
+          (row.JABATAN_ASAL && row.JABATAN_ASAL.toLowerCase().includes(keyword)) ||
+          (row.JABATAN_BARU && row.JABATAN_BARU.toLowerCase().includes(keyword))
+        );
       });
     }
 
     currentPage = 1;
     renderTable();
-    updateTotalBadge();
   }
 
-  function updateTotalBadge() {
-    const badge = document.getElementById(`${id}-total-badge`);
-    if (badge) {
-      badge.textContent = `${filteredData.length} Data`;
-    }
-  }
-
+  // Render Tabel Bertingkat 2 Baris
   function renderTable() {
-    if (!frm_entries) return;
-    const tableBody = frm_entries.querySelector('tbody.list');
-    if (!tableBody) return;
+    const tbody = document.querySelector('#tb_demosi_body');
+    const badgeTotal = document.querySelector('#badge-total-demosi');
+    const infoEl = document.querySelector('#demosi-pagination-info');
+    if (!tbody) return;
 
-    if (!filteredData.length) {
-      tableBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted"><i class="fas fa-inbox fa-2x mb-2 d-block text-400"></i>Tidak ada data demosi yang ditemukan.</td></tr>';
+    if (badgeTotal) badgeTotal.textContent = `${filteredDemosi.length} Data`;
+
+    if (filteredDemosi.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="15" class="text-center py-4 text-muted">Belum ada data riwayat demosi</td></tr>';
+      if (infoEl) infoEl.textContent = 'Menampilkan 0 data';
       renderPagination(0);
       return;
     }
 
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    const endIndex = Math.min(startIndex + rowsPerPage, filteredData.length);
-    const paginatedItems = filteredData.slice(startIndex, endIndex);
+    const totalPages = Math.ceil(filteredDemosi.length / rowsPerPage);
+    if (currentPage > totalPages) currentPage = totalPages;
 
-    tableBody.innerHTML = paginatedItems.map((item, idx) => {
-      const rowNum = startIndex + idx + 1;
-      const tgl = item.TGL_DEMOSI || item.TGL_SURAT || '-';
-      return `
+    const startIdx = (currentPage - 1) * rowsPerPage;
+    const endIdx = Math.min(startIdx + rowsPerPage, filteredDemosi.length);
+    const pageRows = filteredDemosi.slice(startIdx, endIdx);
+
+    let html = '';
+    pageRows.forEach((row, i) => {
+      const no = startIdx + i + 1;
+      const nip = row.NIP || '-';
+      const nama = row.NAMA_PEGAWAI || row.NAMA || '-';
+      const bagianDari = row.BAGIAN_ASAL || '-';
+      const jabatanDari = row.JABATAN_ASAL || '-';
+      const pangkatDari = row.PANGKAT_ASAL || '-';
+      const ekselonDari = row.EKSELON_ASAL || '-';
+      const noSurat = row.NO_SURAT || '-';
+
+      const bagianMenjadi = row.BAGIAN_BARU || '-';
+      const jabatanMenjadi = row.JABATAN_BARU || '-';
+      const pangkatMenjadi = row.PANGKAT_BARU || '-';
+      const ekselonMenjadi = row.EKSELON_BARU || '-';
+      const tglDemosi = row.TGL_DEMOSI ? row.TGL_DEMOSI.substring(0, 10) : '-';
+      const keterangan = row.KETERANGAN || '-';
+
+      html += `
         <tr>
-          <td class="text-center text-muted fw-semi-bold">${rowNum}</td>
-          <td>
-            <div class="fw-bold text-dark">${item.NAMA || '-'}</div>
-            <div class="text-muted font-monospace fs--2">NIP: ${item.NIP || '-'}</div>
-          </td>
-          <td class="text-center font-monospace">${tgl}</td>
-          <td class="fw-semi-bold text-dark">${item.NO_SURAT || '-'}</td>
-          <td class="text-secondary">${item.JABATAN_ASAL || '-'}</td>
-          <td class="text-danger fw-semi-bold">${item.JABATAN_BARU || '-'}</td>
-          <td><span class="badge bg-soft-secondary text-secondary">${item.BAGIAN_BARU || '-'}</span></td>
-          <td class="text-muted fs--2">${item.KETERANGAN || '-'}</td>
+          <td class="text-center fw-semi-bold">${no}</td>
+          <!-- Dari -->
+          <td><span class="badge bg-soft-primary text-primary fw-medium">${nip}</span></td>
+          <td class="fw-semi-bold">${nama}</td>
+          <td>${bagianDari}</td>
+          <td>${jabatanDari}</td>
+          <td>${pangkatDari}</td>
+          <td>${ekselonDari}</td>
+          <td>${noSurat}</td>
+          <!-- Menjadi -->
+          <td class="fw-semi-bold text-warning">${bagianMenjadi}</td>
+          <td>${jabatanMenjadi}</td>
+          <td>${pangkatMenjadi}</td>
+          <td>${ekselonMenjadi}</td>
+          <td>${tglDemosi}</td>
+          <td class="text-break" style="max-width: 150px;">${keterangan}</td>
+          <!-- Aksi -->
           <td class="text-center">
-            <div class="d-inline-flex gap-1">
-              <a href="#!btn-edit" class="btn btn-sm btn-outline-warning py-1 px-2 btn-action-icon" role="button" title="Edit Data" data-row='${JSON.stringify(item)}'>
-                <i class="fas fa-edit"></i>
-              </a>
-              <a href="#!btn-hapus" class="btn btn-sm btn-outline-danger py-1 px-2 btn-action-icon" role="button" title="Hapus Data" data-row='${JSON.stringify(item)}'>
-                <i class="fas fa-trash-alt"></i>
-              </a>
+            <div class="btn-group btn-group-sm">
+              <button type="button" class="btn btn-link text-600 btn-edit-demosi p-1" data-id="${row.KD_DEMOSI_DARI || ''}" title="Edit Data">
+                <i class="fas fa-edit text-warning"></i>
+              </button>
+              <button type="button" class="btn btn-link text-600 btn-delete-demosi p-1" data-id="${row.KD_DEMOSI_DARI || ''}" data-nama="${nama}" title="Hapus Data">
+                <i class="fas fa-trash text-danger"></i>
+              </button>
             </div>
           </td>
         </tr>
       `;
-    }).join('');
+    });
 
-    renderPagination(filteredData.length);
+    tbody.innerHTML = html;
+
+    if (infoEl) {
+      infoEl.textContent = `Menampilkan ${startIdx + 1} - ${endIdx} dari ${filteredDemosi.length} data`;
+    }
+
+    renderPagination(totalPages);
+    attachRowActions();
   }
 
-  function renderPagination(totalRows) {
-    if (!frm_entries) return;
-    const infoEl = frm_entries.querySelector('.pagination-info');
-    const paginationEl = frm_entries.querySelector('.pagination');
-    if (!infoEl || !paginationEl) return;
-
-    if (totalRows === 0) {
-      infoEl.textContent = 'Menampilkan 0 data';
-      paginationEl.innerHTML = '';
+  // Render Tombol Paginasi
+  function renderPagination(totalPages) {
+    const ul = document.querySelector('#demosi-pagination');
+    if (!ul) return;
+    if (totalPages <= 1) {
+      ul.innerHTML = '';
       return;
     }
 
-    const totalPages = Math.ceil(totalRows / rowsPerPage);
-    const startIndex = (currentPage - 1) * rowsPerPage + 1;
-    const endIndex = Math.min(currentPage * rowsPerPage, totalRows);
-    infoEl.textContent = `Menampilkan ${startIndex}-${endIndex} dari ${totalRows} data`;
+    let html = `
+      <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+        <a class="page-link" href="javascript:void(0)" data-page="${currentPage - 1}"><i class="fas fa-chevron-left"></i></a>
+      </li>
+    `;
 
-    let html = '';
-    html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-      <a class="page-link" href="#" data-page="${currentPage - 1}">&laquo;</a>
-    </li>`;
-
-    for (let i = 1; i <= totalPages; i++) {
-      if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
-        html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
-          <a class="page-link" href="#" data-page="${i}">${i}</a>
-        </li>`;
-      } else if (i === currentPage - 3 || i === currentPage + 3) {
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) {
+        html += `
+          <li class="page-item ${p === currentPage ? 'active' : ''}">
+            <a class="page-link" href="javascript:void(0)" data-page="${p}">${p}</a>
+          </li>
+        `;
+      } else if (p === currentPage - 3 || p === currentPage + 3) {
         html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
       }
     }
 
-    html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-      <a class="page-link" href="#" data-page="${currentPage + 1}">&raquo;</a>
-    </li>`;
+    html += `
+      <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+        <a class="page-link" href="javascript:void(0)" data-page="${currentPage + 1}"><i class="fas fa-chevron-right"></i></a>
+      </li>
+    `;
 
-    paginationEl.innerHTML = html;
-
-    paginationEl.querySelectorAll('a.page-link').forEach(a => {
+    ul.innerHTML = html;
+    ul.querySelectorAll('a.page-link').forEach(a => {
       a.addEventListener('click', (e) => {
         e.preventDefault();
-        const p = parseInt(a.getAttribute('data-page'));
-        if (p >= 1 && p <= totalPages && p !== currentPage) {
-          currentPage = p;
+        const page = parseInt(a.getAttribute('data-page'));
+        if (page && page >= 1 && page <= totalPages && page !== currentPage) {
+          currentPage = page;
           renderTable();
         }
       });
     });
   }
 
-  function openAddModal() {
-    const formEl = document.getElementById(`${id}-form`);
-    if (!formEl) return;
-
-    document.getElementById(`${id}-modal-title`).innerHTML = '<i class="fas fa-level-down-alt text-danger me-2"></i>Tambah Data Demosi';
-    setFormEntries(formEl, {
-      KD_DEMOSI_DARI: '',
-      ID_PEGAWAI: '',
-      TGL_DEMOSI: new Date().toISOString().split('T')[0],
-      NO_SURAT: '',
-      KD_BAGIAN_BARU: '',
-      KD_JABATAN_BARU: '',
-      KD_PANGKAT_BARU: '',
-      KETERANGAN: ''
+  // Event Edit & Hapus pada baris tabel
+  function attachRowActions() {
+    // Edit
+    document.querySelectorAll('.btn-edit-demosi').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const row = allDemosi.find(r => String(r.KD_DEMOSI_DARI) === String(id));
+        if (row) {
+          fillFormForEdit(row);
+        }
+      });
     });
 
-    const modal = getModal();
-    if (modal) modal.show();
-  }
+    // Delete
+    document.querySelectorAll('.btn-delete-demosi').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const nama = btn.getAttribute('data-nama') || 'Pegawai';
+        if (!id) return;
 
-  function openEditModal(item) {
-    const formEl = document.getElementById(`${id}-form`);
-    if (!formEl || !item) return;
+        const konfirmasi = confirm(`Apakah Anda yakin ingin menghapus data demosi untuk [${nama}]?`);
+        if (!konfirmasi) return;
 
-    document.getElementById(`${id}-modal-title`).innerHTML = `<i class="fas fa-edit text-warning me-2"></i>Edit Data Demosi [${item.NAMA || ''}]`;
-    setFormEntries(formEl, {
-      KD_DEMOSI_DARI: item.KD_DEMOSI_DARI || '',
-      ID_PEGAWAI: item.ID_PEGAWAI || '',
-      TGL_DEMOSI: item.TGL_DEMOSI || item.TGL_SURAT || '',
-      NO_SURAT: item.NO_SURAT || '',
-      KD_BAGIAN_BARU: item.KD_BAGIAN_BARU || '',
-      KD_JABATAN_BARU: item.KD_JABATAN_BARU || '',
-      KD_PANGKAT_BARU: item.KD_PANGKAT_BARU || '',
-      KETERANGAN: item.KETERANGAN || ''
+        try {
+          const res = await httpPost(`${apiUrl}/pegawai/demosi/delete/${id}`, {});
+          if (res && (res.code === 200 || res.status === 'ok')) {
+            alert('Data demosi berhasil dihapus!');
+            loadData();
+          } else {
+            alert(res?.message || 'Gagal menghapus data demosi.');
+          }
+        } catch (e) {
+          console.error('Error delete demosi:', e);
+          alert('Terjadi kesalahan saat menghapus data demosi.');
+        }
+      });
     });
-
-    const modal = getModal();
-    if (modal) modal.show();
   }
 
-  async function saveData() {
-    const formEl = document.getElementById(`${id}-form`);
-    if (!formEl) return;
+  // Isi data baris ke formulir (Mode Edit)
+  function fillFormForEdit(row) {
+    document.querySelector('#replacement_id_pegawai').value = row.ID_PEGAWAI || '';
+    document.querySelector('#replacement_kd_demosi_dari').value = row.KD_DEMOSI_DARI || '';
+    document.querySelector('#replacement_kd_demosi_menjadi').value = row.KD_DEMOSI_MENJADI || '';
 
-    const payload = getFormEntries(formEl);
-    if (!payload.ID_PEGAWAI) {
-      showDialog({
-        ui: 'interactive',
-        type: 'warning',
-        label: '<span class="text-danger">Silakan pilih Pegawai terlebih dahulu.</span>'
-      });
+    // Sisi Dari
+    document.querySelector('#replacement_NIP').value = row.NIP || '';
+    document.querySelector('#replacement_nama').value = row.NAMA_PEGAWAI || row.NAMA || '';
+    document.querySelector('#replacement_no_surat').value = row.NO_SURAT || '';
+    document.querySelector('#replacement_tanggal_surat').value = row.TGL_SURAT ? row.TGL_SURAT.substring(0, 10) : '';
+
+    if (selDariBagian) selDariBagian.value = row.KD_BAGIAN || '';
+    if (selDariGolongan) selDariGolongan.value = row.KD_GOLONGAN || '';
+    if (selDariJabatan) selDariJabatan.value = row.KD_JABATAN || '';
+    if (selDariPangkat) selDariPangkat.value = row.KD_PANGKAT || '';
+    if (selDariEkselon) selDariEkselon.value = row.KD_EKSELON || '';
+    if (selDariJenisPegawai) selDariJenisPegawai.value = row.KD_JENIS_PEGAWAI || '';
+    if (selDariStatusPegawai) selDariStatusPegawai.value = row.KD_STATUS_PEGAWAI || '';
+    if (selDariLokasi) selDariLokasi.value = row.KD_LOKASI || '';
+
+    // Sisi Menjadi
+    document.querySelector('#replacement_NIP_pimpinan').value = row.NIP_PIMPINAN || '';
+    document.querySelector('#replacement_nama_pimpinan').value = row.NAMA_PIMPINAN || '';
+    document.querySelector('#replacement_tanggal_demosi').value = row.TGL_DEMOSI ? row.TGL_DEMOSI.substring(0, 10) : '';
+    document.querySelector('#replacement_keterangan').value = row.KETERANGAN || '';
+
+    if (selMenjadiBagian) selMenjadiBagian.value = row.KD_BAGIAN_BARU || '';
+    if (selMenjadiGolongan) selMenjadiGolongan.value = row.KD_GOLONGAN_BARU || '';
+    if (selMenjadiJabatan) selMenjadiJabatan.value = row.KD_JABATAN_BARU || '';
+    if (selMenjadiPangkat) selMenjadiPangkat.value = row.KD_PANGKAT_BARU || '';
+    if (selMenjadiEkselon) selMenjadiEkselon.value = row.KD_EKSELON_BARU || '';
+    if (selMenjadiJenisPegawai) selMenjadiJenisPegawai.value = row.KD_JENIS_PEGAWAI_BARU || '';
+    if (selMenjadiStatusPegawai) selMenjadiStatusPegawai.value = row.KD_STATUS_PEGAWAI_BARU || '';
+    if (selMenjadiLokasi) selMenjadiLokasi.value = row.KD_LOKASI_BARU || '';
+
+    // Ubah label tombol Simpan menjadi Update
+    const btnSave = document.querySelector('#btn-save-demosi');
+    if (btnSave) {
+      btnSave.innerHTML = '<i class="fas fa-edit me-1"></i> Update Demosi';
+    }
+
+    // Scroll ke atas formulir
+    document.querySelector('#form-demosi')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // Reset Formulir
+  function resetForm() {
+    const form = document.querySelector('#form-demosi');
+    if (form) form.reset();
+    document.querySelector('#replacement_id_pegawai').value = '';
+    document.querySelector('#replacement_kd_demosi_dari').value = '';
+    document.querySelector('#replacement_kd_demosi_menjadi').value = '';
+
+    // Reset EvoSelectors
+    if (selDariBagian) selDariBagian.value = '';
+    if (selDariGolongan) selDariGolongan.value = '';
+    if (selDariJabatan) selDariJabatan.value = '';
+    if (selDariPangkat) selDariPangkat.value = '';
+    if (selDariEkselon) selDariEkselon.value = '';
+    if (selDariJenisPegawai) selDariJenisPegawai.value = '';
+    if (selDariStatusPegawai) selDariStatusPegawai.value = '';
+    if (selDariLokasi) selDariLokasi.value = '';
+
+    if (selMenjadiBagian) selMenjadiBagian.value = '';
+    if (selMenjadiGolongan) selMenjadiGolongan.value = '';
+    if (selMenjadiJabatan) selMenjadiJabatan.value = '';
+    if (selMenjadiPangkat) selMenjadiPangkat.value = '';
+    if (selMenjadiEkselon) selMenjadiEkselon.value = '';
+    if (selMenjadiJenisPegawai) selMenjadiJenisPegawai.value = '';
+    if (selMenjadiStatusPegawai) selMenjadiStatusPegawai.value = '';
+    if (selMenjadiLokasi) selMenjadiLokasi.value = '';
+
+    const btnSave = document.querySelector('#btn-save-demosi');
+    if (btnSave) {
+      btnSave.innerHTML = '<i class="fas fa-save me-1"></i> Simpan';
+    }
+
+    const statusEl = document.querySelector('#form-demosi-status');
+    if (statusEl) statusEl.textContent = '';
+  }
+
+  // Simpan Formulir Demosi
+  async function handleFormSubmit(e) {
+    e.preventDefault();
+    const btnSave = document.querySelector('#btn-save-demosi');
+    const statusEl = document.querySelector('#form-demosi-status');
+
+    const nip = document.querySelector('#replacement_NIP')?.value?.trim();
+    if (!nip) {
+      alert('Silakan pilih atau masukkan NIP Pegawai terlebih dahulu!');
       return;
     }
-    if (!payload.TGL_DEMOSI) {
-      showDialog({
-        ui: 'interactive',
-        type: 'warning',
-        label: '<span class="text-danger">Tanggal Demosi wajib diisi.</span>'
-      });
-      return;
+
+    const payload = {
+      replacement_kd_demosi_dari: document.querySelector('#replacement_kd_demosi_dari')?.value || '',
+      replacement_kd_demosi_menjadi: document.querySelector('#replacement_kd_demosi_menjadi')?.value || '',
+      replacement_id_pegawai: document.querySelector('#replacement_id_pegawai')?.value || '',
+      replacement_NIP: nip,
+      replacement_nama: document.querySelector('#replacement_nama')?.value || '',
+      replacement_bagian: selDariBagian?.value || '',
+      replacement_golongan: selDariGolongan?.value || '',
+      replacement_jabatan: selDariJabatan?.value || '',
+      replacement_pangkat: selDariPangkat?.value || '',
+      replacement_no_surat: document.querySelector('#replacement_no_surat')?.value || '',
+      replacement_ekselon: selDariEkselon?.value || '',
+      replacement_jenis_pegawai: selDariJenisPegawai?.value || '',
+      replacement_tanggal_surat: document.querySelector('#replacement_tanggal_surat')?.value || '',
+      replacement_status_pegawai: selDariStatusPegawai?.value || '',
+      replacement_lokasi: selDariLokasi?.value || '',
+
+      // Menjadi
+      replacement_NIP_pimpinan: document.querySelector('#replacement_NIP_pimpinan')?.value || '',
+      replacement_bagian_menjadi: selMenjadiBagian?.value || '',
+      replacement_golongan_menjadi: selMenjadiGolongan?.value || '',
+      replacement_nama_pimpinan: document.querySelector('#replacement_nama_pimpinan')?.value || '',
+      replacement_jabatan_menjadi: selMenjadiJabatan?.value || '',
+      replacement_pangkat_menjadi: selMenjadiPangkat?.value || '',
+      replacement_tanggal_demosi: document.querySelector('#replacement_tanggal_demosi')?.value || '',
+      replacement_ekselon_menjadi: selMenjadiEkselon?.value || '',
+      replacement_jenis_pegawai_menjadi: selMenjadiJenisPegawai?.value || '',
+      replacement_status_pegawai_menjadi: selMenjadiStatusPegawai?.value || '',
+      replacement_lokasi_menjadi: selMenjadiLokasi?.value || '',
+      replacement_keterangan: document.querySelector('#replacement_keterangan')?.value || ''
+    };
+
+    if (btnSave) {
+      btnSave.disabled = true;
+      btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
     }
+    if (statusEl) statusEl.textContent = 'Menyimpan data demosi ke server...';
 
     try {
       const res = await httpPost(`${apiUrl}/pegawai/demosi/save`, payload);
-      if (res && res.code === 200) {
-        const modal = getModal();
-        if (modal) modal.hide();
-        showDialog({
-          type: 'success',
-          label: '<span class="text-success">Data demosi berhasil disimpan.</span>'
-        });
+      if (res && (res.code === 200 || res.status === 'ok')) {
+        alert('Data demosi berhasil disimpan!');
+        resetForm();
         await loadData();
       } else {
-        showDialog({
-          ui: 'interactive',
-          type: 'warning',
-          label: `<span class="text-danger">${res?.message || 'Gagal menyimpan data demosi.'}</span>`
-        });
+        alert(res?.message || 'Gagal menyimpan data demosi.');
       }
     } catch (err) {
-      console.error(err);
-      showDialog({
-        ui: 'interactive',
-        type: 'warning',
-        label: '<span class="text-danger">Terjadi kesalahan pada server saat menyimpan data.</span>'
-      });
+      console.error('Error saat simpan demosi:', err);
+      alert('Terjadi kesalahan koneksi saat menyimpan demosi.');
+    } finally {
+      if (btnSave) {
+        btnSave.disabled = false;
+        btnSave.innerHTML = '<i class="fas fa-save me-1"></i> Simpan';
+      }
+      if (statusEl) statusEl.textContent = '';
     }
   }
 
-  async function deleteData(item) {
-    const pk = item.KD_DEMOSI_DARI;
-    if (!pk) return;
+  // Render data di tabel modal lookup pegawai
+  function renderLookupPegawaiTable(filterText = '') {
+    const tbody = document.querySelector('#tbody-lookup-pegawai');
+    if (!tbody) return;
 
-    const dialog = await showDialog({
-      ui: 'interactive',
-      type: 'question',
-      label: `<span class="text-black">Apakah anda yakin akan menghapus data demosi <b>${item.NAMA || ''}</b> (SK: ${item.NO_SURAT || '-'})?</span>`,
-      buttons: [
-        {
-          label: 'Ya, Hapus',
-          class: 'btn-danger',
-          onClick: async () => {
-            dialog.close();
-            try {
-              const res = await httpPost(`${apiUrl}/pegawai/demosi/delete/${pk}`, { id: pk });
-              if (res && res.code === 200) {
-                showDialog({
-                  type: 'success',
-                  label: '<span class="text-success">Data demosi berhasil dihapus.</span>'
-                });
-                await loadData();
-              } else {
-                showDialog({
-                  ui: 'interactive',
-                  type: 'warning',
-                  label: `<span class="text-danger">${res?.message || 'Gagal menghapus data demosi.'}</span>`
-                });
-              }
-            } catch (err) {
-              console.error(err);
-              showDialog({
-                ui: 'interactive',
-                type: 'warning',
-                label: '<span class="text-danger">Terjadi kesalahan server saat menghapus data.</span>'
-              });
-            }
-          }
-        },
-        {
-          label: 'Batal',
-          class: 'btn-secondary',
-          onClick: () => dialog.close()
-        }
-      ]
-    });
-  }
-
-  function exportCSV() {
-    if (!filteredData.length) {
-      showDialog({
-        ui: 'interactive',
-        type: 'warning',
-        label: '<span class="text-danger">Tidak ada data untuk diekspor.</span>'
+    let list = lookupPegawai;
+    const q = filterText.trim().toLowerCase();
+    if (q) {
+      list = lookupPegawai.filter(p => {
+        return (
+          (p.NIP && p.NIP.toLowerCase().includes(q)) ||
+          (p.NAMA && p.NAMA.toLowerCase().includes(q))
+        );
       });
+    }
+
+    if (list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted">Tidak ada pegawai yang sesuai.</td></tr>';
       return;
     }
 
-    const headers = ['No', 'NIP', 'Nama Pegawai', 'Tgl Demosi', 'No SK', 'Jabatan Asal', 'Jabatan Baru', 'Bagian Baru', 'Alasan/Keterangan'];
-    const rows = filteredData.map((d, i) => [
-      i + 1,
-      `"${(d.NIP || '').replace(/"/g, '""')}"`,
-      `"${(d.NAMA || '').replace(/"/g, '""')}"`,
-      `"${(d.TGL_DEMOSI || d.TGL_SURAT || '').replace(/"/g, '""')}"`,
-      `"${(d.NO_SURAT || '').replace(/"/g, '""')}"`,
-      `"${(d.JABATAN_ASAL || '').replace(/"/g, '""')}"`,
-      `"${(d.JABATAN_BARU || '').replace(/"/g, '""')}"`,
-      `"${(d.BAGIAN_BARU || '').replace(/"/g, '""')}"`,
-      `"${(d.KETERANGAN || '').replace(/"/g, '""')}"`
-    ]);
+    let html = '';
+    list.slice(0, 100).forEach((p, idx) => {
+      html += `
+        <tr>
+          <td class="text-center">${idx + 1}</td>
+          <td><span class="badge bg-soft-primary text-primary">${p.NIP}</span></td>
+          <td class="fw-semi-bold">${p.NAMA}</td>
+          <td class="text-center">
+            <button type="button" class="btn btn-xs btn-warning text-dark btn-select-pegawai" data-nip="${p.NIP}" data-id="${p.ID_PEGAWAI || ''}">
+              Pilih
+            </button>
+          </td>
+        </tr>
+      `;
+    });
 
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `status_demosi_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    tbody.innerHTML = html;
+
+    tbody.querySelectorAll('.btn-select-pegawai').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const nip = btn.getAttribute('data-nip');
+        const id = btn.getAttribute('data-id');
+        fetchAndApplySnapshot(nip || id);
+        if (lookupModalInstance) {
+          lookupModalInstance.hide();
+        }
+      });
+    });
   }
 
-  function setupEventListeners() {
-    if (frm_actions) {
-      const btnTambah = frm_actions.querySelector('a[href="#!btn-tambah"]');
-      if (btnTambah) {
-        btnTambah.addEventListener('click', (e) => {
-          e.preventDefault();
-          openAddModal();
-        });
-      }
-
-      const btnRefresh = frm_actions.querySelector('a[href="#!btn-refresh"]');
-      if (btnRefresh) {
-        btnRefresh.addEventListener('click', (e) => {
-          e.preventDefault();
-          loadData();
-        });
-      }
-
-      const btnExport = frm_actions.querySelector('a[href="#!btn-export"]');
-      if (btnExport) {
-        btnExport.addEventListener('click', (e) => {
-          e.preventDefault();
-          exportCSV();
-        });
-      }
-
-      const searchInput = frm_actions.querySelector('.search-box');
-      if (searchInput) {
-        searchInput.addEventListener('input', () => {
-          filterAndRender();
-        });
-      }
+  // Binding Event Handlers Utama
+  function initEvents() {
+    // Submit Form
+    const form = document.querySelector('#form-demosi');
+    if (form) {
+      form.addEventListener('submit', handleFormSubmit);
     }
 
-    if (frm_entries) {
-      frm_entries.addEventListener('click', (e) => {
-        const btnEdit = e.target.closest('a[href="#!btn-edit"]');
-        const btnHapus = e.target.closest('a[href="#!btn-hapus"]');
+    // Reset Form
+    const btnReset = document.querySelector('#btn-reset-demosi');
+    if (btnReset) {
+      btnReset.addEventListener('click', resetForm);
+    }
 
-        if (btnEdit) {
+    // Cari NIP via manual typing / change / blur
+    const nipInput = document.querySelector('#replacement_NIP');
+    if (nipInput) {
+      nipInput.addEventListener('change', () => {
+        const val = nipInput.value.trim();
+        if (val) fetchAndApplySnapshot(val);
+      });
+      nipInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
           e.preventDefault();
-          const rowData = btnEdit.getAttribute('data-row');
-          if (rowData) {
-            try {
-              openEditModal(JSON.parse(rowData));
-            } catch (err) {
-              console.error(err);
-            }
-          }
-        } else if (btnHapus) {
-          e.preventDefault();
-          const rowData = btnHapus.getAttribute('data-row');
-          if (rowData) {
-            try {
-              deleteData(JSON.parse(rowData));
-            } catch (err) {
-              console.error(err);
-            }
-          }
+          const val = nipInput.value.trim();
+          if (val) fetchAndApplySnapshot(val);
         }
       });
     }
 
-    const modalEl = document.getElementById(`${id}-modal`);
-    if (modalEl) {
-      const btnSimpan = modalEl.querySelector('a[href="#!btn-simpan"]');
-      if (btnSimpan) {
-        btnSimpan.addEventListener('click', (e) => {
+    // Modal Lookup Pegawai
+    const btnLookup = document.querySelector('#btn-lookup-nip');
+    const modalEl = document.querySelector('#modalLookupPegawai');
+    if (btnLookup && modalEl && (window.bootstrap || typeof bootstrap !== 'undefined')) {
+      const bs = window.bootstrap || bootstrap;
+      lookupModalInstance = new bs.Modal(modalEl);
+      btnLookup.addEventListener('click', () => {
+        renderLookupPegawaiTable();
+        lookupModalInstance.show();
+      });
+    }
+
+    const searchLookup = document.querySelector('#txtcari_lookup_pegawai');
+    if (searchLookup) {
+      searchLookup.addEventListener('input', () => {
+        renderLookupPegawaiTable(searchLookup.value);
+      });
+    }
+
+    // Toolbar Pencarian Tabel
+    const searchTable = document.querySelector('#txtcari_demosi');
+    const btnCari = document.querySelector('#btn-cari-demosi');
+    const btnClear = document.querySelector('#btn-clear-demosi');
+    const btnRefresh = document.querySelector('#btn-refresh-demosi');
+
+    if (btnCari) btnCari.addEventListener('click', applyFilter);
+    if (searchTable) {
+      searchTable.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
           e.preventDefault();
-          saveData();
-        });
-      }
+          applyFilter();
+        }
+      });
+    }
+    if (btnClear) {
+      btnClear.addEventListener('click', () => {
+        if (searchTable) searchTable.value = '';
+        applyFilter();
+      });
+    }
+    if (btnRefresh) {
+      btnRefresh.addEventListener('click', () => {
+        loadData();
+      });
     }
   }
 
-  // Init Lifecycle
-  setupEventListeners();
-  loadData();
+  // Export ke window & document untuk integrasi sidebar menu
+  const modObj = {
+    id: 'status_demosi',
+    loadData: loadData,
+    reload: loadData
+  };
+  window['status_demosi'] = modObj;
+  document['status_demosi'] = modObj;
+  window['vdemosi'] = modObj;
+  document['vdemosi'] = modObj;
+  window['status_demosi'] = modObj;
+  document['status_demosi'] = modObj;
 
-  // Expose to Global Lifecycle
-  document[id] = { id, loadData, reload: loadData, openAddModal };
-  window[id] = document[id];
+  // Eksekusi Awal Saat Komponen Dimuat
+  initEvents();
+  initEvoSelectors();
+  await loadMasterData();
+  await loadData();
 </script>

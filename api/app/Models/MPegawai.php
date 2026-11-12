@@ -803,12 +803,32 @@ class MPegawai extends Model
                        mm.KD_JABATAN AS KD_JABATAN_BARU,
                        mm.KD_BAGIAN AS KD_BAGIAN_TUJUAN,
                        mm.KD_JABATAN AS KD_JABATAN_TUJUAN,
+                       mm.KD_PANGKAT AS KD_PANGKAT_BARU,
+                       mm.KD_GOLONGAN AS KD_GOLONGAN_BARU,
+                       mm.KD_EKSELON AS KD_EKSELON_BARU,
+                       mm.KD_STATUS_PEGAWAI AS KD_STATUS_PEGAWAI_BARU,
+                       mm.KD_JENIS_PEGAWAI AS KD_JENIS_PEGAWAI_BARU,
+                       mm.KD_LOKASI AS KD_LOKASI_BARU,
+                       mm.NIP_PIMPINAN,
+                       mm.NAMA_PIMPINAN,
                        mm.KETERANGAN,
                        p.NAMA AS NAMA_PEGAWAI,
                        b_asal.BAGIAN AS BAGIAN_ASAL,
                        b_baru.BAGIAN AS BAGIAN_BARU,
                        j_asal.JABATAN AS JABATAN_ASAL,
-                       j_baru.JABATAN AS JABATAN_BARU
+                       j_baru.JABATAN AS JABATAN_BARU,
+                       pkt_asal.PANGKAT AS PANGKAT_ASAL,
+                       pkt_baru.PANGKAT AS PANGKAT_BARU,
+                       g_asal.GOLONGAN AS GOLONGAN_ASAL,
+                       g_baru.GOLONGAN AS GOLONGAN_BARU,
+                       e_asal.EKSELON AS EKSELON_ASAL,
+                       e_baru.EKSELON AS EKSELON_BARU,
+                       jp_asal.JENIS_PEGAWAI AS JENIS_PEGAWAI_ASAL,
+                       jp_baru.JENIS_PEGAWAI AS JENIS_PEGAWAI_BARU,
+                       sp_asal.STATUS_PEGAWAI AS STATUS_PEGAWAI_ASAL,
+                       sp_baru.STATUS_PEGAWAI AS STATUS_PEGAWAI_BARU,
+                       l_asal.LOKASI AS LOKASI_ASAL,
+                       l_baru.LOKASI AS LOKASI_BARU
                 FROM detail_mutasi_dari_pegawai md
                 LEFT JOIN detail_mutasi_menjadi_pegawai mm ON mm.KD_MUTASI_DARI = md.KD_MUTASI_DARI
                 LEFT JOIN pegawai p ON p.ID_PEGAWAI = md.ID_PEGAWAI
@@ -816,6 +836,18 @@ class MPegawai extends Model
                 LEFT JOIN bagian b_baru ON b_baru.KD_BAGIAN = mm.KD_BAGIAN
                 LEFT JOIN jabatan j_asal ON j_asal.KD_JABATAN = md.KD_JABATAN
                 LEFT JOIN jabatan j_baru ON j_baru.KD_JABATAN = mm.KD_JABATAN
+                LEFT JOIN pangkat pkt_asal ON pkt_asal.KD_PANGKAT = md.KD_PANGKAT
+                LEFT JOIN pangkat pkt_baru ON pkt_baru.KD_PANGKAT = mm.KD_PANGKAT
+                LEFT JOIN golongan g_asal ON g_asal.KD_GOLONGAN = md.KD_GOLONGAN
+                LEFT JOIN golongan g_baru ON g_baru.KD_GOLONGAN = mm.KD_GOLONGAN
+                LEFT JOIN ekselon e_asal ON e_asal.KD_EKSELON = md.KD_EKSELON
+                LEFT JOIN ekselon e_baru ON e_baru.KD_EKSELON = mm.KD_EKSELON
+                LEFT JOIN jenis_pegawai jp_asal ON jp_asal.KD_JENIS_PEGAWAI = md.KD_JENIS_PEGAWAI
+                LEFT JOIN jenis_pegawai jp_baru ON jp_baru.KD_JENIS_PEGAWAI = mm.KD_JENIS_PEGAWAI
+                LEFT JOIN status_pegawai sp_asal ON sp_asal.KD_STATUS_PEGAWAI = md.KD_STATUS_PEGAWAI
+                LEFT JOIN status_pegawai sp_baru ON sp_baru.KD_STATUS_PEGAWAI = mm.KD_STATUS_PEGAWAI
+                LEFT JOIN lokasi l_asal ON l_asal.KD_LOKASI = md.KD_LOKASI
+                LEFT JOIN lokasi l_baru ON l_baru.KD_LOKASI = mm.KD_LOKASI
                 WHERE 1=1";
         $binds = [];
 
@@ -834,7 +866,52 @@ class MPegawai extends Model
     {
         $this->db->transBegin();
         try {
+            $aliases = [
+                'ID_PEGAWAI'             => ['replacement_id_pegawai', 'id_pegawai'],
+                'NIP'                    => ['replacement_NIP', 'nip'],
+                'NAMA'                   => ['replacement_nama', 'nama'],
+                'KD_MUTASI_DARI'         => ['replacement_kd_mutasi_dari', 'kd_mutasi_dari'],
+                'NO_SURAT'               => ['replacement_no_surat', 'no_surat'],
+                'TGL_SURAT'              => ['replacement_tanggal_surat', 'tgl_surat'],
+                'KD_BAGIAN_ASAL'         => ['replacement_bagian', 'kd_bagian_asal', 'kd_bagian'],
+                'KD_JABATAN_ASAL'        => ['replacement_jabatan', 'kd_jabatan_asal', 'kd_jabatan'],
+                'KD_EKSELON_ASAL'        => ['replacement_ekselon', 'kd_ekselon_asal', 'kd_ekselon'],
+                'KD_STATUS_PEGAWAI_ASAL' => ['replacement_status_pegawai', 'kd_status_pegawai_asal', 'kd_status_pegawai'],
+                'KD_GOLONGAN_ASAL'       => ['replacement_golongan', 'kd_golongan_asal', 'kd_golongan'],
+                'KD_PANGKAT_ASAL'        => ['replacement_pangkat', 'kd_pangkat_asal', 'kd_pangkat'],
+                'KD_JENIS_PEGAWAI_ASAL'  => ['replacement_jenis_pegawai', 'kd_jenis_pegawai_asal', 'kd_jenis_pegawai'],
+                'KD_LOKASI_ASAL'         => ['replacement_lokasi', 'kd_lokasi_asal', 'kd_lokasi'],
+                'NIP_PIMPINAN'           => ['replacement_NIP_pimpinan', 'nip_pimpinan'],
+                'NAMA_PIMPINAN'          => ['replacement_nama_pimpinan', 'nama_pimpinan'],
+                'TGL_MUTASI'             => ['replacement_tanggal_mutasi', 'tgl_mutasi'],
+                'KD_BAGIAN_BARU'         => ['replacement_bagian_menjadi', 'kd_bagian_baru', 'kd_bagian_tujuan'],
+                'KD_JABATAN_BARU'        => ['replacement_jabatan_menjadi', 'kd_jabatan_baru', 'kd_jabatan_tujuan'],
+                'KD_EKSELON_BARU'        => ['replacement_ekselon_menjadi', 'kd_ekselon_baru'],
+                'KD_STATUS_PEGAWAI_BARU' => ['replacement_status_pegawai_menjadi', 'kd_status_pegawai_baru'],
+                'KD_GOLONGAN_BARU'       => ['replacement_golongan_menjadi', 'kd_golongan_baru'],
+                'KD_PANGKAT_BARU'        => ['replacement_pangkat_menjadi', 'kd_pangkat_baru'],
+                'KD_JENIS_PEGAWAI_BARU'  => ['replacement_jenis_pegawai_menjadi', 'kd_jenis_pegawai_baru'],
+                'KD_LOKASI_BARU'         => ['replacement_lokasi_menjadi', 'kd_lokasi_baru'],
+                'KETERANGAN'             => ['replacement_keterangan', 'keterangan'],
+            ];
+            foreach ($aliases as $target => $sources) {
+                if (!isset($data[$target]) || $data[$target] === '') {
+                    foreach ($sources as $s) {
+                        if (isset($data[$s]) && $data[$s] !== '') {
+                            $data[$target] = $data[$s];
+                            break;
+                        }
+                    }
+                }
+            }
+
             $idPegawai = $data['ID_PEGAWAI'] ?? null;
+            if (empty($idPegawai) && !empty($data['NIP'])) {
+                $pRow = $this->db->table('pegawai')->where('NIP', trim($data['NIP']))->get()->getRowArray();
+                if ($pRow) {
+                    $idPegawai = $pRow['ID_PEGAWAI'];
+                }
+            }
             if (empty($idPegawai)) {
                 return ['code' => 422, 'message' => 'Pegawai belum dipilih'];
             }
@@ -1723,6 +1800,10 @@ class MPegawai extends Model
                        dm.KD_JABATAN AS KD_JABATAN_BARU,
                        dm.KD_PANGKAT AS KD_PANGKAT_BARU,
                        dm.KD_GOLONGAN AS KD_GOLONGAN_BARU,
+                       dm.KD_EKSELON AS KD_EKSELON_BARU,
+                       dm.KD_STATUS_PEGAWAI AS KD_STATUS_PEGAWAI_BARU,
+                       dm.KD_JENIS_PEGAWAI AS KD_JENIS_PEGAWAI_BARU,
+                       dm.KD_LOKASI AS KD_LOKASI_BARU,
                        dm.NIP_PIMPINAN,
                        dm.NAMA_PIMPINAN,
                        dm.KETERANGAN,
@@ -1732,7 +1813,17 @@ class MPegawai extends Model
                        j_asal.JABATAN AS JABATAN_ASAL,
                        j_baru.JABATAN AS JABATAN_BARU,
                        pkt_asal.PANGKAT AS PANGKAT_ASAL,
-                       pkt_baru.PANGKAT AS PANGKAT_BARU
+                       pkt_baru.PANGKAT AS PANGKAT_BARU,
+                       g_asal.GOLONGAN AS GOLONGAN_ASAL,
+                       g_baru.GOLONGAN AS GOLONGAN_BARU,
+                       e_asal.EKSELON AS EKSELON_ASAL,
+                       e_baru.EKSELON AS EKSELON_BARU,
+                       jp_asal.JENIS_PEGAWAI AS JENIS_PEGAWAI_ASAL,
+                       jp_baru.JENIS_PEGAWAI AS JENIS_PEGAWAI_BARU,
+                       sp_asal.STATUS_PEGAWAI AS STATUS_PEGAWAI_ASAL,
+                       sp_baru.STATUS_PEGAWAI AS STATUS_PEGAWAI_BARU,
+                       l_asal.LOKASI AS LOKASI_ASAL,
+                       l_baru.LOKASI AS LOKASI_BARU
                 FROM detail_demosi_dari_pegawai dd
                 LEFT JOIN detail_demosi_menjadi_pegawai dm ON dm.KD_DEMOSI_DARI = dd.KD_DEMOSI_DARI
                 LEFT JOIN pegawai p ON p.ID_PEGAWAI = dd.ID_PEGAWAI
@@ -1742,6 +1833,16 @@ class MPegawai extends Model
                 LEFT JOIN jabatan j_baru ON j_baru.KD_JABATAN = dm.KD_JABATAN
                 LEFT JOIN pangkat pkt_asal ON pkt_asal.KD_PANGKAT = dd.KD_PANGKAT
                 LEFT JOIN pangkat pkt_baru ON pkt_baru.KD_PANGKAT = dm.KD_PANGKAT
+                LEFT JOIN golongan g_asal ON g_asal.KD_GOLONGAN = dd.KD_GOLONGAN
+                LEFT JOIN golongan g_baru ON g_baru.KD_GOLONGAN = dm.KD_GOLONGAN
+                LEFT JOIN ekselon e_asal ON e_asal.KD_EKSELON = dd.KD_EKSELON
+                LEFT JOIN ekselon e_baru ON e_baru.KD_EKSELON = dm.KD_EKSELON
+                LEFT JOIN jenis_pegawai jp_asal ON jp_asal.KD_JENIS_PEGAWAI = dd.KD_JENIS_PEGAWAI
+                LEFT JOIN jenis_pegawai jp_baru ON jp_baru.KD_JENIS_PEGAWAI = dm.KD_JENIS_PEGAWAI
+                LEFT JOIN status_pegawai sp_asal ON sp_asal.KD_STATUS_PEGAWAI = dd.KD_STATUS_PEGAWAI
+                LEFT JOIN status_pegawai sp_baru ON sp_baru.KD_STATUS_PEGAWAI = dm.KD_STATUS_PEGAWAI
+                LEFT JOIN lokasi l_asal ON l_asal.KD_LOKASI = dd.KD_LOKASI
+                LEFT JOIN lokasi l_baru ON l_baru.KD_LOKASI = dm.KD_LOKASI
                 WHERE 1=1";
         $binds = [];
 
@@ -1758,8 +1859,54 @@ class MPegawai extends Model
 
     public function saveDemosi($data)
     {
+        $this->db->transBegin();
         try {
+            $aliases = [
+                'ID_PEGAWAI' => ['replacement_id_pegawai', 'id_pegawai'],
+                'NIP' => ['replacement_NIP', 'nip'],
+                'NAMA' => ['replacement_nama', 'nama'],
+                'KD_DEMOSI_DARI' => ['replacement_kd_demosi_dari', 'kd_demosi_dari'],
+                'NO_SURAT' => ['replacement_no_surat', 'no_surat', 'replacement_no_sk', 'no_sk'],
+                'TGL_SURAT' => ['replacement_tanggal_surat', 'tgl_surat'],
+                'KD_BAGIAN_ASAL' => ['replacement_bagian', 'kd_bagian_asal'],
+                'KD_JABATAN_ASAL' => ['replacement_jabatan', 'kd_jabatan_asal'],
+                'KD_EKSELON_ASAL' => ['replacement_ekselon', 'kd_ekselon_asal'],
+                'KD_STATUS_PEGAWAI_ASAL' => ['replacement_status_pegawai', 'kd_status_pegawai_asal'],
+                'KD_GOLONGAN_ASAL' => ['replacement_golongan', 'kd_golongan_asal'],
+                'KD_PANGKAT_ASAL' => ['replacement_pangkat', 'kd_pangkat_asal'],
+                'KD_JENIS_PEGAWAI_ASAL' => ['replacement_jenis_pegawai', 'kd_jenis_pegawai_asal'],
+                'KD_LOKASI_ASAL' => ['replacement_lokasi', 'kd_lokasi_asal'],
+                'NIP_PIMPINAN' => ['replacement_NIP_pimpinan', 'nip_pimpinan'],
+                'NAMA_PIMPINAN' => ['replacement_nama_pimpinan', 'nama_pimpinan'],
+                'TGL_DEMOSI' => ['replacement_tanggal_demosi', 'tgl_demosi'],
+                'KD_BAGIAN_BARU' => ['replacement_bagian_menjadi', 'kd_bagian_baru', 'kd_bagian'],
+                'KD_JABATAN_BARU' => ['replacement_jabatan_menjadi', 'kd_jabatan_baru', 'kd_jabatan'],
+                'KD_EKSELON_BARU' => ['replacement_ekselon_menjadi', 'kd_ekselon_baru', 'kd_ekselon'],
+                'KD_STATUS_PEGAWAI_BARU' => ['replacement_status_pegawai_menjadi', 'kd_status_pegawai_baru', 'kd_status_pegawai'],
+                'KD_GOLONGAN_BARU' => ['replacement_golongan_menjadi', 'kd_golongan_baru', 'kd_golongan'],
+                'KD_PANGKAT_BARU' => ['replacement_pangkat_menjadi', 'kd_pangkat_baru', 'kd_pangkat'],
+                'KD_JENIS_PEGAWAI_BARU' => ['replacement_jenis_pegawai_menjadi', 'kd_jenis_pegawai_baru', 'kd_jenis_pegawai'],
+                'KD_LOKASI_BARU' => ['replacement_lokasi_menjadi', 'kd_lokasi_baru', 'kd_lokasi'],
+                'KETERANGAN' => ['replacement_keterangan', 'keterangan'],
+            ];
+            foreach ($aliases as $target => $sources) {
+                if (!isset($data[$target]) || $data[$target] === '') {
+                    foreach ($sources as $s) {
+                        if (isset($data[$s]) && $data[$s] !== '') {
+                            $data[$target] = $data[$s];
+                            break;
+                        }
+                    }
+                }
+            }
+
             $idPegawai = $data['ID_PEGAWAI'] ?? null;
+            if (empty($idPegawai) && !empty($data['NIP'])) {
+                $pRow = $this->db->table('pegawai')->where('NIP', trim($data['NIP']))->get()->getRowArray();
+                if ($pRow) {
+                    $idPegawai = $pRow['ID_PEGAWAI'];
+                }
+            }
             if (empty($idPegawai)) {
                 return ['code' => 422, 'message' => 'Pegawai belum dipilih'];
             }
@@ -1768,9 +1915,9 @@ class MPegawai extends Model
             $kdDari = $data['KD_DEMOSI_DARI'] ?? '';
             $isUpdate = !empty($kdDari);
 
-            $noSurat = !empty($data['NO_SURAT']) ? trim($data['NO_SURAT']) : (!empty($data['NO_SK']) ? trim($data['NO_SK']) : ('SK-DMS/' . date('Ymd') . '/' . $idPegawai));
-            $tglSurat = $this->normalizeDate($data['TGL_SURAT'] ?? $data['TGL_DEMOSI'] ?? null, date('Y-m-d'));
             $tglDemosi = $this->normalizeDate($data['TGL_DEMOSI'] ?? null, date('Y-m-d'));
+            $tglSurat = $this->normalizeDate($data['TGL_SURAT'] ?? null, $tglDemosi);
+            $noSurat = !empty($data['NO_SURAT']) ? trim($data['NO_SURAT']) : ('SK-DMS/' . date('Ymd') . '/' . $idPegawai);
 
             $kdBagianAsal  = !empty($data['KD_BAGIAN_ASAL']) ? (int)$data['KD_BAGIAN_ASAL'] : $snapshot['KD_BAGIAN'];
             $kdJabatanAsal = isset($data['KD_JABATAN_ASAL']) && $data['KD_JABATAN_ASAL'] !== '' ? (int)$data['KD_JABATAN_ASAL'] : $snapshot['KD_JABATAN'];
@@ -1798,8 +1945,8 @@ class MPegawai extends Model
                 'ID_PEGAWAI'        => $idPegawai,
                 'NO_SURAT'          => $noSurat,
                 'TGL_SURAT'         => $tglSurat,
-                'NIP'               => $snapshot['NIP'],
-                'NAMA'              => $snapshot['NAMA'],
+                'NIP'               => !empty($data['NIP']) ? trim($data['NIP']) : $snapshot['NIP'],
+                'NAMA'              => !empty($data['NAMA']) ? trim($data['NAMA']) : $snapshot['NAMA'],
                 'KD_BAGIAN'         => $kdBagianAsal,
                 'KD_JABATAN'        => $kdJabatanAsal,
                 'KD_EKSELON'        => $kdEkselonAsal,
@@ -1869,8 +2016,10 @@ class MPegawai extends Model
                 ]);
             }
 
+            $this->db->transCommit();
             return ['code' => 200, 'message' => 'Data demosi berhasil disimpan'];
         } catch (\Exception $e) {
+            $this->db->transRollback();
             return ['code' => 500, 'message' => $e->getMessage()];
         }
     }
