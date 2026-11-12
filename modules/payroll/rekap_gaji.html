@@ -17,23 +17,104 @@
     font-size: 0.85rem;
   }
   @media print {
-    body * {
-      visibility: hidden;
+    @page {
+      size: landscape;
+      margin: 10mm;
     }
-    #rekap-print-area, #rekap-print-area * {
-      visibility: visible;
+
+    html,
+    body {
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #fff !important;
     }
-    #rekap-print-area {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 100%;
-      background: white !important;
-      color: black !important;
-      padding: 15px;
-    }
-    .no-print {
+
+    body > *:not(#rekap-print-only) {
       display: none !important;
+    }
+
+    #rekap-print-only {
+      display: block !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    #rekap-print-table {
+      width: 100% !important;
+      margin: 0 !important;
+      border-collapse: collapse !important;
+      table-layout: fixed;
+      color: #111 !important;
+      font: 7.5pt/1.25 Arial, sans-serif !important;
+    }
+
+    #rekap-print-table thead {
+      display: table-header-group;
+    }
+
+    #rekap-print-table tfoot {
+      display: table-row-group;
+    }
+
+    #rekap-print-table tr {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    #rekap-print-table th,
+    #rekap-print-table td {
+      padding: 5px 4px !important;
+      border: 1px solid #64748b !important;
+      background: #fff !important;
+      color: #111 !important;
+      vertical-align: middle !important;
+    }
+
+    #rekap-print-table th {
+      background: #e9eef5 !important;
+      font-size: 7pt !important;
+      font-weight: 700 !important;
+      text-align: center !important;
+    }
+
+    #rekap-print-table tbody tr:nth-child(even) td {
+      background: #f5f7fa !important;
+    }
+
+    #rekap-print-table th:nth-child(1),
+    #rekap-print-table td:nth-child(1) { width: 4%; text-align: center !important; }
+    #rekap-print-table th:nth-child(2),
+    #rekap-print-table td:nth-child(2) { width: 20%; text-align: left !important; }
+    #rekap-print-table th:nth-child(3),
+    #rekap-print-table td:nth-child(3) { width: 8%; text-align: center !important; }
+    #rekap-print-table th:nth-child(4),
+    #rekap-print-table td:nth-child(4) { width: 13%; }
+    #rekap-print-table th:nth-child(5),
+    #rekap-print-table td:nth-child(5) { width: 15%; }
+    #rekap-print-table th:nth-child(6),
+    #rekap-print-table td:nth-child(6) { width: 13%; }
+    #rekap-print-table th:nth-child(7),
+    #rekap-print-table td:nth-child(7) { width: 13%; }
+    #rekap-print-table th:nth-child(8),
+    #rekap-print-table td:nth-child(8) { width: 14%; }
+
+    #rekap-print-table td:nth-child(n + 4) {
+      text-align: right !important;
+      white-space: nowrap;
+    }
+
+    #rekap-print-table tfoot td {
+      font-weight: 700 !important;
+      background: #e9eef5 !important;
+    }
+
+    #rekap-print-table .badge {
+      padding: 0 !important;
+      background: transparent !important;
+      color: #111 !important;
+      font: inherit !important;
+      white-space: nowrap;
     }
   }
 </style>
@@ -170,6 +251,22 @@
             </table>
           </div>
         </div>
+        <div class="card-footer bg-white border-top py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small" id="rekap-total-info">Menyiapkan data...</span>
+            <div class="d-flex align-items-center ms-2">
+              <label class="small text-muted me-1 mb-0" for="filter-limit-rekap">Baris:</label>
+              <select class="form-select form-select-sm py-0 ps-2 pe-4" style="width: 65px; height: 26px; font-size: 0.75rem;" id="filter-limit-rekap">
+                <option value="5" selected>5</option>
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+          <div class="pagination-container" id="rekap-pagination"></div>
+        </div>
       </div>
 
       <!-- TTD Pengesahan Cetak -->
@@ -196,6 +293,11 @@
 
 <script type="module" defer>
   import { httpGet } from './assets/js/core/http.js';
+
+  let rekapData = [];
+  let currentPage = 1;
+  let rowsPerPage = 5;
+  let isPrinting = false;
 
   const formatRupiah = (val) => {
     const num = parseFloat(val) || 0;
@@ -227,18 +329,28 @@
     document.querySelectorAll('.print-periode-label').forEach(el => el.textContent = periode);
     document.querySelectorAll('.print-tgl-sekarang').forEach(el => el.textContent = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }));
     const badge = document.getElementById('badge-periode');
+
     if (badge) badge.textContent = `Periode: ${periode}`;
 
     try {
       const res = await httpGet(`${config.api_url}/payroll/rekap?periode=${periode}`);
       if (res && res.code === 200 && res.data) {
-        renderRekapTable(res.data.rekap_bagian || []);
-        renderTotals(res.data.summary || {});
+        rekapData = res.data.rekap || [];
+        currentPage = 1;
+        renderRekapTable();
+        renderTotals(res.data.grand_total || {}, rekapData.length);
       } else {
-        renderRekapTable([]);
+        rekapData = [];
+        currentPage = 1;
+        renderRekapTable();
+        renderTotals({}, 0);
       }
     } catch (e) {
       console.error('Error fetching payroll recap:', e);
+      rekapData = [];
+      currentPage = 1;
+      renderPagination(0);
+      renderTotals({}, 0);
       if (tbody) {
         tbody.innerHTML = `
           <tr>
@@ -250,36 +362,45 @@
     }
   };
 
-  const renderRekapTable = (list) => {
+  const renderRekapTable = () => {
     const tbody = document.getElementById('tbody-rekap-bagian');
     if (!tbody) return;
 
-    if (!list || list.length === 0) {
+    if (rekapData.length === 0) {
       tbody.innerHTML = `
         <tr>
           <td colspan="8" class="text-center py-4 text-muted">
             Tidak ada data penggajian untuk periode yang dipilih.
           </td>
         </tr>`;
+      renderPagination(0);
       return;
     }
 
+    const startIndex = isPrinting ? 0 : (currentPage - 1) * rowsPerPage;
+    const pageRows = isPrinting ? rekapData : rekapData.slice(startIndex, startIndex + rowsPerPage);
     let html = '';
-    list.forEach((item, idx) => {
+    pageRows.forEach((item, idx) => {
       const gapok = parseFloat(item.total_gapok) || 0;
-      const bruto = parseFloat(item.total_bruto) || 0;
-      const tunjangan = bruto - gapok;
-      const potongan = parseFloat(item.total_potongan) || 0;
+      const tunjangan = (parseFloat(item.total_tunj_bpjs) || 0)
+        + (parseFloat(item.total_tunj_jht) || 0)
+        + (parseFloat(item.total_tunj_jkk) || 0)
+        + (parseFloat(item.total_tunj_jkm) || 0);
+      const bruto = gapok + tunjangan
+        + (parseFloat(item.total_lembur) || 0)
+        + (parseFloat(item.total_honor) || 0);
+      const potongan = (parseFloat(item.total_pot_bpjs) || 0)
+        + (parseFloat(item.total_pot_jht) || 0);
       const thp = parseFloat(item.total_thp) || 0;
 
       html += `
         <tr>
-          <td class="text-center font-monospace">${idx + 1}</td>
+          <td class="text-center font-monospace">${startIndex + idx + 1}</td>
           <td>
-            <div class="fw-bold text-dark">${item.BAGIAN || 'Umum'}</div>
-            <div class="small text-muted font-monospace">KD: ${item.KD_BAGIAN || '-'}</div>
+            <div class="fw-bold text-dark">${item.nama_bagian || item.BAGIAN || 'Belum ditentukan'}</div>
+            <div class="small text-muted font-monospace">KD: ${item.kd_bagian || item.KD_BAGIAN || '-'}</div>
           </td>
-          <td class="text-center"><span class="badge bg-secondary">${item.jumlah_pegawai} Orang</span></td>
+          <td class="text-center"><span class="badge bg-secondary">${item.jml_pegawai || 0} Orang</span></td>
           <td class="text-end font-monospace">${formatRupiah(gapok)}</td>
           <td class="text-end font-monospace text-primary">${formatRupiah(tunjangan)}</td>
           <td class="text-end font-monospace text-primary fw-semibold">${formatRupiah(bruto)}</td>
@@ -290,33 +411,128 @@
     });
 
     tbody.innerHTML = html;
+    if (!isPrinting) renderPagination(rekapData.length);
   };
 
-  const renderTotals = (summary) => {
-    document.getElementById('rekap-total-pegawai').textContent = (summary.total_pegawai || 0).toLocaleString('id-ID');
-    document.getElementById('rekap-total-bagian').textContent = `${summary.total_bagian || 0} Unit / Bagian`;
-    document.getElementById('rekap-total-gapok').textContent = formatRupiah(summary.sum_gapok);
-    document.getElementById('rekap-total-potongan').textContent = formatRupiah(summary.sum_potongan);
-    document.getElementById('rekap-total-thp').textContent = formatRupiah(summary.sum_gaji_bersih);
+  const renderPagination = (totalRows) => {
+    const info = document.getElementById('rekap-total-info');
+    const container = document.getElementById('rekap-pagination');
+    if (!info || !container) return;
 
-    document.getElementById('foot-total-pegawai').textContent = `${summary.total_pegawai || 0} Orang`;
-    document.getElementById('foot-total-gapok').textContent = formatRupiah(summary.sum_gapok);
-    const sumBruto = parseFloat(summary.sum_bruto) || 0;
-    const sumGapok = parseFloat(summary.sum_gapok) || 0;
-    document.getElementById('foot-total-tunj').textContent = formatRupiah(sumBruto - sumGapok);
-    document.getElementById('foot-total-bruto').textContent = formatRupiah(sumBruto);
-    document.getElementById('foot-total-potongan').textContent = formatRupiah(summary.sum_potongan);
-    document.getElementById('foot-total-thp').textContent = formatRupiah(summary.sum_gaji_bersih);
+    const totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
+    currentPage = Math.min(currentPage, totalPages);
+    const start = totalRows === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
+    const end = Math.min(currentPage * rowsPerPage, totalRows);
+    info.textContent = `Menampilkan ${totalRows === 0 ? 0 : end - start + 1} dari total ${totalRows} unit / bagian`;
+
+    if (totalPages <= 1) {
+      container.innerHTML = '';
+      return;
+    }
+
+    let html = '<ul class="pagination pagination-sm mb-0">';
+    html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage - 1}">&laquo;</a></li>`;
+
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, startPage + 4);
+    if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+
+    if (startPage > 1) {
+      html += '<li class="page-item"><a class="page-link" href="#" data-page="1">1</a></li>';
+      if (startPage > 2) html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+    }
+
+    for (let page = startPage; page <= endPage; page++) {
+      html += `<li class="page-item ${page === currentPage ? 'active' : ''}"><a class="page-link" href="#" data-page="${page}">${page}</a></li>`;
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+      html += `<li class="page-item"><a class="page-link" href="#" data-page="${totalPages}">${totalPages}</a></li>`;
+    }
+
+    html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage + 1}">&raquo;</a></li>`;
+    html += '</ul>';
+    container.innerHTML = html;
+
+    container.querySelectorAll('.page-link[data-page]').forEach(link => {
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        const page = parseInt(link.getAttribute('data-page'), 10);
+        if (page >= 1 && page <= totalPages && page !== currentPage) {
+          currentPage = page;
+          renderRekapTable();
+        }
+      });
+    });
+  };
+
+  const renderTotals = (totals, totalBagian) => {
+    const totalPegawai = parseFloat(totals.total_pegawai) || 0;
+    const totalGapok = parseFloat(totals.total_gapok) || 0;
+    const totalTunjangan = (parseFloat(totals.total_tunj_bpjs) || 0)
+      + (parseFloat(totals.total_tunj_jht) || 0)
+      + (parseFloat(totals.total_tunj_jkk) || 0)
+      + (parseFloat(totals.total_tunj_jkm) || 0);
+    const totalLembur = parseFloat(totals.total_lembur) || 0;
+    const totalHonor = parseFloat(totals.total_honor) || 0;
+    const totalBruto = totalGapok + totalTunjangan + totalLembur + totalHonor;
+    const totalPotongan = (parseFloat(totals.total_pot_bpjs) || 0)
+      + (parseFloat(totals.total_pot_jht) || 0);
+    const totalThp = parseFloat(totals.total_thp) || 0;
+
+    document.getElementById('rekap-total-pegawai').textContent = totalPegawai.toLocaleString('id-ID');
+    document.getElementById('rekap-total-bagian').textContent = `${totalBagian} Unit / Bagian`;
+    document.getElementById('rekap-total-gapok').textContent = formatRupiah(totalGapok);
+    document.getElementById('rekap-total-potongan').textContent = formatRupiah(totalPotongan);
+    document.getElementById('rekap-total-thp').textContent = formatRupiah(totalThp);
+
+    document.getElementById('foot-total-pegawai').textContent = `${totalPegawai} Orang`;
+    document.getElementById('foot-total-gapok').textContent = formatRupiah(totalGapok);
+    document.getElementById('foot-total-tunj').textContent = formatRupiah(totalTunjangan);
+    document.getElementById('foot-total-bruto').textContent = formatRupiah(totalBruto);
+    document.getElementById('foot-total-potongan').textContent = formatRupiah(totalPotongan);
+    document.getElementById('foot-total-thp').textContent = formatRupiah(totalThp);
   };
 
   const bindEvents = () => {
     document.getElementById('btn-apply-filter')?.addEventListener('click', loadRekapData);
     document.getElementById('rekap-filter-periode')?.addEventListener('change', loadRekapData);
-    document.getElementById('btn-print-rekap')?.addEventListener('click', () => window.print());
-    document.getElementById('btn-goto-gaji')?.addEventListener('click', () => {
-      if (window.loadModule) {
-        window.loadModule('modules/payroll/gaji.html');
+    document.getElementById('filter-limit-rekap')?.addEventListener('change', (event) => {
+      rowsPerPage = parseInt(event.target.value, 10) || 5;
+      currentPage = 1;
+      renderRekapTable();
+    });
+    document.getElementById('btn-print-rekap')?.addEventListener('click', () => {
+      const pageBeforePrint = currentPage;
+      isPrinting = true;
+      renderRekapTable();
+      const printTable = document.getElementById('table-rekap-bagian').cloneNode(true);
+      printTable.id = 'rekap-print-table';
+      const printRoot = document.createElement('div');
+      printRoot.id = 'rekap-print-only';
+      printRoot.appendChild(printTable);
+      document.body.appendChild(printRoot);
+
+      const cleanupPrint = () => {
+        printRoot.remove();
+        window.removeEventListener('afterprint', cleanupPrint);
+      };
+      window.addEventListener('afterprint', cleanupPrint);
+
+      try {
+        window.print();
+      } catch (error) {
+        console.error('Error printing payroll recap:', error);
+        cleanupPrint();
+      } finally {
+        isPrinting = false;
+        currentPage = pageBeforePrint;
+        renderRekapTable();
       }
+    });
+    document.getElementById('btn-goto-gaji')?.addEventListener('click', async () => {
+      await loadModule('modules/payroll/gaji', '#container-isi');
     });
   };
 

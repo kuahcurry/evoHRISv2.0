@@ -158,6 +158,22 @@
           </table>
         </div>
       </div>
+      <div class="card-footer bg-white border-top py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <span class="text-muted small" id="jabatan-total-info">Menyiapkan data...</span>
+          <div class="d-flex align-items-center ms-2">
+            <label class="small text-muted me-1 mb-0" for="filter-limit-jabatan">Baris:</label>
+            <select class="form-select form-select-sm py-0 ps-2 pe-4" style="width: 65px; height: 26px; font-size: 0.75rem;" id="filter-limit-jabatan">
+              <option value="8" selected>8</option>
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+        </div>
+        <div class="pagination-container" id="jabatan-pagination"></div>
+      </div>
     </div>
   </div>
 
@@ -235,6 +251,8 @@
   import { httpGet } from './assets/js/core/http.js';
 
   let masterList = [];
+  let currentPage = 1;
+  let rowsPerPage = 8;
 
   const formatRupiah = (val) => {
     const num = parseFloat(val) || 0;
@@ -250,41 +268,105 @@
     try {
       const res = await httpGet(`${config.api_url}/payroll/master-tarif`);
       if (res && res.code === 200 && res.data) {
-        masterList = res.data.jabatan || [];
-        renderJabatanTable(masterList);
+        masterList = res.data.jabatan || res.data.gaji || [];
+        renderJabatanTable();
       }
     } catch (e) {
       console.error('Error fetching master tarif:', e);
     }
   };
 
-  const renderJabatanTable = (list) => {
+  const renderJabatanTable = () => {
     const tbody = document.getElementById('tbody-master-jabatan');
     if (!tbody) return;
 
-    if (!list || list.length === 0) {
+    const query = document.getElementById('search-jabatan')?.value.trim().toLowerCase() || '';
+    const filteredList = masterList.filter(j =>
+      (j.JABATAN || j.nama_jabatan || '').toLowerCase().includes(query) ||
+      String(j.KD_JABATAN || j.kd_jabatan || '').toLowerCase().includes(query)
+    );
+    const totalPages = Math.ceil(filteredList.length / rowsPerPage) || 1;
+    currentPage = Math.min(currentPage, totalPages);
+
+    if (filteredList.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="6" class="text-center py-4 text-muted">Tidak ada data jabatan.</td>
+          <td colspan="6" class="text-center py-4 text-muted">${query ? 'Data jabatan tidak ditemukan.' : 'Tidak ada data jabatan.'}</td>
         </tr>`;
+      renderJabatanPagination(filteredList.length);
       return;
     }
 
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const pageRows = filteredList.slice(startIndex, startIndex + rowsPerPage);
     let html = '';
-    list.forEach((j, idx) => {
+    pageRows.forEach((j, idx) => {
       html += `
         <tr>
-          <td class="text-center font-monospace">${idx + 1}</td>
-          <td><span class="badge bg-light text-dark font-monospace border">${j.KD_JABATAN || '-'}</span></td>
-          <td class="fw-bold text-dark">${j.JABATAN || '-'}</td>
-          <td class="text-end font-monospace">Rp 3.500.000</td>
-          <td class="text-end font-monospace text-primary">Rp 500.000</td>
-          <td class="text-center"><span class="badge bg-success">Aktif</span></td>
+          <td class="text-center font-monospace">${startIndex + idx + 1}</td>
+          <td><span class="badge bg-light text-dark font-monospace border">${j.KD_JABATAN || j.kd_jabatan || '-'}</span></td>
+          <td class="fw-bold text-dark">${j.JABATAN || j.nama_jabatan || '-'}</td>
+          <td class="text-end font-monospace">${j.gaji_pokok != null ? formatRupiah(j.gaji_pokok) : '-'}</td>
+          <td class="text-end font-monospace text-muted">-</td>
+          <td class="text-center"><span class="badge ${j.gaji_pokok != null ? 'bg-success' : 'bg-secondary'}">${j.gaji_pokok != null ? 'Tarif Diatur' : 'Belum Diatur'}</span></td>
         </tr>
       `;
     });
 
     tbody.innerHTML = html;
+    renderJabatanPagination(filteredList.length);
+  };
+
+  const renderJabatanPagination = (totalRows) => {
+    const info = document.getElementById('jabatan-total-info');
+    const container = document.getElementById('jabatan-pagination');
+    if (!info || !container) return;
+
+    const totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
+    const start = totalRows === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
+    const end = Math.min(currentPage * rowsPerPage, totalRows);
+    info.textContent = `Menampilkan ${totalRows === 0 ? 0 : end - start + 1} dari total ${totalRows} jabatan`;
+
+    if (totalPages <= 1) {
+      container.innerHTML = '';
+      return;
+    }
+
+    let html = '<ul class="pagination pagination-sm mb-0">';
+    html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage - 1}">&laquo;</a></li>`;
+
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, startPage + 4);
+    if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+
+    if (startPage > 1) {
+      html += '<li class="page-item"><a class="page-link" href="#" data-page="1">1</a></li>';
+      if (startPage > 2) html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+    }
+
+    for (let page = startPage; page <= endPage; page++) {
+      html += `<li class="page-item ${page === currentPage ? 'active' : ''}"><a class="page-link" href="#" data-page="${page}">${page}</a></li>`;
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+      html += `<li class="page-item"><a class="page-link" href="#" data-page="${totalPages}">${totalPages}</a></li>`;
+    }
+
+    html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage + 1}">&raquo;</a></li>`;
+    html += '</ul>';
+    container.innerHTML = html;
+
+    container.querySelectorAll('.page-link[data-page]').forEach(link => {
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        const page = parseInt(link.getAttribute('data-page'), 10);
+        if (page >= 1 && page <= totalPages && page !== currentPage) {
+          currentPage = page;
+          renderJabatanTable();
+        }
+      });
+    });
   };
 
   const runSimulation = () => {
@@ -324,13 +406,15 @@
       inp.addEventListener('input', runSimulation);
     });
 
-    document.getElementById('search-jabatan')?.addEventListener('input', (e) => {
-      const q = e.target.value.toLowerCase();
-      const filtered = masterList.filter(j =>
-        (j.JABATAN || '').toLowerCase().includes(q) ||
-        (j.KD_JABATAN || '').toLowerCase().includes(q)
-      );
-      renderJabatanTable(filtered);
+    document.getElementById('search-jabatan')?.addEventListener('input', () => {
+      currentPage = 1;
+      renderJabatanTable();
+    });
+
+    document.getElementById('filter-limit-jabatan')?.addEventListener('change', (event) => {
+      rowsPerPage = parseInt(event.target.value, 10) || 8;
+      currentPage = 1;
+      renderJabatanTable();
     });
   };
 
