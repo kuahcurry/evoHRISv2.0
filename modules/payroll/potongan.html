@@ -156,7 +156,7 @@
                   <th class="text-center">Pulang Cepat (PSW)</th>
                   <th class="text-center">Alpa (Hari)</th>
                   <th class="text-end text-danger">Denda Terlambat</th>
-                  <th class="text-end text-danger">Denda Alpa</th>
+                  <th class="text-end text-danger">Denda PSW</th>
                   <th class="text-end text-danger fw-bold">Total Potongan</th>
                 </tr>
               </thead>
@@ -174,7 +174,7 @@
                   <td class="text-center font-monospace" id="foot-pot-psw">0 mnt</td>
                   <td class="text-center font-monospace" id="foot-pot-alpa">0 hari</td>
                   <td class="text-end font-monospace text-danger" id="foot-denda-terlambat">Rp 0</td>
-                  <td class="text-end font-monospace text-danger" id="foot-denda-alpa">Rp 0</td>
+                  <td class="text-end font-monospace text-danger" id="foot-denda-psw">Rp 0</td>
                   <td class="text-end font-monospace text-danger fw-bold" id="foot-total-potongan">Rp 0</td>
                 </tr>
               </tfoot>
@@ -194,11 +194,19 @@
     return 'Rp ' + num.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   };
 
+  const dateToInputValue = (date) => {
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${date.getFullYear()}-${month}-${day}`;
+  };
+
   const initModule = () => {
     const sDate = document.getElementById('pot-start-date');
     const eDate = document.getElementById('pot-end-date');
-    if (sDate) sDate.value = '2024-09-01';
-    if (eDate) eDate.value = '2024-09-30';
+    const today = new Date();
+    const startDate = new Date(2026, 0, 1);
+    if (sDate) sDate.value = dateToInputValue(startDate);
+    if (eDate) eDate.value = dateToInputValue(today);
 
     bindEvents();
     loadBagianMaster();
@@ -223,8 +231,11 @@
   };
 
   const loadPotonganData = async () => {
-    const startDate = document.getElementById('pot-start-date')?.value || '2024-09-01';
-    const endDate = document.getElementById('pot-end-date')?.value || '2024-09-30';
+    const today = new Date();
+    const defaultStartDate = '2026-01-01';
+    const defaultEndDate = dateToInputValue(today);
+    const startDate = document.getElementById('pot-start-date')?.value || defaultStartDate;
+    const endDate = document.getElementById('pot-end-date')?.value || defaultEndDate;
     const kdBagian = document.getElementById('pot-filter-bagian')?.value || '';
 
     const tbody = document.getElementById('tbody-potongan');
@@ -274,7 +285,7 @@
         <tr>
           <td colspan="9" class="text-center py-4 text-success">
             <i class="fas fa-check-circle fa-2x mb-2 d-block"></i>
-            Tidak ada catatan keterlambatan atau pemotongan absensi pada periode ini. Tingkat disiplin 100%!
+            Tidak ada catatan absensi yang memenuhi kriteria pada rentang tanggal ini. Periksa kembali tanggal atau unit kerja yang dipilih.
           </td>
         </tr>`;
       resetKPI();
@@ -285,38 +296,38 @@
     let totPsw = 0;
     let totAlpa = 0;
     let totDendaTerlambat = 0;
-    let totDendaAlpa = 0;
+    let totDendaPsw = 0;
     let totPotongan = 0;
 
     let html = '';
     rows.forEach((r, idx) => {
-      const menit = parseInt(r.total_menit_terlambat) || 0;
-      const psw = parseInt(r.total_menit_psw) || 0;
+      const menit = parseInt(r.total_menit_terlambat ?? r.menit_terlambat) || 0;
+      const psw = parseInt(r.total_menit_psw ?? r.menit_psw) || 0;
       const alpa = parseInt(r.total_hari_mangkir) || 0;
-      const dendaTerlambat = parseFloat(r.potongan_keterlambatan) || 0;
-      const dendaAlpa = parseFloat(r.potongan_alpa) || 0;
-      const totalPot = parseFloat(r.total_potongan_absensi) || 0;
+      const dendaTerlambat = parseFloat(r.potongan_keterlambatan ?? r.nominal_thpjk) || 0;
+      const dendaPsw = parseFloat(r.potongan_psw ?? r.nominal_psw) || 0;
+      const totalPot = parseFloat(r.total_potongan_absensi ?? r.total_denda) || 0;
 
       totMenit += menit;
       totPsw += psw;
       totAlpa += alpa;
       totDendaTerlambat += dendaTerlambat;
-      totDendaAlpa += dendaAlpa;
+      totDendaPsw += dendaPsw;
       totPotongan += totalPot;
 
       html += `
         <tr>
           <td class="text-center font-monospace">${idx + 1}</td>
           <td>
-            <div class="fw-bold text-dark">${r.nama_pegawai || '-'}</div>
-            <div class="small text-muted font-monospace">${r.NIP || '-'}</div>
+            <div class="fw-bold text-dark">${r.nama_pegawai || r.nama || '-'}</div>
+            <div class="small text-muted font-monospace">${r.NIP || r.nip || '-'}</div>
           </td>
-          <td><span class="badge bg-light text-dark border">${r.nama_bagian || 'Umum'}</span></td>
+          <td><span class="badge bg-light text-dark border">${r.nama_bagian || r.bagian || 'Umum'}</span></td>
           <td class="text-center font-monospace">${menit > 0 ? `<span class="badge bg-warning text-dark">${menit} mnt</span>` : '0'}</td>
           <td class="text-center font-monospace">${psw > 0 ? `<span class="badge bg-light text-dark border">${psw} mnt</span>` : '0'}</td>
           <td class="text-center font-monospace">${alpa > 0 ? `<span class="badge bg-danger">${alpa} hari</span>` : '0'}</td>
           <td class="text-end font-monospace text-danger">${formatRupiah(dendaTerlambat)}</td>
-          <td class="text-end font-monospace text-danger">${formatRupiah(dendaAlpa)}</td>
+          <td class="text-end font-monospace text-danger">${formatRupiah(dendaPsw)}</td>
           <td class="text-end font-monospace text-danger fw-bold">${formatRupiah(totalPot)}</td>
         </tr>
       `;
@@ -335,7 +346,7 @@
     document.getElementById('foot-pot-psw').textContent = `${totPsw} mnt`;
     document.getElementById('foot-pot-alpa').textContent = `${totAlpa} hari`;
     document.getElementById('foot-denda-terlambat').textContent = formatRupiah(totDendaTerlambat);
-    document.getElementById('foot-denda-alpa').textContent = formatRupiah(totDendaAlpa);
+    document.getElementById('foot-denda-psw').textContent = formatRupiah(totDendaPsw);
     document.getElementById('foot-total-potongan').textContent = formatRupiah(totPotongan);
   };
 

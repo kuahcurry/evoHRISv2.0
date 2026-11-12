@@ -220,9 +220,21 @@
         </div>
       </div>
       <!-- Pagination Footer -->
-      <div class="card-footer bg-light p-2 d-flex justify-content-between align-items-center">
-        <div class="small text-muted" id="pagination-info">Menampilkan 0 data</div>
-        <ul class="pagination pagination-sm mb-0" id="pagination-links"></ul>
+      <div class="card-footer bg-white border-top py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <span class="text-muted small" id="pagination-info">Menyiapkan data...</span>
+          <div class="d-flex align-items-center ms-2">
+            <label class="small text-muted me-1 mb-0" for="filter-limit-gaji">Baris:</label>
+            <select class="form-select form-select-sm py-0 ps-2 pe-4" style="width: 65px; height: 26px; font-size: 0.75rem;" id="filter-limit-gaji">
+              <option value="7" selected>7</option>
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+        </div>
+        <div class="pagination-container" id="pagination-links"></div>
       </div>
     </div>
   </div>
@@ -547,7 +559,7 @@
   let masterJabatan = [];
   let masterPegawai = [];
   let currentPage = 1;
-  const pageSize = 20;
+  let pageSize = 7;
 
   // Indonesian Currency Formatter
   const formatRupiah = (val) => {
@@ -759,19 +771,30 @@
     const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
     const end = Math.min(page * pageSize, total);
 
-    info.textContent = `Menampilkan ${start} - ${end} dari total ${total} data`;
+    info.textContent = `Menampilkan ${total === 0 ? 0 : end - start + 1} dari total ${total} data`;
 
     let html = '';
-    html += `<li class="page-item ${page <= 1 ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${page - 1}">Prev</a></li>`;
+    html += `<ul class="pagination pagination-sm mb-0"><li class="page-item ${page <= 1 ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${page - 1}">&laquo;</a></li>`;
 
     let startPage = Math.max(1, page - 2);
-    let endPage = Math.min(totalPages, page + 2);
+    let endPage = Math.min(totalPages, startPage + 4);
+    if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+
+    if (startPage > 1) {
+      html += '<li class="page-item"><a class="page-link" href="#" data-page="1">1</a></li>';
+      if (startPage > 2) html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+    }
 
     for (let i = startPage; i <= endPage; i++) {
       html += `<li class="page-item ${i === page ? 'active' : ''}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
     }
 
-    html += `<li class="page-item ${page >= totalPages ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${page + 1}">Next</a></li>`;
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+      html += `<li class="page-item"><a class="page-link" href="#" data-page="${totalPages}">${totalPages}</a></li>`;
+    }
+
+    html += `<li class="page-item ${page >= totalPages ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${page + 1}">&raquo;</a></li></ul>`;
     links.innerHTML = html;
 
     links.querySelectorAll('a.page-link').forEach(a => {
@@ -890,14 +913,15 @@
   const confirmDelete = async (idGaji) => {
     if (!confirm('Apakah Anda yakin ingin menghapus data penggajian ini?')) return;
     try {
-      const res = await httpPost(`${config.api_url}/payroll/delete/${idGaji}`, {});
+      const res = await httpPost(`${config.api_url}/payroll/delete`, { id_gaji: idGaji });
       if (res && res.code === 200) {
         loadData(currentPage);
       } else {
-        alert(res?.data?.message || 'Gagal menghapus data');
+        alert(res?.message || res?.data?.message || 'Gagal menghapus data');
       }
     } catch (e) {
       console.error('Error deleting payroll item:', e);
+      alert(e?.message || 'Gagal menghapus data');
     }
   };
 
@@ -906,6 +930,10 @@
     document.getElementById('filter-periode')?.addEventListener('change', () => loadData(1));
     document.getElementById('filter-bagian')?.addEventListener('change', () => loadData(1));
     document.getElementById('filter-status')?.addEventListener('change', () => loadData(1));
+    document.getElementById('filter-limit-gaji')?.addEventListener('change', (e) => {
+      pageSize = parseInt(e.target.value, 10) || 7;
+      loadData(1);
+    });
     document.getElementById('btn-search')?.addEventListener('click', () => loadData(1));
     document.getElementById('filter-search')?.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') loadData(1);
