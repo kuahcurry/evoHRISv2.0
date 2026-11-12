@@ -243,7 +243,21 @@
     const berkasEl = document.getElementById('modal-lembur-berkas');
     if (berkasEl) {
       if (item.file_berkas) {
-        berkasEl.innerHTML = `<a href="assets/uploads/lembur/${item.file_berkas}" target="_blank" class="btn btn-outline-info btn-sm"><i class="fas fa-file-download me-1"></i>Unduh Berkas Lampiran</a>`;
+        const fileName = String(item.file_berkas);
+        const fileUrl = new URL(
+          `assets/uploads/lembur/${encodeURIComponent(fileName)}`,
+          `${config.base_url.replace(/\/+$/, '')}/`
+        );
+        const downloadLink = document.createElement('a');
+        downloadLink.href = fileUrl.href;
+        downloadLink.download = fileName;
+        downloadLink.className = 'btn btn-outline-info btn-sm';
+
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-file-download me-1';
+        downloadLink.append(icon, document.createTextNode('Unduh Berkas Lampiran'));
+
+        berkasEl.replaceChildren(downloadLink);
       } else {
         berkasEl.innerHTML = '<span class="text-muted small">Tidak ada berkas lampiran.</span>';
       }
