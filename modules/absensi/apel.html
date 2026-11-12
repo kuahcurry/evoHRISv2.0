@@ -1,22 +1,207 @@
-<style>
-  .absensi-apel .card {
-    border: none;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
-    border-radius: 0.5rem;
-  }
-  .absensi-apel .table th {
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    background-color: #f8f9fa;
-    color: #495057;
-    font-weight: 600;
-  }
-  .absensi-apel .table td {
-    vertical-align: middle;
-    font-size: 0.85rem;
-  }
-</style>
+<template>
+  <style>
+    /* ==========================================
+       DESIGN SYSTEM & VARIABLES
+       ========================================== */
+    :root {
+      --ui-bg: #f8fafc;
+      --ui-surface: #ffffff;
+      --ui-text-main: #0f172a;
+      --ui-text-muted: #64748b;
+      --ui-primary: #dc2626; /* Warna Merah/Danger */
+      --ui-primary-hover: #b91c1c;
+      --ui-border: #e2e8f0;
+      
+      --ui-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --ui-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.025);
+      --ui-shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.025);
+      
+      --ui-radius-md: 0.5rem;
+      --ui-radius-lg: 0.75rem;
+      --ui-radius-xl: 1rem;
+    }
+
+    .apel-wrapper {
+      background-color: var(--ui-bg);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 2.5rem 2rem;
+      color: var(--ui-text-main);
+    }
+
+    /* ==========================================
+       UI CARDS
+       ========================================== */
+    .ui-card {
+      background: var(--ui-surface);
+      border: 1px solid var(--ui-border);
+      border-radius: var(--ui-radius-xl);
+      box-shadow: var(--ui-shadow-md);
+      overflow: hidden;
+    }
+
+    .ui-card-header {
+      background: var(--ui-surface);
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--ui-border);
+    }
+
+    .ui-input {
+      border-radius: var(--ui-radius-md);
+      border: 1px solid var(--ui-border);
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+      background: #f8fafc;
+    }
+
+    .ui-input:focus {
+      border-color: var(--ui-primary);
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+      background: #ffffff;
+    }
+
+    .ui-table {
+      width: 100%;
+      margin-bottom: 0;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .ui-table th {
+      background: #f8fafc;
+      color: var(--ui-text-muted);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--ui-border);
+      white-space: nowrap;
+    }
+
+    .ui-table td {
+      padding: 1rem 1.25rem;
+      vertical-align: middle;
+      border-bottom: 1px solid var(--ui-border);
+      color: var(--ui-text-main);
+      font-size: 0.85rem;
+    }
+
+    .ui-table tbody tr {
+      transition: background 0.2s ease;
+    }
+
+    .ui-table tbody tr:hover {
+      background: #fef2f2; /* Hover warna merah pudar */
+    }
+
+    /* ==========================================
+       BUTTONS
+       ========================================== */
+    .btn-ui-white {
+      background: var(--ui-surface);
+      border: 1px solid var(--ui-border);
+      color: var(--ui-text-main);
+      border-radius: var(--ui-radius-md);
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      box-shadow: var(--ui-shadow-sm);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-ui-white:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      transform: translateY(-1px);
+      box-shadow: var(--ui-shadow-md);
+      color: var(--ui-text-main);
+    }
+
+    /* ==========================================
+       BADGES
+       ========================================== */
+    .badge-soft-danger { background-color: #fee2e2; color: #dc2626; border: 1px solid #fecaca; font-weight: 600; }
+    .badge-soft-success { background-color: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; font-weight: 600; }
+  </style>
+
+  <div class="apel-wrapper">
+    
+    <!-- HEADER -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="d-flex align-items-center justify-content-center" style="width: 56px; height: 56px; border-radius: var(--ui-radius-lg); background: #fee2e2; color: #dc2626; font-size: 1.5rem;">
+          <i class="fas fa-flag"></i>
+        </div>
+        <div>
+          <h3 class="fw-bold text-dark mb-1">Konfigurasi & Rekap Apel Pagi</h3>
+          <p class="text-secondary mb-0">Pengaturan jadwal apel pagi gabungan, upacara rutin, dan parameter toleransi scan.</p>
+        </div>
+      </div>
+      
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle px-3 py-2 rounded-pill fw-semibold" id="total-badge-apel">0 Kategori Apel</span>
+        <button class="btn btn-ui-white" id="btn-refresh-apel">
+          <i class="fas fa-sync-alt text-danger"></i> Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- MAIN TABLE CARD -->
+    <div class="ui-card">
+      
+      <!-- Filter Toolbar -->
+      <div class="ui-card-header">
+        <div class="row g-3 align-items-center justify-content-between">
+          <div class="col-md-4">
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-search"></i></span>
+              <input type="text" class="form-control ui-input border-start-0 ps-0" id="search-apel" placeholder="Cari nama apel...">
+            </div>
+          </div>
+          <div class="col-md-6 text-md-end text-secondary small">
+            <i class="fas fa-fingerprint text-danger me-1"></i>
+            Scan log biometrik apel terintegrasi otomatis dengan mesin finger.
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div class="d-none text-center py-3 border-bottom bg-light" id="loading-apel">
+        <div class="spinner-border spinner-border-sm text-danger mb-1" role="status"></div>
+        <div class="small text-muted">Memperbarui data apel...</div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-responsive">
+        <table class="ui-table">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 60px;">No</th>
+              <th>Nama Kegiatan Apel</th>
+              <th class="text-center" style="width: 130px;">Jam Mulai</th>
+              <th class="text-center" style="width: 140px;">Toleransi Waktu</th>
+              <th>Keterangan Pelaksanaan</th>
+              <th class="text-center" style="width: 110px;">Status</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-apel">
+            <tr>
+              <td colspan="6" class="text-center py-5 text-muted">
+                <div class="spinner-border text-danger mb-2" role="status" style="width: 1.5rem; height: 1.5rem;"></div>
+                <div>Memuat konfigurasi apel...</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </div>
+</template>
 
 <script type="module" defer>
   import { httpGet } from './assets/js/core/http.js';
@@ -113,71 +298,4 @@
   initModule();
 </script>
 
-<template>
-  <div class="container-fluid py-3 absensi-apel">
-    <!-- Header -->
-    <div class="row align-items-center mb-3">
-      <div class="col-md-7">
-        <div class="d-flex align-items-center">
-          <div class="avatar bg-soft-danger text-danger p-3 rounded-circle me-3">
-            <i class="fas fa-flag fa-2x"></i>
-          </div>
-          <div>
-            <h4 class="mb-0 fw-bold">Konfigurasi & Rekap Apel Pagi</h4>
-            <p class="text-muted small mb-0">Pengaturan jadwal apel pagi gabungan, upacara rutin, dan parameter toleransi scan</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-5 text-md-end mt-2 mt-md-0">
-        <span class="badge bg-primary px-3 py-2 me-2" id="total-badge-apel">0 Kategori Apel</span>
-        <button class="btn btn-outline-secondary btn-sm me-2" id="btn-refresh-apel" title="Segarkan Data">
-          <i class="fas fa-sync-alt"></i>
-        </button>
-      </div>
-    </div>
 
-    <!-- Card Info -->
-    <div class="card shadow-sm mb-4">
-      <div class="card-header bg-white py-3 border-bottom">
-        <div class="row g-2 align-items-center justify-content-between">
-          <div class="col-md-4">
-            <div class="input-group input-group-sm">
-              <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
-              <input type="text" class="form-control bg-light border-start-0" id="search-apel" placeholder="Cari nama apel...">
-            </div>
-          </div>
-          <div class="col-md-6 text-end text-muted small">
-            <span>Scan log biometrik apel terintegrasi otomatis dengan mesin finger</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="card-body p-0">
-        <div class="d-none text-center py-2 bg-light border-bottom" id="loading-apel">
-          <span class="spinner-border spinner-border-sm text-primary me-2"></span>Memperbarui data apel...
-        </div>
-        <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
-            <thead>
-              <tr>
-                <th style="width: 40px;" class="text-center">No</th>
-                <th>Nama Kegiatan Apel</th>
-                <th style="width: 130px;" class="text-center">Jam Mulai</th>
-                <th style="width: 140px;" class="text-center">Toleransi Waktu</th>
-                <th>Keterangan Pelaksanaan</th>
-                <th style="width: 100px;" class="text-center">Status</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-apel">
-              <tr>
-                <td colspan="7" class="text-center py-4 text-muted">
-                  <span class="spinner-border spinner-border-sm me-2"></span>Memuat konfigurasi apel...
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>

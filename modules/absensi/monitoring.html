@@ -1,22 +1,295 @@
-<style>
-  .absensi-monitoring .card {
-    border: none;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
-    border-radius: 0.5rem;
-  }
-  .absensi-monitoring .table th {
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    background-color: #f8f9fa;
-    color: #495057;
-    font-weight: 600;
-  }
-  .absensi-monitoring .table td {
-    vertical-align: middle;
-    font-size: 0.85rem;
-  }
-</style>
+<template>
+  <style>
+    :root {
+      --ui-bg: #f8fafc;
+      --ui-surface: #ffffff;
+      --ui-text-main: #0f172a;
+      --ui-text-muted: #64748b;
+      --ui-primary: #16a34a;
+      --ui-primary-hover: #15803d;
+      --ui-border: #e2e8f0;
+      
+      --ui-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --ui-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.025);
+      --ui-shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.025);
+      
+      --ui-radius-md: 0.5rem;
+      --ui-radius-lg: 0.75rem;
+      --ui-radius-xl: 1rem;
+    }
+
+    .monitoring-wrapper {
+      background-color: var(--ui-bg);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 2.5rem 2rem;
+      color: var(--ui-text-main);
+    }
+
+    .stat-card {
+      background: var(--ui-surface);
+      border: 1px solid var(--ui-border);
+      border-radius: var(--ui-radius-xl);
+      padding: 1.5rem;
+      box-shadow: var(--ui-shadow-sm);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      height: 100%;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--ui-shadow-lg);
+    }
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--ui-radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+    
+    .icon-primary { background: #eef2ff; color: #4f46e5; }
+    .icon-success { background: #dcfce7; color: #16a34a; }
+    .icon-warning { background: #fef3c7; color: #d97706; }
+    .icon-danger  { background: #fee2e2; color: #dc2626; }
+
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      margin-bottom: 0;
+      color: var(--ui-text-main);
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--ui-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.25rem;
+    }
+
+    .ui-card {
+      background: var(--ui-surface);
+      border: 1px solid var(--ui-border);
+      border-radius: var(--ui-radius-xl);
+      box-shadow: var(--ui-shadow-md);
+      overflow: hidden;
+    }
+
+    .ui-card-header {
+      background: var(--ui-surface);
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--ui-border);
+    }
+
+    .ui-input {
+      border-radius: var(--ui-radius-md);
+      border: 1px solid var(--ui-border);
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+      background: #f8fafc;
+    }
+
+    .ui-input:focus {
+      border-color: var(--ui-primary);
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+      background: #ffffff;
+    }
+
+    .ui-table {
+      width: 100%;
+      margin-bottom: 0;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .ui-table th {
+      background: #f8fafc;
+      color: var(--ui-text-muted);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--ui-border);
+      white-space: nowrap;
+    }
+
+    .ui-table td {
+      padding: 1rem 1.25rem;
+      vertical-align: middle;
+      border-bottom: 1px solid var(--ui-border);
+      color: var(--ui-text-main);
+      font-size: 0.85rem;
+    }
+
+    .ui-table tbody tr {
+      transition: background 0.2s ease;
+    }
+
+    .ui-table tbody tr:hover {
+      background: #f1f5f9;
+    }
+
+    .btn-ui-white {
+      background: var(--ui-surface);
+      border: 1px solid var(--ui-border);
+      color: var(--ui-text-main);
+      border-radius: var(--ui-radius-md);
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      box-shadow: var(--ui-shadow-sm);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-ui-white:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      transform: translateY(-1px);
+      box-shadow: var(--ui-shadow-md);
+      color: var(--ui-text-main);
+    }
+
+    .progress {
+      background-color: #e2e8f0;
+      border-radius: 0.5rem;
+      height: 8px;
+    }
+    .progress-bar {
+      border-radius: 0.5rem;
+    }
+  </style>
+
+  <div class="monitoring-wrapper">
+    
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon icon-success" style="width: 56px; height: 56px; font-size: 1.5rem; border-radius: var(--ui-radius-lg);">
+          <i class="fas fa-tasks"></i>
+        </div>
+        <div>
+          <h3 class="fw-bold text-dark mb-1">Monitoring Jadwal Unit Kerja</h3>
+          <p class="text-secondary mb-0">Audit kepatuhan penginputan jadwal dinas (roster) bulanan antar unit kerja dan instalasi RS.</p>
+        </div>
+      </div>
+      
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle px-3 py-2 rounded-pill fw-semibold" id="total-badge-monitoring">0 Unit</span>
+        <button class="btn btn-ui-white" id="btn-refresh-monitoring">
+          <i class="fas fa-sync-alt text-success"></i> Refresh
+        </button>
+      </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon icon-primary"><i class="fas fa-sitemap"></i></div>
+            <div>
+              <div class="stat-label">Total Unit</div>
+              <div class="stat-value" id="card-stat-mon-total">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon icon-success"><i class="fas fa-check-double"></i></div>
+            <div>
+              <div class="stat-label">Terjadwal Lengkap</div>
+              <div class="stat-value" id="card-stat-mon-lengkap">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon icon-warning"><i class="fas fa-adjust"></i></div>
+            <div>
+              <div class="stat-label">Sebagian</div>
+              <div class="stat-value" id="card-stat-mon-sebagian">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon icon-danger"><i class="fas fa-exclamation-circle"></i></div>
+            <div>
+              <div class="stat-label">Belum Terjadwal</div>
+              <div class="stat-value" id="card-stat-mon-belum">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ui-card">
+      
+      <div class="ui-card-header">
+        <div class="row g-3 align-items-center justify-content-between">
+          <div class="col-md-4">
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0 text-muted">Bulan</span>
+              <input type="month" class="form-control ui-input border-start-0" id="filter-bulan-monitoring" value="2026-04">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-search"></i></span>
+              <input type="text" class="form-control ui-input border-start-0" id="search-monitoring" placeholder="Cari nama unit kerja...">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-none text-center py-3 border-bottom bg-light" id="loading-monitoring">
+        <div class="spinner-border spinner-border-sm text-success mb-1" role="status"></div>
+        <div class="small text-muted">Memperbarui monitoring jadwal...</div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="ui-table">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 60px;">No</th>
+              <th>Unit Kerja / Bagian</th>
+              <th class="text-center" style="width: 120px;">Total Pegawai</th>
+              <th class="text-center" style="width: 130px;">Terjadwal</th>
+              <th style="width: 220px;">Progress</th>
+              <th class="text-center" style="width: 150px;">Status</th>
+              <th class="text-center" style="width: 130px;">Total Entri</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-monitoring">
+            <tr>
+              <td colspan="7" class="text-center py-5 text-muted">
+                <div class="spinner-border text-success mb-2" role="status" style="width: 1.5rem; height: 1.5rem;"></div>
+                <div>Memuat monitoring jadwal...</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </div>
+</template>
 
 <script type="module" defer>
   import { httpGet } from './assets/js/core/http.js';
@@ -154,124 +427,3 @@
 
   initModule();
 </script>
-
-<template>
-  <div class="container-fluid py-3 absensi-monitoring">
-    <!-- Header -->
-    <div class="row align-items-center mb-3">
-      <div class="col-md-7">
-        <div class="d-flex align-items-center">
-          <div class="avatar bg-soft-success text-success p-3 rounded-circle me-3">
-            <i class="fas fa-tasks fa-2x"></i>
-          </div>
-          <div>
-            <h4 class="mb-0 fw-bold">Monitoring Jadwal Unit Kerja</h4>
-            <p class="text-muted small mb-0">Audit kepatuhan penginputan jadwal dinas (roster) bulanan antar unit kerja dan instalasi RS</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-5 text-md-end mt-2 mt-md-0">
-        <span class="badge bg-primary px-3 py-2 me-2" id="total-badge-monitoring">0 Unit</span>
-        <button class="btn btn-outline-secondary btn-sm me-2" id="btn-refresh-monitoring" title="Segarkan Data">
-          <i class="fas fa-sync-alt"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Summary Cards -->
-    <div class="row g-3 mb-3">
-      <div class="col-6 col-md-3">
-        <div class="card p-3 border-start border-4 border-primary">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Total Unit / Bagian</div>
-              <h4 class="mb-0 fw-bold" id="card-stat-mon-total">0</h4>
-            </div>
-            <i class="fas fa-sitemap fa-2x text-primary opacity-25"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card p-3 border-start border-4 border-success">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Terjadwal Lengkap</div>
-              <h4 class="mb-0 fw-bold text-success" id="card-stat-mon-lengkap">0</h4>
-            </div>
-            <i class="fas fa-check-double fa-2x text-success opacity-25"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card p-3 border-start border-4 border-warning">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Sebagian Terjadwal</div>
-              <h4 class="mb-0 fw-bold text-warning" id="card-stat-mon-sebagian">0</h4>
-            </div>
-            <i class="fas fa-adjust fa-2x text-warning opacity-25"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card p-3 border-start border-4 border-danger">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Belum Terjadwal</div>
-              <h4 class="mb-0 fw-bold text-danger" id="card-stat-mon-belum">0</h4>
-            </div>
-            <i class="fas fa-exclamation-circle fa-2x text-danger opacity-25"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Filter & Table Card -->
-    <div class="card shadow-sm mb-4">
-      <div class="card-header bg-white py-3 border-bottom">
-        <div class="row g-2 align-items-center justify-content-between">
-          <div class="col-md-3">
-            <div class="input-group input-group-sm">
-              <span class="input-group-text bg-light">Bulan:</span>
-              <input type="month" class="form-control" id="filter-bulan-monitoring" value="2026-04">
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="input-group input-group-sm">
-              <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
-              <input type="text" class="form-control bg-light border-start-0" id="search-monitoring" placeholder="Cari nama unit kerja...">
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card-body p-0">
-        <div class="d-none text-center py-2 bg-light border-bottom" id="loading-monitoring">
-          <span class="spinner-border spinner-border-sm text-primary me-2"></span>Memperbarui monitoring jadwal...
-        </div>
-        <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
-            <thead>
-              <tr>
-                <th style="width: 40px;" class="text-center">No</th>
-                <th>Unit Kerja / Bagian</th>
-                <th style="width: 120px;" class="text-center">Total Pegawai</th>
-                <th style="width: 130px;" class="text-center">Terjadwal</th>
-                <th style="width: 220px;">Progress Kelengkapan</th>
-                <th style="width: 150px;" class="text-center">Status</th>
-                <th style="width: 130px;" class="text-center">Total Entri Shift</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-monitoring">
-              <tr>
-                <td colspan="7" class="text-center py-4 text-muted">
-                  <span class="spinner-border spinner-border-sm me-2"></span>Memuat monitoring jadwal...
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>

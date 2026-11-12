@@ -1,23 +1,362 @@
-<style>
-  .absensi-status .card {
-    border: none;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
-    border-radius: 0.5rem;
-  }
-  .absensi-status .table th {
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    background-color: #f8f9fa;
-    color: #495057;
-    font-weight: 600;
-  }
-  .absensi-status .table td {
-    vertical-align: middle;
-    font-size: 0.85rem;
-  }
-</style>
+<template>
+  <style>
+    :root {
+      --ui-bg: #f8fafc;
+      --ui-surface: #ffffff;
+      --ui-text-main: #0f172a;
+      --ui-text-muted: #64748b;
+      --ui-primary: #0ea5e9;
+      --ui-primary-hover: #0284c7;
+      --ui-border: #e2e8f0;
+      
+      --ui-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --ui-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.025);
+      --ui-shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.025);
+      
+      --ui-radius-md: 0.5rem;
+      --ui-radius-lg: 0.75rem;
+      --ui-radius-xl: 1rem;
+    }
 
+    .status-wrapper {
+      background-color: var(--ui-bg);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 2.5rem 2rem;
+      color: var(--ui-text-main);
+    }
+
+    .stat-card {
+      background: var(--ui-surface);
+      border: 1px solid var(--ui-border);
+      border-radius: var(--ui-radius-xl);
+      padding: 1.5rem;
+      box-shadow: var(--ui-shadow-sm);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      height: 100%;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--ui-shadow-lg);
+    }
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--ui-radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+    
+    .icon-success { background: #dcfce7; color: #16a34a; }
+    .icon-warning { background: #fef3c7; color: #d97706; }
+    .icon-info    { background: #ecfeff; color: #0891b2; }
+    .icon-primary { background: #eef2ff; color: #4f46e5; }
+    .icon-danger  { background: #fee2e2; color: #dc2626; }
+
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      margin-bottom: 0;
+      color: var(--ui-text-main);
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--ui-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.25rem;
+    }
+
+    .ui-card {
+      background: var(--ui-surface);
+      border: 1px solid var(--ui-border);
+      border-radius: var(--ui-radius-xl);
+      box-shadow: var(--ui-shadow-md);
+      overflow: hidden;
+    }
+
+    .ui-card-header {
+      background: var(--ui-surface);
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--ui-border);
+    }
+
+    .ui-input {
+      border-radius: var(--ui-radius-md);
+      border: 1px solid var(--ui-border);
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+      background: #f8fafc;
+    }
+
+    .ui-input:focus {
+      border-color: var(--ui-primary);
+      box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+      background: #ffffff;
+    }
+
+    .ui-table {
+      width: 100%;
+      margin-bottom: 0;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .ui-table th {
+      background: #f8fafc;
+      color: var(--ui-text-muted);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--ui-border);
+      white-space: nowrap;
+    }
+
+    .ui-table td {
+      padding: 1rem 1.25rem;
+      vertical-align: middle;
+      border-bottom: 1px solid var(--ui-border);
+      color: var(--ui-text-main);
+      font-size: 0.85rem;
+    }
+
+    .ui-table tbody tr {
+      transition: background 0.2s ease;
+    }
+
+    .ui-table tbody tr:hover {
+      background: #f0f9ff;
+    }
+
+    .btn-ui-primary {
+      background: var(--ui-primary);
+      color: white;
+      border: none;
+      border-radius: var(--ui-radius-md);
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      box-shadow: 0 2px 4px rgba(14, 165, 233, 0.2);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-ui-primary:hover {
+      background: var(--ui-primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+      color: white;
+    }
+
+    .btn-ui-white {
+      background: var(--ui-surface);
+      border: 1px solid var(--ui-border);
+      color: var(--ui-text-main);
+      border-radius: var(--ui-radius-md);
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      box-shadow: var(--ui-shadow-sm);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-ui-white:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      transform: translateY(-1px);
+      box-shadow: var(--ui-shadow-md);
+      color: var(--ui-text-main);
+    }
+
+    .badge-soft-primary { background-color: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; font-weight: 600; }
+    .badge-soft-success { background-color: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; font-weight: 600; }
+    .badge-soft-warning { background-color: #fef3c7; color: #d97706; border: 1px solid #fde68a; font-weight: 600; }
+    .badge-soft-danger  { background-color: #fee2e2; color: #dc2626; border: 1px solid #fecaca; font-weight: 600; }
+  </style>
+
+  <div class="status-wrapper">
+    
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon icon-info" style="width: 56px; height: 56px; font-size: 1.5rem; border-radius: var(--ui-radius-lg);">
+          <i class="fas fa-user-clock"></i>
+        </div>
+        <div>
+          <h3 class="fw-bold text-dark mb-1">Rekapitulasi Status Kehadiran</h3>
+          <p class="text-secondary mb-0">Rincian ketepatan waktu, keterlambatan, dan status presensi harian pegawai RS.</p>
+        </div>
+      </div>
+      
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-semibold" id="total-badge-status">0 Catatan</span>
+        <button class="btn btn-ui-white" id="btn-refresh-status">
+          <i class="fas fa-sync-alt text-primary"></i> Refresh
+        </button>
+      </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-6 col-md">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon icon-success"><i class="fas fa-user-check"></i></div>
+            <div>
+              <div class="stat-label">Tepat Waktu</div>
+              <div class="stat-value" id="card-stat-hadir">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon icon-warning"><i class="fas fa-user-clock"></i></div>
+            <div>
+              <div class="stat-label">Terlambat</div>
+              <div class="stat-value" id="card-stat-terlambat">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon icon-info"><i class="fas fa-envelope-open-text"></i></div>
+            <div>
+              <div class="stat-label">Izin / Cuti</div>
+              <div class="stat-value" id="card-stat-izin">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon icon-primary"><i class="fas fa-medkit"></i></div>
+            <div>
+              <div class="stat-label">Sakit</div>
+              <div class="stat-value" id="card-stat-sakit">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon icon-danger"><i class="fas fa-user-slash"></i></div>
+            <div>
+              <div class="stat-label">Alpa</div>
+              <div class="stat-value" id="card-stat-alpa">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ui-card mb-4">
+      
+      <div class="ui-card-header">
+        <div class="row g-3 align-items-end">
+          <div class="col-lg-2 col-md-3 col-sm-6">
+            <label class="form-label fw-semibold text-secondary small mb-1">Dari Tanggal:</label>
+            <input type="date" class="form-control ui-input" id="filter-tgl-mulai-status" value="2026-04-01">
+          </div>
+
+          <div class="col-lg-2 col-md-3 col-sm-6">
+            <label class="form-label fw-semibold text-secondary small mb-1">Sampai Tanggal:</label>
+            <input type="date" class="form-control ui-input" id="filter-tgl-sampai-status" value="2026-04-05">
+          </div>
+
+          <div class="col-lg-3 col-md-3 col-sm-6">
+            <label class="form-label fw-semibold text-secondary small mb-1">Unit / Bagian:</label>
+            <select class="form-select ui-input" id="filter-bagian-status">
+              <option value="">-- Semua Unit --</option>
+            </select>
+          </div>
+
+          <div class="col-lg-2 col-md-3 col-sm-6">
+            <label class="form-label fw-semibold text-secondary small mb-1">Status:</label>
+            <select class="form-select ui-input" id="filter-tipe-status">
+              <option value="">-- Semua Status --</option>
+              <option value="Hadir">Hadir</option>
+              <option value="Terlambat">Terlambat</option>
+              <option value="Alpa">Alpa</option>
+              <option value="Izin">Izin / Cuti</option>
+              <option value="Libur">Libur</option>
+            </select>
+          </div>
+
+          <div class="col-lg col-md col-sm-8">
+            <label class="form-label fw-semibold text-secondary small mb-1">Pencarian:</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-search"></i></span>
+              <input type="text" class="form-control ui-input border-start-0 ps-0" id="search-status" placeholder="Cari pegawai...">
+            </div>
+          </div>
+
+          <div class="col-lg-auto col-md-auto col-sm-4">
+            <button type="button" class="btn btn-ui-primary w-100 justify-content-center" id="btn-filter-status">
+              <i class="fas fa-filter"></i> Terapkan
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-none text-center py-3 border-bottom bg-light" id="loading-status">
+        <div class="spinner-border spinner-border-sm text-primary mb-1" role="status"></div>
+        <div class="small text-muted">Memperbarui data kehadiran...</div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="ui-table">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 60px;">No</th>
+              <th style="width: 120px;">Tanggal</th>
+              <th>Nama Pegawai</th>
+              <th>Unit / Bagian</th>
+              <th>Shift Terjadwal</th>
+              <th class="text-center" style="width: 90px;">Masuk</th>
+              <th class="text-center" style="width: 90px;">Pulang</th>
+              <th class="text-center" style="width: 90px;">Durasi</th>
+              <th class="text-center" style="width: 120px;">Status</th>
+              <th class="text-center" style="width: 120px;">Keterlambatan</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-status">
+            <tr>
+              <td colspan="10" class="text-center py-5 text-muted">
+                <div class="spinner-border text-primary mb-2" role="status" style="width: 1.5rem; height: 1.5rem;"></div>
+                <div>Memuat rincian status kehadiran...</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="ui-card-header border-top border-bottom-0 d-flex flex-column flex-md-row justify-content-between align-items-center py-3">
+        <div class="small text-muted fw-semibold mb-2 mb-md-0">Menampilkan data presensi terverifikasi mesin biometrik</div>
+        <ul class="pagination pagination-sm mb-0 shadow-sm" id="pagination-status"></ul>
+      </div>
+
+    </div>
+
+  </div>
+</template>
 <script type="module" defer>
   import { httpGet } from './assets/js/core/http.js';
 
@@ -240,157 +579,3 @@
   initModule();
 </script>
 
-<template>
-  <div class="container-fluid py-3 absensi-status">
-    <!-- Header -->
-    <div class="row align-items-center mb-3">
-      <div class="col-md-7">
-        <div class="d-flex align-items-center">
-          <div class="avatar bg-soft-info text-info p-3 rounded-circle me-3">
-            <i class="fas fa-user-clock fa-2x"></i>
-          </div>
-          <div>
-            <h4 class="mb-0 fw-bold">Rekapitulasi Status Kehadiran</h4>
-            <p class="text-muted small mb-0">Rincian ketepatan waktu, keterlambatan, dan status presensi harian pegawai RS</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-5 text-md-end mt-2 mt-md-0">
-        <span class="badge bg-primary px-3 py-2 me-2" id="total-badge-status">0 Catatan</span>
-        <button class="btn btn-outline-secondary btn-sm me-2" id="btn-refresh-status" title="Segarkan Data">
-          <i class="fas fa-sync-alt"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Summary Counter Cards -->
-    <div class="row g-2 mb-3">
-      <div class="col">
-        <div class="card p-2 text-center border-bottom border-3 border-success">
-          <div class="text-muted small">Hadir Tepat Waktu</div>
-          <h4 class="mb-0 fw-bold text-success" id="card-stat-hadir">0</h4>
-        </div>
-      </div>
-      <div class="col">
-        <div class="card p-2 text-center border-bottom border-3 border-warning">
-          <div class="text-muted small">Terlambat</div>
-          <h4 class="mb-0 fw-bold text-warning" id="card-stat-terlambat">0</h4>
-        </div>
-      </div>
-      <div class="col">
-        <div class="card p-2 text-center border-bottom border-3 border-info">
-          <div class="text-muted small">Izin / Cuti</div>
-          <h4 class="mb-0 fw-bold text-info" id="card-stat-izin">0</h4>
-        </div>
-      </div>
-      <div class="col">
-        <div class="card p-2 text-center border-bottom border-3 border-primary">
-          <div class="text-muted small">Sakit</div>
-          <h4 class="mb-0 fw-bold text-primary" id="card-stat-sakit">0</h4>
-        </div>
-      </div>
-      <div class="col">
-        <div class="card p-2 text-center border-bottom border-3 border-danger">
-          <div class="text-muted small">Alpa</div>
-          <h4 class="mb-0 fw-bold text-danger" id="card-stat-alpa">0</h4>
-        </div>
-      </div>
-    </div>
-
-    <!-- Filter & Table Card -->
-    <div class="card shadow-sm mb-4">
-      <div class="card-header bg-white py-3 border-bottom">
-        <div class="row g-2 align-items-end">
-          <!-- Dari Tanggal -->
-          <div class="col-lg-2 col-md-3 col-sm-6">
-            <label class="form-label small fw-semibold text-muted mb-1">Dari Tanggal:</label>
-            <input type="date" class="form-control form-control-sm bg-white" id="filter-tgl-mulai-status" value="2026-04-01">
-          </div>
-
-          <!-- Sampai Tanggal -->
-          <div class="col-lg-2 col-md-3 col-sm-6">
-            <label class="form-label small fw-semibold text-muted mb-1">Sampai Tanggal:</label>
-            <input type="date" class="form-control form-control-sm bg-white" id="filter-tgl-sampai-status" value="2026-04-05">
-          </div>
-
-          <!-- Unit / Bagian -->
-          <div class="col-lg-3 col-md-3 col-sm-6">
-            <label class="form-label small fw-semibold text-muted mb-1">Unit / Bagian:</label>
-            <select class="form-select form-select-sm bg-white" id="filter-bagian-status">
-              <option value="">-- Semua Unit / Bagian --</option>
-            </select>
-          </div>
-
-          <!-- Status -->
-          <div class="col-lg-2 col-md-3 col-sm-6">
-            <label class="form-label small fw-semibold text-muted mb-1">Status:</label>
-            <select class="form-select form-select-sm bg-white" id="filter-tipe-status">
-              <option value="">-- Semua Status --</option>
-              <option value="Hadir">Hadir</option>
-              <option value="Terlambat">Terlambat</option>
-              <option value="Alpa">Alpa</option>
-              <option value="Izin">Izin / Cuti</option>
-              <option value="Libur">Libur</option>
-            </select>
-          </div>
-
-          <!-- Pencarian (Fleksibel mengisi ruang) -->
-          <div class="col-lg col-md col-sm-8">
-            <label class="form-label small fw-semibold text-muted mb-1">Pencarian:</label>
-            <div class="input-group input-group-sm">
-              <span class="input-group-text bg-white border-end-0 text-muted">
-                <i class="fas fa-search"></i>
-              </span>
-              <input type="text" class="form-control form-control-sm bg-white border-start-0" id="search-status" placeholder="Cari pegawai...">
-            </div>
-          </div>
-
-          <!-- Tombol Terapkan (Ukuran pas dan sejajar) -->
-          <div class="col-lg-auto col-md-auto col-sm-4">
-            <button type="button" class="btn btn-primary btn-sm px-4 d-inline-flex align-items-center justify-content-center gap-1 shadow-sm" id="btn-filter-status" title="Filter Data">
-              <i class="fas fa-filter"></i>
-              <span>Terapkan</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-      <div class="card-body p-0">
-        <div class="d-none text-center py-2 bg-light border-bottom" id="loading-status">
-          <span class="spinner-border spinner-border-sm text-primary me-2"></span>Memperbarui data kehadiran...
-        </div>
-        <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
-            <thead>
-              <tr>
-                <th style="width: 40px;" class="text-center">No</th>
-                <th style="width: 105px;">Tanggal</th>
-                <th>Nama Pegawai</th>
-                <th>Unit / Bagian</th>
-                <th>Shift Terjadwal</th>
-                <th style="width: 90px;">Masuk</th>
-                <th style="width: 90px;">Pulang</th>
-                <th style="width: 80px;" class="text-center">Durasi</th>
-                <th style="width: 100px;" class="text-center">Status</th>
-                <th style="width: 95px;" class="text-center">Keterlambatan</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-status">
-              <tr>
-                <td colspan="10" class="text-center py-4 text-muted">
-                  <span class="spinner-border spinner-border-sm me-2"></span>Memuat rincian status kehadiran...
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="card-footer bg-white py-2 border-top d-flex justify-content-between align-items-center">
-        <span class="text-muted small">Menampilkan data presensi terverifikasi mesin biometrik</span>
-        <ul class="pagination pagination-sm mb-0" id="pagination-status"></ul>
-      </div>
-    </div>
-  </div>
-</template>
