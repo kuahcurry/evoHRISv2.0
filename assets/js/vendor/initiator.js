@@ -49,25 +49,76 @@ var handleNavbarVerticalCollapsed = function handleNavbarVerticalCollapsed() {
   var html = document.documentElement;
   var navbarVerticalCollapse = document.getElementById('navbarVerticalCollapse');
 
+  var syncSidebarTooltips = function (isCollapsed) {
+    if (!window.bootstrap || !bootstrap.Tooltip) return;
+    var links = document.querySelectorAll('#navbarVerticalNav .nav-link, #sidebar-menu .nav-link');
+    links.forEach(function (link) {
+      var existing = bootstrap.Tooltip.getInstance(link);
+      if (isCollapsed) {
+        if (!existing) {
+          var titleText = link.getAttribute('data-title');
+          if (!titleText) {
+            var textEl = link.querySelector('.nav-link-text');
+            if (textEl) titleText = textEl.textContent.trim();
+          }
+          if (titleText) {
+            new bootstrap.Tooltip(link, {
+              title: titleText,
+              placement: 'right',
+              trigger: 'hover',
+              container: 'body'
+            });
+          }
+        }
+      } else {
+        if (existing) {
+          existing.dispose();
+          link.removeAttribute('data-bs-original-title');
+          link.removeAttribute('title');
+        }
+      }
+    });
+  };
+
   var toggleSidebar = function () {
     var isCurrentlyCollapsed = html.classList.contains('navbar-vertical-collapsed');
     if (isCurrentlyCollapsed) {
       html.classList.remove('navbar-vertical-collapsed');
       localStorage.setItem('isNavbarVerticalCollapsed', false);
+      syncSidebarTooltips(false);
     } else {
       html.classList.add('navbar-vertical-collapsed');
       localStorage.setItem('isNavbarVerticalCollapsed', true);
+
+      // Close open submenus to prevent stuck state when reopened
+      var openCollapses = document.querySelectorAll('#navbarVerticalNav .collapse.show, #sidebar-menu .collapse.show');
+      openCollapses.forEach(function (el) {
+        if (window.bootstrap && bootstrap.Collapse) {
+          var inst = bootstrap.Collapse.getInstance(el);
+          if (inst) inst.hide();
+          else el.classList.remove('show');
+        } else {
+          el.classList.remove('show');
+        }
+      });
+
+      syncSidebarTooltips(true);
     }
     html.classList.remove('navbar-vertical-collapsed-hover');
     sessionStorage.setItem('sidebar_manually_toggled', 'true');
 
-    window.dispatchEvent(new Event('resize'));
-    window.dispatchEvent(new CustomEvent('navbar.vertical.toggle'));
-    clearTimeout(window.__sidebarResizeTimer);
-    window.__sidebarResizeTimer = setTimeout(function () {
+    // Stagger resize events during the 200ms CSS transition for chart containers
+    var triggerResize = function () {
       window.dispatchEvent(new Event('resize'));
-    }, 230);
+      window.dispatchEvent(new CustomEvent('navbar.vertical.toggle'));
+    };
+    triggerResize();
+    [60, 120, 200, 260].forEach(function (delay) {
+      setTimeout(triggerResize, delay);
+    });
   };
+
+  window.syncSidebarTooltips = syncSidebarTooltips;
 
   var toggleButtons = document.querySelectorAll('.navbar-vertical-toggle, .navbar-top .navbar-toggler');
   toggleButtons.forEach(function (btn) {
@@ -81,9 +132,16 @@ var handleNavbarVerticalCollapsed = function handleNavbarVerticalCollapsed() {
     }
   });
 
-  // Pastikan tidak ada class hover yang tertinggal agar sidebar tetap diam di posisinya (tidak membuka saat kursor lewat)
+  // Clear hover class to keep collapsed sidebar static
   if (navbarVerticalCollapse) {
     html.classList.remove('navbar-vertical-collapsed-hover');
+  }
+
+  // Initialize tooltips if page loads in collapsed state
+  if (html.classList.contains('navbar-vertical-collapsed')) {
+    setTimeout(function () {
+      syncSidebarTooltips(true);
+    }, 400);
   }
 };
 var togglePaginationButtonDisable = function togglePaginationButtonDisable(button, disabled) {

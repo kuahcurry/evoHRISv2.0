@@ -167,6 +167,19 @@
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
+
+        const html = document.documentElement;
+        if (html.classList.contains('navbar-vertical-collapsed')) {
+          html.classList.remove('navbar-vertical-collapsed');
+          localStorage.setItem('isNavbarVerticalCollapsed', false);
+          sessionStorage.setItem('sidebar_manually_toggled', 'true');
+          window.dispatchEvent(new Event('resize'));
+          window.dispatchEvent(new CustomEvent('navbar.vertical.toggle'));
+          if (typeof window.syncSidebarTooltips === 'function') {
+            window.syncSidebarTooltips(false);
+          }
+        }
+
         const targetId = btn.getAttribute('href') || btn.getAttribute('data-bs-target');
         if (targetId && targetId.startsWith('#')) {
           const targetEl = document.querySelector(targetId);
@@ -177,6 +190,10 @@
         }
       });
     });
+
+    if (typeof window.syncSidebarTooltips === 'function' && document.documentElement.classList.contains('navbar-vertical-collapsed')) {
+      setTimeout(() => window.syncSidebarTooltips(true), 150);
+    }
   }
 
   // await renderMenu(true);
