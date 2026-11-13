@@ -1,11 +1,14 @@
 <style>
   :root {
-    --dash-primary: #2c7be5;
-    --dash-success: #00d27a;
-    --dash-warning: #f58029;
-    --dash-danger: #e63757;
-    --dash-info: #27bcfd;
-    --dash-purple: #7c3aed;
+    --dash-primary: #1d4ed8;
+    --dash-primary-ink: #1e40af;
+    --dash-primary-soft: #eff6ff;
+    --dash-slate: #334155;
+    --dash-slate-soft: #f1f5f9;
+    --dash-danger: #b91c1c;
+    --dash-danger-soft: #fef2f2;
+    --dash-chart-blue: #2c7be5;
+    --dash-chart-sky: #0284c7;
   }
 
   .dash-container {
@@ -38,92 +41,124 @@
 
   /* Executive Hero Header */
   .dash-hero-card {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    border-radius: 0.85rem;
+    background-color: #1e3a8a;
+    border-radius: 0.75rem;
     color: #ffffff;
     padding: 1.5rem;
-    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.25);
-    position: relative;
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.12);
   }
-  .dash-hero-card::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    right: -10%;
-    width: 320px;
-    height: 320px;
-    background: radial-gradient(circle, rgba(44, 123, 229, 0.25) 0%, transparent 70%);
-    border-radius: 50%;
-    pointer-events: none;
-  }
-
-  /* Live pulse indicator */
-  .live-pulse-dot {
-    width: 9px;
-    height: 9px;
-    background-color: #00d27a;
-    border-radius: 50%;
-    display: inline-block;
-    box-shadow: 0 0 0 0 rgba(0, 210, 122, 0.7);
-    animation: pulse-ring 1.8s infinite;
-  }
-  @keyframes pulse-ring {
-    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 210, 122, 0.7); }
-    70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(0, 210, 122, 0); }
-    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 210, 122, 0); }
+  .dash-hero-subtitle {
+    color: #e2e8f0;
   }
 
   /* Stat Cards */
   .dash-stat-card {
     border-radius: 0.75rem;
-    border: 1px solid rgba(226, 232, 240, 0.85);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     background: #ffffff;
     height: 100%;
     position: relative;
-    overflow: hidden;
   }
   .dash-stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
   }
-  .dash-stat-card:focus-within {
-    outline: 2px solid #2c7be5;
-    outline-offset: 2px;
+  .dash-stat-danger {
+    border-color: #fecaca;
   }
-
-  /* Top accent indicator */
-  .dash-stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-  }
-  .dash-stat-primary::before { background: linear-gradient(90deg, #2c7be5, #6fa5f0); }
-  .dash-stat-warning::before { background: linear-gradient(90deg, #f58029, #f9b17a); }
-  .dash-stat-danger::before  { background: linear-gradient(90deg, #e63757, #f27289); }
-  .dash-stat-info::before    { background: linear-gradient(90deg, #27bcfd, #72d6fe); }
 
   .stat-icon-bubble {
     width: 48px;
     height: 48px;
-    border-radius: 12px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.35rem;
+    font-size: 1.25rem;
     flex-shrink: 0;
+  }
+  .stat-icon-primary {
+    background-color: var(--dash-primary-soft);
+    color: var(--dash-primary-ink);
+  }
+  .stat-icon-danger {
+    background-color: var(--dash-danger-soft);
+    color: var(--dash-danger);
+  }
+  .stat-icon-slate {
+    background-color: var(--dash-slate-soft);
+    color: var(--dash-slate);
   }
   .stat-number {
     font-size: 2.1rem;
     font-weight: 700;
     line-height: 1.1;
     letter-spacing: -0.02em;
+    color: #0f172a;
+  }
+  .stat-number-danger {
+    color: var(--dash-danger);
+  }
+
+  /* Accessible Buttons & Clear Keyboard Focus */
+  .dash-kpi-btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.5rem 0.9rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+  }
+  .dash-kpi-btn.btn-outline-primary {
+    color: var(--dash-primary-ink);
+    border-color: var(--dash-primary);
+  }
+  .dash-kpi-btn.btn-outline-primary:hover {
+    color: #ffffff;
+    background-color: var(--dash-primary);
+    border-color: var(--dash-primary);
+  }
+  .dash-kpi-btn.btn-outline-danger {
+    color: var(--dash-danger);
+    border-color: var(--dash-danger);
+  }
+  .dash-kpi-btn.btn-outline-danger:hover {
+    color: #ffffff;
+    background-color: var(--dash-danger);
+    border-color: var(--dash-danger);
+  }
+  .dash-kpi-btn.btn-outline-secondary {
+    color: var(--dash-slate);
+    border-color: #94a3b8;
+  }
+  .dash-kpi-btn.btn-outline-secondary:hover {
+    color: #ffffff;
+    background-color: var(--dash-slate);
+    border-color: var(--dash-slate);
+  }
+  .dash-hero-btn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .dash-container .btn:focus-visible,
+  .dash-container .form-control:focus-visible,
+  .quick-action-btn:focus-visible {
+    outline: 2px solid var(--dash-primary) !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(29, 78, 216, 0.16) !important;
+  }
+  .dash-hero-card .btn:focus-visible {
+    outline: 2px solid #ffffff !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.25) !important;
   }
 
   /* Quick action button */
@@ -131,24 +166,29 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    min-height: 54px;
     padding: 0.65rem 0.85rem;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 0.65rem;
     color: #334155;
     text-decoration: none;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
     font-weight: 500;
     cursor: pointer;
     width: 100%;
     text-align: left;
   }
-  .quick-action-btn:hover, .quick-action-btn:focus-visible {
+  .quick-action-btn:hover {
     background: #ffffff;
-    border-color: #2c7be5;
-    box-shadow: 0 4px 12px rgba(44, 123, 229, 0.12);
-    color: #2c7be5;
-    outline: none;
+    border-color: var(--dash-primary);
+    box-shadow: 0 4px 12px rgba(29, 78, 216, 0.10);
+    color: var(--dash-primary-ink);
+  }
+  .quick-action-btn:focus-visible {
+    background: #ffffff;
+    border-color: var(--dash-primary);
+    color: var(--dash-primary-ink);
   }
   .quick-action-btn .qa-icon {
     width: 36px;
@@ -157,16 +197,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     flex-shrink: 0;
+  }
+  .qa-icon-primary {
+    background-color: #dbeafe;
+    color: #1e40af;
   }
 
   /* Analytical Chart Card */
   .dash-chart-card {
     border-radius: 0.75rem;
-    border: 1px solid rgba(226, 232, 240, 0.85);
+    border: 1px solid #e2e8f0;
     background: #ffffff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
     overflow: hidden;
     min-width: 0;
   }
@@ -186,11 +230,11 @@
     background: #e2e8f0;
   }
   .gender-pria {
-    background: #2c7be5;
+    background: #1d4ed8;
     transition: width 0.5s ease;
   }
   .gender-wanita {
-    background: #e63757;
+    background: #64748b;
     transition: width 0.5s ease;
   }
 
@@ -210,15 +254,27 @@
     color: #0369a1;
     border: 1px solid #bae6fd;
   }
-  .badge-contrast-success {
-    background-color: #dcfce7;
-    color: #166534;
-    border: 1px solid #bbf7d0;
+  .badge-contrast-neutral {
+    background-color: #f1f5f9;
+    color: #334155;
+    border: 1px solid #cbd5e1;
   }
   .badge-contrast-primary {
     background-color: #dbeafe;
     color: #1e40af;
     border: 1px solid #bfdbfe;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dash-container *,
+    .dash-container *::before,
+    .dash-container *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+    .dash-stat-card:hover {
+      transform: none;
+    }
   }
 </style>
 
@@ -282,20 +338,20 @@
     const h = now.getHours();
     let shiftName = '';
     let shiftHours = '';
-    let shiftBadgeClass = 'bg-primary';
+    let shiftBadgeClass = 'badge-contrast-primary';
 
     if (h >= 7 && h < 14) {
       shiftName = 'Shift Pagi';
       shiftHours = '07:00 - 14:00';
-      shiftBadgeClass = 'bg-primary';
+      shiftBadgeClass = 'badge-contrast-primary';
     } else if (h >= 14 && h < 21) {
       shiftName = 'Shift Siang';
       shiftHours = '14:00 - 21:00';
-      shiftBadgeClass = 'bg-warning text-dark';
+      shiftBadgeClass = 'badge-contrast-warning';
     } else {
       shiftName = 'Shift Malam';
       shiftHours = '21:00 - 07:00';
-      shiftBadgeClass = 'bg-info text-white';
+      shiftBadgeClass = 'badge-contrast-info';
     }
 
     const elShiftName = document.getElementById('dash-shift-name');
@@ -482,11 +538,8 @@
           type: 'bar',
           data: values,
           itemStyle: {
-            color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [
-              { offset: 0, color: '#2c7be5' },
-              { offset: 1, color: '#6fa5f0' }
-            ]),
-            borderRadius: [0, 5, 5, 0]
+            color: '#2c7be5',
+            borderRadius: [0, 4, 4, 0]
           },
           label: {
             show: true,
@@ -521,7 +574,7 @@
       };
     });
 
-    const colors = ['#2c7be5', '#00d27a', '#f58029', '#e63757', '#7c3aed', '#27bcfd', '#64748b'];
+    const colors = ['#1d4ed8', '#0284c7', '#475569', '#0f766e', '#94a3b8', '#d97706'];
 
     const option = {
       tooltip: {
@@ -623,7 +676,7 @@
     const option = {
       tooltip: {
         trigger: 'axis',
-        formatter: '<div class="p-1">Tahun <strong>{b}</strong><br/><span style="color:#00d27a">●</span> Pegawai Masuk: <strong>{c}</strong> Orang</div>'
+        formatter: '<div class="p-1">Tahun <strong>{b}</strong><br/><span style="color:#1d4ed8">●</span> Pegawai Masuk: <strong>{c}</strong> Orang</div>'
       },
       grid: {
         left: '2%',
@@ -651,18 +704,15 @@
           smooth: true,
           data: counts,
           symbolSize: 8,
-          itemStyle: { color: '#00d27a' },
+          itemStyle: { color: '#1d4ed8' },
           areaStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(0, 210, 122, 0.4)' },
-              { offset: 1, color: 'rgba(0, 210, 122, 0.02)' }
-            ])
+            color: 'rgba(29, 78, 216, 0.12)'
           },
           lineStyle: { width: 3 },
           label: {
             show: true,
             position: 'top',
-            color: '#166534',
+            color: '#1e3a8a',
             fontWeight: 'bold',
             fontSize: 11
           }
@@ -716,10 +766,7 @@
           type: 'bar',
           data: values,
           itemStyle: {
-            color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [
-              { offset: 0, color: '#7c3aed' },
-              { offset: 1, color: '#a78bfa' }
-            ]),
+            color: '#334155',
             borderRadius: [0, 4, 4, 0]
           },
           label: {
@@ -727,7 +774,7 @@
             position: 'right',
             fontSize: 11,
             fontWeight: 'bold',
-            color: '#4c1d95'
+            color: '#1e293b'
           }
         }
       ]
@@ -777,10 +824,7 @@
           type: 'bar',
           data: scans,
           itemStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: '#0284c7' },
-              { offset: 1, color: '#38bdf8' }
-            ]),
+            color: '#0284c7',
             borderRadius: [4, 4, 0, 0]
           }
         }
@@ -1026,22 +1070,21 @@
 <template>
   <div class="dash-container pb-4" role="main" aria-label="Dashboard Eksekutif SDM Rumah Sakit">
     
-    <!-- Hero Banner with Live Hospital Shift & Digital Clock -->
+    <!-- Hero Banner with Hospital Shift & Digital Clock -->
     <div class="dash-hero-card mb-4" role="region" aria-label="Informasi Operasional Rumah Sakit">
       <div class="row align-items-center">
         <div class="col-lg-7 mb-3 mb-lg-0">
           <div class="d-flex align-items-center gap-3">
-            <div class="stat-icon-bubble bg-soft-primary bg-opacity-25 text-white" style="background: rgba(255,255,255,0.12);" aria-hidden="true">
+            <div class="stat-icon-bubble text-white" style="background: rgba(255,255,255,0.14);" aria-hidden="true">
               <i class="fas fa-hospital-alt"></i>
             </div>
             <div>
               <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="live-pulse-dot" aria-hidden="true"></span>
-                <span class="badge bg-success bg-opacity-25 text-white border border-success" style="font-size: 0.72rem; letter-spacing: 0.05em;">SISTEM LIVE</span>
-                <span class="text-white text-opacity-85 small fw-semibold" id="dash-live-date">Memuat tanggal...</span>
+                <i class="far fa-calendar-alt dash-hero-subtitle" aria-hidden="true"></i>
+                <span class="dash-hero-subtitle small fw-semibold" id="dash-live-date">Memuat tanggal...</span>
               </div>
               <h3 class="mb-1 fw-bold text-white">Dashboard Eksekutif SDM & Kepegawaian</h3>
-              <p class="text-white text-opacity-75 small mb-0">Pemantauan tenaga medis, perizinan profesi (STR/SIP), distribusi bagian, dan presensi rumah sakit</p>
+              <p class="dash-hero-subtitle small mb-0">Pemantauan tenaga medis, perizinan profesi (STR/SIP), distribusi bagian, dan presensi rumah sakit</p>
             </div>
           </div>
         </div>
@@ -1050,7 +1093,7 @@
           <div class="d-inline-flex flex-wrap align-items-center justify-content-lg-end gap-2">
             <!-- Digital Clock & Shift Status Bar -->
             <div class="d-flex align-items-center bg-black bg-opacity-30 rounded-pill p-1 pe-3 border border-white border-opacity-15 shadow-sm">
-              <span id="dash-shift-badge" class="badge bg-primary text-white rounded-pill px-3 py-1 fw-bold me-2">
+              <span id="dash-shift-badge" class="badge badge-contrast-primary rounded-pill px-3 py-1 fw-bold me-2">
                 <i class="fas fa-user-md me-1" aria-hidden="true"></i>
                 <span id="dash-shift-name">Shift Pagi</span> (<span id="dash-shift-hours">07:00 - 14:00</span>)
               </span>
@@ -1059,7 +1102,7 @@
               </span>
             </div>
             <!-- Refresh Button -->
-            <button id="btn-refresh-dash" class="btn btn-sm btn-outline-light rounded-pill px-3 shadow-sm" aria-label="Segarkan data statistik dashboard">
+            <button id="btn-refresh-dash" class="btn btn-sm btn-outline-light rounded-pill px-3 shadow-sm dash-hero-btn" aria-label="Segarkan data statistik dashboard">
               <i class="fas fa-sync-alt me-1" aria-hidden="true"></i> Segarkan
             </button>
           </div>
@@ -1068,7 +1111,7 @@
     </div>
 
     <!-- Alert Banner (Appears dynamically if STR/SIP Expiring) -->
-    <div id="dash-alert-banner" class="alert d-flex align-items-center justify-content-between p-3 mb-4 shadow-sm border-0 d-none" role="alert" style="border-radius: 0.75rem; background-color: #fee2e2; border-left: 4px solid #dc2626 !important;">
+    <div id="dash-alert-banner" class="alert d-flex flex-wrap align-items-center justify-content-between gap-3 p-3 mb-4 shadow-sm border-0 d-none" role="alert" style="border-radius: 0.75rem; background-color: #fee2e2; border-left: 4px solid #b91c1c !important;">
       <div class="d-flex align-items-center gap-3">
         <div class="stat-icon-bubble bg-danger text-white shadow-sm" style="width: 40px; height: 40px; font-size: 1.1rem;" aria-hidden="true">
           <i class="fas fa-exclamation-triangle"></i>
@@ -1078,7 +1121,7 @@
           <span class="small" style="color: #7f1d1d;" id="dash-alert-banner-msg">Terdapat dokumen STR/SIP yang akan kedaluwarsa.</span>
         </div>
       </div>
-      <button class="btn btn-sm btn-danger px-3 shadow-sm fw-semibold" id="btn-banner-str-sip" aria-label="Periksa daftar STR dan SIP yang akan berakhir">
+      <button class="btn btn-sm btn-danger px-3 shadow-sm fw-semibold dash-hero-btn" id="btn-banner-str-sip" aria-label="Periksa daftar STR dan SIP yang akan berakhir">
         <i class="fas fa-id-card-alt me-1" aria-hidden="true"></i> Periksa Sekarang
       </button>
     </div>
@@ -1104,7 +1147,7 @@
           <div class="row g-2">
             <div class="col-sm-3 col-6">
               <button class="quick-action-btn" data-jump-module="/staff_rs/pegawai" aria-label="Buka Direktori Pegawai">
-                <div class="qa-icon bg-soft-primary text-primary">
+                <div class="qa-icon qa-icon-primary">
                   <i class="fas fa-user-friends" aria-hidden="true"></i>
                 </div>
                 <div class="text-truncate">
@@ -1115,7 +1158,7 @@
             </div>
             <div class="col-sm-3 col-6">
               <button class="quick-action-btn" data-jump-module="/absensi/rekap" aria-label="Buka Rekap Kehadiran">
-                <div class="qa-icon bg-soft-info text-info">
+                <div class="qa-icon qa-icon-primary">
                   <i class="fas fa-calendar-check" aria-hidden="true"></i>
                 </div>
                 <div class="text-truncate">
@@ -1126,7 +1169,7 @@
             </div>
             <div class="col-sm-3 col-6">
               <button class="quick-action-btn" data-jump-module="/payroll/gaji" aria-label="Buka Penggajian">
-                <div class="qa-icon bg-soft-success text-success">
+                <div class="qa-icon qa-icon-primary">
                   <i class="fas fa-money-check-alt" aria-hidden="true"></i>
                 </div>
                 <div class="text-truncate">
@@ -1137,7 +1180,7 @@
             </div>
             <div class="col-sm-3 col-6">
               <button class="quick-action-btn" data-jump-module="/kinerja/target_skp" aria-label="Buka Kinerja SKP">
-                <div class="qa-icon text-white" style="background-color: #7c3aed;">
+                <div class="qa-icon qa-icon-primary">
                   <i class="fas fa-chart-line" aria-hidden="true"></i>
                 </div>
                 <div class="text-truncate">
@@ -1156,20 +1199,20 @@
       
       <!-- Card 1: Total Pegawai & Gender Ratio -->
       <div class="col-sm-6 col-xl-3">
-        <div class="card dash-stat-card dash-stat-primary p-3">
+        <div class="card dash-stat-card p-3">
           <div class="d-flex justify-content-between align-items-start mb-2">
             <div>
               <span class="text-uppercase text-muted fw-bold" style="font-size: 0.72rem; letter-spacing: 0.05em;">Total Tenaga Kerja</span>
-              <div class="stat-number mt-1 text-primary" id="dash-total-pegawai" aria-live="polite">0</div>
+              <div class="stat-number mt-1" id="dash-total-pegawai" aria-live="polite">0</div>
             </div>
-            <div class="stat-icon-bubble bg-soft-primary" aria-hidden="true">
+            <div class="stat-icon-bubble stat-icon-primary" aria-hidden="true">
               <i class="fas fa-hospital-user"></i>
             </div>
           </div>
           <div class="mt-3">
             <div class="d-flex justify-content-between text-muted small mb-1" style="font-size: 0.78rem;">
-              <span><i class="fas fa-mars text-primary me-1" aria-hidden="true"></i>Pria: <b id="dash-badge-pria" class="text-dark">-</b></span>
-              <span><i class="fas fa-venus text-danger me-1" aria-hidden="true"></i>Wanita: <b id="dash-badge-wanita" class="text-dark">-</b></span>
+              <span><i class="fas fa-mars me-1" style="color: #1d4ed8;" aria-hidden="true"></i>Pria: <b id="dash-badge-pria" class="text-dark">-</b></span>
+              <span><i class="fas fa-venus me-1" style="color: #475569;" aria-hidden="true"></i>Wanita: <b id="dash-badge-wanita" class="text-dark">-</b></span>
             </div>
             <div class="gender-bar d-flex" title="Rasio Gender" aria-label="Rasio Gender">
               <div class="gender-pria" id="dash-bar-pria" style="width: 50%;"></div>
@@ -1186,19 +1229,19 @@
             <div>
               <span class="text-uppercase text-muted fw-bold" style="font-size: 0.72rem; letter-spacing: 0.05em;">Peringatan STR & SIP</span>
               <div class="d-flex align-items-baseline gap-2 mt-1">
-                <span class="stat-number text-danger" id="dash-alert-expiring" aria-live="polite">0</span>
+                <span class="stat-number stat-number-danger" id="dash-alert-expiring" aria-live="polite">0</span>
                 <span class="badge badge-contrast-danger fw-semibold" style="font-size: 0.7rem;">≤ 6 Bulan</span>
               </div>
             </div>
-            <div class="stat-icon-bubble bg-soft-danger" aria-hidden="true">
+            <div class="stat-icon-bubble stat-icon-danger" aria-hidden="true">
               <i class="fas fa-id-card-alt"></i>
             </div>
           </div>
-          <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-auto pt-2 border-top">
             <span class="text-muted small" style="font-size: 0.78rem;" id="dash-sub-expiring">
               STR: 0 | SIP: 0
             </span>
-            <button class="btn btn-xs btn-outline-danger py-1 px-2 fw-semibold" id="btn-view-str-sip" style="font-size: 0.75rem;" aria-haspopup="dialog" aria-label="Buka rincian STR dan SIP yang mendekati kedaluwarsa">
+            <button class="btn btn-outline-danger dash-kpi-btn" id="btn-view-str-sip" aria-haspopup="dialog" aria-label="Buka rincian STR dan SIP yang mendekati kedaluwarsa">
               Lihat Detail
             </button>
           </div>
@@ -1207,24 +1250,24 @@
 
       <!-- Card 3: Ulang Tahun Pegawai -->
       <div class="col-sm-6 col-xl-3">
-        <div class="card dash-stat-card dash-stat-warning p-3">
+        <div class="card dash-stat-card p-3">
           <div class="d-flex justify-content-between align-items-start mb-2">
             <div>
               <span class="text-uppercase text-muted fw-bold" style="font-size: 0.72rem; letter-spacing: 0.05em;">Ulang Tahun Pegawai</span>
               <div class="d-flex align-items-baseline gap-2 mt-1">
-                <span class="stat-number text-warning" id="dash-ultah-hari" aria-live="polite">0</span>
+                <span class="stat-number" id="dash-ultah-hari" aria-live="polite">0</span>
                 <span class="text-muted small fw-semibold">Hari Ini</span>
               </div>
             </div>
-            <div class="stat-icon-bubble bg-soft-warning" aria-hidden="true">
+            <div class="stat-icon-bubble stat-icon-primary" aria-hidden="true">
               <i class="fas fa-birthday-cake"></i>
             </div>
           </div>
-          <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-auto pt-2 border-top">
             <span class="text-muted small" style="font-size: 0.78rem;">
               Bulan ini: <b class="text-dark" id="dash-ultah-bulan">0</b> pegawai
             </span>
-            <button class="btn btn-xs btn-outline-warning py-1 px-2 fw-semibold text-dark" id="btn-view-ultah" style="font-size: 0.75rem;" aria-haspopup="dialog" aria-label="Buka daftar pegawai ulang tahun bulan ini">
+            <button class="btn btn-outline-primary dash-kpi-btn" id="btn-view-ultah" aria-haspopup="dialog" aria-label="Buka daftar pegawai ulang tahun bulan ini">
               Lihat Daftar
             </button>
           </div>
@@ -1233,21 +1276,21 @@
 
       <!-- Card 4: Masa Pensiun -->
       <div class="col-sm-6 col-xl-3">
-        <div class="card dash-stat-card dash-stat-info p-3">
+        <div class="card dash-stat-card p-3">
           <div class="d-flex justify-content-between align-items-start mb-2">
             <div>
               <span class="text-uppercase text-muted fw-bold" style="font-size: 0.72rem; letter-spacing: 0.05em;">Masa Pensiun (≥56 Thn)</span>
-              <div class="stat-number mt-1 text-info" id="dash-pensiun" aria-live="polite">0</div>
+              <div class="stat-number mt-1" id="dash-pensiun" aria-live="polite">0</div>
             </div>
-            <div class="stat-icon-bubble bg-soft-info" aria-hidden="true">
+            <div class="stat-icon-bubble stat-icon-slate" aria-hidden="true">
               <i class="fas fa-user-clock"></i>
             </div>
           </div>
-          <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-auto pt-2 border-top">
             <span class="text-muted small" style="font-size: 0.78rem;">
               Perencanaan Suksesi
             </span>
-            <button class="btn btn-xs btn-outline-info py-1 px-2 fw-semibold" id="btn-view-pensiun" style="font-size: 0.75rem;" aria-haspopup="dialog" aria-label="Buka daftar pegawai mendekati masa pensiun">
+            <button class="btn btn-outline-secondary dash-kpi-btn" id="btn-view-pensiun" aria-haspopup="dialog" aria-label="Buka daftar pegawai mendekati masa pensiun">
               Lihat Daftar
             </button>
           </div>
@@ -1280,7 +1323,7 @@
               <h6 class="mb-0 fw-bold text-dark">Status Hubungan Kerja</h6>
               <span class="text-muted small">Komposisi status pegawai</span>
             </div>
-            <span class="badge badge-contrast-success px-2 py-1"><i class="fas fa-id-badge me-1" aria-hidden="true"></i>Status</span>
+            <span class="badge badge-contrast-neutral px-2 py-1"><i class="fas fa-id-badge me-1" aria-hidden="true"></i>Status</span>
           </div>
           <div id="chart-status-pegawai" class="dash-chart-container" style="height: 360px;" role="img" aria-label="Grafik donat komposisi status kepegawaian"></div>
         </div>
@@ -1297,7 +1340,7 @@
               <h6 class="mb-0 fw-bold text-dark">Tren Penerimaan & Pertumbuhan SDM</h6>
               <span class="text-muted small">Historis pegawai bergabung dari tahun ke tahun</span>
             </div>
-            <span class="badge badge-contrast-success px-2 py-1"><i class="fas fa-chart-line me-1" aria-hidden="true"></i>Perekrutan</span>
+            <span class="badge badge-contrast-primary px-2 py-1"><i class="fas fa-chart-line me-1" aria-hidden="true"></i>Perekrutan</span>
           </div>
           <div id="chart-pertumbuhan" class="dash-chart-container" style="height: 310px;" role="img" aria-label="Grafik garis tren penerimaan staf SDM rumah sakit dari tahun ke tahun"></div>
         </div>
@@ -1311,7 +1354,7 @@
               <h6 class="mb-0 fw-bold text-dark">Distribusi Kualifikasi Akademik</h6>
               <span class="text-muted small">Jenjang pendidikan tenaga medis & penunjang</span>
             </div>
-            <span class="badge px-2 py-1 text-white" style="background-color: #7c3aed;"><i class="fas fa-graduation-cap me-1" aria-hidden="true"></i>Pendidikan</span>
+            <span class="badge badge-contrast-neutral px-2 py-1"><i class="fas fa-graduation-cap me-1" aria-hidden="true"></i>Pendidikan</span>
           </div>
           <div id="chart-pendidikan" class="dash-chart-container" style="height: 310px;" role="img" aria-label="Grafik batang jenjang kualifikasi pendidikan pegawai"></div>
         </div>
