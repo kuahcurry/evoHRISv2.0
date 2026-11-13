@@ -160,8 +160,15 @@ $routes->match(['post', 'delete'], '/pegawai/catatan/delete', 'Pegawai::delete_c
 $routes->match(['post', 'delete'], '/pegawai/catatan/delete/(:segment)', 'Pegawai::delete_catatan/$1');
 
 $routes->get('/pegawai/cuti', 'Pegawai::cuti');
+$routes->get('/pegawai/cuti/sisa', 'Pegawai::sisa_cuti');
+$routes->get('/pegawai/cuti/monitoring', 'Pegawai::monitoring_cuti');
+$routes->post('/pegawai/cuti', 'Pegawai::save_cuti');
 $routes->post('/pegawai/cuti/save', 'Pegawai::save_cuti');
-$routes->post('/pegawai/cuti/delete/(:segment)', 'Pegawai::delete_cuti/$1');
+$routes->post('/pegawai/cuti/approve-hrd', 'Pegawai::approve_cuti_hrd');
+$routes->post('/pegawai/cuti/reject-hrd', 'Pegawai::reject_cuti_hrd');
+$routes->post('/pegawai/cuti/action-hrd', 'Pegawai::action_cuti_hrd');
+$routes->match(['post', 'delete'], '/pegawai/cuti/delete', 'Pegawai::delete_cuti');
+$routes->match(['post', 'delete'], '/pegawai/cuti/delete/(:segment)', 'Pegawai::delete_cuti/$1');
 
 // Modul Kepegawaian Modern (cTambahPegawai & cPegawai)
 $routes->get('/cTambahPegawai', 'cTambahPegawai::index');
@@ -259,6 +266,13 @@ $routes->get('/absensi/lembur', 'Absensi::getLembur');
 $routes->get('/absensi/apel', 'Absensi::getApel');
 $routes->get('/absensi/log-mesin', 'Absensi::getLogMesin');
 $routes->get('/absensi/log-detail', 'Absensi::getLogDetail');
+$routes->get('/absensi/rekap-data', 'Absensi::getRekapData');
+$routes->match(['get', 'post'], '/absensi/cetak-rekap', 'Absensi::cetakRekap');
+$routes->match(['get', 'post'], '/absensi/cetak-cuti-tahun', 'Absensi::cetakCutiTahun');
+$routes->match(['get', 'post'], '/absensi/cetak-cuti-bulan', 'Absensi::cetakCutiBulan');
+$routes->match(['get', 'post'], '/absensi/cetak-ijin-tahun', 'Absensi::cetakIjinTahun');
+$routes->match(['get', 'post'], '/absensi/cetak-ijin-bulan', 'Absensi::cetakIjinBulan');
+$routes->match(['get', 'post'], '/absensi/cetak-lembur', 'Absensi::cetakLembur');
 
 // eKinerja Modernized Endpoints
 $routes->get('/kinerja/master', 'Kinerja::getMaster');

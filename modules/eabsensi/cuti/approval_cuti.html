@@ -1,0 +1,306 @@
+<style>
+  .evo-approval-card {
+    border-radius: 0.65rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    background: #fff;
+    border: 1px solid #edf2f9;
+  }
+  .table-approval th {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 700;
+    color: #5e6e82;
+    background-color: #f9fafd;
+    vertical-align: middle;
+    white-space: nowrap;
+    border-bottom: 2px solid #edf2f9;
+    padding: 0.6rem 0.75rem;
+  }
+  .table-approval td {
+    font-size: 0.82rem;
+    vertical-align: middle;
+    padding: 0.55rem 0.75rem;
+  }
+  .table-approval tbody tr:hover {
+    background-color: #f8fafc;
+  }
+  .filter-pill-btn {
+    border-radius: 20px;
+    font-size: 0.76rem;
+    padding: 0.28rem 0.85rem;
+    transition: all 0.2s ease;
+  }
+</style>
+
+<template>
+  <div class="container-fluid py-3" id="page-approval-cuti-container">
+    <!-- Breadcrumb & Header Title -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <div>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-1 fs--2">
+            <li class="breadcrumb-item"><a href="#" class="text-decoration-none">E-Absensi</a></li>
+            <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Cuti</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Approval Cuti</li>
+          </ol>
+        </nav>
+        <h4 class="mb-0 text-primary fw-bold">
+          <i class="fas fa-clipboard-list me-2"></i>Daftar Pengajuan Cuti Pegawai
+        </h4>
+      </div>
+      <div>
+        <span class="badge bg-soft-primary text-primary px-3 py-2 fs--1 rounded-pill">
+          <i class="fas fa-database me-1"></i> Data Pemohon Cuti
+        </span>
+      </div>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div class="card evo-approval-card mb-3">
+      <div class="card-body py-2 px-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <!-- Filter Kategori Status -->
+          <div class="d-flex flex-wrap align-items-center gap-1" id="filter-status-group">
+            <button type="button" class="btn btn-sm btn-primary filter-pill-btn active" data-status="all">
+              Semua (<span id="count-all">0</span>)
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-warning filter-pill-btn" data-status="0">
+              Menunggu (<span id="count-menunggu">0</span>)
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-success filter-pill-btn" data-status="1">
+              Disetujui (<span id="count-disetujui">0</span>)
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger filter-pill-btn" data-status="2">
+              Ditolak (<span id="count-ditolak">0</span>)
+            </button>
+          </div>
+
+          <!-- Input Pencarian & Refresh -->
+          <div class="d-flex align-items-center gap-2">
+            <div class="input-group input-group-sm" style="max-width: 280px;">
+              <span class="input-group-text bg-light"><i class="fas fa-search text-muted"></i></span>
+              <input type="text" id="input_search_approval" class="form-control" placeholder="Cari NIP, Nama, Unit...">
+            </div>
+            <button type="button" id="btn-refresh-approval" class="btn btn-falcon-default btn-sm" title="Segarkan Data">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABEL DATA CUTI PEGAWAI (READ-ONLY) -->
+    <div class="card evo-approval-card mb-4">
+      <div class="card-header bg-white py-3 px-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+          <h6 class="mb-0 fw-bold text-700">
+            <i class="fas fa-table text-primary me-2"></i>Daftar Pegawai yang Mengajukan / Memperoleh Cuti
+          </h6>
+          <small class="text-muted fs--2" id="approval-counter">Memuat data cuti...</small>
+        </div>
+        <div class="text-muted fs--2">
+          <i class="fas fa-info-circle me-1"></i>Hak persetujuan dan penolakan cuti dikelola oleh HRD
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover table-striped table-approval mb-0" id="table-daftar-cuti">
+            <thead>
+              <tr>
+                <th class="text-center" style="width: 40px;">#</th>
+                <th>NIP</th>
+                <th>Nama Pegawai</th>
+                <th>Jenis Cuti</th>
+                <th>Tgl Mulai</th>
+                <th>Tgl Sampai</th>
+                <th class="text-center">Lama</th>
+                <th>Bagian / Unit</th>
+                <th>Keperluan</th>
+                <th class="text-center">Status HRD</th>
+                <th>Catatan HRD</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-approval-cuti">
+              <tr>
+                <td colspan="11" class="text-center py-5 text-muted">
+                  <span class="spinner-border spinner-border-sm me-2"></span>Memuat data cuti dari sistem...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</template>
+
+<script type="module" defer>
+  import { httpGet } from './assets/js/core/http.js';
+
+  const apiUrl = (typeof config !== 'undefined' && config.api_url)
+    ? config.api_url
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  let fullCutiData = [];
+  let currentStatusFilter = 'all';
+
+  async function loadApprovalData(keyword = '') {
+    const tbody = document.getElementById('tbody-approval-cuti');
+    if (!tbody) return;
+    tbody.innerHTML = `<tr><td colspan="11" class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data cuti dari sistem...</td></tr>`;
+
+    try {
+      let queryParam = keyword ? `?keyword=${encodeURIComponent(keyword)}` : '';
+      const res = await httpGet(`${apiUrl}/pegawai/cuti${queryParam}`);
+      fullCutiData = (res && res.data && Array.isArray(res.data)) ? res.data : [];
+
+      updateStatusCounters(fullCutiData);
+      renderTable();
+    } catch (err) {
+      console.error(err);
+      tbody.innerHTML = `<tr><td colspan="11" class="text-center py-4 text-danger">Gagal memuat data cuti dari server.</td></tr>`;
+    }
+  }
+
+  function updateStatusCounters(data) {
+    let totalAll = data.length;
+    let totalMenunggu = 0;
+    let totalDisetujui = 0;
+    let totalDitolak = 0;
+
+    data.forEach(item => {
+      const appr = parseInt(item.APPROVAL_HRD || 0, 10);
+      if (appr === 1) {
+        totalDisetujui++;
+      } else if (appr === 2) {
+        totalDitolak++;
+      } else {
+        totalMenunggu++;
+      }
+    });
+
+    const elAll = document.getElementById('count-all');
+    const elMenunggu = document.getElementById('count-menunggu');
+    const elDisetujui = document.getElementById('count-disetujui');
+    const elDitolak = document.getElementById('count-ditolak');
+
+    if (elAll) elAll.textContent = totalAll;
+    if (elMenunggu) elMenunggu.textContent = totalMenunggu;
+    if (elDisetujui) elDisetujui.textContent = totalDisetujui;
+    if (elDitolak) elDitolak.textContent = totalDitolak;
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('tbody-approval-cuti');
+    if (!tbody) return;
+
+    let filtered = fullCutiData;
+    if (currentStatusFilter !== 'all') {
+      const targetStatus = parseInt(currentStatusFilter, 10);
+      filtered = fullCutiData.filter(item => {
+        const appr = parseInt(item.APPROVAL_HRD || 0, 10);
+        return appr === targetStatus;
+      });
+    }
+
+    const counterEl = document.getElementById('approval-counter');
+    if (counterEl) {
+      counterEl.textContent = `Menampilkan ${filtered.length} dari total ${fullCutiData.length} data cuti pegawai`;
+    }
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="11" class="text-center py-5 text-muted">
+            <i class="fas fa-inbox fa-2x mb-2 d-block text-300"></i>
+            Tidak ada data pengajuan cuti yang sesuai dengan kriteria.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    let rowsHtml = '';
+    filtered.forEach((item, idx) => {
+      const lama = item.LAMA || '-';
+      const nama = item.NAMA_PEGAWAI || item.NAMA || '-';
+      const bagian = item.BAGIAN || '-';
+      const jenis = item.JENIS_CUTI || item.NAMA_JENIS_CUTI || '-';
+      const nip = item.NIP || '-';
+      const tglMulai = item.TANGGAL_MULAI || '-';
+      const tglSampai = item.TANGGAL_SAMPAI || '-';
+      const keperluan = item.KEPERLUAN || '-';
+      const catatanHrd = item.CATATAN_HRD || '-';
+
+      const apprHrd = parseInt(item.APPROVAL_HRD || 0, 10);
+      let statusBadge = '<span class="badge bg-soft-warning text-warning"><i class="fas fa-clock me-1"></i>Menunggu HRD</span>';
+      if (apprHrd === 1) {
+        statusBadge = '<span class="badge bg-soft-success text-success"><i class="fas fa-check-circle me-1"></i>Disetujui HRD</span>';
+      } else if (apprHrd === 2) {
+        statusBadge = '<span class="badge bg-soft-danger text-danger"><i class="fas fa-times-circle me-1"></i>Ditolak HRD</span>';
+      }
+
+      rowsHtml += `
+        <tr>
+          <td class="text-center text-muted fw-bold">${idx + 1}</td>
+          <td><span class="badge bg-light text-dark font-monospace">${nip}</span></td>
+          <td class="fw-semi-bold text-dark">${nama}</td>
+          <td><span class="badge bg-soft-primary text-primary">${jenis}</span></td>
+          <td>${tglMulai}</td>
+          <td>${tglSampai}</td>
+          <td class="text-center fw-bold">${lama} Hari</td>
+          <td>${bagian}</td>
+          <td class="text-truncate" style="max-width: 180px;" title="${keperluan}">${keperluan}</td>
+          <td class="text-center">${statusBadge}</td>
+          <td class="text-muted fs--2" style="max-width: 180px;">${catatanHrd}</td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = rowsHtml;
+  }
+
+  // Filter Status Buttons
+  document.querySelectorAll('#filter-status-group button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#filter-status-group button').forEach(b => {
+        b.classList.remove('active');
+        if (b.dataset.status === 'all') b.className = 'btn btn-sm btn-outline-primary filter-pill-btn';
+        if (b.dataset.status === '0') b.className = 'btn btn-sm btn-outline-warning filter-pill-btn';
+        if (b.dataset.status === '1') b.className = 'btn btn-sm btn-outline-success filter-pill-btn';
+        if (b.dataset.status === '2') b.className = 'btn btn-sm btn-outline-danger filter-pill-btn';
+      });
+
+      btn.classList.add('active');
+      if (btn.dataset.status === 'all') btn.className = 'btn btn-sm btn-primary filter-pill-btn active';
+      if (btn.dataset.status === '0') btn.className = 'btn btn-sm btn-warning filter-pill-btn active';
+      if (btn.dataset.status === '1') btn.className = 'btn btn-sm btn-success filter-pill-btn active';
+      if (btn.dataset.status === '2') btn.className = 'btn btn-sm btn-danger filter-pill-btn active';
+
+      currentStatusFilter = btn.dataset.status;
+      renderTable();
+    });
+  });
+
+  // Pencarian dengan Debounce
+  let searchDebounce = null;
+  document.getElementById('input_search_approval')?.addEventListener('input', (e) => {
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(() => {
+      loadApprovalData(e.target.value.trim());
+    }, 300);
+  });
+
+  // Refresh
+  document.getElementById('btn-refresh-approval')?.addEventListener('click', () => {
+    const input = document.getElementById('input_search_approval');
+    if (input) input.value = '';
+    loadApprovalData();
+  });
+
+  // Initial Load
+  loadApprovalData();
+</script>

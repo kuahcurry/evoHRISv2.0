@@ -1,0 +1,558 @@
+<style>
+  /* Styling EvoSelector Searchable Dropdown */
+  div[data-role="selector"] {
+    position: relative;
+    width: 100%;
+    pointer-events: auto !important;
+  }
+  div[data-role="selector"] > input.form-control,
+  div[data-role="selector"] > input.dropdown-toggle {
+    background-color: #ffffff !important;
+    color: #1e293b !important;
+    border: 1px solid #cbd5e1 !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    display: block !important;
+    visibility: visible !important;
+    font-size: 0.8125rem;
+    padding-right: 26px;
+  }
+  div[data-role="selector"] > input.dropdown-toggle::after {
+    display: none !important;
+  }
+  div[data-role="selector"] > span.fa-chevron-down,
+  div[data-role="selector"] > span.fa-solid,
+  div[data-role="selector"] > svg {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    font-size: 11px;
+    color: #748194;
+    pointer-events: none;
+    z-index: 2;
+  }
+  div[data-role="selector"] > a[href="#!selectorclose"] {
+    position: absolute;
+    top: 50%;
+    right: 24px;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: #e63757;
+    z-index: 3;
+    text-decoration: none;
+  }
+  div[data-role="selector"] .dropdown-menu {
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border-radius: 0.375rem;
+    z-index: 1060 !important;
+    max-height: 260px;
+    overflow-y: auto !important;
+    width: 100% !important;
+  }
+  div[data-role="selector"] .dropdown-item {
+    font-size: 0.8125rem;
+    padding: 0.4rem 0.75rem;
+    cursor: pointer;
+    white-space: normal;
+  }
+  div[data-role="selector"] .dropdown-item:hover,
+  div[data-role="selector"] .dropdown-item:focus {
+    background-color: #edf2f9;
+    color: #2c7be5;
+  }
+
+  /* Table styling */
+  .table-rekap th {
+    background-color: #f1f5f9;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: #334155;
+    white-space: nowrap;
+    vertical-align: middle;
+    border-bottom: 2px solid #cbd5e1;
+  }
+  .table-rekap td {
+    font-size: 0.8125rem;
+    vertical-align: middle;
+  }
+  .nowrap {
+    white-space: nowrap;
+  }
+</style>
+
+<template id="template-vrekaplaporan">
+  <div class="container-fluid p-0">
+    <!-- Header Page -->
+    <div class="card shadow-sm border-0 mb-3">
+      <div class="card-body p-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+          <h4 class="mb-1 text-dark fw-bold">
+            <i class="fas fa-file-invoice text-primary me-2"></i>Rekap Laporan Kepegawaian & Kehadiran
+          </h4>
+          <p class="text-muted small mb-0">
+            Laporan rekapitulasi Cuti, Ijin, dan Lembur pegawai RSUD Bobong dengan format standar resmi A4
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card shadow-sm border-0 mb-3">
+      <div class="card-header bg-light py-2 border-bottom">
+        <h6 class="mb-0 fw-bold text-700">
+          <i class="fas fa-filter text-secondary me-1"></i> Filter Data Laporan
+        </h6>
+      </div>
+      <div class="card-body p-3">
+        <div class="row g-3">
+          <!-- BAGIAN -->
+          <div class="col-md-4">
+            <label class="form-label fs--1 fw-bold text-700 mb-1">BAGIAN :</label>
+            <div id="sel_bagian" placeholder="--Pilih--"></div>
+            <div class="form-text fs--2 text-muted">Pilih unit/bagian atau pilih semua</div>
+          </div>
+
+          <!-- TAHUN -->
+          <div class="col-md-4">
+            <label class="form-label fs--1 fw-bold text-700 mb-1">Tahun :</label>
+            <div id="sel_tahun" placeholder="--Pilih Tahun--"></div>
+            <div class="form-text fs--2 text-muted">Pilih tahun periode laporan</div>
+          </div>
+
+          <!-- BULAN -->
+          <div class="col-md-4">
+            <label class="form-label fs--1 fw-bold text-700 mb-1">Bulan :</label>
+            <div id="sel_bulan" placeholder="--Pilih Bulan--"></div>
+            <div class="form-text fs--2 text-muted">Pilih bulan (wajib untuk laporan bulanan)</div>
+          </div>
+        </div>
+
+        <hr class="my-3 text-200">
+
+        <!-- 5 Action Buttons -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <div class="d-flex flex-wrap gap-2">
+            <!-- 1. Cetak cuti pertahun -->
+            <button class="btn btn-falcon-default btn-sm text-primary fw-semi-bold" id="btn-cetak-cuti-tahun" type="button">
+              <i class="fas fa-print me-1 text-primary"></i> Cetak cuti pertahun
+            </button>
+
+            <!-- 2. Cetak cuti perbulan -->
+            <button class="btn btn-falcon-primary btn-sm fw-semi-bold" id="btn-cetak-cuti-bulan" type="button">
+              <i class="fas fa-print me-1"></i> Cetak cuti perbulan
+            </button>
+
+            <!-- 3. Cetak Ijin Pertahun -->
+            <button class="btn btn-falcon-default btn-sm text-info fw-semi-bold" id="btn-cetak-ijin-tahun" type="button">
+              <i class="fas fa-print me-1 text-info"></i> Cetak Ijin Pertahun
+            </button>
+
+            <!-- 4. Cetak ijin perbulan -->
+            <button class="btn btn-falcon-info btn-sm fw-semi-bold" id="btn-cetak-ijin-bulan" type="button">
+              <i class="fas fa-print me-1"></i> Cetak ijin perbulan
+            </button>
+
+            <!-- 5. Cetak lembur -->
+            <button class="btn btn-falcon-warning btn-sm fw-semi-bold text-warning-dark" id="btn-cetak-lembur" type="button">
+              <i class="fas fa-print me-1"></i> Cetak lembur
+            </button>
+          </div>
+
+          <!-- Tombol Tampilkan Pratinjau -->
+          <div>
+            <button class="btn btn-outline-secondary btn-sm" id="btn-preview-data" type="button">
+              <i class="fas fa-search me-1"></i> Tampilkan Pratinjau
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pratinjau Data Tabular -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-white py-2 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <span class="fas fa-table text-primary"></span>
+          <h6 class="mb-0 fw-bold" id="preview-title">Pratinjau Data Laporan</h6>
+          <span class="badge badge-soft-primary" id="preview-badge">Cuti Tahunan</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="fs--2 text-muted" id="preview-count">0 Data Ditemukan</span>
+        </div>
+      </div>
+
+      <!-- Quick Switcher Tabs for Preview -->
+      <div class="bg-light px-3 py-2 border-bottom">
+        <div class="btn-group btn-group-sm" role="group">
+          <button type="button" class="btn btn-sm btn-outline-primary active" id="tab-prev-cuti">Cuti</button>
+          <button type="button" class="btn btn-sm btn-outline-primary" id="tab-prev-ijin">Ijin</button>
+          <button type="button" class="btn btn-sm btn-outline-primary" id="tab-prev-lembur">Lembur</button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover table-striped align-middle mb-0 table-rekap" id="table-rekap-preview">
+          <thead id="thead-rekap">
+            <!-- Headers generated by JS -->
+          </thead>
+          <tbody id="tbody-rekap">
+            <tr>
+              <td colspan="9" class="text-center py-4 text-muted">
+                <i class="fas fa-info-circle me-1"></i> Silakan pilih filter lalu klik salah satu tombol <strong>Cetak</strong> atau <strong>Tampilkan Pratinjau</strong>.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card-footer bg-light py-2 d-flex justify-content-between align-items-center">
+        <span class="fs--2 text-muted" id="rekap-footer-info">Status: Siap</span>
+        <div id="rekap-summary-badge"></div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+  import EvoSelector from './components/EvoSelector.js';
+
+  const apiUrl = (typeof config !== 'undefined' && config.api_url)
+    ? config.api_url
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  let selBagian = null;
+  let selTahun = null;
+  let selBulan = null;
+  let currentPreviewType = 'cuti_tahun';
+
+  const namaBulanIndo = [
+    { text: '--Pilih Bulan--', value: '-' },
+    { text: 'Januari', value: '1' },
+    { text: 'Februari', value: '2' },
+    { text: 'Maret', value: '3' },
+    { text: 'April', value: '4' },
+    { text: 'Mei', value: '5' },
+    { text: 'Juni', value: '6' },
+    { text: 'Juli', value: '7' },
+    { text: 'Agustus', value: '8' },
+    { text: 'September', value: '9' },
+    { text: 'Oktober', value: '10' },
+    { text: 'November', value: '11' },
+    { text: 'Desember', value: '12' }
+  ];
+
+  // Inisialisasi Selector
+  function initSelectors() {
+    // 1. Selector Bagian
+    selBagian = new EvoSelector('sel_bagian', [
+      { text: '--Pilih--', value: '-' },
+      { text: 'Semua Bagian / Unit Kerja', value: 'all' }
+    ]);
+
+    // 2. Selector Tahun
+    const currYear = new Date().getFullYear();
+    const optTahun = [{ text: '--Pilih Tahun--', value: '-' }];
+    for (let y = currYear; y >= currYear - 4; y--) {
+      optTahun.push({ text: String(y), value: String(y) });
+    }
+    selTahun = new EvoSelector('sel_tahun', optTahun);
+    selTahun.value = '-';
+
+    // 3. Selector Bulan
+    selBulan = new EvoSelector('sel_bulan', namaBulanIndo);
+    selBulan.value = '-';
+
+    // Load Master Bagian dari API
+    loadMasterBagian();
+  }
+
+  async function loadMasterBagian() {
+    try {
+      const rs = await httpGet(`${apiUrl}/absensi/master`);
+      if (rs && rs.data && rs.data.bagian && Array.isArray(rs.data.bagian)) {
+        const opts = [
+          { text: '--Pilih--', value: '-' },
+          { text: 'Semua Bagian / Unit Kerja', value: 'all' }
+        ];
+        rs.data.bagian.forEach(b => {
+          opts.push({
+            text: b.BAGIAN,
+            value: String(b.KD_BAGIAN)
+          });
+        });
+        selBagian.addOptions(opts);
+      }
+    } catch (err) {
+      console.warn('Gagal memuat master bagian:', err);
+    }
+  }
+
+  function checkFiltersValid() {
+    const kdBagian = (selBagian?.value && selBagian.value !== '-') ? selBagian.value : '';
+    const tahun = (selTahun?.value && selTahun.value !== '-') ? selTahun.value : '';
+    const bulan = (selBulan?.value && selBulan.value !== '-') ? selBulan.value : '';
+
+    if (!kdBagian || !tahun || !bulan) {
+      alert('isi terlebih dahulu');
+      return false;
+    }
+    return true;
+  }
+
+  function getFilterParams() {
+    const kdBagian = (selBagian?.value && selBagian.value !== '-') ? selBagian.value : '';
+    const tahun = (selTahun?.value && selTahun.value !== '-') ? selTahun.value : '';
+    const bulan = (selBulan?.value && selBulan.value !== '-') ? selBulan.value : '';
+    return { kd_bagian: kdBagian, tahun: String(tahun), bulan: String(bulan) };
+  }
+
+  function setButtonLoading(btn, isLoading, originalHtml) {
+    if (!btn) return;
+    if (isLoading) {
+      btn.dataset.origHtml = originalHtml || btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span> Mencetak...`;
+    } else {
+      btn.disabled = false;
+      btn.innerHTML = btn.dataset.origHtml || originalHtml;
+    }
+  }
+
+  // Handle Cetak Dokumen A4
+  async function handleCetak(type, btnElement) {
+    // Validasi semua 3 filter input wajib diisi
+    if (!checkFiltersValid()) return;
+
+    const params = getFilterParams();
+
+    if ((type === 'cuti_bulan' || type === 'ijin_bulan') && !params.bulan) {
+      alert('Silakan pilih Bulan terlebih dahulu untuk mencetak laporan bulanan.');
+      return;
+    }
+
+    setButtonLoading(btnElement, true);
+    document.getElementById('rekap-footer-info').textContent = 'Sedang membuat berkas cetak resmi...';
+
+    try {
+      let endpoint = '';
+      switch (type) {
+        case 'cuti_tahun': endpoint = '/absensi/cetak-cuti-tahun'; break;
+        case 'cuti_bulan': endpoint = '/absensi/cetak-cuti-bulan'; break;
+        case 'ijin_tahun': endpoint = '/absensi/cetak-ijin-tahun'; break;
+        case 'ijin_bulan': endpoint = '/absensi/cetak-ijin-bulan'; break;
+        case 'lembur': endpoint = '/absensi/cetak-lembur'; break;
+      }
+
+      const query = new URLSearchParams(params).toString();
+      const res = await httpGet(`${apiUrl}${endpoint}?${query}`);
+
+      if (res && res.code === 200 && res.data && res.data.length > 0 && res.data[0].file) {
+        let fileUrl = res.data[0].file;
+        try {
+          const parsed = new URL(fileUrl);
+          fileUrl = `${window.location.origin}${parsed.pathname}${parsed.search}`;
+        } catch (e) {}
+        window.open(fileUrl, '_blank');
+        document.getElementById('rekap-footer-info').textContent = 'Dokumen cetak berhasil dibuka di jendela baru.';
+      } else {
+        const msg = (res && res.message) ? res.message : 'Gagal menghasilkan dokumen cetak.';
+        alert(msg);
+        document.getElementById('rekap-footer-info').textContent = 'Gagal mencetak dokumen.';
+      }
+
+      // Perbarui juga data pratinjau tabel
+      currentPreviewType = type;
+      await loadPreviewData(type);
+    } catch (err) {
+      console.error('Error saat mencetak:', err);
+      alert('Terjadi kesalahan saat memproses cetak.');
+      document.getElementById('rekap-footer-info').textContent = 'Terjadi kesalahan sistem.';
+    } finally {
+      setButtonLoading(btnElement, false);
+    }
+  }
+
+  // Load dan Tampilkan Pratinjau Tabular
+  async function loadPreviewData(type = null) {
+    if (!checkFiltersValid()) return;
+    if (!type) type = currentPreviewType;
+    currentPreviewType = type;
+
+    const params = getFilterParams();
+    const thead = document.getElementById('thead-rekap');
+    const tbody = document.getElementById('tbody-rekap');
+    const badge = document.getElementById('preview-badge');
+    const title = document.getElementById('preview-title');
+    const countElem = document.getElementById('preview-count');
+    const summaryBadge = document.getElementById('rekap-summary-badge');
+
+    // Update Tab Active
+    document.getElementById('tab-prev-cuti').classList.remove('active');
+    document.getElementById('tab-prev-ijin').classList.remove('active');
+    document.getElementById('tab-prev-lembur').classList.remove('active');
+
+    if (type.startsWith('cuti')) {
+      document.getElementById('tab-prev-cuti').classList.add('active');
+      badge.textContent = (type === 'cuti_bulan') ? 'Cuti Bulanan' : 'Cuti Tahunan';
+      title.textContent = 'Pratinjau Data Cuti';
+    } else if (type.startsWith('ijin')) {
+      document.getElementById('tab-prev-ijin').classList.add('active');
+      badge.textContent = (type === 'ijin_bulan') ? 'Ijin Bulanan' : 'Ijin Tahunan';
+      title.textContent = 'Pratinjau Data Ijin';
+    } else {
+      document.getElementById('tab-prev-lembur').classList.add('active');
+      badge.textContent = 'Lembur Pegawai';
+      title.textContent = 'Pratinjau Data Lembur';
+    }
+
+    tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat pratinjau data...</td></tr>`;
+
+    try {
+      const query = new URLSearchParams({ ...params, type }).toString();
+      const res = await httpGet(`${apiUrl}/absensi/rekap-data?${query}`);
+
+      const rows = (res && res.data && Array.isArray(res.data)) ? res.data : [];
+      countElem.textContent = `${rows.length} Data Ditemukan`;
+
+      if (type === 'lembur') {
+        thead.innerHTML = `<tr>
+          <th class="text-center" style="width: 45px;">No</th>
+          <th style="min-width: 140px;">NIP</th>
+          <th style="min-width: 170px;">Nama Pegawai</th>
+          <th style="min-width: 150px;">Bagian</th>
+          <th class="text-center" style="min-width: 110px;">Tgl Lembur</th>
+          <th class="text-center" style="min-width: 120px;">Jam</th>
+          <th class="text-center" style="min-width: 80px;">Durasi</th>
+          <th class="text-center" style="min-width: 90px;">Hari</th>
+          <th style="min-width: 180px;">Keterangan</th>
+          <th class="text-center" style="min-width: 90px;">Status</th>
+        </tr>`;
+
+        if (rows.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-muted"><i class="fas fa-info-circle me-1"></i> Tidak ada data lembur untuk filter yang dipilih.</td></tr>`;
+          summaryBadge.innerHTML = '';
+          return;
+        }
+
+        let totalJam = 0;
+        let html = '';
+        rows.forEach((r, idx) => {
+          totalJam += (parseFloat(r.DURASI_JAM) || 0);
+          const statusCls = (r.status == '1') ? 'badge-soft-success' : ((r.status == '2') ? 'badge-soft-danger' : 'badge-soft-warning');
+          html += `<tr>
+            <td class="text-center">${idx + 1}</td>
+            <td class="nowrap fw-semi-bold">${r.NIP || '-'}</td>
+            <td class="fw-bold text-dark">${r.NAMA || '-'}</td>
+            <td>${r.BAGIAN || '-'}</td>
+            <td class="text-center nowrap">${r.tanggal_lembur || '-'}</td>
+            <td class="text-center nowrap">${(r.jam_mulai ? r.jam_mulai.substring(0,5) : '')} - ${(r.jam_selesai ? r.jam_selesai.substring(0,5) : '')}</td>
+            <td class="text-center fw-bold">${r.DURASI || '-'}</td>
+            <td class="text-center">${r.JENIS_HARI_LABEL || '-'}</td>
+            <td>${r.keterangan || '-'}</td>
+            <td class="text-center"><span class="badge ${statusCls}">${r.STATUS_LABEL || '-'}</span></td>
+          </tr>`;
+        });
+        tbody.innerHTML = html;
+        summaryBadge.innerHTML = `<span class="badge badge-soft-info fs--2">Total Durasi: ${Math.round(totalJam * 100) / 100} Jam</span>`;
+      } else {
+        const isCuti = type.startsWith('cuti');
+        thead.innerHTML = `<tr>
+          <th class="text-center" style="width: 45px;">No</th>
+          <th style="min-width: 140px;">NIP</th>
+          <th style="min-width: 170px;">Nama Pegawai</th>
+          <th style="min-width: 150px;">Bagian</th>
+          <th style="min-width: 140px;">${isCuti ? 'Jenis Cuti' : 'Jenis Ijin'}</th>
+          <th class="text-center" style="min-width: 160px;">Periode Tanggal</th>
+          <th class="text-center" style="min-width: 80px;">Jml Hari</th>
+          <th style="min-width: 180px;">${isCuti ? 'Keperluan' : 'Alasan / Keperluan'}</th>
+          <th class="text-center" style="min-width: 90px;">Status</th>
+        </tr>`;
+
+        if (rows.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted"><i class="fas fa-info-circle me-1"></i> Tidak ada data untuk filter yang dipilih.</td></tr>`;
+          summaryBadge.innerHTML = '';
+          return;
+        }
+
+        let totalHari = 0;
+        let html = '';
+        rows.forEach((r, idx) => {
+          totalHari += (parseInt(r.JUMLAH_HARI) || 0);
+          const statusCls = (r.STATUS == '1') ? 'badge-soft-success' : ((r.STATUS == '2') ? 'badge-soft-danger' : 'badge-soft-warning');
+          const tglRange = (r.TANGGAL_MULAI === r.TANGGAL_SAMPAI || !r.TANGGAL_SAMPAI)
+            ? (r.TANGGAL_MULAI || '-')
+            : `${r.TANGGAL_MULAI} s/d ${r.TANGGAL_SAMPAI}`;
+
+          html += `<tr>
+            <td class="text-center">${idx + 1}</td>
+            <td class="nowrap fw-semi-bold">${r.NIP || '-'}</td>
+            <td class="fw-bold text-dark">${r.NAMA || '-'}</td>
+            <td>${r.BAGIAN || '-'}</td>
+            <td>${r.JENIS_CUTI || '-'}</td>
+            <td class="text-center nowrap">${tglRange}</td>
+            <td class="text-center fw-bold">${r.JUMLAH_HARI || 1} Hari</td>
+            <td>${r.KEPERLUAN || '-'}</td>
+            <td class="text-center"><span class="badge ${statusCls}">${r.STATUS_LABEL || '-'}</span></td>
+          </tr>`;
+        });
+        tbody.innerHTML = html;
+        summaryBadge.innerHTML = `<span class="badge badge-soft-primary fs--2">Total: ${totalHari} Hari Kerja</span>`;
+      }
+      document.getElementById('rekap-footer-info').textContent = 'Pratinjau data berhasil dimuat.';
+    } catch (err) {
+      console.error('Error saat memuat pratinjau:', err);
+      tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle me-1"></i> Gagal memuat pratinjau data.</td></tr>`;
+      document.getElementById('rekap-footer-info').textContent = 'Gagal memuat pratinjau.';
+    }
+  }
+
+  // Event Listeners Tombol Cetak
+  document.getElementById('btn-cetak-cuti-tahun')?.addEventListener('click', (e) => {
+    handleCetak('cuti_tahun', e.currentTarget);
+  });
+
+  document.getElementById('btn-cetak-cuti-bulan')?.addEventListener('click', (e) => {
+    handleCetak('cuti_bulan', e.currentTarget);
+  });
+
+  document.getElementById('btn-cetak-ijin-tahun')?.addEventListener('click', (e) => {
+    handleCetak('ijin_tahun', e.currentTarget);
+  });
+
+  document.getElementById('btn-cetak-ijin-bulan')?.addEventListener('click', (e) => {
+    handleCetak('ijin_bulan', e.currentTarget);
+  });
+
+  document.getElementById('btn-cetak-lembur')?.addEventListener('click', (e) => {
+    handleCetak('lembur', e.currentTarget);
+  });
+
+  // Tombol Tampilkan Pratinjau
+  document.getElementById('btn-preview-data')?.addEventListener('click', () => {
+    loadPreviewData();
+  });
+
+  // Tab switchers
+  document.getElementById('tab-prev-cuti')?.addEventListener('click', () => {
+    const params = getFilterParams();
+    loadPreviewData(params.bulan ? 'cuti_bulan' : 'cuti_tahun');
+  });
+
+  document.getElementById('tab-prev-ijin')?.addEventListener('click', () => {
+    const params = getFilterParams();
+    loadPreviewData(params.bulan ? 'ijin_bulan' : 'ijin_tahun');
+  });
+
+  document.getElementById('tab-prev-lembur')?.addEventListener('click', () => {
+    loadPreviewData('lembur');
+  });
+
+  // Initialize
+  initSelectors();
+</script>

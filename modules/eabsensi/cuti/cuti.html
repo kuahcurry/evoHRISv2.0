@@ -1,0 +1,589 @@
+<style>
+  .evo-cuti-card {
+    border-radius: 0.65rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    background: #fff;
+    border: 1px solid #edf2f9;
+  }
+  .evo-selector-container {
+    position: relative;
+    width: 100%;
+  }
+  .evo-selector-input {
+    cursor: pointer;
+    background-color: #fff !important;
+    border: 1px solid #d8e2ef;
+    border-radius: 0.25rem;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.85rem;
+    width: 100%;
+    min-height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .badge-status-menunggu {
+    background-color: #fff3cd;
+    color: #997404;
+    border: 1px solid #ffe69c;
+  }
+  .badge-status-disetujui {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    border: 1px solid #badbcc;
+  }
+  .badge-status-hrd {
+    background-color: #cfe2ff;
+    color: #084298;
+    border: 1px solid #b6d4fe;
+  }
+  .badge-status-ditolak {
+    background-color: #f8d7da;
+    color: #842029;
+    border: 1px solid #f5c2c7;
+  }
+  .table-cuti th {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 700;
+    color: #5e6e82;
+    background-color: #f9fafd;
+    vertical-align: middle;
+    white-space: nowrap;
+    border-bottom: 2px solid #edf2f9;
+  }
+  .table-cuti td {
+    font-size: 0.82rem;
+    vertical-align: middle;
+  }
+  .form-label-bold {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #4d5969;
+    margin-bottom: 0.3rem;
+  }
+</style>
+
+<template>
+  <div class="container-fluid py-3" id="page-cuti-container">
+    <!-- Breadcrumb & Title -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <div>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-1 fs--2">
+            <li class="breadcrumb-item"><a href="#" class="text-decoration-none">E-Absensi</a></li>
+            <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Cuti</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Permohonan Cuti</li>
+          </ol>
+        </nav>
+        <h4 class="mb-0 text-primary fw-bold">
+          <i class="fas fa-calendar-check me-2"></i>Pengajuan & Riwayat Cuti
+        </h4>
+      </div>
+      <div>
+        <span class="badge bg-soft-primary text-primary px-3 py-2 fs--1 rounded-pill">
+          <i class="fas fa-id-badge me-1"></i> Mode Pegawai
+        </span>
+      </div>
+    </div>
+
+    <!-- FORM PENGAJUAN CUTI -->
+    <div class="card evo-cuti-card mb-4">
+      <div class="card-header bg-light py-2 px-3 border-bottom d-flex align-items-center justify-content-between">
+        <h6 class="mb-0 fw-bold text-700">
+          <i class="fas fa-calendar-plus text-primary me-2"></i>Form Pengajuan Cuti
+        </h6>
+        <span class="text-muted fs--2">Lengkapi data permohonan cuti Anda</span>
+      </div>
+      <div class="card-body p-3">
+        <form id="form-pengajuan-cuti" autocomplete="off">
+          <!-- Row 1: Bagian/Unit, Nama, NIP -->
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label class="form-label form-label-bold">Bagian/Unit :</label>
+              <input type="text" id="cuti_bagian" class="form-control form-control-sm bg-light" readonly placeholder="Memuat Bagian/Unit...">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label form-label-bold">Nama :</label>
+              <input type="text" id="cuti_nama" class="form-control form-control-sm bg-light" readonly placeholder="administrator" value="administrator">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label form-label-bold">NIP :</label>
+              <input type="text" id="cuti_nip" class="form-control form-control-sm bg-light" readonly placeholder="123456" value="123456">
+            </div>
+          </div>
+
+          <!-- Row 2: Tanggal Cuti, Jenis Cuti, Pegawai Pengganti -->
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label class="form-label form-label-bold">Tanggal Cuti :</label>
+              <div class="d-flex align-items-center gap-1">
+                <input type="date" id="cuti_tgl_mulai" class="form-control form-control-sm" required placeholder="YYYY-MM-DD">
+                <span class="text-muted small px-1">s/d</span>
+                <input type="date" id="cuti_tgl_sampai" class="form-control form-control-sm" required placeholder="YYYY-MM-DD">
+              </div>
+              <div class="d-flex justify-content-between align-items-center mt-1">
+                <small class="text-muted fs--2">Format: YYYY-MM-DD</small>
+                <span id="label_lama_hari" class="badge bg-soft-info text-info fs--2">0 Hari</span>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label form-label-bold">Jenis Cuti :</label>
+              <div id="sel_jenis_cuti" placeholder="Pilih Jenis Cuti"></div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label form-label-bold">Pegawai Pengganti :</label>
+              <div id="sel_pegawai_pengganti" placeholder="Pilih Pegawai Pengganti"></div>
+            </div>
+          </div>
+
+          <!-- Row 3: No Yang Bisa Dihubungi, Sisa Cuti, Keperluan -->
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label class="form-label form-label-bold">No Yang Bisa Dihubungi :</label>
+              <input type="text" id="cuti_kontak" class="form-control form-control-sm bg-light" readonly placeholder="4456" value="4456">
+              <div class="form-text fs--2 text-muted">Diambil otomatis dari nomor kontak pegawai</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label form-label-bold">Sisa Cuti :</label>
+              <div class="input-group input-group-sm">
+                <input type="text" id="cuti_sisa" class="form-control form-control-sm bg-light fw-bold text-primary" readonly placeholder="12" value="12">
+                <span class="input-group-text bg-light text-muted">Hari</span>
+              </div>
+              <div class="form-text fs--2 text-muted" id="info_sisa_cuti">Dihitung otomatis dari kuota database</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label form-label-bold">Keperluan :</label>
+              <textarea id="cuti_keperluan" rows="2" class="form-control form-control-sm" placeholder="Tulis keperluan/alasan cuti..." required></textarea>
+            </div>
+          </div>
+
+          <!-- Tombol Aksi Pengajuan -->
+          <div class="d-flex justify-content-end align-items-center gap-2 pt-2 border-top">
+            <button type="button" id="btn-reset-cuti" class="btn btn-falcon-default btn-sm px-3">
+              <i class="fas fa-undo me-1"></i> Reset
+            </button>
+            <button type="submit" id="btn-simpan-cuti" class="btn btn-primary btn-sm px-4">
+              <i class="fas fa-paper-plane me-1"></i> Ajukan Cuti
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TABEL RIWAYAT PENGAJUAN CUTI -->
+    <div class="card evo-cuti-card mb-4">
+      <div class="card-header bg-white py-3 px-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+          <h6 class="mb-0 fw-bold text-700">
+            <i class="fas fa-history text-secondary me-2"></i>Riwayat Pengajuan Cuti
+          </h6>
+          <small class="text-muted fs--2" id="text-counter-cuti">Menampilkan data riwayat cuti</small>
+        </div>
+
+        <!-- Search Input dengan Debounce -->
+        <div class="d-flex align-items-center gap-2">
+          <div class="input-group input-group-sm" style="min-width: 280px; max-width: 360px;">
+            <span class="input-group-text bg-light border-end-0">
+              <i class="fas fa-search text-400"></i>
+            </span>
+            <input type="text" id="input_search_cuti" class="form-control border-start-0" placeholder="Cari NIP / Nama...">
+            <button type="button" id="btn_search_cuti" class="btn btn-falcon-primary btn-sm">
+              Cari
+            </button>
+          </div>
+          <button type="button" id="btn-refresh-cuti" class="btn btn-falcon-default btn-sm" title="Segarkan Data">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover table-striped table-cuti mb-0">
+            <thead>
+              <tr>
+                <th class="text-center" style="width: 40px;">#</th>
+                <th>NIP</th>
+                <th>Nama</th>
+                <th>Jenis</th>
+                <th>Tgl Mulai</th>
+                <th>Tgl Sampai</th>
+                <th class="text-center">Lama</th>
+                <th>Bagian/Unit</th>
+                <th>Keperluan</th>
+                <th class="text-center">Status</th>
+                <th>Catatan Atasan</th>
+                <th>Catatan HRD</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-cuti">
+              <tr>
+                <td colspan="12" class="text-center py-4 text-muted">
+                  <span class="spinner-border spinner-border-sm me-2"></span>Memuat data riwayat cuti...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card-footer bg-light py-2 px-3 border-top d-flex justify-content-between align-items-center">
+        <span class="fs--2 text-muted" id="footer-summary-cuti">Total pengajuan: 0</span>
+        <span class="fs--2 text-muted">Data tersinkronisasi otomatis dengan HRIS</span>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+  import { loadSession, getCurrentUser } from './assets/js/core/helpers.js';
+  import EvoSelector from './components/EvoSelector.js';
+
+  const apiUrl = (typeof config !== 'undefined' && config.api_url)
+    ? config.api_url
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  let selJenisCuti = null;
+  let selPegawaiPengganti = null;
+  let cachedPegawaiList = [];
+  let currentUserData = {};
+
+  // Utility Debounce
+  function debounce(func, delay = 300) {
+    let timer;
+    return function (...args) {
+      clearTimeout(timer);
+      timer = setTimeout(() => func.apply(this, args), delay);
+    };
+  }
+
+  // Hitung selisih hari
+  function calculateLamaHari(tglMulai, tglSampai) {
+    if (!tglMulai || !tglSampai) return 0;
+    const start = new Date(tglMulai);
+    const end = new Date(tglSampai);
+    if (isNaN(start) || isNaN(end) || end < start) return 0;
+    const diffTime = Math.abs(end - start);
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  }
+
+  // Inisialisasi Data Pengguna
+  async function initUserData() {
+    const sessionApp = loadSession({ id: 'app' }) || {};
+    const curr = (typeof getCurrentUser === 'function') ? (getCurrentUser() || {}) : {};
+    
+    // Gabungkan preferensi sesi
+    currentUserData = {
+      nama: curr.nama_user || curr.username || sessionApp.nama_user || sessionApp.username || 'administrator',
+      nip: curr.nip || curr.kd_paramedis || curr.kd_user || sessionApp.nip || sessionApp.kd_paramedis || '123456',
+      bagian: curr.nama_unit || curr.tag_unit || curr.bagian || sessionApp.nama_unit || '',
+      kontak: curr.kontak || curr.handphone || curr.hp || curr.telephone || sessionApp.kontak || '4456'
+    };
+
+    document.getElementById('cuti_nama').value = currentUserData.nama;
+    document.getElementById('cuti_nip').value = currentUserData.nip;
+    document.getElementById('cuti_kontak').value = currentUserData.kontak;
+    if (currentUserData.bagian) {
+      document.getElementById('cuti_bagian').value = currentUserData.bagian;
+    }
+
+    // Ambil detail kuota sisa cuti dan kontak resmi dari database
+    try {
+      const res = await httpGet(`${apiUrl}/pegawai/cuti/sisa?nip=${encodeURIComponent(currentUserData.nip)}`);
+      if (res && res.code === 200 && res.data) {
+        if (res.data.sisa !== undefined) {
+          document.getElementById('cuti_sisa').value = res.data.sisa;
+        }
+        if (res.data.bagian) {
+          document.getElementById('cuti_bagian').value = res.data.bagian;
+        }
+        if (res.data.kontak) {
+          document.getElementById('cuti_kontak').value = res.data.kontak;
+        }
+        if (res.data.total !== undefined && res.data.terpakai !== undefined) {
+          document.getElementById('info_sisa_cuti').textContent = 
+            `Kuota: ${res.data.total} hari | Terpakai: ${res.data.terpakai} hari | Sisa: ${res.data.sisa} hari`;
+        }
+      }
+    } catch (err) {
+      console.warn('Gagal memuat sisa cuti:', err);
+    }
+  }
+
+  // Inisialisasi Selector Evo
+  async function initSelectors() {
+    // 1. Selector Jenis Cuti
+    selJenisCuti = new EvoSelector('sel_jenis_cuti', [
+      { text: 'Pilih Jenis Cuti', value: '-' }
+    ]);
+
+    // 2. Selector Pegawai Pengganti
+    selPegawaiPengganti = new EvoSelector('sel_pegawai_pengganti', [
+      { text: 'Pilih Pegawai Pengganti', value: '-' }
+    ]);
+
+    // Load Master Jenis Cuti
+    try {
+      const rsMaster = await httpGet(`${apiUrl}/cPegawai/master`);
+      if (rsMaster && rsMaster.data && Array.isArray(rsMaster.data.jenis_cuti)) {
+        const optsCuti = [{ text: 'Pilih Jenis Cuti', value: '-' }];
+        rsMaster.data.jenis_cuti.forEach(item => {
+          optsCuti.push({
+            text: item.JENIS_CUTI || item.NAMA_JENIS_CUTI,
+            value: String(item.KD_JENIS_CUTI)
+          });
+        });
+        selJenisCuti.addOptions(optsCuti);
+      }
+    } catch (err) {
+      console.warn('Gagal memuat master jenis cuti:', err);
+    }
+
+    // Load Master Pegawai Pengganti
+    try {
+      const rsPegawai = await httpGet(`${apiUrl}/cTambahPegawai/get_data_pegawai`);
+      let list = [];
+      if (rsPegawai && rsPegawai.data) {
+        if (Array.isArray(rsPegawai.data.data)) {
+          list = rsPegawai.data.data;
+        } else if (Array.isArray(rsPegawai.data)) {
+          list = rsPegawai.data;
+        }
+      }
+      cachedPegawaiList = list;
+      if (list.length > 0) {
+        const optsPengganti = [{ text: 'Pilih Pegawai Pengganti', value: '-' }];
+        list.forEach(p => {
+          optsPengganti.push({
+            text: `${p.NIP || '-'} - ${p.NAMA || 'Tanpa Nama'}`,
+            value: String(p.ID_PEGAWAI || p.NIP)
+          });
+        });
+        selPegawaiPengganti.addOptions(optsPengganti);
+      }
+    } catch (err) {
+      console.warn('Gagal memuat master pegawai pengganti:', err);
+    }
+  }
+
+  // Format Status Badge
+  function renderStatusBadge(status, statusBatal) {
+    if (statusBatal == 1 || status == 3 || String(status).toLowerCase() === 'ditolak') {
+      return `<span class="badge badge-status-ditolak"><i class="fas fa-times-circle me-1"></i>Ditolak</span>`;
+    }
+    const s = parseInt(status);
+    switch (s) {
+      case 1:
+        return `<span class="badge badge-status-disetujui"><i class="fas fa-check-circle me-1"></i>Disetujui</span>`;
+      case 2:
+        return `<span class="badge badge-status-hrd"><i class="fas fa-check-double me-1"></i>Disetujui HRD</span>`;
+      case 0:
+      default:
+        return `<span class="badge badge-status-menunggu"><i class="fas fa-clock me-1"></i>Menunggu</span>`;
+    }
+  }
+
+  // Muat Data Riwayat Cuti (12 Kolom)
+  async function loadDataCuti(keyword = '') {
+    const tbody = document.getElementById('tbody-cuti');
+    tbody.innerHTML = `<tr><td colspan="12" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat riwayat pengajuan cuti...</td></tr>`;
+
+    try {
+      let queryParam = keyword ? `?keyword=${encodeURIComponent(keyword)}` : '';
+      const res = await httpGet(`${apiUrl}/pegawai/cuti${queryParam}`);
+      const data = (res && res.data && Array.isArray(res.data)) ? res.data : [];
+
+      document.getElementById('text-counter-cuti').textContent = `Ditemukan ${data.length} pengajuan cuti`;
+      document.getElementById('footer-summary-cuti').textContent = `Total pengajuan: ${data.length}`;
+
+      if (data.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="12" class="text-center py-4 text-muted">
+              <i class="fas fa-inbox fa-2x mb-2 d-block text-300"></i>
+              Tidak ada data riwayat cuti yang sesuai.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      let rowsHtml = '';
+      data.forEach((item, idx) => {
+        const lamaHari = item.LAMA || calculateLamaHari(item.TANGGAL_MULAI, item.TANGGAL_SAMPAI) || '-';
+        const namaPegawai = item.NAMA_PEGAWAI || item.NAMA || '-';
+        const bagianUnit = item.BAGIAN || item.KD_BAGIAN || '-';
+        const jenisCuti = item.JENIS_CUTI || item.NAMA_JENIS_CUTI || '-';
+        const tglMulai = item.TANGGAL_MULAI || '-';
+        const tglSampai = item.TANGGAL_SAMPAI || '-';
+        const keperluan = item.KEPERLUAN || '-';
+        const statusBadge = renderStatusBadge(item.STATUS, item.STATUS_BATAL);
+        const catatanAtasan = item.CATATAN_ATASAN || '-';
+        const catatanHrd = item.CATATAN_HRD || '-';
+
+        rowsHtml += `
+          <tr>
+            <td class="text-center text-muted fw-bold">${idx + 1}</td>
+            <td><span class="badge bg-light text-dark font-monospace">${item.NIP || '-'}</span></td>
+            <td class="fw-semi-bold text-900">${namaPegawai}</td>
+            <td><span class="badge bg-soft-secondary text-secondary">${jenisCuti}</span></td>
+            <td>${tglMulai}</td>
+            <td>${tglSampai}</td>
+            <td class="text-center fw-bold">${lamaHari} Hari</td>
+            <td>${bagianUnit}</td>
+            <td class="text-truncate" style="max-width: 180px;" title="${keperluan}">${keperluan}</td>
+            <td class="text-center">${statusBadge}</td>
+            <td class="small text-muted">${catatanAtasan}</td>
+            <td class="small text-muted">${catatanHrd}</td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = rowsHtml;
+    } catch (err) {
+      console.error('Error saat memuat data cuti:', err);
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="12" class="text-center py-4 text-danger">
+            <i class="fas fa-exclamation-triangle me-1"></i> Gagal memuat data riwayat cuti.
+          </td>
+        </tr>
+      `;
+    }
+  }
+
+  // Event Listeners Tanggal Cuti (Hitung Durasi)
+  function setupDateListeners() {
+    const elMulai = document.getElementById('cuti_tgl_mulai');
+    const elSampai = document.getElementById('cuti_tgl_sampai');
+    const elBadge = document.getElementById('label_lama_hari');
+
+    const updateDurasi = () => {
+      const durasi = calculateLamaHari(elMulai.value, elSampai.value);
+      elBadge.textContent = `${durasi} Hari`;
+      if (durasi > 0) {
+        elBadge.className = 'badge bg-soft-primary text-primary fs--2';
+      } else {
+        elBadge.className = 'badge bg-soft-info text-info fs--2';
+      }
+    };
+
+    elMulai?.addEventListener('change', () => {
+      if (!elSampai.value || elSampai.value < elMulai.value) {
+        elSampai.value = elMulai.value;
+      }
+      updateDurasi();
+    });
+
+    elSampai?.addEventListener('change', updateDurasi);
+  }
+
+  // Submit Form Pengajuan Cuti
+  document.getElementById('form-pengajuan-cuti')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const tglMulai = document.getElementById('cuti_tgl_mulai').value;
+    const tglSampai = document.getElementById('cuti_tgl_sampai').value;
+    const kdJenisCuti = (selJenisCuti?.value && selJenisCuti.value !== '-') ? selJenisCuti.value : '';
+    const pengganti = (selPegawaiPengganti?.value && selPegawaiPengganti.value !== '-') ? selPegawaiPengganti.value : '';
+    const keperluan = document.getElementById('cuti_keperluan').value.trim();
+
+    if (!tglMulai || !tglSampai) {
+      alert('Silakan tentukan Tanggal Cuti (Mulai s/d Sampai).');
+      return;
+    }
+
+    if (!kdJenisCuti) {
+      alert('Silakan pilih Jenis Cuti.');
+      return;
+    }
+
+    if (!keperluan) {
+      alert('Silakan tulis keperluan/alasan cuti.');
+      return;
+    }
+
+    const payload = {
+      NIP: document.getElementById('cuti_nip').value,
+      NAMA: document.getElementById('cuti_nama').value,
+      BAGIAN: document.getElementById('cuti_bagian').value,
+      KD_JENIS_CUTI: kdJenisCuti,
+      TANGGAL_MULAI: tglMulai,
+      TANGGAL_SAMPAI: tglSampai,
+      PEGAWAI_PENGGANTI: pengganti,
+      KEPERLUAN: keperluan,
+      STATUS: 0
+    };
+
+    const submitBtn = document.getElementById('btn-simpan-cuti');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span> Mengirim...`;
+
+    try {
+      const res = await httpPost(`${apiUrl}/pegawai/cuti`, payload);
+      if (res && (res.code === 200 || res.status === 'ok')) {
+        alert('Pengajuan cuti berhasil dikirim.');
+        // Reset form input
+        document.getElementById('cuti_tgl_mulai').value = '';
+        document.getElementById('cuti_tgl_sampai').value = '';
+        document.getElementById('cuti_keperluan').value = '';
+        document.getElementById('label_lama_hari').textContent = '0 Hari';
+        if (selJenisCuti) selJenisCuti.value = '-';
+        if (selPegawaiPengganti) selPegawaiPengganti.value = '-';
+
+        // Segarkan riwayat cuti dan sisa cuti
+        await loadDataCuti();
+        await initUserData();
+      } else {
+        alert((res && res.message) ? res.message : 'Gagal mengirim pengajuan cuti.');
+      }
+    } catch (err) {
+      console.error('Error saat mengirim pengajuan cuti:', err);
+      alert('Terjadi kesalahan saat menyimpan pengajuan cuti.');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = `<i class="fas fa-paper-plane me-1"></i> Ajukan Cuti`;
+    }
+  });
+
+  // Tombol Reset Form
+  document.getElementById('btn-reset-cuti')?.addEventListener('click', () => {
+    document.getElementById('cuti_tgl_mulai').value = '';
+    document.getElementById('cuti_tgl_sampai').value = '';
+    document.getElementById('cuti_keperluan').value = '';
+    document.getElementById('label_lama_hari').textContent = '0 Hari';
+    if (selJenisCuti) selJenisCuti.value = '-';
+    if (selPegawaiPengganti) selPegawaiPengganti.value = '-';
+  });
+
+  // Pencarian dengan Debounce (Parameter NIP & Nama)
+  const searchInput = document.getElementById('input_search_cuti');
+  if (searchInput) {
+    searchInput.addEventListener('input', debounce((e) => {
+      const kw = e.target.value.trim();
+      loadDataCuti(kw);
+    }, 300));
+  }
+
+  // Tombol Cari langsung
+  document.getElementById('btn_search_cuti')?.addEventListener('click', () => {
+    const kw = searchInput ? searchInput.value.trim() : '';
+    loadDataCuti(kw);
+  });
+
+  // Tombol Refresh
+  document.getElementById('btn-refresh-cuti')?.addEventListener('click', () => {
+    if (searchInput) searchInput.value = '';
+    loadDataCuti('');
+    initUserData();
+  });
+
+  // Jalankan inisialisasi awal
+  initUserData();
+  initSelectors();
+  setupDateListeners();
+  loadDataCuti();
+</script>

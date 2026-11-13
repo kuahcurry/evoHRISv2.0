@@ -771,12 +771,6 @@
     const fileKel = document.getElementById('add-keluarga-upload')?.files?.[0];
     if (fileKel) formData.append('file_keluarga', fileKel);
 
-    // 9. Akun Sistem
-    const buatUser = document.getElementById('add-buat-user')?.checked ? '1' : '0';
-    formData.append('buat_user', buatUser);
-    formData.append('username', document.getElementById('add-username')?.value.trim() || nip);
-    formData.append('password', document.getElementById('add-password')?.value || '');
-
     try {
       const response = await fetch(`${apiUrl}/cPegawai/save_data`, {
         method: 'POST',
@@ -1214,27 +1208,8 @@
                   <input type="date" class="form-control form-control-sm" id="add-tgl-masuk">
                 </div>
             </div>
-            </div>
-            <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
-              <div class="form-section-title mb-0">
-                <i class="fas fa-user-lock text-primary"></i> Akun Pengguna
-              </div>
-              <div class="form-check form-switch mb-0">
-                <input class="form-check-input" type="checkbox" id="add-buat-user" checked>
-              </div>
-            </div>
-            <div class="card-body" id="section-kredensial-user">
-              <div class="mb-2">
-                <label class="form-label small fw-semibold text-muted mb-1">Username Login</label>
-                <input type="text" class="form-control form-control-sm" id="add-username" placeholder="Username (default: NIP)">
-              </div>
-              <div>
-                <label class="form-label small fw-semibold text-muted mb-1">Password Awal</label>
-                <input type="password" class="form-control form-control-sm" id="add-password" placeholder="Password akun sistem">
-                <small class="text-muted">Biarkan kosong jika default password menggunakan tanggal lahir.</small>
-              </div>
-            </div>
           </div>
+        </div>
 
           <!-- Card Penempatan & Status Kerja -->
           <div class="card card-form-pegawai mb-3">

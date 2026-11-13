@@ -1,0 +1,564 @@
+<style>
+  .evo-approval-card {
+    border-radius: 0.65rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    background: #fff;
+    border: 1px solid #edf2f9;
+  }
+  .table-approval th {
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 700;
+    color: #5e6e82;
+    background-color: #f9fafd;
+    vertical-align: middle;
+    white-space: nowrap;
+    border-bottom: 2px solid #edf2f9;
+  }
+  .table-approval td {
+    font-size: 0.82rem;
+    vertical-align: middle;
+  }
+  .stat-card {
+    border-radius: 0.5rem;
+    border: 1px solid #edf2f9;
+    padding: 0.75rem 1rem;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .stat-card:hover, .stat-card.active {
+    transform: translateY(-2px);
+    box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.08);
+    border-color: #2c7be5;
+  }
+  .stat-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+  }
+</style>
+
+<template>
+  <div class="container-fluid py-3" id="page-approval-hrd-container">
+    <!-- Breadcrumb & Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <div>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-1 fs--2">
+            <li class="breadcrumb-item"><a href="#" class="text-decoration-none">E-Absensi</a></li>
+            <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Cuti</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Approval Cuti HRD</li>
+          </ol>
+        </nav>
+        <h4 class="mb-0 text-primary fw-bold">
+          <i class="fas fa-user-shield me-2"></i>Approval Cuti (HRD / Personalia)
+        </h4>
+      </div>
+      <div>
+        <span class="badge bg-soft-primary text-primary px-3 py-2 fs--1 rounded-pill">
+          <i class="fas fa-shield-alt me-1"></i> Mode Verifikator HRD
+        </span>
+      </div>
+    </div>
+
+    <!-- Quick Stat Cards / Filter Tabs -->
+    <div class="row g-2 mb-3">
+      <div class="col-6 col-md-3">
+        <div class="stat-card active" id="card-filter-all" data-filter="all">
+          <div class="stat-icon bg-soft-primary text-primary">
+            <i class="fas fa-layer-group"></i>
+          </div>
+          <div>
+            <div class="fs--2 text-muted fw-semi-bold">Semua Pengajuan</div>
+            <h5 class="mb-0 fw-bold" id="stat-total">0</h5>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card" id="card-filter-pending" data-filter="0">
+          <div class="stat-icon bg-soft-warning text-warning">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div>
+            <div class="fs--2 text-muted fw-semi-bold">Menunggu HRD</div>
+            <h5 class="mb-0 fw-bold text-warning" id="stat-pending">0</h5>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card" id="card-filter-approved" data-filter="1">
+          <div class="stat-icon bg-soft-success text-success">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div>
+            <div class="fs--2 text-muted fw-semi-bold">Disetujui HRD</div>
+            <h5 class="mb-0 fw-bold text-success" id="stat-approved">0</h5>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card" id="card-filter-rejected" data-filter="2">
+          <div class="stat-icon bg-soft-danger text-danger">
+            <i class="fas fa-times-circle"></i>
+          </div>
+          <div>
+            <div class="fs--2 text-muted fw-semi-bold">Ditolak HRD</div>
+            <h5 class="mb-0 fw-bold text-danger" id="stat-rejected">0</h5>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alert / Toast Container -->
+    <div id="hrd-alert-container"></div>
+
+    <!-- Card Tabel Approval HRD -->
+    <div class="card evo-approval-card mb-4">
+      <div class="card-header bg-white py-3 px-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+          <h6 class="mb-0 fw-bold text-700">
+            <i class="fas fa-clipboard-check text-primary me-2"></i>Daftar Pengajuan Cuti Pegawai
+          </h6>
+          <small class="text-muted fs--2" id="hrd-counter">Memuat data...</small>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <div class="input-group input-group-sm" style="width: 260px;">
+            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+            <input type="text" id="input_search_hrd" class="form-control border-start-0" placeholder="Cari NIP, Nama, Unit...">
+          </div>
+          <button type="button" id="btn-refresh-hrd" class="btn btn-falcon-default btn-sm" title="Segarkan Data">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover table-striped table-approval mb-0">
+            <thead>
+              <tr>
+                <th class="text-center" style="width: 40px;">#</th>
+                <th>NIP</th>
+                <th>Nama Pegawai</th>
+                <th>Jenis Cuti</th>
+                <th>Tgl Mulai</th>
+                <th>Tgl Sampai</th>
+                <th class="text-center">Lama</th>
+                <th>Bagian / Unit</th>
+                <th>Keperluan</th>
+                <th class="text-center">Status HRD</th>
+                <th>Catatan HRD</th>
+                <th class="text-center" style="width: 140px;">Aksi HRD</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-approval-hrd">
+              <tr>
+                <td colspan="12" class="text-center py-4 text-muted">
+                  <span class="spinner-border spinner-border-sm me-2"></span>Memuat data...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Konfirmasi Approval / Reject HRD -->
+    <div class="modal fade" id="modal-hrd-action" tabindex="-1" aria-labelledby="modalHrdActionLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header" id="modal-hrd-header">
+            <h5 class="modal-title fw-bold" id="modalHrdActionLabel">
+              <i class="fas fa-check-circle me-2"></i>Konfirmasi Approval HRD
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="action-kd-cuti">
+            <input type="hidden" id="action-type"> <!-- 'approve' | 'reject' | 'reset' -->
+
+            <div class="p-2 mb-3 rounded bg-light border">
+              <div class="d-flex justify-content-between mb-1">
+                <span class="text-muted fs--2">Pegawai:</span>
+                <span class="fw-bold fs--1" id="action-pegawai-nama">-</span>
+              </div>
+              <div class="d-flex justify-content-between mb-1">
+                <span class="text-muted fs--2">NIP / Bagian:</span>
+                <span class="fs--2 text-dark" id="action-pegawai-nip-bagian">-</span>
+              </div>
+              <div class="d-flex justify-content-between mb-1">
+                <span class="text-muted fs--2">Jenis Cuti:</span>
+                <span class="badge bg-soft-info text-info fs--2" id="action-cuti-jenis">-</span>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span class="text-muted fs--2">Periode & Durasi:</span>
+                <span class="fs--2 text-dark fw-semi-bold" id="action-cuti-periode">-</span>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="input-catatan-hrd" class="form-label fs--1 fw-semi-bold" id="label-catatan-hrd">
+                Catatan HRD (Opsional)
+              </label>
+              <textarea class="form-control form-control-sm" id="input-catatan-hrd" rows="3" placeholder="Masukkan catatan atau alasan persetujuan/penolakan..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer bg-light py-2">
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="button" class="btn btn-sm btn-primary" id="btn-submit-action-hrd">
+              <span class="spinner-border spinner-border-sm d-none me-1" id="btn-spinner-action"></span>
+              <span id="btn-action-label"><i class="fas fa-check me-1"></i>Konfirmasi</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</template>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+
+  const apiUrl = (typeof config !== 'undefined' && config.api_url)
+    ? config.api_url
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  let cachedCutiData = [];
+  let currentFilter = 'all'; // 'all', '0', '1', '2'
+  let currentSearch = '';
+  let bsModalInstance = null;
+
+  function showAlert(message, type = 'success') {
+    const alertBox = document.getElementById('hrd-alert-container');
+    if (!alertBox) return;
+    alertBox.innerHTML = `
+      <div class="alert alert-${type} alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    `;
+    setTimeout(() => {
+      if (alertBox.firstChild) {
+        alertBox.innerHTML = '';
+      }
+    }, 4500);
+  }
+
+  function getModal() {
+    const modalEl = document.getElementById('modal-hrd-action');
+    if (!modalEl) return null;
+    if (window.bootstrap && window.bootstrap.Modal) {
+      if (!bsModalInstance) {
+        bsModalInstance = new window.bootstrap.Modal(modalEl);
+      }
+      return bsModalInstance;
+    }
+    return {
+      show: () => { modalEl.classList.add('show'); modalEl.style.display = 'block'; },
+      hide: () => { modalEl.classList.remove('show'); modalEl.style.display = 'none'; }
+    };
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('tbody-approval-hrd');
+    if (!tbody) return;
+
+    // Filter by tab & search
+    let list = cachedCutiData.slice();
+
+    if (currentFilter !== 'all') {
+      const targetStatus = parseInt(currentFilter, 10);
+      list = list.filter(item => {
+        const apprHrd = parseInt(item.APPROVAL_HRD || 0, 10);
+        return apprHrd === targetStatus;
+      });
+    }
+
+    if (currentSearch) {
+      const q = currentSearch.toLowerCase();
+      list = list.filter(item => {
+        const nip = String(item.NIP || '').toLowerCase();
+        const nama = String(item.NAMA || item.NAMA_PEGAWAI || '').toLowerCase();
+        const bagian = String(item.BAGIAN || '').toLowerCase();
+        const jenis = String(item.JENIS_CUTI || '').toLowerCase();
+        return nip.includes(q) || nama.includes(q) || bagian.includes(q) || jenis.includes(q);
+      });
+    }
+
+    document.getElementById('hrd-counter').textContent = `Menampilkan ${list.length} dari ${cachedCutiData.length} data pengajuan`;
+
+    if (list.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="12" class="text-center py-4 text-muted">
+            <i class="fas fa-inbox fa-2x mb-2 text-300 d-block"></i>
+            Tidak ada data pengajuan cuti yang sesuai dengan filter.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    let rowsHtml = '';
+    list.forEach((item, idx) => {
+      const kdCuti = item.KD_CUTI;
+      const nip = item.NIP || '-';
+      const nama = item.NAMA || item.NAMA_PEGAWAI || '-';
+      const bagian = item.BAGIAN || '-';
+      const jenis = item.JENIS_CUTI || '-';
+      const tglMulai = item.TANGGAL_MULAI || '-';
+      const tglSampai = item.TANGGAL_SAMPAI || '-';
+      const lama = item.LAMA || '1';
+      const keperluan = item.KEPERLUAN || item.KETERANGAN || '-';
+      const apprHrd = parseInt(item.APPROVAL_HRD || 0, 10);
+      const catatanHrd = item.CATATAN_HRD || '-';
+
+      let statusBadge = '';
+      if (apprHrd === 1) {
+        statusBadge = '<span class="badge bg-soft-success text-success"><i class="fas fa-check-circle me-1"></i>Disetujui HRD</span>';
+      } else if (apprHrd === 2) {
+        statusBadge = '<span class="badge bg-soft-danger text-danger"><i class="fas fa-times-circle me-1"></i>Ditolak HRD</span>';
+      } else {
+        statusBadge = '<span class="badge bg-soft-warning text-warning"><i class="fas fa-clock me-1"></i>Menunggu HRD</span>';
+      }
+
+      rowsHtml += `
+        <tr data-kd="${kdCuti}">
+          <td class="text-center text-muted fw-bold">${idx + 1}</td>
+          <td><span class="badge bg-light text-dark font-monospace">${nip}</span></td>
+          <td class="fw-semi-bold text-900">${nama}</td>
+          <td><span class="text-primary fw-semi-bold">${jenis}</span></td>
+          <td>${tglMulai}</td>
+          <td>${tglSampai}</td>
+          <td class="text-center fw-bold">${lama} Hari</td>
+          <td>${bagian}</td>
+          <td class="text-truncate" style="max-width: 140px;" title="${keperluan}">${keperluan}</td>
+          <td class="text-center">${statusBadge}</td>
+          <td class="small text-muted" style="max-width: 150px;">
+            ${catatanHrd !== '-' ? `<span title="${catatanHrd}"><i class="fas fa-comment-alt text-info me-1"></i>${catatanHrd}</span>` : '<span class="text-400">-</span>'}
+          </td>
+          <td class="text-center">
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-sm ${apprHrd === 1 ? 'btn-success' : 'btn-outline-success'} btn-act-approve" data-kd="${kdCuti}" title="Approve (Setujui)">
+                <i class="fas fa-check"></i>
+              </button>
+              <button class="btn btn-sm ${apprHrd === 2 ? 'btn-danger' : 'btn-outline-danger'} btn-act-reject" data-kd="${kdCuti}" title="Reject (Tolak)">
+                <i class="fas fa-times"></i>
+              </button>
+              ${apprHrd !== 0 ? `
+              <button class="btn btn-sm btn-outline-secondary btn-act-reset" data-kd="${kdCuti}" title="Reset Status">
+                <i class="fas fa-undo"></i>
+              </button>` : ''}
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = rowsHtml;
+    attachActionEvents();
+  }
+
+  function attachActionEvents() {
+    // Approve buttons
+    document.querySelectorAll('.btn-act-approve').forEach(btn => {
+      btn.onclick = (e) => {
+        const kd = btn.getAttribute('data-kd');
+        openActionModal(kd, 'approve');
+      };
+    });
+
+    // Reject buttons
+    document.querySelectorAll('.btn-act-reject').forEach(btn => {
+      btn.onclick = (e) => {
+        const kd = btn.getAttribute('data-kd');
+        openActionModal(kd, 'reject');
+      };
+    });
+
+    // Reset buttons
+    document.querySelectorAll('.btn-act-reset').forEach(btn => {
+      btn.onclick = (e) => {
+        const kd = btn.getAttribute('data-kd');
+        openActionModal(kd, 'reset');
+      };
+    });
+  }
+
+  function openActionModal(kdCuti, actionType) {
+    const item = cachedCutiData.find(c => String(c.KD_CUTI) === String(kdCuti));
+    if (!item) return;
+
+    document.getElementById('action-kd-cuti').value = kdCuti;
+    document.getElementById('action-type').value = actionType;
+
+    const nama = item.NAMA || item.NAMA_PEGAWAI || '-';
+    const nip = item.NIP || '-';
+    const bagian = item.BAGIAN || '-';
+    const jenis = item.JENIS_CUTI || '-';
+    const periode = `${item.TANGGAL_MULAI || '-'} s/d ${item.TANGGAL_SAMPAI || '-'} (${item.LAMA || 1} Hari)`;
+
+    document.getElementById('action-pegawai-nama').textContent = nama;
+    document.getElementById('action-pegawai-nip-bagian').textContent = `${nip} / ${bagian}`;
+    document.getElementById('action-cuti-jenis').textContent = jenis;
+    document.getElementById('action-cuti-periode').textContent = periode;
+
+    const modalTitle = document.getElementById('modalHrdActionLabel');
+    const headerEl = document.getElementById('modal-hrd-header');
+    const labelCatatan = document.getElementById('label-catatan-hrd');
+    const inputCatatan = document.getElementById('input-catatan-hrd');
+    const submitBtn = document.getElementById('btn-submit-action-hrd');
+    const submitLabel = document.getElementById('btn-action-label');
+
+    inputCatatan.value = item.CATATAN_HRD || '';
+
+    if (actionType === 'approve') {
+      modalTitle.innerHTML = '<i class="fas fa-check-circle text-success me-2"></i>Setujui Pengajuan Cuti (HRD)';
+      headerEl.className = 'modal-header bg-soft-success';
+      labelCatatan.textContent = 'Catatan Persetujuan HRD (Opsional)';
+      submitBtn.className = 'btn btn-sm btn-success';
+      submitLabel.innerHTML = '<i class="fas fa-check me-1"></i>Approve Sekarang';
+      if (!inputCatatan.value) inputCatatan.value = 'Disetujui oleh HRD';
+    } else if (actionType === 'reject') {
+      modalTitle.innerHTML = '<i class="fas fa-times-circle text-danger me-2"></i>Tolak Pengajuan Cuti (HRD)';
+      headerEl.className = 'modal-header bg-soft-danger';
+      labelCatatan.textContent = 'Alasan Penolakan HRD (Wajib / Dianjurkan)';
+      submitBtn.className = 'btn btn-sm btn-danger';
+      submitLabel.innerHTML = '<i class="fas fa-ban me-1"></i>Tolak Pengajuan';
+      if (!inputCatatan.value) inputCatatan.placeholder = 'Tuliskan alasan penolakan...';
+    } else if (actionType === 'reset') {
+      modalTitle.innerHTML = '<i class="fas fa-undo text-secondary me-2"></i>Reset Status Approval';
+      headerEl.className = 'modal-header bg-light';
+      labelCatatan.textContent = 'Keterangan Reset';
+      submitBtn.className = 'btn btn-sm btn-secondary';
+      submitLabel.innerHTML = '<i class="fas fa-undo me-1"></i>Reset ke Menunggu';
+    }
+
+    const modal = getModal();
+    if (modal) modal.show();
+  }
+
+  async function submitActionHRD() {
+    const kdCuti = document.getElementById('action-kd-cuti').value;
+    const actionType = document.getElementById('action-type').value;
+    const catatan = document.getElementById('input-catatan-hrd').value.trim();
+
+    if (!kdCuti) return;
+
+    const spinner = document.getElementById('btn-spinner-action');
+    const submitBtn = document.getElementById('btn-submit-action-hrd');
+    spinner.classList.remove('d-none');
+    submitBtn.disabled = true;
+
+    try {
+      let endpoint = `${apiUrl}/pegawai/cuti/action-hrd`;
+      let payload = { kd_cuti: kdCuti, catatan_hrd: catatan };
+
+      if (actionType === 'approve') {
+        endpoint = `${apiUrl}/pegawai/cuti/approve-hrd`;
+      } else if (actionType === 'reject') {
+        endpoint = `${apiUrl}/pegawai/cuti/reject-hrd`;
+      } else if (actionType === 'reset') {
+        payload.status = 0;
+      }
+
+      const res = await httpPost(endpoint, payload);
+      
+      const modal = getModal();
+      if (modal) modal.hide();
+
+      if (res && (res.code === 200 || res.status === 'ok' || res.status?.startsWith('ok'))) {
+        showAlert(res.message || 'Status approval HRD berhasil diperbarui!', 'success');
+      } else {
+        showAlert(res.message || 'Berhasil memperbarui status approval', 'info');
+      }
+
+      // Refresh data
+      await loadHrdData();
+    } catch (err) {
+      console.error(err);
+      showAlert('Gagal memperbarui status cuti. Silakan coba lagi.', 'danger');
+    } finally {
+      spinner.classList.add('d-none');
+      submitBtn.disabled = false;
+    }
+  }
+
+  async function loadHrdData() {
+    const tbody = document.getElementById('tbody-approval-hrd');
+    tbody.innerHTML = `<tr><td colspan="12" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data cuti...</td></tr>`;
+
+    try {
+      const res = await httpGet(`${apiUrl}/pegawai/cuti`);
+      const data = (res && res.data && Array.isArray(res.data)) ? res.data : [];
+      cachedCutiData = data;
+
+      // Update Quick Stats
+      let cntTotal = data.length;
+      let cntPending = 0;
+      let cntApproved = 0;
+      let cntRejected = 0;
+
+      data.forEach(item => {
+        const a = parseInt(item.APPROVAL_HRD || 0, 10);
+        if (a === 1) cntApproved++;
+        else if (a === 2) cntRejected++;
+        else cntPending++;
+      });
+
+      document.getElementById('stat-total').textContent = cntTotal;
+      document.getElementById('stat-pending').textContent = cntPending;
+      document.getElementById('stat-approved').textContent = cntApproved;
+      document.getElementById('stat-rejected').textContent = cntRejected;
+
+      renderTable();
+    } catch (err) {
+      console.error(err);
+      tbody.innerHTML = `<tr><td colspan="12" class="text-center py-4 text-danger">Gagal memuat data dari server.</td></tr>`;
+    }
+  }
+
+  // Filter Card tabs
+  document.querySelectorAll('.stat-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      currentFilter = card.getAttribute('data-filter');
+      renderTable();
+    });
+  });
+
+  // Debounce search input
+  let searchTimeout = null;
+  document.getElementById('input_search_hrd')?.addEventListener('input', (e) => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      currentSearch = e.target.value.trim();
+      renderTable();
+    }, 200);
+  });
+
+  // Refresh button
+  document.getElementById('btn-refresh-hrd')?.addEventListener('click', () => {
+    loadHrdData();
+  });
+
+  // Modal Submit Button
+  document.getElementById('btn-submit-action-hrd')?.addEventListener('click', () => {
+    submitActionHRD();
+  });
+
+  // Initial load
+  loadHrdData();
+</script>

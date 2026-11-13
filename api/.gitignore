@@ -1,6 +1,7 @@
 /vendor
 /.htaccess
 /.env
+/cetak
 /writable/logs
 .htaccess
 .env

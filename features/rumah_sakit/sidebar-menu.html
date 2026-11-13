@@ -588,20 +588,56 @@
       <div class="parent-wrapper label-1">
         <ul class="nav collapse parent show" id="collapse_absensi">
           <li class="nav-item">
-            <a class="nav-link submenu-item" href="#menu" data-tag="absensi_rekap" data-target="/absensi/rekap" data-title="Rekap Kehadiran Bulanan" data-icon="fas fa-calendar-alt" data-group="Kehadiran">
+            <a class="nav-link submenu-item" href="#menu" data-tag="absensi_rekap" data-target="/eabsensi/VrekapLaporan" data-title="Rekap Laporan" data-icon="fas fa-file-invoice" data-group="Kehadiran">
               <div class="d-flex align-items-center">
-                <span class="nav-link-icon"><span class="fas fa-calendar-alt"></span></span>
-                <span class="nav-link-text ps-1">Rekap Bulanan</span>
+                <span class="nav-link-icon"><span class="fas fa-file-invoice"></span></span>
+                <span class="nav-link-text ps-1">Rekap Laporan</span>
               </div>
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link submenu-item" href="#menu" data-tag="absensi_status" data-target="/absensi/status" data-title="Rekap Status Kehadiran" data-icon="fas fa-user-clock" data-group="Kehadiran">
-              <div class="d-flex align-items-center">
-                <span class="nav-link-icon"><span class="fas fa-user-clock"></span></span>
-                <span class="nav-link-text ps-1">Status Kehadiran</span>
+            <a class="nav-link dropdown-indicator" href="#collapse_absensi_cuti" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="collapse_absensi_cuti">
+              <div class="d-flex align-items-center mb-1">
+                <span class="nav-link-icon"><span class="fas fa-calendar-minus"></span></span>
+                <span class="nav-link-text ps-1">Cuti</span>
               </div>
             </a>
+            <div class="parent-wrapper">
+              <ul class="nav collapse parent" id="collapse_absensi_cuti">
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="absensi_cuti" data-target="/eabsensi/cuti/cuti" data-title="Cuti" data-icon="fas fa-calendar-plus" data-group="Cuti">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-calendar-plus"></span></span>
+                      <span class="nav-link-text ps-1">Cuti</span>
+                    </div>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="absensi_approval_cuti" data-target="/eabsensi/cuti/approval_cuti" data-title="Approval Cuti" data-icon="fas fa-user-check" data-group="Cuti">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-user-check"></span></span>
+                      <span class="nav-link-text ps-1">Approval Cuti</span>
+                    </div>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="absensi_approval_cuti_hrd" data-target="/eabsensi/cuti/approval_cuti_hrd" data-title="Approval Cuti HRD" data-icon="fas fa-user-shield" data-group="Cuti">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-user-shield"></span></span>
+                      <span class="nav-link-text ps-1">Approval Cuti HRD</span>
+                    </div>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="absensi_monitoring_cuti" data-target="/eabsensi/cuti/monitoring_cuti" data-title="Monitoring Cuti" data-icon="fas fa-calendar-alt" data-group="Cuti">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-calendar-alt"></span></span>
+                      <span class="nav-link-text ps-1">Monitoring Cuti</span>
+                    </div>
+                  </a>
+                </li>
+              </ul>
+            </div>
           </li>
           <li class="nav-item">
             <a class="nav-link submenu-item" href="#menu" data-tag="absensi_lembur" data-target="/absensi/lembur" data-title="Rekap Lembur Pegawai" data-icon="fas fa-business-time" data-group="Kehadiran">

@@ -623,6 +623,14 @@ class Pegawai extends BaseController
         return sendResponse(200, $this->mPegawai->getCuti($params));
     }
 
+    public function sisa_cuti()
+    {
+        $idPegawai = $this->request->getGet('id_pegawai') ?? $this->request->getGet('id');
+        $nip = $this->request->getGet('nip');
+        $res = $this->mPegawai->getSisaCuti($idPegawai, $nip);
+        return sendResponse(200, $res);
+    }
+
     public function save_cuti()
     {
         $data = $this->getPayload();
@@ -639,6 +647,60 @@ class Pegawai extends BaseController
         if (empty($id)) return sendResponse(400, null, 'ID cuti diperlukan');
         $res = $this->mPegawai->deleteCuti($id);
         return sendResponse($res['code'], $res, $res['message']);
+    }
+
+    public function approve_cuti_hrd()
+    {
+        $data = $this->getPayload();
+        $kdCuti = $data['kd_cuti'] ?? $data['KD_CUTI'] ?? null;
+        $catatan = $data['catatan_hrd'] ?? $data['CATATAN_HRD'] ?? '';
+
+        if (empty($kdCuti)) {
+            return sendResponse(400, null, 'KD_CUTI diperlukan');
+        }
+
+        $res = $this->mPegawai->updateApprovalHRD($kdCuti, 1, $catatan);
+        return sendResponse($res['code'], $res, $res['message']);
+    }
+
+    public function reject_cuti_hrd()
+    {
+        $data = $this->getPayload();
+        $kdCuti = $data['kd_cuti'] ?? $data['KD_CUTI'] ?? null;
+        $catatan = $data['catatan_hrd'] ?? $data['CATATAN_HRD'] ?? '';
+
+        if (empty($kdCuti)) {
+            return sendResponse(400, null, 'KD_CUTI diperlukan');
+        }
+
+        $res = $this->mPegawai->updateApprovalHRD($kdCuti, 2, $catatan);
+        return sendResponse($res['code'], $res, $res['message']);
+    }
+
+    public function action_cuti_hrd()
+    {
+        $data = $this->getPayload();
+        $kdCuti = $data['kd_cuti'] ?? $data['KD_CUTI'] ?? null;
+        $status = $data['status'] ?? $data['approval_hrd'] ?? $data['APPROVAL_HRD'] ?? 1;
+        $catatan = $data['catatan_hrd'] ?? $data['CATATAN_HRD'] ?? '';
+
+        if (empty($kdCuti)) {
+            return sendResponse(400, null, 'KD_CUTI diperlukan');
+        }
+
+        $res = $this->mPegawai->updateApprovalHRD($kdCuti, $status, $catatan);
+        return sendResponse($res['code'], $res, $res['message']);
+    }
+
+    public function monitoring_cuti()
+    {
+        $params = [
+            'tahun'   => $this->request->getGet('tahun') ?? $this->request->getGet('year'),
+            'bulan'   => $this->request->getGet('bulan') ?? $this->request->getGet('month'),
+            'search'  => $this->request->getGet('search') ?? $this->request->getGet('keyword') ?? $this->request->getGet('unit')
+        ];
+        $res = $this->mPegawai->getMonitoringCuti($params);
+        return sendResponse(200, $res);
     }
 
     // ==========================================

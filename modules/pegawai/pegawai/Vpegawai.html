@@ -443,7 +443,13 @@
       const rs = await httpPost(`${config.api_url}/cTambahPegawai/print/${id}`, { id: id });
       if (typeof hideLoader === 'function') hideLoader();
       if (rs && rs.code === 200 && rs.data && rs.data.length > 0 && rs.data[0].file) {
-        window.open(rs.data[0].file, '_blank');
+        let fileUrl = rs.data[0].file;
+        try {
+          const parsed = new URL(fileUrl);
+          // Selaraskan host & port dengan browser saat ini agar tidak refused to connect
+          fileUrl = `${window.location.origin}${parsed.pathname}${parsed.search}`;
+        } catch (e) {}
+        window.open(fileUrl, '_blank');
       } else {
         const msg = (rs && rs.message) ? rs.message : 'Gagal mencetak riwayat pegawai.';
         if (typeof showDialog === 'function') {

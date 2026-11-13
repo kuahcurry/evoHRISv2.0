@@ -55,7 +55,7 @@ const loadModule = async (file, target = '#module-container', type = 'file', rel
  } catch (err) {
   console.error(err.message);
  }
- if (response) {
+ if (response && response.ok) {
   elem.innerHTML = '';
   const text = await response.text();
   const parser = new DOMParser();
@@ -71,7 +71,12 @@ const loadModule = async (file, target = '#module-container', type = 'file', rel
   }else if (type == 'file') {
    if (doc.querySelector('template') !== null) html = doc.querySelector('template').content.cloneNode(true);
   }
-  elem.appendChild(html);
+  if (html) {
+   elem.appendChild(html);
+  } else {
+   console.warn(`Template tidak ditemukan pada modul ${filepath}`);
+   return false;
+  }
   let code = null;
   if (document.readyState === "loading") {
    document.addEventListener("DOMContentLoaded", console.info(`loading module ${filename} is on process...`));

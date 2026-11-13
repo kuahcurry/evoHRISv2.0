@@ -52,7 +52,15 @@ if (!function_exists('printing')) {
       $root = realpath(dirname(__DIR__, 2));
     }
     $baseUrl = getenv('app.baseURL');
-    if (empty($baseUrl)) {
+    if (!empty($_SERVER['HTTP_HOST'])) {
+      $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+      $parsedPath = parse_url($baseUrl, PHP_URL_PATH);
+      if ($parsedPath) {
+        $baseUrl = "{$scheme}://{$_SERVER['HTTP_HOST']}{$parsedPath}";
+      } else {
+        $baseUrl = "{$scheme}://{$_SERVER['HTTP_HOST']}";
+      }
+    } elseif (empty($baseUrl)) {
       $baseUrl = 'http://127.0.0.1:8099/evoHRIS_v2.1/api';
     }
     $printerService = getenv('app.services');

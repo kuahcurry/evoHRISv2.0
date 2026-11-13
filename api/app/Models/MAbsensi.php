@@ -505,4 +505,170 @@ class MAbsensi extends Model
             ->orderBy('att.scan_date', 'ASC')
             ->get()->getResultArray();
     }
+
+    /**
+     * Rekapitulasi Data Cuti Pegawai (Tahunan / Bulanan)
+     */
+    public function getRekapCuti($tahun, $bulan = null, $kdBagian = null)
+    {
+        $builder = $this->db->table('detail_cuti_pegawai d')
+            ->select('d.KD_CUTI, d.NIP, d.NAMA, d.KD_BAGIAN, COALESCE(b.BAGIAN, "-") AS BAGIAN, jc.JENIS_CUTI, d.TANGGAL_MULAI, d.TANGGAL_SAMPAI, d.KEPERLUAN, d.STATUS')
+            ->join('jenis_cuti jc', 'jc.KD_JENIS_CUTI = d.KD_JENIS_CUTI', 'left')
+            ->join('bagian b', 'b.KD_BAGIAN = d.KD_BAGIAN', 'left')
+            ->where('jc.KELOMPOK_IJIN', 0);
+
+        if (!empty($tahun)) {
+            $builder->where('YEAR(d.TANGGAL_MULAI)', (int)$tahun);
+        }
+        if (!empty($bulan) && $bulan !== 'all' && $bulan !== '-') {
+            $builder->where('MONTH(d.TANGGAL_MULAI)', (int)$bulan);
+        }
+        if (!empty($kdBagian) && $kdBagian !== 'all' && $kdBagian !== '-') {
+            $builder->where('d.KD_BAGIAN', $kdBagian);
+        }
+
+        $rows = $builder->orderBy('d.TANGGAL_MULAI', 'ASC')->get()->getResultArray();
+
+        foreach ($rows as &$r) {
+            $tglMulai = $r['TANGGAL_MULAI'];
+            $tglSampai = $r['TANGGAL_SAMPAI'];
+            if (empty($tglSampai) || $tglSampai === '0000-00-00' || $tglSampai === $tglMulai) {
+                $r['JUMLAH_HARI'] = 1;
+            } else {
+                try {
+                    $d1 = new \DateTime($tglMulai);
+                    $d2 = new \DateTime($tglSampai);
+                    $diff = $d1->diff($d2);
+                    $r['JUMLAH_HARI'] = ($diff->days + 1);
+                } catch (\Exception $e) {
+                    $r['JUMLAH_HARI'] = 1;
+                }
+            }
+            if ($r['STATUS'] == '1') {
+                $r['STATUS_LABEL'] = 'Disetujui';
+            } elseif ($r['STATUS'] == '2') {
+                $r['STATUS_LABEL'] = 'Ditolak';
+            } else {
+                $r['STATUS_LABEL'] = 'Menunggu';
+            }
+        }
+        unset($r);
+
+        return $rows;
+    }
+
+    /**
+     * Rekapitulasi Data Ijin Pegawai (Tahunan / Bulanan)
+     */
+    public function getRekapIjin($tahun, $bulan = null, $kdBagian = null)
+    {
+        $builder = $this->db->table('detail_cuti_pegawai d')
+            ->select('d.KD_CUTI, d.NIP, d.NAMA, d.KD_BAGIAN, COALESCE(b.BAGIAN, "-") AS BAGIAN, jc.JENIS_CUTI, d.TANGGAL_MULAI, d.TANGGAL_SAMPAI, d.KEPERLUAN, d.STATUS')
+            ->join('jenis_cuti jc', 'jc.KD_JENIS_CUTI = d.KD_JENIS_CUTI', 'left')
+            ->join('bagian b', 'b.KD_BAGIAN = d.KD_BAGIAN', 'left')
+            ->where('jc.KELOMPOK_IJIN', 1);
+
+        if (!empty($tahun)) {
+            $builder->where('YEAR(d.TANGGAL_MULAI)', (int)$tahun);
+        }
+        if (!empty($bulan) && $bulan !== 'all' && $bulan !== '-') {
+            $builder->where('MONTH(d.TANGGAL_MULAI)', (int)$bulan);
+        }
+        if (!empty($kdBagian) && $kdBagian !== 'all' && $kdBagian !== '-') {
+            $builder->where('d.KD_BAGIAN', $kdBagian);
+        }
+
+        $rows = $builder->orderBy('d.TANGGAL_MULAI', 'ASC')->get()->getResultArray();
+
+        foreach ($rows as &$r) {
+            $tglMulai = $r['TANGGAL_MULAI'];
+            $tglSampai = $r['TANGGAL_SAMPAI'];
+            if (empty($tglSampai) || $tglSampai === '0000-00-00' || $tglSampai === $tglMulai) {
+                $r['JUMLAH_HARI'] = 1;
+            } else {
+                try {
+                    $d1 = new \DateTime($tglMulai);
+                    $d2 = new \DateTime($tglSampai);
+                    $diff = $d1->diff($d2);
+                    $r['JUMLAH_HARI'] = ($diff->days + 1);
+                } catch (\Exception $e) {
+                    $r['JUMLAH_HARI'] = 1;
+                }
+            }
+            if ($r['STATUS'] == '1') {
+                $r['STATUS_LABEL'] = 'Disetujui';
+            } elseif ($r['STATUS'] == '2') {
+                $r['STATUS_LABEL'] = 'Ditolak';
+            } else {
+                $r['STATUS_LABEL'] = 'Menunggu';
+            }
+        }
+        unset($r);
+
+        return $rows;
+    }
+
+    /**
+     * Rekapitulasi Data Lembur Pegawai
+     */
+    public function getRekapLembur($tahun, $bulan = null, $kdBagian = null)
+    {
+        $builder = $this->db->table('t_lembur tl')
+            ->select('tl.id_lembur, tl.id_pegawai, COALESCE(NULLIF(tl.nama, ""), p.NAMA, "-") AS NAMA, COALESCE(p.NIP, "-") AS NIP, tl.kd_bagian, COALESCE(b.BAGIAN, b_sub.BAGIAN, "-") AS BAGIAN, tl.tanggal_lembur, tl.jam_mulai, tl.jam_selesai, tl.keterangan, tl.status, tl.jenis_hari')
+            ->join('pegawai p', 'tl.id_pegawai = p.ID_PEGAWAI', 'left')
+            ->join('bagian b', 'tl.kd_bagian = b.KD_BAGIAN', 'left')
+            ->join('bagian b_sub', 'tl.kd_subbagian = b_sub.KD_BAGIAN', 'left');
+
+        if (!empty($tahun)) {
+            $builder->where('YEAR(tl.tanggal_lembur)', (int)$tahun);
+        }
+        if (!empty($bulan) && $bulan !== 'all' && $bulan !== '-') {
+            $builder->where('MONTH(tl.tanggal_lembur)', (int)$bulan);
+        }
+        if (!empty($kdBagian) && $kdBagian !== 'all' && $kdBagian !== '-') {
+            $builder->where('tl.kd_bagian', $kdBagian);
+        }
+
+        $rows = $builder->orderBy('tl.tanggal_lembur', 'ASC')->get()->getResultArray();
+
+        foreach ($rows as &$r) {
+            $mulai = $r['jam_mulai'] ?? '';
+            $selesai = $r['jam_selesai'] ?? '';
+            $durasiStr = '-';
+            $durasiJam = 0;
+            if (!empty($mulai) && !empty($selesai)) {
+                $t1 = strtotime($mulai);
+                $t2 = strtotime($selesai);
+                if ($t1 && $t2) {
+                    $diff = $t2 - $t1;
+                    if ($diff < 0) $diff += 86400;
+                    $h = floor($diff / 3600);
+                    $m = floor(($diff % 3600) / 60);
+                    $durasiStr = "{$h} Jam" . ($m > 0 ? " {$m} Mnt" : "");
+                    $durasiJam = round($diff / 3600, 2);
+                }
+            }
+            $r['DURASI'] = $durasiStr;
+            $r['DURASI_JAM'] = $durasiJam;
+
+            if ($r['jenis_hari'] == '1') {
+                $r['JENIS_HARI_LABEL'] = 'Hari Kerja';
+            } elseif ($r['jenis_hari'] == '2') {
+                $r['JENIS_HARI_LABEL'] = 'Hari Libur';
+            } else {
+                $r['JENIS_HARI_LABEL'] = '-';
+            }
+
+            if ($r['status'] == '1') {
+                $r['STATUS_LABEL'] = 'Disetujui';
+            } elseif ($r['status'] == '2') {
+                $r['STATUS_LABEL'] = 'Ditolak';
+            } else {
+                $r['STATUS_LABEL'] = 'Menunggu';
+            }
+        }
+        unset($r);
+
+        return $rows;
+    }
 }

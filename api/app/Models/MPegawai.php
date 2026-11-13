@@ -1836,7 +1836,7 @@ class MPegawai extends Model
     }
 
     // ==========================================
-    // 12. CUTI PEGAWAI
+    // 11. CUTI
     // ==========================================
     public function getCuti($params = [])
     {
@@ -1847,18 +1847,29 @@ class MPegawai extends Model
                        c.TANGGAL_MULAI AS TGL_CUTI_MULAI,
                        c.TANGGAL_SAMPAI AS TGL_CUTI_SAMPAI,
                        c.KEPERLUAN AS KETERANGAN,
+                       CASE 
+                           WHEN c.TANGGAL_SAMPAI IS NOT NULL AND c.TANGGAL_SAMPAI != '0000-00-00' 
+                                AND c.TANGGAL_MULAI IS NOT NULL AND c.TANGGAL_MULAI != '0000-00-00'
+                           THEN DATEDIFF(c.TANGGAL_SAMPAI, c.TANGGAL_MULAI) + 1
+                           ELSE 1
+                       END AS LAMA,
                        COALESCE(p.NAMA, c.NAMA) AS NAMA_PEGAWAI,
                        jc.JENIS_CUTI,
-                       b.BAGIAN
+                       b.BAGIAN,
+                       pp.NAMA AS NAMA_PENGGANTI
                 FROM detail_cuti_pegawai c
                 LEFT JOIN pegawai p ON p.ID_PEGAWAI = c.ID_PEGAWAI
                 LEFT JOIN jenis_cuti jc ON jc.KD_JENIS_CUTI = c.KD_JENIS_CUTI
                 LEFT JOIN bagian b ON b.KD_BAGIAN = c.KD_BAGIAN
+                LEFT JOIN pegawai pp ON pp.ID_PEGAWAI = c.PEGAWAI_PENGGANTI
                 WHERE 1=1";
         $binds = [];
 
         if ($keyword !== '') {
-            $sql .= " AND (p.NAMA LIKE ? OR c.NIP LIKE ? OR jc.JENIS_CUTI LIKE ? OR c.NOMOR_SURAT LIKE ?)";
+            $sql .= " AND (p.NAMA LIKE ? OR c.NAMA LIKE ? OR c.NIP LIKE ? OR p.NIP LIKE ? OR jc.JENIS_CUTI LIKE ? OR c.NOMOR_SURAT LIKE ? OR b.BAGIAN LIKE ?)";
+            $binds[] = "%$keyword%";
+            $binds[] = "%$keyword%";
+            $binds[] = "%$keyword%";
             $binds[] = "%$keyword%";
             $binds[] = "%$keyword%";
             $binds[] = "%$keyword%";
@@ -1869,35 +1880,105 @@ class MPegawai extends Model
         return $this->db->query($sql, $binds)->getResultArray();
     }
 
+    public function getSisaCuti($idPegawai = null, $nip = null)
+    {
+        $year = date('Y');
+        $row = null;
+        if ($idPegawai !== null && $idPegawai !== '') {
+            $row = $this->db->table('pegawai')->where('ID_PEGAWAI', $idPegawai)->get()->getRowArray();
+        }
+        if (!$row && !empty($nip)) {
+            $row = $this->db->table('pegawai')->where('NIP', $nip)->get()->getRowArray();
+        }
+
+        $id = $row['ID_PEGAWAI'] ?? ($idPegawai !== null && $idPegawai !== '' ? $idPegawai : 0);
+        $nipVal = $row['NIP'] ?? $nip ?? '';
+        $baseCuti = !empty($row['jml_cuti']) ? (int)$row['jml_cuti'] : 12;
+
+        if (!empty($id)) {
+            $mc = $this->db->table('master_cutitahunan')
+                ->where('id_pegawai', $id)
+                ->where('tahun', $year)
+                ->get()->getRowArray();
+            if ($mc && isset($mc['jumlah'])) {
+                $baseCuti = (int)$mc['jumlah'];
+            }
+        }
+
+        $used = 0;
+        if ($id !== null || !empty($nipVal)) {
+            $q = "SELECT COALESCE(SUM(
+                    CASE 
+                        WHEN TANGGAL_SAMPAI IS NOT NULL AND TANGGAL_SAMPAI != '0000-00-00'
+                        THEN DATEDIFF(TANGGAL_SAMPAI, TANGGAL_MULAI) + 1
+                        ELSE 1
+                    END
+                  ), 0) AS total_hari
+                  FROM detail_cuti_pegawai
+                  WHERE (ID_PEGAWAI = ? OR (NIP = ? AND NIP != ''))
+                    AND YEAR(TANGGAL_MULAI) = ?
+                    AND (STATUS_BATAL = 0 OR STATUS_BATAL IS NULL)
+                    AND (STATUS = 1 OR STATUS IS NULL)";
+            $usedRow = $this->db->query($q, [$id, $nipVal, $year])->getRowArray();
+            if ($usedRow && isset($usedRow['total_hari'])) {
+                $used = (int)$usedRow['total_hari'];
+            }
+        }
+
+        $sisa = max(0, $baseCuti - $used);
+        $kontak = $row['HANDPHONE'] ?? $row['TELEPHONE'] ?? '';
+        if (empty($kontak)) {
+            $kontak = '4456';
+        }
+
+        return [
+            'id_pegawai' => $id,
+            'nip'        => $nipVal,
+            'nama'       => $row['NAMA'] ?? '',
+            'total'      => $baseCuti,
+            'terpakai'   => $used,
+            'sisa'       => $sisa,
+            'kontak'     => $kontak,
+            'bagian'     => $row['BAGIAN'] ?? ''
+        ];
+    }
+
     public function saveCuti($data)
     {
         try {
             $idPegawai = $data['ID_PEGAWAI'] ?? null;
-            if (empty($idPegawai)) {
+            if ($idPegawai === null || $idPegawai === '') {
+                $idPegawai = $data['NIP'] ?? null;
+            }
+            if ($idPegawai === null || $idPegawai === '') {
                 return ['code' => 422, 'message' => 'Pegawai belum dipilih'];
             }
 
             $snapshot = $this->getPegawaiSnapshot($idPegawai);
             $kd = $data['KD_CUTI'] ?? '';
 
-            $noSurat = !empty($data['NOMOR_SURAT']) ? trim($data['NOMOR_SURAT']) : (!empty($data['NO_SURAT']) ? trim($data['NO_SURAT']) : ('CUTI/' . date('Ymd') . '/' . $idPegawai));
+            $noSurat = !empty($data['NOMOR_SURAT']) ? trim($data['NOMOR_SURAT']) : (!empty($data['NO_SURAT']) ? trim($data['NO_SURAT']) : ('CUTI/' . date('Ymd') . '/' . ($snapshot['ID_PEGAWAI'] ?? $idPegawai)));
             $tglMulai = $this->normalizeDate($data['TANGGAL_MULAI'] ?? $data['TGL_CUTI_MULAI'] ?? null, date('Y-m-d'));
             $tglSampai = $this->normalizeDate($data['TANGGAL_SAMPAI'] ?? $data['TGL_CUTI_SAMPAI'] ?? null, date('Y-m-d'));
             $kdJenisCuti = !empty($data['KD_JENIS_CUTI']) ? (int)$data['KD_JENIS_CUTI'] : 1;
             $keperluan = !empty($data['KEPERLUAN']) ? $data['KEPERLUAN'] : (!empty($data['KETERANGAN']) ? $data['KETERANGAN'] : '-');
+            $nip = !empty($data['NIP']) ? $data['NIP'] : (!empty($snapshot['NIP']) ? $snapshot['NIP'] : '');
+            $nama = !empty($data['NAMA']) ? $data['NAMA'] : (!empty($snapshot['NAMA']) ? $snapshot['NAMA'] : '');
+            $kdBagian = !empty($data['KD_BAGIAN']) ? (int)$data['KD_BAGIAN'] : ($snapshot['KD_BAGIAN'] ?? 1);
+            $idPegVal = isset($snapshot['ID_PEGAWAI']) ? $snapshot['ID_PEGAWAI'] : $idPegawai;
 
             $record = [
-                'ID_PEGAWAI'        => $idPegawai,
-                'NIP'               => $snapshot['NIP'],
-                'NAMA'              => $snapshot['NAMA'],
-                'KD_BAGIAN'         => !empty($data['KD_BAGIAN']) ? (int)$data['KD_BAGIAN'] : $snapshot['KD_BAGIAN'],
+                'ID_PEGAWAI'        => $idPegVal,
+                'NIP'               => $nip,
+                'NAMA'              => $nama,
+                'KD_BAGIAN'         => $kdBagian,
                 'KD_JENIS_CUTI'     => $kdJenisCuti,
                 'TANGGAL_MULAI'     => $tglMulai,
                 'TANGGAL_SAMPAI'    => $tglSampai,
                 'NOMOR_SURAT'       => $noSurat,
                 'KEPERLUAN'         => $keperluan,
                 'PEGAWAI_PENGGANTI' => $data['PEGAWAI_PENGGANTI'] ?? $data['PENGGANTI'] ?? null,
-                'STATUS'            => 1,
+                'STATUS'            => isset($data['STATUS']) ? (int)$data['STATUS'] : 0,
                 'TANGGAL_INPUT'     => date('Y-m-d'),
             ];
 
@@ -1922,6 +2003,261 @@ class MPegawai extends Model
         } catch (\Exception $e) {
             return ['code' => 500, 'message' => $e->getMessage()];
         }
+    }
+
+    public function updateApprovalHRD($kdCuti, $statusApproval, $catatanHRD = '')
+    {
+        try {
+            if (empty($kdCuti)) {
+                return ['code' => 400, 'message' => 'KD_CUTI diperlukan'];
+            }
+
+            $statusApproval = (int)$statusApproval; // 1 = Approve, 2 = Reject
+            $updateData = [
+                'APPROVAL_HRD' => $statusApproval,
+                'CATATAN_HRD'  => $catatanHRD,
+            ];
+
+            // Selaraskan juga STATUS umum
+            if ($statusApproval === 1) {
+                $updateData['STATUS'] = 1; // Disetujui
+            } elseif ($statusApproval === 2) {
+                $updateData['STATUS'] = 2; // Ditolak
+            }
+
+            $this->db->table('detail_cuti_pegawai')
+                ->where('KD_CUTI', $kdCuti)
+                ->update($updateData);
+
+            $msg = 'Status approval cuti berhasil direset';
+            if ($statusApproval === 1) {
+                $msg = 'Pengajuan cuti berhasil disetujui HRD';
+            } elseif ($statusApproval === 2) {
+                $msg = 'Pengajuan cuti telah ditolak HRD';
+            }
+
+            return [
+                'code' => 200,
+                'message' => $msg,
+                'kd_cuti' => $kdCuti,
+                'approval_hrd' => $statusApproval
+            ];
+        } catch (\Exception $e) {
+            return ['code' => 500, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function getMonitoringCuti($params = [])
+    {
+        $year = $params['tahun'] ?? $params['year'] ?? '';
+        $month = $params['bulan'] ?? $params['month'] ?? '';
+        $keyword = trim($params['search'] ?? $params['keyword'] ?? $params['unit'] ?? '');
+
+        // 15 jenis cuti baku sesuai spesifikasi
+        $jenisList = [
+            ['kd' => 3,  'key' => 'CUTI_MELAHIRKAN',                             'nama' => 'CUTI MELAHIRKAN'],
+            ['kd' => 6,  'key' => 'CUTI_TAHUNAN',                                'nama' => 'CUTI TAHUNAN'],
+            ['kd' => 9,  'key' => 'CUTI_DI_LUAR_TANGGUNGAN',                    'nama' => 'CUTI DI LUAR TANGGUNGAN'],
+            ['kd' => 13, 'key' => 'IJIN_PULANG_AWAL',                           'nama' => 'IJIN PULANG AWAL'],
+            ['kd' => 14, 'key' => 'IJIN_KELUAR_TUGAS_IKT',                     'nama' => 'IJIN KELUAR TUGAS (IKT)'],
+            ['kd' => 15, 'key' => 'IJIN_KELUAR_PRIBADI_IKP',                   'nama' => 'IJIN KELUAR PRIBADI (IKP)'],
+            ['kd' => 17, 'key' => 'CUTI_KHUSUS_PERNIKAHAN_ANAK',               'nama' => 'CUTI KHUSUS (PERNIKAHAN ANAK)'],
+            ['kd' => 18, 'key' => 'CUTI_KHUSUS_IBADAH_HAJI',                   'nama' => 'CUTI KHUSUS (IBADAH HAJI)'],
+            ['kd' => 19, 'key' => 'CUTI_KHUSUS_IBADAH_UMROH',                  'nama' => 'CUTI KHUSUS (IBADAH UMROH)'],
+            ['kd' => 20, 'key' => 'CUTI_KHUSUS_ISTRI_MELAHIRKAN_KEGUGURAN',     'nama' => 'CUTI KHUSUS (ISTRI MELAHIRKAN/ KEGUGURAN)'],
+            ['kd' => 21, 'key' => 'CUTI_KHUSUS_MENIKAH',                       'nama' => 'CUTI KHUSUS (MENIKAH)'],
+            ['kd' => 22, 'key' => 'CUTI_KHUSUS_MENGKHITANKAN_PEMBAPTISAN_ANAK', 'nama' => 'CUTI KHUSUS (MENGKHITANKAN/ PEMBAPTISAN ANAK)'],
+            ['kd' => 23, 'key' => 'CUTI_KHUSUS_KELUARGA_INTI_MENINGGAL_DUNIA',  'nama' => 'CUTI KHUSUS (KELUARGA INTI MENINGGAL DUNIA)'],
+            ['kd' => 26, 'key' => 'CUTI_SAKIT',                                'nama' => 'CUTI SAKIT'],
+            ['kd' => 27, 'key' => 'IJIN_KHUSUS',                               'nama' => 'IJIN KHUSUS'],
+        ];
+
+        // 48 unit baku rumah sakit sesuai template spesifikasi
+        $standardUnits = [
+            ['no' => 1,  'nama' => 'Kepegawaian', 'aliases' => ['kepegawaian', 'admin dan kepegawaian', 'sdm']],
+            ['no' => 2,  'nama' => 'case manager', 'aliases' => ['case manager', 'casemanager']],
+            ['no' => 3,  'nama' => 'ICU', 'aliases' => ['icu', 'hcu', 'iccu', 'intensif']],
+            ['no' => 4,  'nama' => 'UGD umum', 'aliases' => ['ugd umum', 'igd umum', 'ugd', 'igd']],
+            ['no' => 5,  'nama' => 'UGD PONEK', 'aliases' => ['ugd ponek', 'igd ponek', 'ponek']],
+            ['no' => 6,  'nama' => 'POLIKLINIK BEDAH', 'aliases' => ['poliklinik bedah', 'poli bedah', 'bedah']],
+            ['no' => 7,  'nama' => 'POLIKLINIK PENYAKIT DALAM', 'aliases' => ['poliklinik penyakit dalam', 'poli dalam', 'penyakit dalam']],
+            ['no' => 8,  'nama' => 'POLIKLINIK ANAK', 'aliases' => ['poliklinik anak', 'poli anak']],
+            ['no' => 9,  'nama' => 'POLIKLINIK OBGYN', 'aliases' => ['poliklinik obgyn', 'poli obgyn', 'obgyn', 'kandungan']],
+            ['no' => 10, 'nama' => 'POLIKLINIK GIGI', 'aliases' => ['poliklinik gigi', 'poli gigi', 'gigi dasar', 'poli gigi dasar']],
+            ['no' => 11, 'nama' => 'POLIKLINIK THT', 'aliases' => ['poliklinik tht', 'poli tht', 'tht']],
+            ['no' => 12, 'nama' => 'POLIKLINIK JANTUNG DAN PEMBULUH DARAH', 'aliases' => ['poliklinik jantung', 'poli jantung', 'jantung']],
+            ['no' => 13, 'nama' => 'LABORATORIUM', 'aliases' => ['laboratorium', 'lab', 'instalasi laboratorium']],
+            ['no' => 14, 'nama' => 'GIZI', 'aliases' => ['gizi', 'konsultasi gizi', 'instalasi gizi']],
+            ['no' => 15, 'nama' => 'PERENCANAAN dan PENGEMBANGAN', 'aliases' => ['perencanaan dan pengembangan', 'perencanaan']],
+            ['no' => 16, 'nama' => 'KEUANGAN dan UMUM', 'aliases' => ['keuangan dan umum', 'keuangan']],
+            ['no' => 17, 'nama' => 'OK', 'aliases' => ['ok', 'kamar operasi', 'bedah sentral', 'ibs']],
+            ['no' => 18, 'nama' => 'POLIKLINIK SYARAF', 'aliases' => ['poliklinik syaraf', 'poli syaraf', 'syaraf', 'saraf']],
+            ['no' => 19, 'nama' => 'RUANGAN BERSALIN', 'aliases' => ['ruangan bersalin', 'kebidanan', 'bersalin', 'vk']],
+            ['no' => 20, 'nama' => 'RUANG NIFAS', 'aliases' => ['ruang nifas', 'nifas']],
+            ['no' => 21, 'nama' => 'RUANG NICU', 'aliases' => ['ruang nicu', 'perinatologi', 'nicu', 'picu']],
+            ['no' => 22, 'nama' => 'POLIKLINIK MATA', 'aliases' => ['poliklinik mata', 'poli mata', 'mata']],
+            ['no' => 23, 'nama' => 'RUANG ANAK', 'aliases' => ['ruang anak', 'anak', 'bangsal anak']],
+            ['no' => 24, 'nama' => 'REKAM MEDIS', 'aliases' => ['rekam medis', 'ruang rekam medis', 'rekam medik']],
+            ['no' => 25, 'nama' => 'BPJS', 'aliases' => ['bpjs', 'casemix']],
+            ['no' => 26, 'nama' => 'RADIOLOGI', 'aliases' => ['radiologi', 'instalasi radiologi', 'roentgen']],
+            ['no' => 27, 'nama' => 'POLIKLINIK TB DOTS RO', 'aliases' => ['poliklinik tb dots', 'poli tb dots', 'tb dots', 'tb dots ro']],
+            ['no' => 28, 'nama' => 'LONDRY', 'aliases' => ['londry', 'laundry', 'loundry']],
+            ['no' => 29, 'nama' => 'CSSD', 'aliases' => ['cssd', 'sterilisasi']],
+            ['no' => 30, 'nama' => 'KESEHATAN LINGKUNGAN', 'aliases' => ['kesehatan lingkungan', 'kesling', 'sanitasi']],
+            ['no' => 31, 'nama' => 'PKRS_promosi kesehatan RS', 'aliases' => ['pkrs_promosi kesehatan rs', 'pkrs', 'promosi kesehatan']],
+            ['no' => 32, 'nama' => 'PENGELOLA BARANG / ASET', 'aliases' => ['pengelola barang / aset', 'pengelola barang', 'aset']],
+            ['no' => 33, 'nama' => 'LOGISTIK DAN UMUM', 'aliases' => ['logistik dan umum', 'logistik', 'rumah tangga']],
+            ['no' => 34, 'nama' => 'IPSRS', 'aliases' => ['ipsrs', 'ips rs', 'pemeliharaan sarana']],
+            ['no' => 35, 'nama' => 'BDRS', 'aliases' => ['bdrs', 'unit transfusi darah', 'bank darah', 'utd']],
+            ['no' => 36, 'nama' => 'BIDANG KEPERAWATAN', 'aliases' => ['bidang keperawatan', 'keperawatan', 'komite keperawatan']],
+            ['no' => 37, 'nama' => 'GUDANG FARMASI', 'aliases' => ['gudang farmasi']],
+            ['no' => 38, 'nama' => 'RUANG APOTIK', 'aliases' => ['ruang apotik', 'apotik', 'apotek']],
+            ['no' => 39, 'nama' => 'INSTALASI FARMASI', 'aliases' => ['instalasi farmasi', 'farmasi']],
+            ['no' => 40, 'nama' => 'KEAMANAN', 'aliases' => ['keamanan', 'satpam', 'security']],
+            ['no' => 41, 'nama' => 'CLEANING SERVICE', 'aliases' => ['cleaning service', 'cs', 'kebersihan']],
+            ['no' => 42, 'nama' => 'PPI', 'aliases' => ['ppi', 'pencegahan infeksi']],
+            ['no' => 43, 'nama' => 'DIREKTUR', 'aliases' => ['direktur', 'direksi', 'pimpinan']],
+            ['no' => 44, 'nama' => 'KASUBAG TATA USAHA', 'aliases' => ['kasubag tata usaha', 'tata usaha', 'tu']],
+            ['no' => 45, 'nama' => 'DRIVER AMBULANCE', 'aliases' => ['driver ambulance', 'driver', 'sopir', 'pengemudi']],
+            ['no' => 46, 'nama' => 'RUANG INTERNA DEWASA', 'aliases' => ['ruang interna dewasa', 'kelas 1 dan 2', 'umum dan bangsal', 'interna', 'rawat inap dewasa']],
+            ['no' => 47, 'nama' => 'POLIKLINIK', 'aliases' => ['poliklinik', 'poli general check up', 'poli fisioterapi', 'rawat jalan']],
+            ['no' => 48, 'nama' => 'IPCN', 'aliases' => ['ipcn']]
+        ];
+
+        // Inisialisasi data unit
+        $unitsData = [];
+        foreach ($standardUnits as $u) {
+            $cutiCounts = [];
+            foreach ($jenisList as $j) {
+                $cutiCounts[$j['kd']] = 0;
+            }
+            $unitsData[] = [
+                'no'         => $u['no'],
+                'nama'       => $u['nama'],
+                'aliases'    => $u['aliases'],
+                'cuti'       => $cutiCounts,
+                'sudah'      => 0,
+                'belum'      => 0,
+                'ditolak'    => 0,
+                'total'      => 0,
+                'keterangan' => 'Tidak ada data',
+                'detail'     => []
+            ];
+        }
+
+        // Ambil data dari detail_cuti_pegawai dengan filter tanggal
+        $sql = "SELECT c.KD_CUTI, c.ID_PEGAWAI, c.NIP, c.NAMA, c.KD_BAGIAN, b.BAGIAN, c.KD_JENIS_CUTI, jc.JENIS_CUTI,
+                       c.TANGGAL_MULAI, c.TANGGAL_SAMPAI, c.STATUS, c.APPROVAL_HRD, c.CATATAN_HRD, c.CATATAN_ATASAN
+                FROM detail_cuti_pegawai c
+                LEFT JOIN bagian b ON b.KD_BAGIAN = c.KD_BAGIAN
+                LEFT JOIN jenis_cuti jc ON jc.KD_JENIS_CUTI = c.KD_JENIS_CUTI
+                WHERE (c.STATUS_BATAL = 0 OR c.STATUS_BATAL IS NULL)";
+        
+        $binds = [];
+        if (!empty($year)) {
+            $sql .= " AND YEAR(c.TANGGAL_MULAI) = ?";
+            $binds[] = $year;
+        }
+        if (!empty($month)) {
+            $sql .= " AND MONTH(c.TANGGAL_MULAI) = ?";
+            $binds[] = $month;
+        }
+
+        $records = $this->db->query($sql, $binds)->getResultArray();
+
+        // Agregasi setiap permohonan ke dalam unit yang sesuai
+        foreach ($records as $row) {
+            $bagianName = strtolower(trim($row['BAGIAN'] ?? ''));
+            $kdJenisCuti = (int)($row['KD_JENIS_CUTI'] ?? 0);
+            $apprHrd = (int)($row['APPROVAL_HRD'] ?? 0);
+
+            $matchedIdx = -1;
+            // Cocokkan ke unit yang bersangkutan
+            foreach ($unitsData as $idx => $u) {
+                if ($bagianName !== '' && (strtolower($u['nama']) === $bagianName || in_array($bagianName, $u['aliases']))) {
+                    $matchedIdx = $idx;
+                    break;
+                }
+            }
+
+            // Jika tidak cocok langsung, cari substring
+            if ($matchedIdx === -1 && $bagianName !== '') {
+                foreach ($unitsData as $idx => $u) {
+                    foreach ($u['aliases'] as $alias) {
+                        if (strpos($bagianName, $alias) !== false || strpos($alias, $bagianName) !== false) {
+                            $matchedIdx = $idx;
+                            break 2;
+                        }
+                    }
+                }
+            }
+
+            // Fallback cerdas
+            if ($matchedIdx === -1) {
+                if (strpos($bagianName, 'poli') !== false) {
+                    $matchedIdx = 46; // No 47 POLIKLINIK
+                } elseif (strpos($bagianName, 'kepeg') !== false || strpos($bagianName, 'admin') !== false) {
+                    $matchedIdx = 0;  // No 1 Kepegawaian
+                }
+            }
+
+            if ($matchedIdx !== -1) {
+                if (isset($unitsData[$matchedIdx]['cuti'][$kdJenisCuti])) {
+                    $unitsData[$matchedIdx]['cuti'][$kdJenisCuti]++;
+                }
+
+                // Hitung status approval
+                if ($apprHrd === 1) {
+                    $unitsData[$matchedIdx]['sudah']++;
+                } elseif ($apprHrd === 2) {
+                    $unitsData[$matchedIdx]['ditolak']++;
+                } else {
+                    $unitsData[$matchedIdx]['belum']++;
+                }
+
+                $unitsData[$matchedIdx]['total']++;
+                $unitsData[$matchedIdx]['detail'][] = [
+                    'kd_cuti'      => $row['KD_CUTI'],
+                    'nip'          => $row['NIP'],
+                    'nama'         => $row['NAMA'],
+                    'jenis_cuti'   => $row['JENIS_CUTI'],
+                    'tgl_mulai'    => $row['TANGGAL_MULAI'],
+                    'approval_hrd' => $apprHrd
+                ];
+            }
+        }
+
+        // Tentukan keterangan akhir untuk setiap unit
+        foreach ($unitsData as &$u) {
+            if ($u['total'] === 0) {
+                $u['keterangan'] = 'Tidak ada data';
+            } elseif ($u['belum'] > 0) {
+                $u['keterangan'] = 'Ada data yang belum di Approv';
+            } else {
+                $u['keterangan'] = 'Sudah di Approv semua';
+            }
+        }
+        unset($u);
+
+        // Filter keyword unit jika diminta
+        if ($keyword !== '') {
+            $filtered = [];
+            foreach ($unitsData as $u) {
+                if (stripos($u['nama'], $keyword) !== false) {
+                    $filtered[] = $u;
+                }
+            }
+            $unitsData = $filtered;
+        }
+
+        return [
+            'jenis_cuti' => $jenisList,
+            'units'      => $unitsData,
+            'summary'    => [
+                'total_permohonan' => count($records),
+                'total_unit'       => count($unitsData)
+            ]
+        ];
     }
 
     public function getDemosi($params = [])

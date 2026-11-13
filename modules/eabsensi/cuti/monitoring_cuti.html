@@ -1,0 +1,839 @@
+<style>
+  .evo-matrix-card {
+    border-radius: 0.65rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    background: #fff;
+    border: 1px solid #edf2f9;
+  }
+  .table-matrix-wrapper {
+    position: relative;
+    max-height: 72vh;
+    overflow-x: auto;
+    overflow-y: auto;
+  }
+  .table-matrix {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    margin-bottom: 0;
+  }
+  .table-matrix thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    font-size: 0.72rem;
+    font-weight: 700;
+    vertical-align: middle;
+    text-align: center;
+    white-space: nowrap;
+    padding: 0.45rem 0.5rem;
+    background-color: #edf2f9;
+    color: #344050;
+    border: 1px solid #d8e2ef;
+  }
+  .table-matrix thead tr:nth-child(2) th {
+    top: 32px;
+    z-index: 3;
+    background-color: #f9fafd;
+    font-size: 0.68rem;
+  }
+  .table-matrix td {
+    font-size: 0.78rem;
+    vertical-align: middle;
+    padding: 0.4rem 0.5rem;
+    border: 1px solid #e3ebf6;
+    white-space: nowrap;
+  }
+  .table-matrix tbody tr:hover {
+    background-color: #f4f7fb !important;
+  }
+  .table-matrix tbody tr.row-has-data {
+    background-color: #ffffff;
+  }
+  .table-matrix tbody tr.row-empty {
+    background-color: #fafbfc;
+    color: #748194;
+  }
+  .th-cuti-header {
+    background-color: #e3ebf6 !important;
+    color: #2c7be5 !important;
+  }
+  .th-approval-header {
+    background-color: #e0f2fe !important;
+    color: #0284c7 !important;
+  }
+  .sticky-col-no {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background-color: inherit;
+    width: 42px;
+    min-width: 42px;
+    text-align: center;
+  }
+  .sticky-col-unit {
+    position: sticky;
+    left: 42px;
+    z-index: 2;
+    background-color: inherit;
+    min-width: 220px;
+    max-width: 260px;
+    box-shadow: 3px 0 5px rgba(0,0,0,0.05);
+  }
+  thead th.sticky-col-no, thead th.sticky-col-unit {
+    z-index: 4 !important;
+    background-color: #edf2f9 !important;
+  }
+  .table-matrix tfoot th {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    background-color: #edf2f9;
+    font-weight: 700;
+    border: 1px solid #d8e2ef;
+    padding: 0.5rem;
+  }
+  .table-matrix tfoot th.sticky-col-no, .table-matrix tfoot th.sticky-col-unit {
+    z-index: 4 !important;
+    background-color: #edf2f9 !important;
+  }
+</style>
+
+<template>
+  <div class="container-fluid py-3" id="page-monitoring-cuti-container">
+    <!-- Breadcrumb & Title -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <div>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-1 fs--2">
+            <li class="breadcrumb-item"><a href="#" class="text-decoration-none">E-Absensi</a></li>
+            <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Cuti</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Monitoring Cuti</li>
+          </ol>
+        </nav>
+        <h4 class="mb-0 text-primary fw-bold">
+          <i class="fas fa-chart-line me-2"></i>Monitoring Pengajuan Cuti Seluruh Unit
+        </h4>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-soft-info text-info px-3 py-2 fs--1 rounded-pill">
+          <i class="fas fa-hospital me-1"></i> 48 Unit Standar RS
+        </span>
+      </div>
+    </div>
+
+    <!-- Filter & Action Bar -->
+    <div class="card evo-matrix-card mb-3">
+      <div class="card-body py-3 px-3">
+        <div class="row g-2 align-items-center">
+          <div class="col-12 col-md-3">
+            <label class="form-label fs--2 fw-bold text-700 mb-1" for="filter_search_unit">Cari Unit Kerja</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-light"><i class="fas fa-search text-muted"></i></span>
+              <input type="text" id="filter_search_unit" class="form-control" placeholder="Ketik nama unit kerja...">
+            </div>
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label fs--2 fw-bold text-700 mb-1" for="filter_tahun">
+              Tahun <span class="text-danger">*</span>
+            </label>
+            <select id="filter_tahun" class="form-select form-select-sm" required>
+              <option value="">-- Pilih Tahun --</option>
+              <option value="2027">2027</option>
+              <option value="2026">2026</option>
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label fs--2 fw-bold text-700 mb-1" for="filter_bulan">
+              Bulan <span class="text-danger">*</span>
+            </label>
+            <select id="filter_bulan" class="form-select form-select-sm" required>
+              <option value="">-- Pilih Bulan --</option>
+              <option value="1">Januari</option>
+              <option value="2">Februari</option>
+              <option value="3">Maret</option>
+              <option value="4">April</option>
+              <option value="5">Mei</option>
+              <option value="6">Juni</option>
+              <option value="7">Juli</option>
+              <option value="8">Agustus</option>
+              <option value="9">September</option>
+              <option value="10">Oktober</option>
+              <option value="11">November</option>
+              <option value="12">Desember</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-5 d-flex justify-content-md-end align-items-end gap-2 pt-2 pt-md-0">
+            <button type="button" id="btn-apply-filter" class="btn btn-primary btn-sm">
+              <i class="fas fa-filter me-1"></i>Filter
+            </button>
+            <button type="button" id="btn-export-excel" class="btn btn-success btn-sm" title="Ekspor data matriks ke format Excel (.xls)">
+              <i class="fas fa-file-excel me-1"></i>Export Excel
+            </button>
+            <button type="button" id="btn-print-monitoring" class="btn btn-falcon-default btn-sm" title="Cetak Tabel Matriks">
+              <i class="fas fa-print me-1"></i>Cetak
+            </button>
+            <button type="button" id="btn-reset-filter" class="btn btn-falcon-default btn-sm" title="Reset Filter">
+              <i class="fas fa-undo me-1"></i>Reset
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Status Counter Cards -->
+    <div class="row g-2 mb-3">
+      <div class="col-6 col-lg-3">
+        <div class="p-2 px-3 bg-white rounded border d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fs--2 text-muted fw-bold">TOTAL UNIT STANDAR</div>
+            <h5 class="mb-0 fw-bold text-dark" id="counter-total-unit">48 Unit</h5>
+          </div>
+          <i class="fas fa-building text-300 fa-2x"></i>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="p-2 px-3 bg-white rounded border d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fs--2 text-muted fw-bold">TOTAL PENGAJUAN</div>
+            <h5 class="mb-0 fw-bold text-primary" id="counter-total-cuti">-</h5>
+          </div>
+          <i class="fas fa-file-alt text-soft-primary text-primary fa-2x"></i>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="p-2 px-3 bg-white rounded border d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fs--2 text-muted fw-bold">BELUM DI-APPROVE</div>
+            <h5 class="mb-0 fw-bold text-warning" id="counter-total-belum">-</h5>
+          </div>
+          <i class="fas fa-clock text-soft-warning text-warning fa-2x"></i>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="p-2 px-3 bg-white rounded border d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fs--2 text-muted fw-bold">SUDAH DISETUJUI</div>
+            <h5 class="mb-0 fw-bold text-success" id="counter-total-sudah">-</h5>
+          </div>
+          <i class="fas fa-check-circle text-soft-success text-success fa-2x"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Matriks Card & Table -->
+    <div class="card evo-matrix-card mb-4">
+      <div class="card-header bg-white py-2 px-3 border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold text-700">
+          <i class="fas fa-table text-primary me-2"></i>Matriks Pemantauan Cuti per Unit Kerja
+        </h6>
+        <span class="fs--2 text-muted" id="matrix-info">Pilih filter Tahun dan Bulan untuk memuat data.</span>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-matrix-wrapper">
+          <table class="table table-bordered table-sm table-matrix text-center" id="table-monitoring-cuti">
+            <thead>
+              <!-- Baris Header 1 -->
+              <tr>
+                <th rowspan="2" class="sticky-col-no">No</th>
+                <th rowspan="2" class="sticky-col-unit text-start">Unit</th>
+                <th colspan="15" class="th-cuti-header">Pengajuan Cuti</th>
+                <th colspan="3" class="th-approval-header">Status Approval</th>
+                <th rowspan="2" style="width: 55px;">Total</th>
+                <th rowspan="2" style="min-width: 190px;" class="text-start">Keterangan</th>
+              </tr>
+              <!-- Baris Header 2 (15 Jenis Cuti + 3 Status Approval) -->
+              <tr id="header-jenis-cuti-row">
+                <th title="CUTI MELAHIRKAN">CUTI MELAHIRKAN</th>
+                <th title="CUTI TAHUNAN">CUTI TAHUNAN</th>
+                <th title="CUTI DI LUAR TANGGUNGAN">CUTI DI LUAR TANGGUNGAN</th>
+                <th title="IJIN PULANG AWAL">IJIN PULANG AWAL</th>
+                <th title="IJIN KELUAR TUGAS (IKT)">IJIN KELUAR TUGAS (IKT)</th>
+                <th title="IJIN KELUAR PRIBADI (IKP)">IJIN KELUAR PRIBADI (IKP)</th>
+                <th title="CUTI KHUSUS (PERNIKAHAN ANAK)">CUTI KHUSUS (PERNIKAHAN ANAK)</th>
+                <th title="CUTI KHUSUS (IBADAH HAJI)">CUTI KHUSUS (IBADAH HAJI)</th>
+                <th title="CUTI KHUSUS (IBADAH UMROH)">CUTI KHUSUS (IBADAH UMROH)</th>
+                <th title="CUTI KHUSUS (ISTRI MELAHIRKAN/ KEGUGURAN)">CUTI KHUSUS (ISTRI MELAHIRKAN/ KEGUGURAN)</th>
+                <th title="CUTI KHUSUS (MENIKAH)">CUTI KHUSUS (MENIKAH)</th>
+                <th title="CUTI KHUSUS (MENGKHITANKAN/ PEMBAPTISAN ANAK)">CUTI KHUSUS (MENGKHITANKAN/ PEMBAPTISAN ANAK)</th>
+                <th title="CUTI KHUSUS (KELUARGA INTI MENINGGAL DUNIA)">CUTI KHUSUS (KELUARGA INTI MENINGGAL DUNIA)</th>
+                <th title="CUTI SAKIT">CUTI SAKIT</th>
+                <th title="IJIN KHUSUS">IJIN KHUSUS</th>
+                <th class="text-success" style="width: 48px;">Sudah</th>
+                <th class="text-warning" style="width: 48px;">Belum</th>
+                <th class="text-danger" style="width: 48px;">diTolak</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-monitoring-matrix">
+              <tr>
+                <td colspan="22" class="text-center py-5 text-muted">
+                  <i class="fas fa-filter text-primary me-2"></i>Silakan tentukan filter <strong>Tahun</strong> dan <strong>Bulan</strong>, lalu klik tombol <strong>Filter</strong> untuk menampilkan data.
+                </td>
+              </tr>
+            </tbody>
+            <tfoot id="tfoot-monitoring-matrix" class="d-none">
+              <tr>
+                <th class="sticky-col-no text-center">#</th>
+                <th class="sticky-col-unit text-start">TOTAL KESELURUHAN</th>
+                <th id="tot-cuti-3">0</th>
+                <th id="tot-cuti-6">0</th>
+                <th id="tot-cuti-9">0</th>
+                <th id="tot-cuti-13">0</th>
+                <th id="tot-cuti-14">0</th>
+                <th id="tot-cuti-15">0</th>
+                <th id="tot-cuti-17">0</th>
+                <th id="tot-cuti-18">0</th>
+                <th id="tot-cuti-19">0</th>
+                <th id="tot-cuti-20">0</th>
+                <th id="tot-cuti-21">0</th>
+                <th id="tot-cuti-22">0</th>
+                <th id="tot-cuti-23">0</th>
+                <th id="tot-cuti-26">0</th>
+                <th id="tot-cuti-27">0</th>
+                <th class="text-success" id="tot-appr-sudah">0</th>
+                <th class="text-warning" id="tot-appr-belum">0</th>
+                <th class="text-danger" id="tot-appr-ditolak">0</th>
+                <th class="text-primary fw-bold" id="tot-grand-total">0</th>
+                <th class="text-start fs--2" id="tot-keterangan">-</th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Detail Permohonan Unit -->
+    <div class="modal fade" id="modal-unit-detail" tabindex="-1" aria-labelledby="modalUnitDetailLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header bg-soft-primary">
+            <h5 class="modal-title fw-bold text-primary" id="modalUnitDetailLabel">
+              <i class="fas fa-list-ul me-2"></i>Rincian Pengajuan Cuti: <span id="detail-unit-name">-</span>
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm table-hover mb-0">
+                <thead class="bg-light">
+                  <tr>
+                    <th class="text-center" style="width: 40px;">#</th>
+                    <th>NIP</th>
+                    <th>Nama Pegawai</th>
+                    <th>Jenis Cuti</th>
+                    <th>Tgl Mulai</th>
+                    <th class="text-center">Status HRD</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-unit-detail-list">
+                  <tr>
+                    <td colspan="6" class="text-center py-3 text-muted">Memuat...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="modal-footer py-2">
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</template>
+
+<script type="module" defer>
+  import { httpGet } from './assets/js/core/http.js';
+
+  const apiUrl = (typeof config !== 'undefined' && config.api_url)
+    ? config.api_url
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  const jenisCutiList = [
+    { kd: 3,  nama: 'CUTI MELAHIRKAN' },
+    { kd: 6,  nama: 'CUTI TAHUNAN' },
+    { kd: 9,  nama: 'CUTI DI LUAR TANGGUNGAN' },
+    { kd: 13, nama: 'IJIN PULANG AWAL' },
+    { kd: 14, nama: 'IJIN KELUAR TUGAS (IKT)' },
+    { kd: 15, nama: 'IJIN KELUAR PRIBADI (IKP)' },
+    { kd: 17, nama: 'CUTI KHUSUS (PERNIKAHAN ANAK)' },
+    { kd: 18, nama: 'CUTI KHUSUS (IBADAH HAJI)' },
+    { kd: 19, nama: 'CUTI KHUSUS (IBADAH UMROH)' },
+    { kd: 20, nama: 'CUTI KHUSUS (ISTRI MELAHIRKAN/ KEGUGURAN)' },
+    { kd: 21, nama: 'CUTI KHUSUS (MENIKAH)' },
+    { kd: 22, nama: 'CUTI KHUSUS (MENGKHITANKAN/ PEMBAPTISAN ANAK)' },
+    { kd: 23, nama: 'CUTI KHUSUS (KELUARGA INTI MENINGGAL DUNIA)' },
+    { kd: 26, nama: 'CUTI SAKIT' },
+    { kd: 27, nama: 'IJIN KHUSUS' }
+  ];
+
+  let rawMonitoringData = null;
+  let detailModalInstance = null;
+
+  function escapeXml(unsafe) {
+    if (unsafe === null || unsafe === undefined) return '';
+    return String(unsafe)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
+  }
+
+  function getDetailModal() {
+    const el = document.getElementById('modal-unit-detail');
+    if (!el) return null;
+    if (window.bootstrap && window.bootstrap.Modal) {
+      if (!detailModalInstance) {
+        detailModalInstance = new window.bootstrap.Modal(el);
+      }
+      return detailModalInstance;
+    }
+    return {
+      show: () => { el.classList.add('show'); el.style.display = 'block'; },
+      hide: () => { el.classList.remove('show'); el.style.display = 'none'; }
+    };
+  }
+
+  // Validasi Filter Wajib Isi
+  function checkFiltersValid() {
+    const tahun = document.getElementById('filter_tahun')?.value;
+    const bulan = document.getElementById('filter_bulan')?.value;
+
+    if (!tahun || !bulan) {
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Peringatan',
+          text: 'isi terlebih dahulu'
+        });
+      } else {
+        alert('isi terlebih dahulu');
+      }
+      return false;
+    }
+    return true;
+  }
+
+  async function loadMonitoringMatrix() {
+    if (!checkFiltersValid()) {
+      return;
+    }
+
+    const tbody = document.getElementById('tbody-monitoring-matrix');
+    const tfoot = document.getElementById('tfoot-monitoring-matrix');
+    tbody.innerHTML = `<tr><td colspan="22" class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat matriks data cuti dari basis data...</td></tr>`;
+    if (tfoot) tfoot.classList.add('d-none');
+
+    const searchUnit = document.getElementById('filter_search_unit')?.value.trim() || '';
+    const tahun = document.getElementById('filter_tahun')?.value || '';
+    const bulan = document.getElementById('filter_bulan')?.value || '';
+
+    try {
+      const queryParams = new URLSearchParams();
+      if (searchUnit) queryParams.append('search', searchUnit);
+      if (tahun) queryParams.append('tahun', tahun);
+      if (bulan) queryParams.append('bulan', bulan);
+
+      const qs = queryParams.toString() ? `?${queryParams.toString()}` : '';
+      const res = await httpGet(`${apiUrl}/pegawai/cuti/monitoring${qs}`);
+
+      if (!res || !res.data || !res.data.units) {
+        tbody.innerHTML = `<tr><td colspan="22" class="text-center py-4 text-warning">Tidak dapat memuat matriks cuti.</td></tr>`;
+        return;
+      }
+
+      rawMonitoringData = res.data;
+      renderMatrix();
+    } catch (err) {
+      console.error(err);
+      tbody.innerHTML = `<tr><td colspan="22" class="text-center py-4 text-danger">Gagal menghubungi server backend.</td></tr>`;
+    }
+  }
+
+  function renderMatrix() {
+    if (!rawMonitoringData || !rawMonitoringData.units) return;
+
+    const tbody = document.getElementById('tbody-monitoring-matrix');
+    const tfoot = document.getElementById('tfoot-monitoring-matrix');
+    const units = rawMonitoringData.units;
+
+    let totalCutiAll = 0;
+    let totalSudahAll = 0;
+    let totalBelumAll = 0;
+    let totalDitolakAll = 0;
+    const totalsPerJenis = {};
+    jenisCutiList.forEach(j => { totalsPerJenis[j.kd] = 0; });
+
+    let rowsHtml = '';
+
+    units.forEach((u) => {
+      const hasData = (u.total > 0);
+      const rowClass = hasData ? 'row-has-data' : 'row-empty';
+
+      if (hasData) {
+        totalCutiAll += u.total;
+        totalSudahAll += u.sudah;
+        totalBelumAll += u.belum;
+        totalDitolakAll += u.ditolak;
+      }
+
+      let jenisCells = '';
+      jenisCutiList.forEach(j => {
+        const count = u.cuti ? (u.cuti[j.kd] || 0) : 0;
+        if (hasData) {
+          totalsPerJenis[j.kd] += count;
+          jenisCells += `<td class="text-center">${count > 0 ? `<strong class="text-primary">${count}</strong>` : ''}</td>`;
+        } else {
+          jenisCells += `<td class="text-center text-muted"></td>`;
+        }
+      });
+
+      let apprSudahCell = '';
+      let apprBelumCell = '';
+      let apprDitolakCell = '';
+      let totalCell = '';
+      let keteranganCell = '';
+
+      if (hasData) {
+        apprSudahCell = `<td class="text-center fw-bold text-success">${u.sudah}</td>`;
+        apprBelumCell = `<td class="text-center fw-bold text-warning">${u.belum}</td>`;
+        apprDitolakCell = `<td class="text-center fw-bold text-danger">${u.ditolak}</td>`;
+        totalCell = `<td class="text-center fw-bold text-dark bg-soft-light">${u.total}</td>`;
+
+        if (u.belum > 0) {
+          keteranganCell = `<td class="text-start"><span class="badge bg-warning text-dark"><i class="fas fa-exclamation-triangle me-1"></i>Ada data yang belum di Approv</span></td>`;
+        } else {
+          keteranganCell = `<td class="text-start"><span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Sudah di Approv semua</span></td>`;
+        }
+      } else {
+        apprSudahCell = `<td class="text-center"></td>`;
+        apprBelumCell = `<td class="text-center"></td>`;
+        apprDitolakCell = `<td class="text-center"></td>`;
+        totalCell = `<td class="text-center"></td>`;
+        keteranganCell = `<td class="text-start text-muted fs--2">Tidak ada data</td>`;
+      }
+
+      rowsHtml += `
+        <tr class="${rowClass}" data-unit-no="${u.no}" ${hasData ? 'style="cursor: pointer;" title="Klik untuk melihat rincian permohonan"' : ''}>
+          <td class="sticky-col-no fw-semi-bold">${u.no}.</td>
+          <td class="sticky-col-unit text-start ${hasData ? 'fw-bold text-primary' : 'text-700'}">${u.nama}</td>
+          ${jenisCells}
+          ${apprSudahCell}
+          ${apprBelumCell}
+          ${apprDitolakCell}
+          ${totalCell}
+          ${keteranganCell}
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = rowsHtml;
+
+    // Update Quick Counters
+    document.getElementById('counter-total-unit').textContent = `${units.length} Unit`;
+    document.getElementById('counter-total-cuti').textContent = `${totalCutiAll} Permohonan`;
+    document.getElementById('counter-total-belum').textContent = `${totalBelumAll}`;
+    document.getElementById('counter-total-sudah').textContent = `${totalSudahAll}`;
+
+    const tahunVal = document.getElementById('filter_tahun')?.value;
+    const bulanVal = document.getElementById('filter_bulan')?.value;
+    document.getElementById('matrix-info').textContent = `Tahun: ${tahunVal} | Bulan: ${bulanVal} | Total: ${units.length} unit | ${totalCutiAll} permohonan cuti`;
+
+    // Update Footer Totals
+    jenisCutiList.forEach(j => {
+      const el = document.getElementById(`tot-cuti-${j.kd}`);
+      if (el) el.textContent = totalsPerJenis[j.kd] > 0 ? totalsPerJenis[j.kd] : '0';
+    });
+    document.getElementById('tot-appr-sudah').textContent = totalSudahAll;
+    document.getElementById('tot-appr-belum').textContent = totalBelumAll;
+    document.getElementById('tot-appr-ditolak').textContent = totalDitolakAll;
+    document.getElementById('tot-grand-total').textContent = totalCutiAll;
+    document.getElementById('tot-keterangan').textContent = totalBelumAll > 0 ? `${totalBelumAll} Menunggu HRD` : 'Selesai diproses';
+
+    if (tfoot) tfoot.classList.remove('d-none');
+
+    // Attach click events on rows with data to show details
+    document.querySelectorAll('.row-has-data').forEach(row => {
+      row.onclick = () => {
+        const no = parseInt(row.getAttribute('data-unit-no'), 10);
+        const u = units.find(item => item.no === no);
+        if (u) openUnitDetail(u);
+      };
+    });
+  }
+
+  function openUnitDetail(unit) {
+    document.getElementById('detail-unit-name').textContent = unit.nama;
+    const tbody = document.getElementById('tbody-unit-detail-list');
+
+    if (!unit.detail || unit.detail.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center py-3 text-muted">Tidak ada rincian data permohonan.</td></tr>`;
+    } else {
+      let rows = '';
+      unit.detail.forEach((d, idx) => {
+        const statusBadge = (d.approval_hrd === 1)
+          ? '<span class="badge bg-soft-success text-success">Disetujui HRD</span>'
+          : (d.approval_hrd === 2 ? '<span class="badge bg-soft-danger text-danger">Ditolak HRD</span>' : '<span class="badge bg-soft-warning text-warning">Menunggu HRD</span>');
+
+        rows += `
+          <tr>
+            <td class="text-center text-muted">${idx + 1}</td>
+            <td><span class="badge bg-light text-dark font-monospace">${d.nip || '-'}</span></td>
+            <td class="fw-semi-bold">${d.nama || '-'}</td>
+            <td><span class="text-primary">${d.jenis_cuti || '-'}</span></td>
+            <td>${d.tgl_mulai || '-'}</td>
+            <td class="text-center">${statusBadge}</td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = rows;
+    }
+
+    const modal = getDetailModal();
+    if (modal) modal.show();
+  }
+
+  // EKSPOR EXCEL MENGGUNAKAN METODE DATA PEGAWAI
+  function exportExcel() {
+    if (!checkFiltersValid()) {
+      return;
+    }
+
+    if (!rawMonitoringData || !rawMonitoringData.units || rawMonitoringData.units.length === 0) {
+      if (typeof Swal !== 'undefined') {
+        Swal.fire('Info', 'Data belum dimuat atau kosong. Silakan klik tombol Filter terlebih dahulu.', 'info');
+      } else {
+        alert('Data belum dimuat atau kosong. Silakan klik tombol Filter terlebih dahulu.');
+      }
+      return;
+    }
+
+    try {
+      const units = rawMonitoringData.units;
+      const tahunVal = document.getElementById('filter_tahun')?.value || '';
+      const bulanVal = document.getElementById('filter_bulan')?.value || '';
+
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+      const filename = `Monitoring_Cuti_${tahunVal}_Bulan${bulanVal}_${timestamp}.xls`;
+
+      // Header kolom jenis cuti
+      const headerJenisCuti = jenisCutiList
+        .map(j => `<th style="background-color: #f2f2f2; border: 0.5pt solid #000000; font-weight: bold; text-align: center;">${escapeXml(j.nama)}</th>`)
+        .join('');
+
+      // Hitung total untuk footer excel
+      let grandTotalCuti = 0;
+      let grandSudah = 0;
+      let grandBelum = 0;
+      let grandDitolak = 0;
+      const totalPerJenis = {};
+      jenisCutiList.forEach(j => { totalPerJenis[j.kd] = 0; });
+
+      // Bangun baris data tabel
+      let tableRows = '';
+      units.forEach((u) => {
+        const hasData = (u.total > 0);
+        if (hasData) {
+          grandTotalCuti += u.total;
+          grandSudah += u.sudah;
+          grandBelum += u.belum;
+          grandDitolak += u.ditolak;
+        }
+
+        let cutiCols = '';
+        jenisCutiList.forEach(j => {
+          const val = u.cuti ? (u.cuti[j.kd] || 0) : 0;
+          if (hasData) {
+            totalPerJenis[j.kd] += val;
+            cutiCols += `<td class="number" style="border: 0.5pt solid #d0d0d0; text-align: center;">${val > 0 ? val : ''}</td>`;
+          } else {
+            cutiCols += `<td style="border: 0.5pt solid #d0d0d0; text-align: center;"></td>`;
+          }
+        });
+
+        tableRows += `
+          <tr>
+            <td class="number" style="border: 0.5pt solid #d0d0d0; text-align: center;">${u.no}</td>
+            <td class="text" style="border: 0.5pt solid #d0d0d0; text-align: left;">${escapeXml(u.nama)}</td>
+            ${cutiCols}
+            <td class="number" style="border: 0.5pt solid #d0d0d0; text-align: center; ${u.sudah > 0 ? 'font-weight: bold; color: #198754;' : ''}">${hasData ? u.sudah : ''}</td>
+            <td class="number" style="border: 0.5pt solid #d0d0d0; text-align: center; ${u.belum > 0 ? 'font-weight: bold; color: #ffc107;' : ''}">${hasData ? u.belum : ''}</td>
+            <td class="number" style="border: 0.5pt solid #d0d0d0; text-align: center; ${u.ditolak > 0 ? 'font-weight: bold; color: #dc3545;' : ''}">${hasData ? u.ditolak : ''}</td>
+            <td class="number" style="border: 0.5pt solid #d0d0d0; text-align: center; font-weight: bold;">${hasData ? u.total : ''}</td>
+            <td class="text" style="border: 0.5pt solid #d0d0d0; text-align: left;">${escapeXml(u.keterangan || '')}</td>
+          </tr>
+        `;
+      });
+
+      // Kolom total footer jenis cuti
+      const footerJenisCols = jenisCutiList
+        .map(j => `<th class="number" style="background-color: #f2f2f2; border: 0.5pt solid #000000; font-weight: bold; text-align: center;">${totalPerJenis[j.kd] > 0 ? totalPerJenis[j.kd] : 0}</th>`)
+        .join('');
+
+      const tableHtml = `
+        <table border="1">
+          <thead>
+            <tr>
+              <th colspan="22" style="background-color: #2c7be5; color: #ffffff; font-size: 14px; font-weight: bold; text-align: center; padding: 10px;">
+                MATRIKS MONITORING CUTI PEGAWAI SELURUH UNIT (TAHUN ${tahunVal} / BULAN ${bulanVal})
+              </th>
+            </tr>
+            <tr>
+              <th rowspan="2" style="background-color: #e9ecef; border: 0.5pt solid #000000; font-weight: bold; text-align: center; vertical-align: middle;">No</th>
+              <th rowspan="2" style="background-color: #e9ecef; border: 0.5pt solid #000000; font-weight: bold; text-align: center; vertical-align: middle;">Unit</th>
+              <th colspan="15" style="background-color: #e3ebf6; border: 0.5pt solid #000000; font-weight: bold; text-align: center; vertical-align: middle;">Pengajuan Cuti</th>
+              <th colspan="3" style="background-color: #e0f2fe; border: 0.5pt solid #000000; font-weight: bold; text-align: center; vertical-align: middle;">Status Approval</th>
+              <th rowspan="2" style="background-color: #e9ecef; border: 0.5pt solid #000000; font-weight: bold; text-align: center; vertical-align: middle;">Total</th>
+              <th rowspan="2" style="background-color: #e9ecef; border: 0.5pt solid #000000; font-weight: bold; text-align: center; vertical-align: middle;">Keterangan</th>
+            </tr>
+            <tr>
+              ${headerJenisCuti}
+              <th style="background-color: #d1e7dd; border: 0.5pt solid #000000; font-weight: bold; text-align: center;">Sudah</th>
+              <th style="background-color: #fff3cd; border: 0.5pt solid #000000; font-weight: bold; text-align: center;">Belum</th>
+              <th style="background-color: #f8d7da; border: 0.5pt solid #000000; font-weight: bold; text-align: center;">diTolak</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+          <tfoot>
+            <tr>
+              <th colspan="2" style="background-color: #e9ecef; border: 0.5pt solid #000000; font-weight: bold; text-align: right;">TOTAL KESELURUHAN:</th>
+              ${footerJenisCols}
+              <th class="number" style="background-color: #d1e7dd; border: 0.5pt solid #000000; font-weight: bold; text-align: center;">${grandSudah}</th>
+              <th class="number" style="background-color: #fff3cd; border: 0.5pt solid #000000; font-weight: bold; text-align: center;">${grandBelum}</th>
+              <th class="number" style="background-color: #f8d7da; border: 0.5pt solid #000000; font-weight: bold; text-align: center;">${grandDitolak}</th>
+              <th class="number" style="background-color: #e9ecef; border: 0.5pt solid #000000; font-weight: bold; text-align: center;">${grandTotalCuti}</th>
+              <th style="background-color: #e9ecef; border: 0.5pt solid #000000; font-weight: bold; text-align: center;">${grandBelum > 0 ? `${grandBelum} Menunggu HRD` : 'Lengkap'}</th>
+            </tr>
+          </tfoot>
+        </table>
+      `;
+
+      // Format Excel XML Standar EVO HRIS (metode Vpegawai.html)
+      const excelTemplate = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+          <meta http-equiv="Content-Type" content="application/vnd.ms-excel; charset=utf-8">
+          <!--[if gte mso 9]>
+          <xml>
+            <x:ExcelWorkbook>
+              <x:ExcelWorksheets>
+                <x:ExcelWorksheet>
+                  <x:Name>Monitoring Cuti</x:Name>
+                  <x:WorksheetOptions>
+                    <x:DisplayGridlines/>
+                  </x:WorksheetOptions>
+                </x:ExcelWorksheet>
+              </x:ExcelWorksheets>
+            </x:ExcelWorkbook>
+          </xml>
+          <![endif]-->
+          <style>
+            .text { mso-number-format: "\\@"; }
+            .date { mso-number-format: "dd\\/mm\\/yyyy"; }
+            .number { mso-number-format: "\\#\\,\\#\\#0"; text-align: center; }
+            th { border: 0.5pt solid #000000; padding: 6px; font-family: Arial, sans-serif; font-size: 11px; }
+            td { border: 0.5pt solid #d0d0d0; padding: 4px; font-family: Arial, sans-serif; font-size: 11px; }
+          </style>
+        </head>
+        <body>
+          ${tableHtml}
+        </body>
+        </html>
+      `;
+
+      const blob = new Blob([excelTemplate], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          icon: 'success',
+          title: 'Ekspor Berhasil',
+          text: `Berhasil mengunduh ${units.length} data unit monitoring ke dalam format Excel.`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
+    } catch (err) {
+      console.error('Error saat ekspor Excel monitoring cuti:', err);
+      if (typeof Swal !== 'undefined') {
+        Swal.fire('Error', 'Terjadi kesalahan saat mengekspor data ke Excel.', 'error');
+      } else {
+        alert('Terjadi kesalahan saat mengekspor data ke Excel.');
+      }
+    }
+  }
+
+  // Filter Event Listeners
+  let searchTimer = null;
+  document.getElementById('filter_search_unit')?.addEventListener('input', () => {
+    // Cari langsung jika data sudah pernah dimuat
+    if (rawMonitoringData) {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        loadMonitoringMatrix();
+      }, 250);
+    }
+  });
+
+  // Tombol Filter (Validasi wajib isi Tahun dan Bulan)
+  document.getElementById('btn-apply-filter')?.addEventListener('click', () => {
+    loadMonitoringMatrix();
+  });
+
+  // Tombol Ekspor Excel
+  document.getElementById('btn-export-excel')?.addEventListener('click', () => {
+    exportExcel();
+  });
+
+  // Tombol Reset Filter
+  document.getElementById('btn-reset-filter')?.addEventListener('click', () => {
+    const searchInput = document.getElementById('filter_search_unit');
+    const tahunSelect = document.getElementById('filter_tahun');
+    const bulanSelect = document.getElementById('filter_bulan');
+    const tbody = document.getElementById('tbody-monitoring-matrix');
+    const tfoot = document.getElementById('tfoot-monitoring-matrix');
+
+    if (searchInput) searchInput.value = '';
+    if (tahunSelect) tahunSelect.value = '';
+    if (bulanSelect) bulanSelect.value = '';
+    rawMonitoringData = null;
+
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="22" class="text-center py-5 text-muted">
+            <i class="fas fa-filter text-primary me-2"></i>Silakan tentukan filter <strong>Tahun</strong> dan <strong>Bulan</strong>, lalu klik tombol <strong>Filter</strong> untuk menampilkan data.
+          </td>
+        </tr>
+      `;
+    }
+    if (tfoot) tfoot.classList.add('d-none');
+
+    document.getElementById('counter-total-cuti').textContent = '-';
+    document.getElementById('counter-total-belum').textContent = '-';
+    document.getElementById('counter-total-sudah').textContent = '-';
+    document.getElementById('matrix-info').textContent = 'Pilih filter Tahun dan Bulan untuk memuat data.';
+  });
+
+  // Tombol Cetak
+  document.getElementById('btn-print-monitoring')?.addEventListener('click', () => {
+    if (!checkFiltersValid()) return;
+    window.print();
+  });
+</script>
