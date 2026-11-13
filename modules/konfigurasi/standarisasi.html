@@ -1,246 +1,295 @@
 <template id="template-konfig-standarisasi">
-  <div class="row mb-3">
-    <div class="col">
-      <div class="card bg-100 shadow-none border">
-        <div class="card-body py-3">
-          <div class="row justify-content-between align-items-center">
-            <div class="col-auto">
-              <h5 class="mb-1 text-primary fw-bold"><i class="fas fa-business-time me-2"></i>Standarisasi Jam & Jadwal Kerja</h5>
-              <div class="text-secondary small">Konfigurasi standar operasional jadwal shift pelayanan medis dan jam kerja kantor/administrasi RS.</div>
-            </div>
-            <div class="col-auto">
-              <button class="btn btn-sm btn-falcon-default me-1" id="btn-refresh-standar">
-                <i class="fas fa-sync-alt me-1"></i>Refresh
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+    <div class="container-fluid py-4 px-3 px-md-4 bg-light">
 
-  <!-- Navigation Tabs -->
-  <ul class="nav nav-tabs mb-3" id="standarTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-      <button class="nav-link active fw-bold" id="tab-pelayanan-link" data-bs-toggle="tab" data-bs-target="#tab-pelayanan" type="button" role="tab">
-        <i class="fas fa-clock me-2"></i>Jadwal Shift Pelayanan Medis (<span id="badge-total-pelayanan">0</span>)
-      </button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link fw-bold" id="tab-administrasi-link" data-bs-toggle="tab" data-bs-target="#tab-administrasi" type="button" role="tab">
-        <i class="fas fa-calendar-day me-2"></i>Jadwal Jam Kerja Administrasi (<span id="badge-total-admin">0</span>)
-      </button>
-    </li>
-  </ul>
+        <!-- HEADER -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+            <div>
+                <h3 class="fw-bold text-dark mb-1">Standarisasi Jam & Jadwal Kerja</h3>
+                <p class="text-secondary mb-0">Konfigurasi standar operasional jadwal shift pelayanan medis dan jam kerja kantor/administrasi RS.</p>
+            </div>
+            <div>
+                <button class="btn btn-white border border-secondary-subtle shadow-sm rounded-pill px-3 py-2 text-dark fw-semibold" id="btn-refresh-standar">
+                    <i class="fas fa-sync-alt text-primary me-2"></i>Refresh Data
+                </button>
+            </div>
+        </div>
 
-  <!-- Tab Contents -->
-  <div class="tab-content" id="standarTabsContent">
-    <!-- TAB 1: SHIFT PELAYANAN -->
-    <div class="tab-pane fade show active" id="tab-pelayanan" role="tabpanel">
-      <div class="card mb-3">
-        <div class="card-header bg-light">
-          <div class="row g-2 align-items-center justify-content-between">
-            <div class="col-md-4 col-sm-12">
-              <div class="input-group input-group-sm">
-                <span class="input-group-text bg-white"><i class="fas fa-search text-secondary"></i></span>
-                <input type="text" class="form-control" id="search-shift" placeholder="Cari nama shift pelayanan...">
-              </div>
-            </div>
-            <div class="col-md-4 col-sm-6">
-              <select class="form-select form-select-sm" id="filter-shift-kelompok">
-                <option value="">-- Semua Kelompok Unit --</option>
-              </select>
-            </div>
-            <div class="col-md-4 col-sm-6 text-end">
-              <button class="btn btn-sm btn-primary" id="btn-add-shift">
-                <i class="fas fa-plus me-1"></i>Tambah Shift Pelayanan
-              </button>
-            </div>
-          </div>
+        <!-- TABS NAVIGATION -->
+        <div class="bg-white rounded-5 shadow-sm border p-1 d-inline-flex gap-1 mb-4">
+            <ul class="nav nav-pills border-0" id="standarTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-semibold rounded-5 px-4 py-2" id="tab-pelayanan-link" data-bs-toggle="tab" data-bs-target="#tab-pelayanan" type="button" role="tab">
+                        <i class="fas fa-clock me-2"></i>Shift Pelayanan 
+                        <span id="badge-total-pelayanan" class="badge bg-secondary ms-2 rounded-pill">0</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold rounded-5 px-4 py-2" id="tab-administrasi-link" data-bs-toggle="tab" data-bs-target="#tab-administrasi" type="button" role="tab">
+                        <i class="fas fa-calendar-day me-2"></i>Jam Administrasi
+                        <span id="badge-total-admin" class="badge bg-secondary ms-2 rounded-pill">0</span>
+                    </button>
+                </li>
+            </ul>
         </div>
-        <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-sm table-striped table-hover mb-0 fs--1">
-              <thead class="bg-200 text-900">
-                <tr>
-                  <th class="text-center py-2" style="width: 50px;">#</th>
-                  <th class="py-2">Unit / Kelompok Kerja</th>
-                  <th class="py-2">Nama Shift / Jadwal</th>
-                  <th class="text-center py-2" style="width: 120px;">Jam Mulai</th>
-                  <th class="text-center py-2" style="width: 120px;">Jam Selesai</th>
-                  <th class="text-center py-2" style="width: 120px;">Durasi Kerja</th>
-                  <th class="text-center py-2" style="width: 100px;">Status</th>
-                  <th class="text-end py-2 pe-3" style="width: 110px;">Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="shift-table-body">
-                <tr>
-                  <td colspan="8" class="text-center py-4 text-muted">
-                    <div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat standar shift...
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <!-- Pagination -->
-        <div class="card-footer bg-light py-2">
-          <div class="row align-items-center justify-content-between">
-            <div class="col-auto text-secondary small" id="shift-page-info">Menampilkan 0 data</div>
-            <div class="col-auto">
-              <ul class="pagination pagination-sm mb-0" id="shift-pagination"></ul>
+
+        <div class="tab-content" id="standarTabsContent">
+            
+            <!-- ========================================== -->
+            <!-- TAB 1: SHIFT PELAYANAN                     -->
+            <!-- ========================================== -->
+            <div class="tab-pane fade show active" id="tab-pelayanan" role="tabpanel">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                    <div class="card-header bg-white pt-4 px-4 pb-3 border-bottom-0">
+                        <div class="row g-3 align-items-center justify-content-between">
+                            <div class="col-md-4">
+                                <div class="input-group shadow-sm rounded-3">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-search"></i></span>
+                                    <input type="text" class="form-control bg-light border-start-0" id="search-shift" placeholder="Cari nama shift pelayanan...">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select bg-light border-secondary-subtle shadow-sm rounded-3" id="filter-shift-kelompok">
+                                    <option value="">-- Semua Kelompok Unit --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 text-md-end">
+                                <button class="btn btn-primary rounded-pill px-3 py-2 fw-semibold shadow-sm d-flex align-items-center gap-2 ms-auto" id="btn-add-shift">
+                                    <i class="fas fa-plus"></i> Tambah Shift
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-borderless align-middle mb-0">
+                                <thead class="bg-light text-secondary">
+                                    <tr>
+                                        <th class="py-3 px-4 text-uppercase small fw-bold text-center" style="width: 60px;">#</th>
+                                        <th class="py-3 text-uppercase small fw-bold">Unit / Kelompok Kerja</th>
+                                        <th class="py-3 text-uppercase small fw-bold">Nama Shift</th>
+                                        <th class="py-3 text-uppercase small fw-bold text-center">Jam Mulai</th>
+                                        <th class="py-3 text-uppercase small fw-bold text-center">Jam Selesai</th>
+                                        <th class="py-3 text-uppercase small fw-bold text-center">Durasi</th>
+                                        <th class="py-3 text-uppercase small fw-bold text-center">Status</th>
+                                        <th class="py-3 px-4 text-uppercase small fw-bold text-center" style="width: 100px;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="shift-table-body">
+                                    <tr>
+                                        <td colspan="8" class="text-center py-5 text-muted">
+                                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div> Memuat standar shift...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer bg-white py-3 px-4 border-top border-secondary-subtle">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="small text-secondary fw-semibold" id="shift-page-info">Menampilkan 0 data</div>
+                            <nav><ul class="pagination pagination-sm mb-0 shadow-sm" id="shift-pagination"></ul></nav>
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
+
+            <!-- ========================================== -->
+            <!-- TAB 2: JADWAL ADMINISTRASI                 -->
+            <!-- ========================================== -->
+            <div class="tab-pane fade" id="tab-administrasi" role="tabpanel">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                    <div class="card-header bg-white pt-4 px-4 pb-3 border-bottom-0 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                            <i class="fas fa-calendar-alt text-primary"></i> Jam Kerja Administrasi
+                        </h5>
+                        <button class="btn btn-primary rounded-pill px-3 py-2 fw-semibold shadow-sm d-flex align-items-center gap-2" id="btn-add-admin-schedule">
+                            <i class="fas fa-plus"></i> Tambah Jadwal
+                        </button>
+                    </div>
+                    
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-borderless align-middle mb-0">
+                                <thead class="bg-light text-secondary">
+                                    <tr>
+                                        <th class="py-3 px-4 text-uppercase small fw-bold text-center" style="width: 60px;">#</th>
+                                        <th class="py-3 text-uppercase small fw-bold">Hari Kerja</th>
+                                        <th class="py-3 text-uppercase small fw-bold text-center">Jam Masuk</th>
+                                        <th class="py-3 text-uppercase small fw-bold text-center">Jam Pulang</th>
+                                        <th class="py-3 text-uppercase small fw-bold text-center">Toleransi</th>
+                                        <th class="py-3 text-uppercase small fw-bold">Keterangan</th>
+                                        <th class="py-3 px-4 text-uppercase small fw-bold text-center" style="width: 100px;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-table-body">
+                                    <tr>
+                                        <td colspan="7" class="text-center py-5 text-muted">
+                                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div> Memuat jadwal administrasi...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
-      </div>
     </div>
 
-    <!-- TAB 2: JADWAL ADMINISTRASI -->
-    <div class="tab-pane fade" id="tab-administrasi" role="tabpanel">
-      <div class="card mb-3">
-        <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
-          <h6 class="mb-0 text-dark fw-bold"><i class="fas fa-calendar-alt me-2 text-primary"></i>Ketentuan Jam Kerja Non-Shift / Administrasi</h6>
-          <button class="btn btn-sm btn-primary" id="btn-add-admin-schedule">
-            <i class="fas fa-plus me-1"></i>Tambah Jadwal Kantor
-          </button>
-        </div>
-        <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-sm table-striped table-hover mb-0 fs--1">
-              <thead class="bg-200 text-900">
-                <tr>
-                  <th class="text-center py-2" style="width: 50px;">#</th>
-                  <th class="py-2" style="width: 140px;">Hari Kerja</th>
-                  <th class="text-center py-2" style="width: 130px;">Jam Masuk</th>
-                  <th class="text-center py-2" style="width: 130px;">Jam Pulang</th>
-                  <th class="text-center py-2" style="width: 150px;">Toleransi Terlambat</th>
-                  <th class="py-2">Keterangan / Aturan</th>
-                  <th class="text-end py-2 pe-3" style="width: 110px;">Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="admin-table-body">
-                <tr>
-                  <td colspan="7" class="text-center py-4 text-muted">
-                    <div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat jadwal administrasi...
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+    <!-- ========================================== -->
+    <!-- MODAL: SHIFT PELAYANAN                     -->
+    <!-- ========================================== -->
+    <div class="modal fade" id="modal-shift-form" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <form id="form-shift">
+                    
+                    <div class="modal-header bg-white border-bottom-0 px-4 pt-4 pb-0">
+                        <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="modal-shift-title">
+                            <i class="fas fa-clock text-primary"></i> Tambah Shift Pelayanan
+                        </h5>
+                        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    
+                    <div class="modal-body p-4">
+                        <input type="hidden" id="form-shift-id" name="id">
+                        
+                        <div class="bg-light p-3 rounded-3 mb-3">
+                            <label class="form-label fw-semibold text-secondary small mb-1">Kelompok Kerja / Unit <span class="text-danger">*</span></label>
+                            <select class="form-select bg-white border-secondary-subtle shadow-sm rounded-2" id="form-shift-kelompok" name="kd_kelompok" required>
+                                <option value="">-- Pilih Kelompok Unit --</option>
+                            </select>
+                        </div>
+                        
+                        <div class="bg-light p-3 rounded-3 mb-3">
+                            <label class="form-label fw-semibold text-secondary small mb-1">Nama Shift Pelayanan <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control bg-white border-secondary-subtle shadow-sm rounded-2" id="form-shift-nama" name="nama_standarisasi" required placeholder="Contoh: Shift Pagi, Shift Siang">
+                        </div>
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <div class="bg-light p-3 rounded-3 h-100">
+                                    <label class="form-label fw-semibold text-secondary small mb-1">Jam Mulai <span class="text-danger">*</span></label>
+                                    <input type="time" class="form-control bg-white border-secondary-subtle shadow-sm rounded-2" id="form-shift-mulai" name="jam_mulai" required value="07:00">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="bg-light p-3 rounded-3 h-100">
+                                    <label class="form-label fw-semibold text-secondary small mb-1">Jam Selesai <span class="text-danger">*</span></label>
+                                    <input type="time" class="form-control bg-white border-secondary-subtle shadow-sm rounded-2" id="form-shift-selesai" name="jam_selesai" required value="14:00">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mb-0">
+                            <div class="col-6">
+                                <div class="bg-light p-3 rounded-3 h-100">
+                                    <label class="form-label fw-semibold text-secondary small mb-1">Durasi Efektif</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.5" class="form-control bg-white border-secondary-subtle shadow-sm rounded-start-2" id="form-shift-durasi" name="durasi_jam" value="7.0">
+                                        <span class="input-group-text bg-white border-secondary-subtle text-muted rounded-end-2">Jam</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="bg-light p-3 rounded-3 h-100">
+                                    <label class="form-label fw-semibold text-secondary small mb-1">Status</label>
+                                    <select class="form-select bg-white border-secondary-subtle shadow-sm rounded-2" id="form-shift-status" name="is_active">
+                                        <option value="1">Aktif</option>
+                                        <option value="0">Non-Aktif</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer bg-light border-top-0 px-4 py-3">
+                        <button type="button" class="btn btn-white border border-secondary-subtle text-dark fw-semibold shadow-sm rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary fw-semibold shadow-sm rounded-pill px-4 d-flex align-items-center gap-2" id="btn-save-shift">
+                            <i class="fas fa-save"></i> Simpan Shift
+                        </button>
+                    </div>
 
-  <!-- Modal Tambah / Edit Shift Pelayanan -->
-  <div class="modal fade" id="modal-shift-form" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header bg-light">
-          <h5 class="modal-title" id="modal-shift-title"><i class="fas fa-clock me-2 text-primary"></i>Tambah Shift Pelayanan</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </form>
+            </div>
         </div>
-        <form id="form-shift">
-          <input type="hidden" id="form-shift-id" name="id">
-          <div class="modal-body">
-            <div class="mb-3">
-              <label class="form-label fw-bold">Kelompok Kerja / Unit <span class="text-danger">*</span></label>
-              <select class="form-select" id="form-shift-kelompok" name="kd_kelompok" required>
-                <option value="">-- Pilih Kelompok Unit --</option>
-              </select>
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-bold">Nama Shift Pelayanan <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" id="form-shift-nama" name="nama_standarisasi" required placeholder="Contoh: Shift Pagi, Shift Siang, Shift Malam">
-            </div>
-            <div class="row g-2 mb-3">
-              <div class="col-6">
-                <label class="form-label fw-bold">Jam Mulai <span class="text-danger">*</span></label>
-                <input type="time" class="form-control" id="form-shift-mulai" name="jam_mulai" required value="07:00">
-              </div>
-              <div class="col-6">
-                <label class="form-label fw-bold">Jam Selesai <span class="text-danger">*</span></label>
-                <input type="time" class="form-control" id="form-shift-selesai" name="jam_selesai" required value="14:00">
-              </div>
-            </div>
-            <div class="row g-2 mb-3">
-              <div class="col-6">
-                <label class="form-label fw-bold">Durasi Jam Efektif</label>
-                <input type="number" step="0.5" class="form-control" id="form-shift-durasi" name="durasi_jam" value="7.0">
-              </div>
-              <div class="col-6">
-                <label class="form-label fw-bold">Status Keaktifan</label>
-                <select class="form-select" id="form-shift-status" name="is_active">
-                  <option value="1">Aktif Digunakan</option>
-                  <option value="0">Non-Aktif</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer bg-light">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-            <button type="submit" class="btn btn-primary" id="btn-save-shift">
-              <i class="fas fa-save me-1"></i>Simpan Shift
-            </button>
-          </div>
-        </form>
-      </div>
     </div>
-  </div>
 
-  <!-- Modal Tambah / Edit Administrasi -->
-  <div class="modal fade" id="modal-admin-form" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header bg-light">
-          <h5 class="modal-title" id="modal-admin-title"><i class="fas fa-calendar-day me-2 text-primary"></i>Tambah Jadwal Kantor</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <!-- ========================================== -->
+    <!-- MODAL: ADMINISTRASI                        -->
+    <!-- ========================================== -->
+    <div class="modal fade" id="modal-admin-form" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <form id="form-admin">
+                    
+                    <div class="modal-header bg-white border-bottom-0 px-4 pt-4 pb-0">
+                        <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="modal-admin-title">
+                            <i class="fas fa-calendar-day text-primary"></i> Tambah Jadwal Kantor
+                        </h5>
+                        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    
+                    <div class="modal-body p-4">
+                        <input type="hidden" id="form-admin-id" name="id">
+                        
+                        <div class="bg-light p-3 rounded-3 mb-3">
+                            <label class="form-label fw-semibold text-secondary small mb-1">Hari Kerja <span class="text-danger">*</span></label>
+                            <select class="form-select bg-white border-secondary-subtle shadow-sm rounded-2" id="form-admin-hari" name="hari" required>
+                                <option value="Senin">Senin</option>
+                                <option value="Selasa">Selasa</option>
+                                <option value="Rabu">Rabu</option>
+                                <option value="Kamis">Kamis</option>
+                                <option value="Jumat">Jumat</option>
+                                <option value="Sabtu">Sabtu</option>
+                                <option value="Minggu">Minggu</option>
+                            </select>
+                        </div>
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <div class="bg-light p-3 rounded-3 h-100">
+                                    <label class="form-label fw-semibold text-secondary small mb-1">Jam Masuk <span class="text-danger">*</span></label>
+                                    <input type="time" class="form-control bg-white border-secondary-subtle shadow-sm rounded-2" id="form-admin-masuk" name="jam_masuk" required value="07:30">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="bg-light p-3 rounded-3 h-100">
+                                    <label class="form-label fw-semibold text-secondary small mb-1">Jam Pulang <span class="text-danger">*</span></label>
+                                    <input type="time" class="form-control bg-white border-secondary-subtle shadow-sm rounded-2" id="form-admin-pulang" name="jam_pulang" required value="16:00">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-light p-3 rounded-3 mb-3">
+                            <label class="form-label fw-semibold text-secondary small mb-1">Toleransi Terlambat</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control bg-white border-secondary-subtle shadow-sm rounded-start-2" id="form-admin-toleransi" name="toleransi_menit" value="15" min="0">
+                                <span class="input-group-text bg-white border-secondary-subtle text-muted rounded-end-2">Menit</span>
+                            </div>
+                            <div class="form-text small text-muted mt-1">Batas toleransi sebelum dikenakan potongan disiplin.</div>
+                        </div>
+                        
+                        <div class="bg-light p-3 rounded-3 mb-0">
+                            <label class="form-label fw-semibold text-secondary small mb-1">Keterangan Aturan</label>
+                            <input type="text" class="form-control bg-white border-secondary-subtle shadow-sm rounded-2" id="form-admin-keterangan" name="keterangan" placeholder="Contoh: Jam kerja reguler staf manajemen">
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer bg-light border-top-0 px-4 py-3">
+                        <button type="button" class="btn btn-white border border-secondary-subtle text-dark fw-semibold shadow-sm rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary fw-semibold shadow-sm rounded-pill px-4 d-flex align-items-center gap-2" id="btn-save-admin">
+                            <i class="fas fa-save"></i> Simpan Jadwal
+                        </button>
+                    </div>
+
+                </form>
+            </div>
         </div>
-        <form id="form-admin">
-          <input type="hidden" id="form-admin-id" name="id">
-          <div class="modal-body">
-            <div class="mb-3">
-              <label class="form-label fw-bold">Hari Kerja <span class="text-danger">*</span></label>
-              <select class="form-select" id="form-admin-hari" name="hari" required>
-                <option value="Senin">Senin</option>
-                <option value="Selasa">Selasa</option>
-                <option value="Rabu">Rabu</option>
-                <option value="Kamis">Kamis</option>
-                <option value="Jumat">Jumat</option>
-                <option value="Sabtu">Sabtu</option>
-                <option value="Minggu">Minggu</option>
-              </select>
-            </div>
-            <div class="row g-2 mb-3">
-              <div class="col-6">
-                <label class="form-label fw-bold">Jam Masuk Standar <span class="text-danger">*</span></label>
-                <input type="time" class="form-control" id="form-admin-masuk" name="jam_masuk" required value="07:30">
-              </div>
-              <div class="col-6">
-                <label class="form-label fw-bold">Jam Pulang Standar <span class="text-danger">*</span></label>
-                <input type="time" class="form-control" id="form-admin-pulang" name="jam_pulang" required value="16:00">
-              </div>
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-bold">Toleransi Terlambat (Menit)</label>
-              <input type="number" class="form-control" id="form-admin-toleransi" name="toleransi_menit" value="15" min="0">
-              <div class="form-text">Batas toleransi kehadiran sebelum dikenakan potongan disiplin.</div>
-            </div>
-            <div class="mb-3">
-              <label class="form-label fw-bold">Keterangan Aturan</label>
-              <input type="text" class="form-control" id="form-admin-keterangan" name="keterangan" placeholder="Contoh: Jam kerja reguler staf manajemen non-shift">
-            </div>
-          </div>
-          <div class="modal-footer bg-light">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-            <button type="submit" class="btn btn-primary" id="btn-save-admin">
-              <i class="fas fa-save me-1"></i>Simpan Jadwal
-            </button>
-          </div>
-        </form>
-      </div>
     </div>
-  </div>
 </template>
 
 <script type="module" defer>
@@ -455,7 +504,10 @@
         const name = btn.getAttribute('data-name');
         if (confirm(`Apakah Anda yakin ingin menghapus shift "${name}"?`)) {
           try {
-            await httpPost(`${config.api_url}/konfigurasi/standarisasi/delete/${id}`, {});
+            const response = await httpPost(`${config.api_url}/konfigurasi/standarisasi/delete/${id}`, { id });
+            if (!response || Number(response.code) !== 200) {
+              throw new Error(response?.message || response?.status || 'Respons server tidak valid');
+            }
             loadShifts();
           } catch (err) {
             alert('Gagal menghapus shift: ' + err.message);
@@ -640,9 +692,13 @@
         const is_active = document.getElementById('form-shift-status').value;
 
         try {
-          await httpPost(`${config.api_url}/konfigurasi/standarisasi/save`, {
+          const response = await httpPost(`${config.api_url}/konfigurasi/standarisasi/save`, {
             id, kd_kelompok, nama_standarisasi, jam_mulai, jam_selesai, durasi_jam, is_active
           });
+          if (!response || Number(response.code) !== 200) {
+            throw new Error(response?.message || response?.status || 'Respons server tidak valid');
+          }
+
           const modalEl = document.getElementById('modal-shift-form');
           if (modalEl && window.bootstrap) {
             bootstrap.Modal.getInstance(modalEl).hide();

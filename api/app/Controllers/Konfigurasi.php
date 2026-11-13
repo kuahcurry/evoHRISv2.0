@@ -283,6 +283,17 @@ class Konfigurasi extends BaseController
             $idUserLevel = $input['id_user_level'] ?? null;
             $items = $input['items'] ?? [];
 
+            if (is_string($items)) {
+                $decodedItems = json_decode($items, true);
+                if (!is_array($decodedItems)) {
+                    $decodedItemsBase64 = base64_decode($items, true);
+                    $decodedItems = $decodedItemsBase64 === false
+                        ? null
+                        : json_decode($decodedItemsBase64, true);
+                }
+                $items = $decodedItems;
+            }
+
             if (!$idUserLevel || !is_array($items)) {
                 return sendResponse(400, null, false, 'Data batch hak akses tidak valid');
             }
@@ -318,7 +329,10 @@ class Konfigurasi extends BaseController
     {
         try {
             $input = $this->request->getJSON(true) ?? $this->request->getPost();
-            if (empty($input['STANDARISASI']) || empty($input['JAM_MASUK']) || empty($input['JAM_PULANG'])) {
+            $namaShift = $input['STANDARISASI'] ?? $input['nama_standarisasi'] ?? null;
+            $jamMasuk = $input['JAM_MASUK'] ?? $input['jam_mulai'] ?? null;
+            $jamPulang = $input['JAM_PULANG'] ?? $input['jam_selesai'] ?? null;
+            if (empty($namaShift) || empty($jamMasuk) || empty($jamPulang)) {
                 return sendResponse(400, null, false, 'Nama Shift, Jam Masuk, dan Jam Pulang wajib diisi');
             }
 

@@ -1,22 +1,380 @@
+<template>
+  <div class="absensi-rekap-wrapper">
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="ui-icon-bubble" style="background: #eef2ff; color: #4f46e5;">
+          <i class="fas fa-calendar-check"></i>
+        </div>
+        <div>
+          <h3 class="fw-bold text-dark mb-1">Rekapitulasi Kehadiran Bulanan</h3>
+          <p class="text-secondary mb-0">Matrix jadwal kerja, status presensi, dan catatan jam kerja harian pegawai.</p>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-semibold" id="total-badge-rekap">0 Pegawai</span>
+        <button class="btn btn-ui-white" id="btn-refresh-rekap">
+          <i class="fas fa-sync-alt text-primary"></i> Refresh
+        </button>
+      </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="ui-icon-bubble" style="background: #eef2ff; color: #4f46e5;">
+              <i class="fas fa-users"></i>
+            </div>
+            <div>
+              <div class="stat-label">Total Pegawai</div>
+              <div class="stat-value" id="stat-total-pegawai">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="ui-icon-bubble" style="background: #dcfce7; color: #16a34a;">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div>
+              <div class="stat-label">Total Kehadiran</div>
+              <div class="stat-value" id="stat-total-hadir">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="ui-icon-bubble" style="background: #fef3c7; color: #d97706;">
+              <i class="fas fa-user-clock"></i>
+            </div>
+            <div>
+              <div class="stat-label">Keterlambatan</div>
+              <div class="stat-value" id="stat-total-terlambat">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="ui-icon-bubble" style="background: #e0f2fe; color: #0284c7;">
+              <i class="fas fa-info-circle"></i>
+            </div>
+            <div>
+              <div class="stat-label">Keterangan Legend</div>
+              <div class="d-flex gap-1 flex-wrap mt-1">
+                <span class="badge bg-success bg-opacity-75 rounded-pill px-2">Hadir</span>
+                <span class="badge bg-warning text-dark rounded-pill px-2">Telat</span>
+                <span class="badge bg-danger bg-opacity-75 rounded-pill px-2">Alpa</span>
+                <span class="badge bg-secondary bg-opacity-50 rounded-pill px-2">Libur</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ui-card mb-4">
+      <div class="ui-card-header">
+        <div class="row g-3 align-items-end">
+          <div class="col-lg-3 col-md-4 col-sm-6">
+            <label class="form-label ui-label">Periode Bulan</label>
+            <input type="month" class="form-control ui-input" id="filter-bulan-rekap" value="2026-04">
+          </div>
+          <div class="col-lg-4 col-md-4 col-sm-6">
+            <label class="form-label ui-label">Unit / Bagian</label>
+            <select class="form-select ui-input" id="filter-bagian-rekap">
+              <option value="">-- Memuat Bagian --</option>
+            </select>
+          </div>
+          <div class="col-lg col-md col-sm-8">
+            <label class="form-label ui-label">Cari Pegawai</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-search"></i></span>
+              <input type="text" class="form-control ui-input border-start-0 ps-0" id="search-rekap" placeholder="Nama atau NIP...">
+            </div>
+          </div>
+          <div class="col-lg-auto col-md-auto col-sm-4">
+            <button type="button" class="btn btn-ui-primary w-100 justify-content-center" id="btn-filter-rekap">
+              <i class="fas fa-filter"></i> Terapkan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ui-card">
+      <div class="d-none text-center py-3 border-bottom bg-light" id="loading-rekap">
+        <div class="spinner-border spinner-border-sm text-primary mb-1" role="status"></div>
+        <div class="small text-muted">Memperbarui matrix data...</div>
+      </div>
+
+      <div class="table-responsive" style="max-height: 65vh;">
+        <table class="ui-table table-matrix" id="table-rekap-matrix">
+          <thead class="sticky-top">
+            <tr id="thead-rekap-days">
+            </tr>
+          </thead>
+          <tbody id="tbody-rekap">
+            <tr>
+              <td colspan="45" class="text-center py-5 text-muted">
+                <div class="spinner-border text-primary mb-2" role="status" style="width: 1.5rem; height: 1.5rem;"></div>
+                <div>Memuat rekapitulasi kehadiran...</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="modal fade ui-modal" id="modal-detail-rekap" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2">
+              <i class="fas fa-fingerprint text-primary"></i> Rincian Presensi Harian
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body p-4">
+            <div class="bg-light border rounded-3 p-4 mb-4">
+              <div class="row g-3">
+                <div class="col-6">
+                  <div class="ui-label">Nama Pegawai</div>
+                  <div class="fw-bold text-dark" id="modal-det-nama">-</div>
+                </div>
+                <div class="col-6">
+                  <div class="ui-label">Tanggal</div>
+                  <div class="fw-bold text-dark" id="modal-det-tanggal">-</div>
+                </div>
+                <div class="col-6">
+                  <div class="ui-label">Shift Terjadwal</div>
+                  <span class="badge bg-secondary rounded-pill" id="modal-det-shift">-</span>
+                </div>
+                <div class="col-6">
+                  <div class="ui-label">Status Kehadiran</div>
+                  <span class="badge bg-primary rounded-pill" id="modal-det-status">-</span>
+                </div>
+                <div class="col-6">
+                  <div class="ui-label">Jam Masuk (Aktual)</div>
+                  <div class="fw-bold text-success" id="modal-det-masuk">-</div>
+                </div>
+                <div class="col-6">
+                  <div class="ui-label">Jam Pulang (Aktual)</div>
+                  <div class="fw-bold text-info" id="modal-det-keluar">-</div>
+                </div>
+              </div>
+            </div>
+
+            <h6 class="fw-bold text-secondary small text-uppercase mb-3"><i class="fas fa-list text-primary me-1"></i> Audit Raw Scan Biometrik</h6>
+            <div class="table-responsive border rounded-3">
+              <table class="table table-hover table-borderless align-middle mb-0">
+                <thead class="bg-light text-secondary">
+                  <tr>
+                    <th class="text-center py-2" style="width: 50px;">No</th>
+                    <th class="py-2">Waktu Scan</th>
+                    <th class="py-2">Mesin SN</th>
+                    <th class="py-2">Mode</th>
+                  </tr>
+                </thead>
+                <tbody id="modal-det-raw-logs">
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-ui-white" data-bs-dismiss="modal">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</template>
+
 <style>
-  .absensi-rekap .card {
-    border: none;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
-    border-radius: 0.5rem;
+  .absensi-rekap-wrapper {
+    background-color: #f8fafc;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 2.5rem 2rem;
+    color: #0f172a;
   }
-  .absensi-rekap .table th {
+
+  .ui-icon-bubble {
+    width: 48px;
+    height: 48px;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .stat-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    height: 100%;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.05);
+  }
+
+  .stat-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin-bottom: 0;
+    color: #0f172a;
+  }
+
+  .stat-label {
     font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
-    background-color: #f8f9fa;
-    color: #495057;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+  }
+
+  .ui-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+  }
+
+  .ui-card-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: #ffffff;
+  }
+
+  .ui-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+  }
+
+  .ui-input {
+    border-radius: 0.5rem;
+    border: 1px solid #e2e8f0;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    background: #f8fafc;
+  }
+
+  .ui-input:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+    background: #ffffff;
+  }
+
+  .btn-ui-primary {
+    background: #4f46e5;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
     font-weight: 600;
-    text-align: center;
+    padding: 0.5rem 1rem;
+    box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
   }
-  .absensi-rekap .table td {
+
+  .btn-ui-primary:hover {
+    background: #4338ca;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    color: white;
+  }
+
+  .btn-ui-white {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #0f172a;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-ui-white:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  }
+
+  .ui-table {
+    width: 100%;
+    margin-bottom: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .ui-table th {
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+
+  .ui-table td {
+    padding: 1rem 1.25rem;
     vertical-align: middle;
-    font-size: 0.8rem;
+    border-bottom: 1px solid #e2e8f0;
+    color: #0f172a;
+    font-size: 0.85rem;
   }
+
+  .ui-table tbody tr {
+    transition: background 0.2s ease;
+  }
+
+  .ui-table tbody tr:hover {
+    background: #f1f5f9;
+  }
+
+  .table-matrix th {
+    font-size: 0.65rem;
+    padding: 0.5rem;
+    text-align: center;
+    min-width: 40px;
+  }
+  
+  .table-matrix td {
+    padding: 0.5rem;
+  }
+
   .matrix-day-cell {
     min-width: 32px;
     max-width: 38px;
@@ -25,11 +383,13 @@
     cursor: pointer;
     transition: transform 0.1s ease;
   }
+
   .matrix-day-cell:hover {
     transform: scale(1.15);
     z-index: 5;
     position: relative;
   }
+
   .shift-badge {
     display: inline-block;
     width: 28px;
@@ -41,12 +401,37 @@
     color: #fff;
     text-align: center;
   }
-  .shift-badge.bg-success { background-color: #28a745 !important; }
-  .shift-badge.bg-warning { background-color: #ffc107 !important; color: #212529 !important; }
-  .shift-badge.bg-danger { background-color: #dc3545 !important; }
-  .shift-badge.bg-secondary { background-color: #6c757d !important; opacity: 0.6; }
-  .shift-badge.bg-info { background-color: #17a2b8 !important; }
-  .shift-badge.bg-light-libur { background-color: #e9ecef !important; color: #6c757d !important; }
+
+  .shift-badge.bg-success { background-color: #16a34a !important; }
+  .shift-badge.bg-warning { background-color: #d97706 !important; color: #ffffff !important; }
+  .shift-badge.bg-danger { background-color: #dc2626 !important; }
+  .shift-badge.bg-secondary { background-color: #64748b !important; opacity: 0.6; }
+  .shift-badge.bg-info { background-color: #0284c7 !important; }
+  .shift-badge.bg-light-libur { background-color: #e2e8f0 !important; color: #64748b !important; }
+
+  .ui-modal .modal-content {
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+  }
+
+  .ui-modal .modal-header {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1.25rem 1.5rem;
+  }
+
+  .ui-modal .modal-body {
+    padding: 1.5rem;
+    background: #ffffff;
+  }
+
+  .ui-modal .modal-footer {
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    padding: 1rem 1.5rem;
+  }
 </style>
 
 <script type="module" defer>
@@ -300,206 +685,3 @@
   initModule();
 </script>
 
-<template>
-  <div class="container-fluid py-3 absensi-rekap">
-    <!-- Header -->
-    <div class="row align-items-center mb-3">
-      <div class="col-md-7">
-        <div class="d-flex align-items-center">
-          <div class="avatar bg-soft-primary text-primary p-3 rounded-circle me-3">
-            <i class="fas fa-calendar-check fa-2x"></i>
-          </div>
-          <div>
-            <h4 class="mb-0 fw-bold">Rekapitulasi Kehadiran Bulanan</h4>
-            <p class="text-muted small mb-0">Matrix jadwal kerja, status presensi, dan catatan jam kerja harian pegawai</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-5 text-md-end mt-2 mt-md-0">
-        <span class="badge bg-primary px-3 py-2 me-2" id="total-badge-rekap">0 Pegawai</span>
-        <button class="btn btn-outline-secondary btn-sm me-2" id="btn-refresh-rekap" title="Segarkan Data">
-          <i class="fas fa-sync-alt"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Summary Stat Cards -->
-    <div class="row g-3 mb-3">
-      <div class="col-6 col-md-3">
-        <div class="card p-3 border-start border-4 border-primary">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Total Pegawai Terdata</div>
-              <h4 class="mb-0 fw-bold" id="stat-total-pegawai">0</h4>
-            </div>
-            <i class="fas fa-users fa-2x text-primary opacity-25"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card p-3 border-start border-4 border-success">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Total Kehadiran</div>
-              <h4 class="mb-0 fw-bold text-success" id="stat-total-hadir">0</h4>
-            </div>
-            <i class="fas fa-check-circle fa-2x text-success opacity-25"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card p-3 border-start border-4 border-warning">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Total Keterlambatan</div>
-              <h4 class="mb-0 fw-bold text-warning" id="stat-total-terlambat">0</h4>
-            </div>
-            <i class="fas fa-user-clock fa-2x text-warning opacity-25"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card p-3 border-start border-4 border-info">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Keterangan Legend</div>
-              <div class="d-flex gap-1 flex-wrap mt-1">
-                <span class="badge bg-success small">Hadir</span>
-                <span class="badge bg-warning small">Telat</span>
-                <span class="badge bg-danger small">Alpa</span>
-                <span class="badge bg-secondary small">Libur</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Filters & Table Card -->
-    <div class="card shadow-sm mb-4">
-      <div class="card-header bg-white py-3 border-bottom">
-        <div class="row g-2 align-items-end">
-          
-          <!-- Periode Bulan -->
-          <div class="col-lg-3 col-md-3 col-sm-6">
-            <label class="form-label small fw-semibold text-muted mb-1">Periode Bulan:</label>
-            <input type="month" class="form-control form-control-sm bg-white" id="filter-bulan-rekap" value="2026-04">
-          </div>
-
-          <!-- Unit / Bagian -->
-          <div class="col-lg-4 col-md-4 col-sm-6">
-            <label class="form-label small fw-semibold text-muted mb-1">Unit / Bagian:</label>
-            <select class="form-select form-select-sm bg-white" id="filter-bagian-rekap">
-              <option value="">-- Memuat Bagian --</option>
-            </select>
-          </div>
-
-          <!-- Cari Pegawai  -->
-          <div class="col-lg col-md col-sm-8">
-            <label class="form-label small fw-semibold text-muted mb-1">Cari Pegawai:</label>
-            <div class="input-group input-group-sm">
-              <span class="input-group-text bg-white border-end-0 text-muted">
-                <i class="fas fa-search"></i>
-              </span>
-              <input type="text" class="form-control form-control-sm bg-white border-start-0" id="search-rekap" placeholder="Nama / NIP...">
-            </div>
-          </div>
-
-          <!-- Tombol Terapkan -->
-          <div class="col-lg-auto col-md-auto col-sm-4">
-            <button type="button" class="btn btn-primary btn-sm px-4 d-inline-flex align-items-center justify-content-center gap-1 shadow-sm" id="btn-filter-rekap">
-              <i class="fas fa-filter"></i>
-              <span>Terapkan</span>
-            </button>
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-      <div class="card-body p-0">
-        <div class="d-none text-center py-2 bg-light border-bottom" id="loading-rekap">
-          <span class="spinner-border spinner-border-sm text-primary me-2"></span>Memperbarui matrix data...
-        </div>
-        <div class="table-responsive" style="max-height: 65vh;">
-          <table class="table table-bordered table-hover align-middle mb-0" id="table-rekap-matrix">
-            <thead class="sticky-top bg-light">
-              <tr id="thead-rekap-days">
-                <!-- Dynamically generated days 1..31 -->
-              </tr>
-            </thead>
-            <tbody id="tbody-rekap">
-              <tr>
-                <td colspan="45" class="text-center py-4 text-muted">
-                  <span class="spinner-border spinner-border-sm me-2"></span>Memuat rekapitulasi kehadiran...
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal Detail Log Harian -->
-    <div class="modal fade" id="modal-detail-rekap" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title fw-bold"><i class="fas fa-fingerprint text-primary me-2"></i>Rincian Presensi Harian</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="card bg-light border-0 mb-3 p-3">
-              <div class="row g-2">
-                <div class="col-6">
-                  <small class="text-muted d-block">Nama Pegawai</small>
-                  <strong id="modal-det-nama">-</strong>
-                </div>
-                <div class="col-6">
-                  <small class="text-muted d-block">Tanggal</small>
-                  <strong id="modal-det-tanggal">-</strong>
-                </div>
-                <div class="col-6">
-                  <small class="text-muted d-block">Shift Terjadwal</small>
-                  <span class="badge bg-secondary" id="modal-det-shift">-</span>
-                </div>
-                <div class="col-6">
-                  <small class="text-muted d-block">Status Kehadiran</small>
-                  <span class="badge bg-primary" id="modal-det-status">-</span>
-                </div>
-                <div class="col-6">
-                  <small class="text-muted d-block">Jam Masuk (Aktual)</small>
-                  <strong class="text-success" id="modal-det-masuk">-</strong>
-                </div>
-                <div class="col-6">
-                  <small class="text-muted d-block">Jam Pulang (Aktual)</small>
-                  <strong class="text-info" id="modal-det-keluar">-</strong>
-                </div>
-              </div>
-            </div>
-
-            <h6 class="fw-bold mb-2 small text-uppercase text-muted"><i class="fas fa-list me-1"></i>Audit Raw Scan Biometrik (Mesin)</h6>
-            <div class="table-responsive">
-              <table class="table table-sm table-bordered">
-                <thead class="bg-light">
-                  <tr>
-                    <th style="width: 40px;" class="text-center">No</th>
-                    <th>Waktu Scan</th>
-                    <th>Mesin SN</th>
-                    <th>Mode</th>
-                  </tr>
-                </thead>
-                <tbody id="modal-det-raw-logs">
-                  <!-- Injected via JS -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>

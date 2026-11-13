@@ -3,6 +3,7 @@
     border-radius: 0.5rem;
     box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
   }
+
   .btn-action-icon {
     display: inline-flex;
     align-items: center;
@@ -13,8 +14,8 @@
 <script type="module">
   import { httpGet, httpPost } from './assets/js/core/http.js';
 
-  const apiUrl = (typeof config !== 'undefined' && config.api_url) 
-    ? config.api_url 
+  const apiUrl = (typeof config !== 'undefined' && config.api_url)
+    ? config.api_url
     : `${window.location.origin}/evoHRIS_v2.1/api`;
 
   let allData = [];
@@ -50,6 +51,11 @@
   function renderTable(items) {
     const tableBody = document.getElementById('table-jenjang_pendidikan');
     if (!tableBody) return;
+    const tableWrapper = tableBody.closest('.table-responsive');
+    if (tableWrapper) {
+      tableWrapper.style.maxHeight = 'none';
+      tableWrapper.style.overflowY = 'auto';
+    }
 
     const totalInfo = document.getElementById('total-rows-info-jenjang_pendidikan');
     if (totalInfo) totalInfo.innerText = `Total: ${items.length} data`;
@@ -76,6 +82,22 @@
         </td>
       </tr>
     `).join('');
+
+    if (tableWrapper) {
+      requestAnimationFrame(() => {
+        if (items.length <= 11) {
+          tableWrapper.style.maxHeight = 'none';
+          return;
+        }
+
+        const headerHeight = tableBody.closest('table').tHead.getBoundingClientRect().height;
+        const elevenRowsHeight = Array.from(tableBody.rows)
+          .slice(0, 11)
+          .reduce((height, row) => height + row.getBoundingClientRect().height, 0);
+
+        tableWrapper.style.maxHeight = `${Math.ceil(headerHeight + elevenRowsHeight)}px`;
+      });
+    }
 
     // Attach row events
     tableBody.querySelectorAll('.btn-edit-jenjang_pendidikan').forEach(btn => {
@@ -180,8 +202,8 @@
       renderTable(allData);
       return;
     }
-    const filtered = allData.filter(item => 
-      String(item.KD_JENJANG).toLowerCase().includes(q) || 
+    const filtered = allData.filter(item =>
+      String(item.KD_JENJANG).toLowerCase().includes(q) ||
       (item.JENJANG_PENDIDIKAN && item.JENJANG_PENDIDIKAN.toLowerCase().includes(q))
     );
     renderTable(filtered);
@@ -221,7 +243,8 @@
         </div>
         <div class="d-flex align-items-center gap-2">
           <div class="input-group input-group-sm" style="width: 240px;">
-            <input type="text" class="form-control" id="search-jenjang_pendidikan" placeholder="Cari ID / Jenjang Pendidikan...">
+            <input type="text" class="form-control" id="search-jenjang_pendidikan"
+              placeholder="Cari ID / Jenjang Pendidikan...">
             <span class="input-group-text"><i class="fas fa-search"></i></span>
           </div>
           <button class="btn btn-sm btn-primary" id="btn-tambah-jenjang_pendidikan" type="button">
@@ -255,17 +278,21 @@
     </div>
 
     <!-- MODAL FORM TAMBAH / UBAH Jenjang Pendidikan -->
-    <div class="modal fade" id="modal-form-jenjang_pendidikan" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal fade" id="modal-form-jenjang_pendidikan" tabindex="-1" aria-hidden="true"
+      data-bs-backdrop="static">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header bg-white px-4 py-3 border-bottom d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-3">
-              <div class="d-flex align-items-center justify-content-center text-primary rounded-3" style="width: 38px; height: 38px; background: rgba(44, 123, 229, 0.08);">
+              <div class="d-flex align-items-center justify-content-center text-primary rounded-3"
+                style="width: 38px; height: 38px; background: rgba(44, 123, 229, 0.08);">
                 <i class="fas fa-school fs-1"></i>
               </div>
               <div>
-                <h5 class="modal-title fw-bold text-dark mb-0" id="modal-title-jenjang_pendidikan">Tambah Data Jenjang Pendidikan</h5>
-                <small class="text-muted d-block" id="modal-subtitle-jenjang_pendidikan">Masukkan informasi data Jenjang Pendidikan baru</small>
+                <h5 class="modal-title fw-bold text-dark mb-0" id="modal-title-jenjang_pendidikan">Tambah Data Jenjang
+                  Pendidikan</h5>
+                <small class="text-muted d-block" id="modal-subtitle-jenjang_pendidikan">Masukkan informasi data Jenjang
+                  Pendidikan baru</small>
               </div>
             </div>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
@@ -275,8 +302,10 @@
             <form id="form-jenjang_pendidikan">
               <input type="hidden" id="input-pk-jenjang_pendidikan" name="KD_JENJANG">
               <div class="mb-3">
-                <label for="input-display-jenjang_pendidikan" class="form-label fw-semi-bold">Jenjang Pendidikan <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="input-display-jenjang_pendidikan" name="JENJANG_PENDIDIKAN" placeholder="Contoh: SMA/SMK, D3, D4, S1, S2, S3, PROFESI" required>
+                <label for="input-display-jenjang_pendidikan" class="form-label fw-semi-bold">Jenjang Pendidikan <span
+                    class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="input-display-jenjang_pendidikan" name="JENJANG_PENDIDIKAN"
+                  placeholder="Contoh: SMA/SMK, D3, D4, S1, S2, S3, PROFESI" required>
               </div>
             </form>
           </div>

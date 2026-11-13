@@ -117,15 +117,38 @@ class Kinerja extends BaseController
     public function approveTargetSkp()
     {
         $data = $this->request->getJSON(true) ?? $this->request->getPost();
-        $id = (int) ($data['id_targetskp'] ?? 0);
+        $requestedIds = $data['ids'] ?? ($data['id_targetskp'] ?? []);
+        if (is_string($requestedIds)) {
+            $decodedIds = json_decode($requestedIds, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decodedIds)) {
+                $requestedIds = $decodedIds;
+            }
+        }
+        $requestedIds = is_array($requestedIds) ? $requestedIds : [$requestedIds];
         $status = (string) ($data['status'] ?? '1');
         $catatan = $data['catatan'] ?? null;
+        $ids = [];
 
-        if ($id <= 0) {
+        foreach ($requestedIds as $requestedId) {
+            $id = filter_var($requestedId, FILTER_VALIDATE_INT);
+            if ($id === false || $id <= 0) {
+                return sendResponse(400, null, 'ID target SKP tidak valid');
+            }
+            $ids[] = $id;
+        }
+
+        if (empty($ids)) {
             return sendResponse(400, null, 'ID target SKP tidak valid');
         }
 
-        $this->mKinerja->approveTargetSkp($id, $status, $catatan);
+        if (!in_array($status, ['1', '2'], true)) {
+            return sendResponse(400, null, 'Status approval tidak valid');
+        }
+
+        if (!$this->mKinerja->approveTargetSkp(array_values(array_unique($ids)), $status, $catatan)) {
+            return sendResponse(500, null, 'Gagal memperbarui status target SKP');
+        }
+
         $msg = ($status === '1') ? 'Target SKP berhasil disetujui' : 'Target SKP ditolak';
         return sendResponse(200, null, $msg);
     }

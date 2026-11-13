@@ -1,22 +1,536 @@
-<style>
-  .kinerja-aktifitas .card {
-    border: none;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
-    border-radius: 0.5rem;
-  }
-  .kinerja-aktifitas .table th {
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    background-color: #f8f9fa;
-    color: #495057;
-    font-weight: 600;
-  }
-  .kinerja-aktifitas .table td {
-    vertical-align: middle;
-    font-size: 0.85rem;
-  }
-</style>
+<template>
+  <style>
+    /* ==========================================
+       DESIGN SYSTEM & VARIABLES
+       ========================================== */
+    :root {
+      --ui-bg: #f8fafc;
+      --ui-surface: #ffffff;
+      --ui-text-main: #0f172a;
+      --ui-text-muted: #64748b;
+      --ui-primary: #d97706; /* Warna Warning/Gold */
+      --ui-primary-hover: #b45309;
+      --ui-border: #e2e8f0;
+      
+      --ui-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --ui-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.025);
+      --ui-shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.025);
+      
+      --ui-radius-md: 0.5rem;
+      --ui-radius-lg: 0.75rem;
+      --ui-radius-xl: 1rem;
+    }
+
+    .logbook-wrapper {
+      background-color: var(--ui-bg);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 2.5rem 2rem;
+      min-height: 100vh;
+      color: var(--ui-text-main);
+    }
+
+    /* ==========================================
+       STAT CARDS
+       ========================================== */
+    .stat-card {
+      background: var(--ui-surface);
+      border: 1px solid var(--ui-border);
+      border-radius: var(--ui-radius-xl);
+      padding: 1.5rem;
+      box-shadow: var(--ui-shadow-sm);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      height: 100%;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--ui-shadow-lg);
+    }
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--ui-radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+    
+    .icon-warning { background: #fef3c7; color: #d97706; }
+    .icon-primary { background: #e0f2fe; color: #0284c7; }
+    .icon-success { background: #dcfce7; color: #16a34a; }
+    .icon-secondary { background: #f1f5f9; color: #64748b; }
+
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      margin-bottom: 0;
+      color: var(--ui-text-main);
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--ui-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.25rem;
+    }
+
+    /* ==========================================
+       UI CARDS & TABLES
+       ========================================== */
+    .ui-card {
+      background: var(--ui-surface);
+      border: 1px solid var(--ui-border);
+      border-radius: var(--ui-radius-xl);
+      box-shadow: var(--ui-shadow-md);
+      overflow: hidden;
+    }
+
+    .ui-card-header {
+      background: var(--ui-surface);
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--ui-border);
+    }
+
+    .ui-input {
+      border-radius: var(--ui-radius-md);
+      border: 1px solid var(--ui-border);
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+      background: #f8fafc;
+    }
+
+    .ui-input:focus {
+      border-color: var(--ui-primary);
+      box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
+      background: #ffffff;
+    }
+
+    .ui-table {
+      width: 100%;
+      margin-bottom: 0;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .ui-table th {
+      background: #f8fafc;
+      color: var(--ui-text-muted);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--ui-border);
+      white-space: nowrap;
+    }
+
+    .ui-table td {
+      padding: 1rem 1.25rem;
+      vertical-align: middle;
+      border-bottom: 1px solid var(--ui-border);
+      color: var(--ui-text-main);
+      font-size: 0.85rem;
+    }
+
+    .ui-table tbody tr {
+      transition: background 0.2s ease;
+    }
+
+    .ui-table tbody tr:hover {
+      background: #f1f5f9;
+    }
+
+    /* ==========================================
+       BUTTONS
+       ========================================== */
+    .btn-ui-primary {
+      background: var(--ui-primary);
+      color: white;
+      border: none;
+      border-radius: var(--ui-radius-md);
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      box-shadow: 0 2px 4px rgba(217, 119, 6, 0.2);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-ui-primary:hover {
+      background: var(--ui-primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+      color: white;
+    }
+
+    .btn-ui-white {
+      background: var(--ui-surface);
+      border: 1px solid var(--ui-border);
+      color: var(--ui-text-main);
+      border-radius: var(--ui-radius-md);
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      box-shadow: var(--ui-shadow-sm);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-ui-white:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      transform: translateY(-1px);
+      box-shadow: var(--ui-shadow-md);
+      color: var(--ui-text-main);
+    }
+
+    /* ==========================================
+       MODAL STYLING
+       ========================================== */
+    .ui-modal .modal-content {
+      border: none;
+      border-radius: var(--ui-radius-xl);
+      box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+
+    .ui-modal .modal-header {
+      background: var(--ui-surface);
+      border-bottom: 1px solid var(--ui-border);
+      padding: 1.25rem 1.5rem;
+    }
+
+    .ui-modal .modal-body {
+      padding: 1.5rem;
+      background: var(--ui-surface);
+    }
+
+    .ui-modal .modal-footer {
+      background: var(--ui-bg);
+      border-top: 1px solid var(--ui-border);
+      padding: 1rem 1.5rem;
+    }
+  </style>
+
+  <div class="logbook-wrapper">
+    
+    <!-- HEADER -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon icon-warning" style="width: 56px; height: 56px; font-size: 1.5rem; border-radius: var(--ui-radius-lg);">
+          <i class="fas fa-book-reader"></i>
+        </div>
+        <div>
+          <h3 class="fw-bold text-dark mb-1">Logbook & Catatan Aktifitas Harian</h3>
+          <p class="text-secondary mb-0">Pencatatan real-time log pekerjaan harian, asuhan medis, administrasi, dan durasi kerja staf.</p>
+        </div>
+      </div>
+      
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning-subtle px-3 py-2 rounded-pill fw-semibold" id="badge-total-aktifitas">Memuat...</span>
+        <button class="btn btn-ui-white" id="btn-refresh-aktifitas">
+          <i class="fas fa-sync-alt text-warning"></i> Refresh
+        </button>
+        <button class="btn btn-ui-primary" id="btn-tambah-aktifitas">
+          <i class="fas fa-plus"></i> Catat Aktifitas
+        </button>
+      </div>
+    </div>
+
+    <!-- STAT CARDS -->
+    <div class="row g-4 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon icon-warning"><i class="fas fa-clipboard-list"></i></div>
+            <div>
+              <div class="stat-label">Total Aktifitas</div>
+              <div class="stat-value" id="card-stat-akt-total">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon icon-primary"><i class="fas fa-business-time"></i></div>
+            <div>
+              <div class="stat-label">Total Jam Kerja</div>
+              <div class="stat-value" id="card-stat-akt-hours">0 <span class="fs-6 fw-normal text-muted">Jam</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon icon-success"><i class="fas fa-check-circle"></i></div>
+            <div>
+              <div class="stat-label">Telah Disetujui</div>
+              <div class="stat-value" id="card-stat-akt-approved">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon icon-secondary"><i class="fas fa-hourglass-half"></i></div>
+            <div>
+              <div class="stat-label">Menunggu Review</div>
+              <div class="stat-value" id="card-stat-akt-pending">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILTER CARD -->
+    <div class="ui-card mb-4">
+      <div class="ui-card-header">
+        <div class="row g-2 align-items-center">
+          <div class="col-lg-3 col-md-6">
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-search"></i></span>
+              <input type="text" class="form-control ui-input border-start-0 ps-0" id="search-aktifitas" placeholder="Cari nama, kegiatan, catatan...">
+            </div>
+          </div>
+          <div class="col-lg-2 col-md-6">
+            <input type="date" class="form-control ui-input" id="filter-tgl-mulai" title="Tanggal Mulai">
+          </div>
+          <div class="col-lg-2 col-md-6">
+            <input type="date" class="form-control ui-input" id="filter-tgl-selesai" title="Tanggal Selesai">
+          </div>
+          <div class="col-lg-2 col-md-6">
+            <select class="form-select ui-input" id="filter-bagian-aktifitas">
+              <option value="">-- Semua Unit --</option>
+            </select>
+          </div>
+          <div class="col-lg-2 col-md-6">
+            <select class="form-select ui-input" id="filter-status-aktifitas">
+              <option value="">-- Status --</option>
+              <option value="1">Disetujui</option>
+              <option value="0">Menunggu</option>
+              <option value="2">Ditolak</option>
+            </select>
+          </div>
+          <div class="col-lg-1 col-md-6">
+            <button class="btn btn-ui-primary w-100 justify-content-center" id="btn-filter-aktifitas">
+              <i class="fas fa-filter"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN TABLE CARD -->
+    <div class="ui-card">
+      <div class="ui-card-header d-flex justify-content-between align-items-center border-bottom-0">
+        <h5 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+          <i class="fas fa-book text-warning"></i> Riwayat Logbook Harian
+        </h5>
+        <div class="spinner-border spinner-border-sm text-warning d-none" id="loading-aktifitas" role="status"></div>
+      </div>
+      
+      <div class="table-responsive">
+        <table class="ui-table">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 50px;">No</th>
+              <th style="width: 130px;">Waktu & Jam</th>
+              <th style="width: 220px;">Pegawai & Unit</th>
+              <th>Aktifitas / Tindakan</th>
+              <th style="width: 110px;">Output</th>
+              <th class="text-center" style="width: 90px;">Durasi</th>
+              <th style="width: 140px;">Catatan</th>
+              <th class="text-center" style="width: 110px;">Status</th>
+              <th class="text-center" style="width: 100px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-aktifitas">
+            <tr>
+              <td colspan="9" class="text-center py-5 text-muted">
+                <div class="spinner-border text-warning mb-2" role="status" style="width: 1.5rem; height: 1.5rem;"></div>
+                <div>Memuat data logbook...</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="ui-card-header border-top border-bottom-0 d-flex flex-column flex-md-row justify-content-between align-items-center py-3">
+        <div class="small text-muted fw-semibold mb-2 mb-md-0" id="pagination-info-aktifitas">Menampilkan 0 data</div>
+        <ul class="pagination pagination-sm mb-0 shadow-sm" id="pagination-aktifitas"></ul>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL DETAIL AKTIFITAS                     -->
+  <!-- ========================================== -->
+  <div class="modal fade ui-modal" id="modal-aktifitas-detail" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        
+        <div class="modal-header bg-warning bg-opacity-10 border-0">
+          <h5 class="modal-title fw-bold text-warning-emphasis d-flex align-items-center gap-2">
+            <i class="fas fa-clipboard-check"></i> Rincian Catatan Aktifitas
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body p-4">
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <div class="text-muted small text-uppercase fw-semibold mb-1">Pegawai</div>
+              <h5 class="fw-bold text-dark mb-0" id="modal-detail-akt-nama">-</h5>
+              <div class="text-secondary small">NIP: <span id="modal-detail-akt-nip">-</span></div>
+            </div>
+            <div class="col-md-6">
+              <div class="text-muted small text-uppercase fw-semibold mb-1">Unit Kerja</div>
+              <h6 class="fw-bold text-warning mb-0" id="modal-detail-akt-bagian">-</h6>
+              <div class="text-secondary small">Tanggal: <span id="modal-detail-akt-tgl">-</span></div>
+            </div>
+          </div>
+
+          <div class="bg-light p-4 rounded-3 mb-4 border">
+            <div class="text-muted small text-uppercase fw-semibold mb-1">Kaitan Target SKP</div>
+            <div class="fw-semibold text-dark mb-3" id="modal-detail-akt-target">-</div>
+            <div class="text-muted small text-uppercase fw-semibold mb-1">Uraian Aktifitas / Tindakan Medis</div>
+            <div class="fs-6 fw-bold text-dark" id="modal-detail-akt-uraian">-</div>
+          </div>
+
+          <div class="row g-3 text-center mb-4">
+            <div class="col-4">
+              <div class="p-3 border rounded-3 bg-white shadow-sm">
+                <div class="text-muted small fw-semibold mb-1">Jam Kerja</div>
+                <h6 class="mb-0 text-dark fw-bold" id="modal-detail-akt-jam">-</h6>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="p-3 border rounded-3 bg-white shadow-sm">
+                <div class="text-muted small fw-semibold mb-1">Total Durasi</div>
+                <h5 class="mb-0 text-warning fw-bold" id="modal-detail-akt-durasi">-</h5>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="p-3 border rounded-3 bg-white shadow-sm">
+                <div class="text-muted small fw-semibold mb-1">Volume Output</div>
+                <h5 class="mb-0 text-primary fw-bold" id="modal-detail-akt-output">-</h5>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <div class="text-muted small text-uppercase fw-semibold mb-1">Catatan Tambahan</div>
+            <div class="p-3 border rounded-3 bg-light text-dark small" id="modal-detail-akt-catatan">-</div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+            <span class="text-muted small fw-semibold">Status Verifikasi Atasan:</span>
+            <span id="modal-detail-akt-status">-</span>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ui-white" data-bs-dismiss="modal">Tutup</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL FORM INPUT AKTIFITAS                 -->
+  <!-- ========================================== -->
+  <div class="modal fade ui-modal" id="modal-aktifitas-form" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2">
+            <i class="fas fa-edit text-warning"></i> Catat Aktifitas Harian
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body p-4">
+          <div class="row g-4 mb-4">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold text-secondary small">Pegawai Pelaksana <span class="text-danger">*</span></label>
+              <select class="form-select ui-input" id="modal-akt-pegawai">
+                <option value="">-- Pilih Pegawai --</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold text-secondary small">Target SKP Terkait</label>
+              <select class="form-select ui-input" id="modal-akt-target">
+                <option value="0">-- Kegiatan Non-Target --</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row g-4 mb-4">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold text-secondary small">Tanggal <span class="text-danger">*</span></label>
+              <input type="date" class="form-control ui-input" id="modal-akt-tgl">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold text-secondary small">Jam Mulai</label>
+              <input type="time" class="form-control ui-input" id="modal-akt-jam-mulai" value="08:00">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold text-secondary small">Jam Selesai</label>
+              <input type="time" class="form-control ui-input" id="modal-akt-jam-selesai" value="09:00">
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-semibold text-secondary small">Uraian Aktifitas <span class="text-danger">*</span></label>
+            <textarea class="form-control ui-input" id="modal-akt-uraian" rows="3" placeholder="Contoh: Melakukan pemasangan infus dan observasi TTV pasien..."></textarea>
+          </div>
+
+          <div class="row g-4 mb-4">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold text-secondary small">Volume / Output</label>
+              <input type="number" class="form-control ui-input" id="modal-akt-output" value="1">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold text-secondary small">Satuan Output</label>
+              <select class="form-select ui-input" id="modal-akt-satuan">
+                <option value="">-- Satuan Output --</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-0">
+            <label class="form-label fw-semibold text-secondary small">Catatan Hasil / Keterangan</label>
+            <input type="text" class="form-control ui-input" id="modal-akt-catatan" placeholder="Contoh: Tindakan berjalan lancar, kondisi pasien stabil">
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ui-white" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-ui-primary" id="btn-save-aktifitas">
+            <i class="fas fa-save"></i> Simpan Log
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</template>
 
 <script type="module" defer>
   import { httpGet, httpPost } from './assets/js/core/http.js';
@@ -469,289 +983,3 @@
   initModule();
 </script>
 
-<template>
-  <div class="container-fluid py-3 kinerja-aktifitas">
-    <!-- Header -->
-    <div class="row align-items-center mb-3">
-      <div class="col-md-7">
-        <div class="d-flex align-items-center">
-          <div class="avatar bg-soft-warning text-warning p-3 rounded-circle me-3">
-            <i class="fas fa-book-reader fa-2x"></i>
-          </div>
-          <div>
-            <h4 class="mb-0 fw-bold">Logbook & Catatan Aktifitas Harian</h4>
-            <p class="text-muted small mb-0">Pencatatan real-time log pekerjaan harian, asuhan medis, administrasi, dan durasi kerja staf</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-5 text-md-end mt-2 mt-md-0">
-        <span class="badge bg-warning text-dark px-3 py-2 me-2" id="badge-total-aktifitas">Memuat...</span>
-        <button class="btn btn-outline-secondary btn-sm me-2" id="btn-refresh-aktifitas" title="Segarkan Data">
-          <i class="fas fa-sync-alt"></i>
-        </button>
-        <button class="btn btn-warning btn-sm" id="btn-tambah-aktifitas">
-          <i class="fas fa-plus me-1"></i>Catat Aktifitas Baru
-        </button>
-      </div>
-    </div>
-
-    <!-- Summary Cards -->
-    <div class="row g-3 mb-3">
-      <div class="col-6 col-md-3">
-        <div class="card p-3 border-start border-4 border-warning">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Total Aktifitas</div>
-              <h4 class="mb-0 fw-bold text-dark" id="card-stat-akt-total">0</h4>
-            </div>
-            <i class="fas fa-clipboard-list fa-2x text-warning opacity-25"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card p-3 border-start border-4 border-primary">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Total Jam Kerja</div>
-              <h4 class="mb-0 fw-bold text-primary" id="card-stat-akt-hours">0 Jam</h4>
-            </div>
-            <i class="fas fa-business-time fa-2x text-primary opacity-25"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card p-3 border-start border-4 border-success">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Telah Disetujui</div>
-              <h4 class="mb-0 fw-bold text-success" id="card-stat-akt-approved">0</h4>
-            </div>
-            <i class="fas fa-check-circle fa-2x text-success opacity-25"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card p-3 border-start border-4 border-secondary">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Menunggu Review</div>
-              <h4 class="mb-0 fw-bold text-muted" id="card-stat-akt-pending">0</h4>
-            </div>
-            <i class="fas fa-hourglass-half fa-2x text-secondary opacity-25"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Filter Card -->
-    <div class="card p-3 mb-3">
-      <div class="row g-2 align-items-center">
-        <div class="col-md-3">
-          <div class="input-group input-group-sm">
-            <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
-            <input type="text" class="form-control" id="search-aktifitas" placeholder="Cari nama, kegiatan, catatan...">
-          </div>
-        </div>
-        <div class="col-md-2">
-          <input type="date" class="form-control form-control-sm" id="filter-tgl-mulai" title="Tanggal Mulai">
-        </div>
-        <div class="col-md-2">
-          <input type="date" class="form-control form-control-sm" id="filter-tgl-selesai" title="Tanggal Selesai">
-        </div>
-        <div class="col-md-2">
-          <select class="form-select form-select-sm" id="filter-bagian-aktifitas">
-            <option value="">-- Semua Unit / Bagian --</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <select class="form-select form-select-sm" id="filter-status-aktifitas">
-            <option value="">-- Semua Status --</option>
-            <option value="1">Disetujui</option>
-            <option value="0">Menunggu Approval</option>
-            <option value="2">Ditolak</option>
-          </select>
-        </div>
-        <div class="col-md-1 text-end">
-          <button class="btn btn-outline-warning text-dark btn-sm w-100" id="btn-filter-aktifitas">
-            <i class="fas fa-filter"></i>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Table Card -->
-    <div class="card">
-      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-book me-2 text-warning"></i>Riwayat Catatan Logbook Harian Pegawai</h6>
-        <div class="spinner-border spinner-border-sm text-warning d-none" id="loading-aktifitas"></div>
-      </div>
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead>
-            <tr>
-              <th class="text-center" style="width: 45px;">No</th>
-              <th style="width: 130px;">Waktu & Jam</th>
-              <th style="width: 220px;">Pegawai & Unit</th>
-              <th>Aktifitas / Tindakan Dilakukan</th>
-              <th style="width: 110px;">Output</th>
-              <th class="text-center" style="width: 90px;">Durasi</th>
-              <th style="width: 140px;">Catatan</th>
-              <th class="text-center" style="width: 110px;">Status</th>
-              <th class="text-center" style="width: 110px;">Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="tbody-aktifitas">
-            <tr>
-              <td colspan="10" class="text-center py-4 text-muted">
-                <span class="spinner-border spinner-border-sm me-2"></span>Memuat data...
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="card-footer bg-white d-flex flex-column flex-md-row justify-content-between align-items-center py-2">
-        <div class="text-muted small mb-2 mb-md-0" id="pagination-info-aktifitas">Menampilkan 0 data</div>
-        <ul class="pagination pagination-sm mb-0" id="pagination-aktifitas"></ul>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Detail Aktifitas -->
-  <div class="modal fade" id="modal-aktifitas-detail" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content">
-        <div class="modal-header bg-warning text-dark">
-          <h5 class="modal-title"><i class="fas fa-clipboard-check me-2"></i>Rincian Catatan Aktifitas Harian</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body p-4">
-          <div class="row g-3 mb-3">
-            <div class="col-md-6">
-              <label class="text-muted small d-block">Pegawai</label>
-              <h5 class="fw-bold text-dark mb-0" id="modal-detail-akt-nama">-</h5>
-              <div class="text-muted small">NIP: <span id="modal-detail-akt-nip">-</span></div>
-            </div>
-            <div class="col-md-6">
-              <label class="text-muted small d-block">Unit Kerja</label>
-              <h6 class="fw-semibold text-primary mb-0" id="modal-detail-akt-bagian">-</h6>
-              <div class="text-muted small">Tanggal: <span id="modal-detail-akt-tgl">-</span></div>
-            </div>
-          </div>
-
-          <div class="card bg-light p-3 mb-3">
-            <label class="text-muted small">Kaitan Target SKP</label>
-            <div class="fw-semibold text-dark mb-2" id="modal-detail-akt-target">-</div>
-            <label class="text-muted small">Uraian Aktifitas / Tindakan Medis</label>
-            <div class="fs-6 fw-bold text-dark" id="modal-detail-akt-uraian">-</div>
-          </div>
-
-          <div class="row g-3 text-center mb-3">
-            <div class="col-4">
-              <div class="p-3 border rounded bg-white">
-                <div class="text-muted small">Jam Kerja</div>
-                <h6 class="mb-0 text-dark fw-bold" id="modal-detail-akt-jam">-</h6>
-              </div>
-            </div>
-            <div class="col-4">
-              <div class="p-3 border rounded bg-white">
-                <div class="text-muted small">Total Durasi</div>
-                <h5 class="mb-0 text-primary fw-bold" id="modal-detail-akt-durasi">-</h5>
-              </div>
-            </div>
-            <div class="col-4">
-              <div class="p-3 border rounded bg-white">
-                <div class="text-muted small">Volume Output</div>
-                <h5 class="mb-0 text-success fw-bold" id="modal-detail-akt-output">-</h5>
-              </div>
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <label class="text-muted small d-block">Catatan Tambahan / Hasil Pelaksanaan</label>
-            <div class="p-2 border rounded bg-light text-dark small" id="modal-detail-akt-catatan">-</div>
-          </div>
-
-          <div class="d-flex justify-content-between align-items-center pt-2 border-top">
-            <span class="text-muted small">Status Verifikasi Atasan:</span>
-            <span id="modal-detail-akt-status">-</span>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Form Input Aktifitas -->
-  <div class="modal fade" id="modal-aktifitas-form" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content">
-        <div class="modal-header bg-warning text-dark">
-          <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Catat Aktifitas Harian</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body p-4">
-          <div class="row g-3 mb-3">
-            <div class="col-md-6">
-              <label class="form-label fw-bold small">Pegawai Pelaksana <span class="text-danger">*</span></label>
-              <select class="form-select form-select-sm" id="modal-akt-pegawai">
-                <option value="">-- Pilih Pegawai --</option>
-              </select>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-bold small">Target SKP Terkait</label>
-              <select class="form-select form-select-sm" id="modal-akt-target">
-                <option value="0">-- Kegiatan Non-Target / Rutin Umum --</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="row g-3 mb-3">
-            <div class="col-md-4">
-              <label class="form-label fw-bold small">Tanggal <span class="text-danger">*</span></label>
-              <input type="date" class="form-control form-control-sm" id="modal-akt-tgl">
-            </div>
-            <div class="col-md-4">
-              <label class="form-label fw-bold small">Jam Mulai</label>
-              <input type="time" class="form-control form-control-sm" id="modal-akt-jam-mulai" value="08:00">
-            </div>
-            <div class="col-md-4">
-              <label class="form-label fw-bold small">Jam Selesai</label>
-              <input type="time" class="form-control form-control-sm" id="modal-akt-jam-selesai" value="09:00">
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label fw-bold small">Uraian Aktifitas / Tindakan <span class="text-danger">*</span></label>
-            <textarea class="form-control" id="modal-akt-uraian" rows="3" placeholder="Contoh: Melakukan pemasangan infus dan observasi TTV pasien di ruang rawat inap..."></textarea>
-          </div>
-
-          <div class="row g-3 mb-3">
-            <div class="col-md-6">
-              <label class="form-label fw-bold small">Volume / Output</label>
-              <input type="number" class="form-control form-control-sm" id="modal-akt-output" value="1">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-bold small">Satuan Output</label>
-              <select class="form-select form-select-sm" id="modal-akt-satuan">
-                <option value="">-- Satuan Output --</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label fw-bold small">Catatan Hasil / Keterangan</label>
-            <input type="text" class="form-control form-control-sm" id="modal-akt-catatan" placeholder="Contoh: Tindakan berjalan lancar, kondisi pasien stabil">
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-          <button type="button" class="btn btn-warning btn-sm" id="btn-save-aktifitas">
-            <i class="fas fa-save me-1"></i>Simpan Log Aktifitas
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>

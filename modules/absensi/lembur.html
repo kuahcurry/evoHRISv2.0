@@ -1,23 +1,429 @@
-<style>
-  .absensi-lembur .card {
-    border: none;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
-    border-radius: 0.5rem;
-  }
-  .absensi-lembur .table th {
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    background-color: #f8f9fa;
-    color: #495057;
-    font-weight: 600;
-  }
-  .absensi-lembur .table td {
-    vertical-align: middle;
-    font-size: 0.85rem;
-  }
-</style>
+<template>
+  <style>
+    :root {
+      --ui-bg: #f8fafc;
+      --ui-surface: #ffffff;
+      --ui-text-main: #0f172a;
+      --ui-text-muted: #64748b;
+      --ui-primary: #d97706;
+      --ui-primary-hover: #b45309;
+      --ui-border: #e2e8f0;
+      
+      --ui-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --ui-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.025);
+      --ui-shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.025);
+      
+      --ui-radius-md: 0.5rem;
+      --ui-radius-lg: 0.75rem;
+      --ui-radius-xl: 1rem;
+    }
 
+    .lembur-wrapper {
+      background-color: var(--ui-bg);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 2.5rem 2rem;
+      color: var(--ui-text-main);
+    }
+
+    .stat-card {
+      background: var(--ui-surface);
+      border: 1px solid var(--ui-border);
+      border-radius: var(--ui-radius-xl);
+      padding: 1.5rem;
+      box-shadow: var(--ui-shadow-sm);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      height: 100%;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--ui-shadow-lg);
+    }
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--ui-radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+    
+    .icon-primary { background: #eef2ff; color: #4f46e5; }
+    .icon-success { background: #dcfce7; color: #16a34a; }
+    .icon-warning { background: #fef3c7; color: #d97706; }
+    .icon-danger  { background: #fee2e2; color: #dc2626; }
+
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      margin-bottom: 0;
+      color: var(--ui-text-main);
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--ui-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.25rem;
+    }
+
+    .ui-card {
+      background: var(--ui-surface);
+      border: 1px solid var(--ui-border);
+      border-radius: var(--ui-radius-xl);
+      box-shadow: var(--ui-shadow-md);
+      overflow: hidden;
+    }
+
+    .ui-card-header {
+      background: var(--ui-surface);
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--ui-border);
+    }
+
+    .ui-input {
+      border-radius: var(--ui-radius-md);
+      border: 1px solid var(--ui-border);
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+      background: #f8fafc;
+    }
+
+    .ui-input:focus {
+      border-color: var(--ui-primary);
+      box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
+      background: #ffffff;
+    }
+
+    .ui-table {
+      width: 100%;
+      margin-bottom: 0;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .ui-table th {
+      background: #f8fafc;
+      color: var(--ui-text-muted);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--ui-border);
+      white-space: nowrap;
+    }
+
+    .ui-table td {
+      padding: 1rem 1.25rem;
+      vertical-align: middle;
+      border-bottom: 1px solid var(--ui-border);
+      color: var(--ui-text-main);
+      font-size: 0.85rem;
+    }
+
+    .ui-table tbody tr {
+      transition: background 0.2s ease;
+    }
+
+    .ui-table tbody tr:hover {
+      background: #fef3c7;
+    }
+
+    .btn-ui-primary {
+      background: var(--ui-primary);
+      color: white;
+      border: none;
+      border-radius: var(--ui-radius-md);
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      box-shadow: 0 2px 4px rgba(217, 119, 6, 0.2);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-ui-primary:hover {
+      background: var(--ui-primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+      color: white;
+    }
+
+    .btn-ui-white {
+      background: var(--ui-surface);
+      border: 1px solid var(--ui-border);
+      color: var(--ui-text-main);
+      border-radius: var(--ui-radius-md);
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      box-shadow: var(--ui-shadow-sm);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-ui-white:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      transform: translateY(-1px);
+      box-shadow: var(--ui-shadow-md);
+      color: var(--ui-text-main);
+    }
+
+    .ui-modal .modal-content {
+      border: none;
+      border-radius: var(--ui-radius-xl);
+      box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+
+    .ui-modal .modal-header {
+      background: var(--ui-surface);
+      border-bottom: 1px solid var(--ui-border);
+      padding: 1.25rem 1.5rem;
+    }
+
+    .ui-modal .modal-body {
+      padding: 1.5rem;
+      background: var(--ui-surface);
+    }
+
+    .ui-modal .modal-footer {
+      background: var(--ui-bg);
+      border-top: 1px solid var(--ui-border);
+      padding: 1rem 1.5rem;
+    }
+
+    .badge-soft-warning { background-color: #fef3c7; color: #d97706; border: 1px solid #fde68a; font-weight: 600; }
+    .badge-soft-success { background-color: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; font-weight: 600; }
+    .badge-soft-danger  { background-color: #fee2e2; color: #dc2626; border: 1px solid #fecaca; font-weight: 600; }
+  </style>
+
+  <div class="lembur-wrapper">
+    
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon icon-warning" style="width: 56px; height: 56px; font-size: 1.5rem; border-radius: var(--ui-radius-lg);">
+          <i class="fas fa-business-time"></i>
+        </div>
+        <div>
+          <h3 class="fw-bold text-dark mb-1">Rekapitulasi Lembur Pegawai</h3>
+          <p class="text-secondary mb-0">Manajemen pengajuan kerja lembur, verifikasi kepala unit, dan laporan jam dinas luar/ekstra.</p>
+        </div>
+      </div>
+      
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning-subtle px-3 py-2 rounded-pill fw-semibold" id="total-badge-lembur">0 Pengajuan</span>
+        <button class="btn btn-ui-white" id="btn-refresh-lembur">
+          <i class="fas fa-sync-alt text-warning"></i> Refresh
+        </button>
+      </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon icon-primary"><i class="fas fa-clipboard-list"></i></div>
+            <div>
+              <div class="stat-label">Total Pengajuan</div>
+              <div class="stat-value" id="card-stat-lembur-total">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon icon-success"><i class="fas fa-check-circle"></i></div>
+            <div>
+              <div class="stat-label">Disetujui</div>
+              <div class="stat-value" id="card-stat-lembur-approved">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon icon-warning"><i class="fas fa-hourglass-half"></i></div>
+            <div>
+              <div class="stat-label">Menunggu</div>
+              <div class="stat-value" id="card-stat-lembur-pending">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon icon-danger"><i class="fas fa-times-circle"></i></div>
+            <div>
+              <div class="stat-label">Ditolak</div>
+              <div class="stat-value" id="card-stat-lembur-rejected">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ui-card mb-4">
+      
+      <div class="ui-card-header">
+        <div class="row g-3 align-items-end">
+          <div class="col-lg-2 col-md-3 col-sm-6">
+            <label class="form-label fw-semibold text-secondary small mb-1">Periode Bulan:</label>
+            <input type="month" class="form-control ui-input" id="filter-bulan-lembur" value="2026-04">
+          </div>
+
+          <div class="col-lg-3 col-md-3 col-sm-6">
+            <label class="form-label fw-semibold text-secondary small mb-1">Unit / Bagian:</label>
+            <select class="form-select ui-input" id="filter-bagian-lembur">
+              <option value="">-- Semua Unit --</option>
+            </select>
+          </div>
+
+          <div class="col-lg-2 col-md-3 col-sm-6">
+            <label class="form-label fw-semibold text-secondary small mb-1">Status Verifikasi:</label>
+            <select class="form-select ui-input" id="filter-status-lembur">
+              <option value="">-- Semua Status --</option>
+              <option value="1">Disetujui</option>
+              <option value="0">Menunggu</option>
+              <option value="2">Ditolak</option>
+            </select>
+          </div>
+
+          <div class="col-lg col-md col-sm-8">
+            <label class="form-label fw-semibold text-secondary small mb-1">Pencarian:</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-search"></i></span>
+              <input type="text" class="form-control ui-input border-start-0 ps-0" id="search-lembur" placeholder="Nama / NIP...">
+            </div>
+          </div>
+
+          <div class="col-lg-auto col-md-auto col-sm-4">
+            <button type="button" class="btn btn-ui-primary w-100 justify-content-center" id="btn-filter-lembur">
+              <i class="fas fa-filter"></i> Terapkan
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-none text-center py-3 border-bottom bg-light" id="loading-lembur">
+        <div class="spinner-border spinner-border-sm text-warning mb-1" role="status"></div>
+        <div class="small text-muted">Memperbarui data lembur...</div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="ui-table">
+          <thead>
+            <tr>
+              <th class="text-center" style="width: 50px;">No</th>
+              <th style="width: 110px;">Tanggal</th>
+              <th>Nama Pegawai</th>
+              <th>Unit / Bagian</th>
+              <th class="text-center" style="width: 80px;">Mulai</th>
+              <th class="text-center" style="width: 80px;">Selesai</th>
+              <th class="text-center" style="width: 90px;">Durasi</th>
+              <th>Uraian Tugas</th>
+              <th class="text-center" style="width: 120px;">Status</th>
+              <th class="text-center" style="width: 80px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-lembur">
+            <tr>
+              <td colspan="10" class="text-center py-5 text-muted">
+                <div class="spinner-border text-warning mb-2" role="status" style="width: 1.5rem; height: 1.5rem;"></div>
+                <div>Memuat data pengajuan lembur...</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="ui-card-header border-top border-bottom-0 d-flex flex-column flex-md-row justify-content-between align-items-center py-3">
+        <div class="small text-muted fw-semibold mb-2 mb-md-0">Menampilkan data lembur terintegrasi sistem approval</div>
+        <ul class="pagination pagination-sm mb-0 shadow-sm" id="pagination-lembur"></ul>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="modal fade ui-modal" id="modal-detail-lembur" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        
+        <div class="modal-header bg-warning bg-opacity-10 border-0">
+          <h5 class="modal-title fw-bold text-warning d-flex align-items-center gap-2">
+            <i class="fas fa-file-invoice"></i> Rincian Pengajuan Lembur
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body p-4">
+          <div class="bg-light p-4 rounded-3 mb-4 border">
+            <div class="row g-3">
+              <div class="col-7">
+                <div class="text-muted small text-uppercase fw-semibold mb-1">Nama Pegawai</div>
+                <div class="fw-bold text-dark" id="modal-lembur-nama">-</div>
+              </div>
+              <div class="col-5">
+                <div class="text-muted small text-uppercase fw-semibold mb-1">NIP</div>
+                <div class="fw-bold text-dark" id="modal-lembur-nip">-</div>
+              </div>
+              <div class="col-7">
+                <div class="text-muted small text-uppercase fw-semibold mb-1">Unit Kerja</div>
+                <div class="fw-semibold text-dark" id="modal-lembur-bagian">-</div>
+              </div>
+              <div class="col-5">
+                <div class="text-muted small text-uppercase fw-semibold mb-1">Tanggal</div>
+                <div class="fw-bold text-warning" id="modal-lembur-tanggal">-</div>
+              </div>
+              <div class="col-12">
+                <div class="text-muted small text-uppercase fw-semibold mb-1">Jam Pelaksanaan</div>
+                <div class="fw-bold text-dark" id="modal-lembur-jam">-</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <div class="text-muted small text-uppercase fw-semibold mb-1">Uraian Tugas / Keterangan Lembur</div>
+            <div class="p-3 border rounded-3 bg-light text-dark small" id="modal-lembur-uraian">-</div>
+          </div>
+
+          <div class="mb-4">
+            <div class="text-muted small text-uppercase fw-semibold mb-2">Progres Persetujuan</div>
+            <div class="progress" style="height: 24px;">
+              <div class="progress-bar progress-bar-striped bg-success fw-semibold" role="progressbar" id="modal-lembur-prog-bar" style="width: 0%;">0 Approval</div>
+            </div>
+          </div>
+
+          <div class="mb-0">
+            <div class="text-muted small text-uppercase fw-semibold mb-1">Berkas Lampiran Surat Tugas</div>
+            <div id="modal-lembur-berkas">-</div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ui-white" data-bs-dismiss="modal">Tutup</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</template>
 <script type="module" defer>
   import { httpGet } from './assets/js/core/http.js';
 
@@ -243,7 +649,21 @@
     const berkasEl = document.getElementById('modal-lembur-berkas');
     if (berkasEl) {
       if (item.file_berkas) {
-        berkasEl.innerHTML = `<a href="assets/uploads/lembur/${item.file_berkas}" target="_blank" class="btn btn-outline-info btn-sm"><i class="fas fa-file-download me-1"></i>Unduh Berkas Lampiran</a>`;
+        const fileName = String(item.file_berkas);
+        const fileUrl = new URL(
+          `assets/uploads/lembur/${encodeURIComponent(fileName)}`,
+          `${config.base_url.replace(/\/+$/, '')}/`
+        );
+        const downloadLink = document.createElement('a');
+        downloadLink.href = fileUrl.href;
+        downloadLink.download = fileName;
+        downloadLink.className = 'btn btn-outline-info btn-sm';
+
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-file-download me-1';
+        downloadLink.append(icon, document.createTextNode('Unduh Berkas Lampiran'));
+
+        berkasEl.replaceChildren(downloadLink);
       } else {
         berkasEl.innerHTML = '<span class="text-muted small">Tidak ada berkas lampiran.</span>';
       }
@@ -280,221 +700,3 @@
   initModule();
 </script>
 
-<template>
-  <div class="container-fluid py-3 absensi-lembur">
-    <!-- Header -->
-    <div class="row align-items-center mb-3">
-      <div class="col-md-7">
-        <div class="d-flex align-items-center">
-          <div class="avatar bg-soft-warning text-warning p-3 rounded-circle me-3">
-            <i class="fas fa-business-time fa-2x"></i>
-          </div>
-          <div>
-            <h4 class="mb-0 fw-bold">Rekapitulasi Lembur Pegawai</h4>
-            <p class="text-muted small mb-0">Manajemen pengajuan kerja lembur, verifikasi kepala unit, dan laporan jam dinas luar/ekstra</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-5 text-md-end mt-2 mt-md-0">
-        <span class="badge bg-primary px-3 py-2 me-2" id="total-badge-lembur">0 Pengajuan</span>
-        <button class="btn btn-outline-secondary btn-sm me-2" id="btn-refresh-lembur" title="Segarkan Data">
-          <i class="fas fa-sync-alt"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Summary Cards -->
-    <div class="row g-3 mb-3">
-      <div class="col-6 col-md-3">
-        <div class="card p-3 border-start border-4 border-primary">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Total Pengajuan</div>
-              <h4 class="mb-0 fw-bold" id="card-stat-lembur-total">0</h4>
-            </div>
-            <i class="fas fa-clipboard-list fa-2x text-primary opacity-25"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card p-3 border-start border-4 border-success">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Disetujui</div>
-              <h4 class="mb-0 fw-bold text-success" id="card-stat-lembur-approved">0</h4>
-            </div>
-            <i class="fas fa-check-circle fa-2x text-success opacity-25"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card p-3 border-start border-4 border-warning">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Menunggu Approval</div>
-              <h4 class="mb-0 fw-bold text-warning" id="card-stat-lembur-pending">0</h4>
-            </div>
-            <i class="fas fa-hourglass-half fa-2x text-warning opacity-25"></i>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card p-3 border-start border-4 border-danger">
-          <div class="d-flex align-items-center">
-            <div class="flex-grow-1">
-              <div class="text-muted small">Ditolak</div>
-              <h4 class="mb-0 fw-bold text-danger" id="card-stat-lembur-rejected">0</h4>
-            </div>
-            <i class="fas fa-times-circle fa-2x text-danger opacity-25"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Filter & Table Card -->
-    <div class="card shadow-sm mb-4">
-      <div class="card-header bg-white py-3 border-bottom">
-        <div class="row g-2 align-items-end">
-          <!-- Periode Bulan -->
-          <div class="col-lg-2 col-md-3 col-sm-6">
-            <label class="form-label small fw-semibold text-muted mb-1">Periode Bulan:</label>
-            <input type="month" class="form-control form-control-sm bg-white" id="filter-bulan-lembur" value="2026-04">
-          </div>
-
-          <!-- Unit / Bagian -->
-          <div class="col-lg-3 col-md-3 col-sm-6">
-            <label class="form-label small fw-semibold text-muted mb-1">Unit / Bagian:</label>
-            <select class="form-select form-select-sm bg-white" id="filter-bagian-lembur">
-              <option value="">-- Semua Unit / Bagian --</option>
-            </select>
-          </div>
-
-          <!-- Status Verifikasi -->
-          <div class="col-lg-2 col-md-3 col-sm-6">
-            <label class="form-label small fw-semibold text-muted mb-1">Status Verifikasi:</label>
-            <select class="form-select form-select-sm bg-white" id="filter-status-lembur">
-              <option value="">-- Semua Status --</option>
-              <option value="1">Disetujui</option>
-              <option value="0">Menunggu</option>
-              <option value="2">Ditolak</option>
-            </select>
-          </div>
-
-          <!-- Pencarian (Fleksibel mengisi ruang) -->
-          <div class="col-lg col-md col-sm-8">
-            <label class="form-label small fw-semibold text-muted mb-1">Pencarian:</label>
-            <div class="input-group input-group-sm">
-              <span class="input-group-text bg-white border-end-0 text-muted">
-                <i class="fas fa-search"></i>
-              </span>
-              <input type="text" class="form-control form-control-sm bg-white border-start-0" id="search-lembur" placeholder="Nama / NIP...">
-            </div>
-          </div>
-
-          <!-- Tombol Terapkan (Ukuran pas dan rata bawah) -->
-          <div class="col-lg-auto col-md-auto col-sm-4">
-            <button type="button" class="btn btn-primary btn-sm px-4 d-inline-flex align-items-center justify-content-center gap-1 shadow-sm" id="btn-filter-lembur" title="Filter Lembur">
-              <i class="fas fa-filter"></i>
-              <span>Terapkan</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-      <div class="card-body p-0">
-        <div class="d-none text-center py-2 bg-light border-bottom" id="loading-lembur">
-          <span class="spinner-border spinner-border-sm text-primary me-2"></span>Memperbarui data lembur...
-        </div>
-        <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
-            <thead>
-              <tr>
-                <th style="width: 40px;" class="text-center">No</th>
-                <th style="width: 105px;">Tanggal</th>
-                <th>Nama Pegawai</th>
-                <th>Unit / Bagian</th>
-                <th style="width: 80px;">Mulai</th>
-                <th style="width: 80px;">Selesai</th>
-                <th style="width: 85px;" class="text-center">Durasi</th>
-                <th>Uraian Tugas / Keterangan</th>
-                <th style="width: 120px;" class="text-center">Status</th>
-                <th style="width: 80px;" class="text-center">Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-lembur">
-              <tr>
-                <td colspan="10" class="text-center py-4 text-muted">
-                  <span class="spinner-border spinner-border-sm me-2"></span>Memuat data pengajuan lembur...
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="card-footer bg-white py-2 border-top d-flex justify-content-between align-items-center">
-        <span class="text-muted small">Menampilkan data lembur terintegrasi sistem approval</span>
-        <ul class="pagination pagination-sm mb-0" id="pagination-lembur"></ul>
-      </div>
-    </div>
-
-    <!-- Modal Detail Lembur -->
-    <div class="modal fade" id="modal-detail-lembur" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title fw-bold"><i class="fas fa-file-invoice text-warning me-2"></i>Rincian Pengajuan Lembur</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="card bg-light border-0 p-3 mb-3">
-              <div class="row g-2">
-                <div class="col-7">
-                  <small class="text-muted d-block">Nama Pegawai</small>
-                  <strong id="modal-lembur-nama">-</strong>
-                </div>
-                <div class="col-5">
-                  <small class="text-muted d-block">NIP</small>
-                  <strong id="modal-lembur-nip">-</strong>
-                </div>
-                <div class="col-7">
-                  <small class="text-muted d-block">Unit Kerja / Bagian</small>
-                  <span id="modal-lembur-bagian">-</span>
-                </div>
-                <div class="col-5">
-                  <small class="text-muted d-block">Tanggal Pelaksanaan</small>
-                  <strong class="text-primary" id="modal-lembur-tanggal">-</strong>
-                </div>
-                <div class="col-12">
-                  <small class="text-muted d-block">Jam Pelaksanaan</small>
-                  <strong class="text-dark" id="modal-lembur-jam">-</strong>
-                </div>
-              </div>
-            </div>
-
-            <div class="mb-3">
-              <small class="text-muted fw-bold d-block text-uppercase mb-1">Uraian Tugas / Keterangan Lembur:</small>
-              <div class="p-2 border rounded bg-white small" id="modal-lembur-uraian">-</div>
-            </div>
-
-            <div class="mb-3">
-              <small class="text-muted fw-bold d-block text-uppercase mb-1">Progres Persetujuan (Approval):</small>
-              <div class="progress" style="height: 20px;">
-                <div class="progress-bar progress-bar-striped bg-success" role="progressbar" id="modal-lembur-prog-bar" style="width: 0%;">0 Approval</div>
-              </div>
-            </div>
-
-            <div class="mb-2">
-              <small class="text-muted fw-bold d-block text-uppercase mb-1">Berkas Lampiran Surat Tugas:</small>
-              <div id="modal-lembur-berkas">-</div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>

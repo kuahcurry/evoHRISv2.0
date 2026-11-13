@@ -151,7 +151,7 @@ class MKinerja extends Model
             ->join('pegawai p', 'ts.id_pegawai = p.NIP OR ts.id_pegawai = p.ID_PEGAWAI OR REPLACE(ts.id_pegawai, ".", "") = p.NIP', 'left')
             ->join('pegawai_id_mesin pim', 'ts.id_pegawai = pim.ID_PEGAWAI OR ts.id_pegawai = pim.NIP OR REPLACE(ts.id_pegawai, ".", "") = pim.NIP', 'left')
             ->join('pegawai_grand pg', 'ts.id_pegawai = pg.nip OR ts.id_pegawai = pg.id_pegawai', 'left')
-            ->join('detail_penempatan_pegawai dpp', 'dpp.ID_PEGAWAI = p.ID_PEGAWAI', 'left')
+            ->join('(SELECT * FROM detail_penempatan_pegawai WHERE KD_PENEMPATAN IN (SELECT MAX(KD_PENEMPATAN) FROM detail_penempatan_pegawai GROUP BY ID_PEGAWAI)) dpp', 'dpp.ID_PEGAWAI = p.ID_PEGAWAI', 'left')
             ->join('bagian bg', 'dpp.KD_BAGIAN = bg.KD_BAGIAN', 'left');
 
         if (!empty($filters['tahun'])) {
@@ -240,7 +240,7 @@ class MKinerja extends Model
         }
     }
 
-    public function approveTargetSkp(int $idTarget, string $status = '1', ?string $catatan = null)
+    public function approveTargetSkp(array $ids, string $status = '1', ?string $catatan = null)
     {
         $update = [
             'status' => $status
@@ -256,7 +256,11 @@ class MKinerja extends Model
         }
 
         return $this->db->table('ekinerja_target_skp')
-            ->where('id_targetskp', $idTarget)
+            ->whereIn('id_targetskp', $ids)
+            ->groupStart()
+                ->where('status', '0')
+                ->orWhere('status', null)
+            ->groupEnd()
             ->update($update);
     }
 
@@ -281,7 +285,7 @@ class MKinerja extends Model
             ->join('pegawai p', 'ea.id_pegawai = p.NIP OR ea.id_pegawai = p.ID_PEGAWAI OR REPLACE(ea.id_pegawai, ".", "") = p.NIP', 'left')
             ->join('pegawai_id_mesin pim', 'ea.id_pegawai = pim.ID_PEGAWAI OR ea.id_pegawai = pim.NIP OR REPLACE(ea.id_pegawai, ".", "") = pim.NIP', 'left')
             ->join('pegawai_grand pg', 'ea.id_pegawai = pg.nip OR ea.id_pegawai = pg.id_pegawai', 'left')
-            ->join('detail_penempatan_pegawai dpp', 'dpp.ID_PEGAWAI = p.ID_PEGAWAI', 'left')
+            ->join('(SELECT * FROM detail_penempatan_pegawai WHERE KD_PENEMPATAN IN (SELECT MAX(KD_PENEMPATAN) FROM detail_penempatan_pegawai GROUP BY ID_PEGAWAI)) dpp', 'dpp.ID_PEGAWAI = p.ID_PEGAWAI', 'left')
             ->join('bagian bg', 'dpp.KD_BAGIAN = bg.KD_BAGIAN', 'left');
 
         if (!empty($filters['bulan'])) {

@@ -1,144 +1,168 @@
 <template id="template-konfig-target">
-  <div class="row mb-3">
-    <div class="col">
-      <div class="card bg-100 shadow-none border">
-        <div class="card-body py-3">
-          <div class="row justify-content-between align-items-center">
-            <div class="col-auto">
-              <h5 class="mb-1 text-primary fw-bold"><i class="fas fa-bullseye me-2"></i>Konfigurasi Target Kinerja SKP</h5>
-              <div class="text-secondary small">Pengaturan kuota target jam kerja efektif bulanan per jenjang eselon dan jabatan fungsional RS.</div>
-            </div>
-            <div class="col-auto">
-              <button class="btn btn-sm btn-falcon-default me-1" id="btn-refresh-target">
-                <i class="fas fa-sync-alt me-1"></i>Refresh
-              </button>
-              <button class="btn btn-sm btn-primary" id="btn-add-target">
-                <i class="fas fa-plus me-1"></i>Tambah Target Eselon
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+    <div class="container-fluid py-4 px-3 px-md-4 bg-light rounded-2 ">
 
-  <!-- Stat Cards -->
-  <div class="row g-3 mb-3">
-    <div class="col-md-4 col-sm-12">
-      <div class="card overflow-hidden">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="badge bg-primary p-3 rounded-circle me-3"><i class="fas fa-sitemap fs-2"></i></div>
+        <!-- HEADER -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
             <div>
-              <h6 class="text-secondary mb-1">Total Jenjang Terdaftar</h6>
-              <h4 class="mb-0 text-primary fw-bold" id="stat-total-target">0</h4>
+                <h3 class="fw-bold text-dark mb-1">Konfigurasi Target SKP</h3>
+                <p class="text-secondary mb-0">Pengaturan kuota target jam kerja efektif bulanan per jenjang eselon dan jabatan fungsional RS.</p>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-4 col-sm-6">
-      <div class="card overflow-hidden">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="badge bg-success p-3 rounded-circle me-3"><i class="fas fa-hourglass-half fs-2"></i></div>
-            <div>
-              <h6 class="text-secondary mb-1">Target Maksimal</h6>
-              <h4 class="mb-0 text-success fw-bold" id="stat-max-target">0 Jam</h4>
+            <div class="d-flex gap-2">
+                <button class="btn btn-white border border-secondary-subtle shadow-sm rounded-pill px-3 py-2 text-dark fw-semibold" id="btn-refresh-target">
+                    <i class="fas fa-sync-alt text-primary me-2"></i>Refresh
+                </button>
+                <button class="btn btn-primary rounded-pill px-3 py-2 fw-semibold shadow-sm d-flex align-items-center gap-2" id="btn-add-target">
+                    <i class="fas fa-plus"></i> Tambah Target
+                </button>
             </div>
-          </div>
         </div>
-      </div>
-    </div>
-    <div class="col-md-4 col-sm-6">
-      <div class="card overflow-hidden">
-        <div class="card-body">
-          <div class="badge bg-info p-3 rounded-circle me-3"><i class="fas fa-calculator fs-2"></i></div>
-          <div>
-            <h6 class="text-secondary mb-1">Rata-Rata Target</h6>
-            <h4 class="mb-0 text-info fw-bold" id="stat-avg-target">0 Jam</h4>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Main Table Card -->
-  <div class="card mb-3">
-    <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
-      <h6 class="mb-0 text-dark fw-bold"><i class="fas fa-table me-2 text-primary"></i>Ketentuan Beban Kerja Efektif Bulanan</h6>
-    </div>
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-sm table-striped table-hover mb-0 fs--1">
-          <thead class="bg-200 text-900">
-            <tr>
-              <th class="text-center py-2" style="width: 50px;">#</th>
-              <th class="py-2" style="width: 25%;">Jenjang Eselon / Jabatan</th>
-              <th class="text-center py-2" style="width: 18%;">Target Jam / Bulan</th>
-              <th class="text-center py-2" style="width: 18%;">Target Menit / Bulan</th>
-              <th class="py-2">Dasar Aturan / Keterangan</th>
-              <th class="text-end py-2 pe-3" style="width: 110px;">Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="target-table-body">
-            <tr>
-              <td colspan="6" class="text-center py-4 text-muted">
-                <div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat data target SKP...
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
+        <!-- STAT CARDS -->
+        <div class="row g-4 mb-4">
+            
+            <!-- Card 1 -->
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4 d-flex align-items-center gap-3">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 56px; height: 56px;">
+                            <i class="fas fa-sitemap fs-5"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary fw-semibold text-uppercase small mb-1" style="letter-spacing: 0.5px;">Total Jenjang</div>
+                            <h3 class="mb-0 fw-bold text-dark" id="stat-total-target">0</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-  <!-- Modal Tambah / Edit Target -->
-  <div class="modal fade" id="modal-target-form" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header bg-light">
-          <h5 class="modal-title" id="modal-target-title"><i class="fas fa-bullseye me-2 text-primary"></i>Tambah Target Eselon</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <!-- Card 2 -->
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4 d-flex align-items-center gap-3">
+                        <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 56px; height: 56px;">
+                            <i class="fas fa-hourglass-half fs-5"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary fw-semibold text-uppercase small mb-1" style="letter-spacing: 0.5px;">Target Maksimal</div>
+                            <h3 class="mb-0 fw-bold text-dark" id="stat-max-target">0 <span class="fs-5 fw-normal text-muted">Jam</span></h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4 d-flex align-items-center gap-3">
+                        <div class="bg-info bg-opacity-10 text-info rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 56px; height: 56px;">
+                            <i class="fas fa-calculator fs-5"></i>
+                        </div>
+                        <div>
+                            <div class="text-secondary fw-semibold text-uppercase small mb-1" style="letter-spacing: 0.5px;">Rata-Rata Target</div>
+                            <h3 class="mb-0 fw-bold text-dark" id="stat-avg-target">0 <span class="fs-5 fw-normal text-muted">Jam</span></h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
-        <form id="form-target">
-          <input type="hidden" id="form-target-id" name="id_target">
-          <div class="modal-body">
-            <div class="mb-3">
-              <label class="form-label fw-bold">Jenjang Eselon / Jabatan <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" id="form-target-eselon" name="eselon" required placeholder="Contoh: Eselon II, Eselon III, Pelaksana, Dokter">
+
+        <!-- MAIN TABLE -->
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card-header bg-white pt-4 px-4 pb-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                    <i class="fas fa-table text-primary"></i> Ketentuan Beban Kerja
+                </h5>
             </div>
-            <div class="row g-2 mb-3">
-              <div class="col-6">
-                <label class="form-label fw-bold">Target Jam / Bulan <span class="text-danger">*</span></label>
-                <div class="input-group">
-                  <input type="number" step="1" class="form-control" id="form-target-jam" name="target_jam" required min="1" value="100">
-                  <span class="input-group-text bg-white">Jam</span>
+            
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-borderless align-middle mb-0">
+                        <thead class="bg-light text-secondary">
+                            <tr>
+                                <th class="py-3 px-4 text-uppercase small fw-bold text-center" style="width: 60px;">#</th>
+                                <th class="py-3 text-uppercase small fw-bold" style="width: 25%;">Jenjang Eselon / Jabatan</th>
+                                <th class="py-3 text-uppercase small fw-bold text-center" style="width: 18%;">Target Jam</th>
+                                <th class="py-3 text-uppercase small fw-bold text-center" style="width: 18%;">Target Menit</th>
+                                <th class="py-3 text-uppercase small fw-bold">Keterangan</th>
+                                <th class="py-3 px-4 text-uppercase small fw-bold text-center" style="width: 100px;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="target-table-body">
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div> Memuat data target SKP...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-              </div>
-              <div class="col-6">
-                <label class="form-label fw-bold">Target Menit / Bulan <span class="text-danger">*</span></label>
-                <div class="input-group">
-                  <input type="number" step="1" class="form-control" id="form-target-menit" name="target_menit" required min="60" value="6000">
-                  <span class="input-group-text bg-white">Mnt</span>
-                </div>
-              </div>
             </div>
-            <div class="mb-3">
-              <label class="form-label fw-bold">Keterangan / Regulasi Acuan</label>
-              <textarea class="form-control" id="form-target-keterangan" name="keterangan" rows="2" placeholder="Dasar peraturan bupati / standar MenPAN-RB..."></textarea>
-            </div>
-          </div>
-          <div class="modal-footer bg-light">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-            <button type="submit" class="btn btn-primary" id="btn-save-target">
-              <i class="fas fa-save me-1"></i>Simpan Target
-            </button>
-          </div>
-        </form>
-      </div>
+        </div>
+
     </div>
-  </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL: ADD/EDIT TARGET                     -->
+    <!-- ========================================== -->
+    <div class="modal fade" id="modal-target-form" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <form id="form-target">
+                    
+                    <div class="modal-header bg-white border-bottom-0 px-4 pt-4 pb-0">
+                        <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="modal-target-title">
+                            <i class="fas fa-bullseye text-primary"></i> Tambah Target Eselon
+                        </h5>
+                        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    
+                    <div class="modal-body p-4">
+                        <input type="hidden" id="form-target-id" name="id_target">
+                        
+                        <div class="bg-light p-3 rounded-3 mb-3">
+                            <label class="form-label fw-semibold text-secondary small mb-1">Jenjang Eselon / Jabatan <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control bg-white border-secondary-subtle shadow-sm rounded-2" id="form-target-eselon" name="eselon" required placeholder="Contoh: Eselon II, Dokter, Perawat...">
+                        </div>
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <div class="bg-light p-3 rounded-3 h-100">
+                                    <label class="form-label fw-semibold text-secondary small mb-1">Target Jam <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <input type="number" step="1" class="form-control bg-white border-secondary-subtle shadow-sm rounded-start-2" id="form-target-jam" name="target_jam" required min="1" value="100">
+                                        <span class="input-group-text bg-white border-secondary-subtle text-muted rounded-end-2">Jam</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="bg-light p-3 rounded-3 h-100">
+                                    <label class="form-label fw-semibold text-secondary small mb-1">Target Menit <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <input type="number" step="1" class="form-control bg-white border-secondary-subtle shadow-sm rounded-start-2" id="form-target-menit" name="target_menit" required min="60" value="6000">
+                                        <span class="input-group-text bg-white border-secondary-subtle text-muted rounded-end-2">Mnt</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-light p-3 rounded-3 mb-0">
+                            <label class="form-label fw-semibold text-secondary small mb-1">Keterangan / Regulasi Acuan</label>
+                            <textarea class="form-control bg-white border-secondary-subtle shadow-sm rounded-2" id="form-target-keterangan" name="keterangan" rows="2" placeholder="Dasar peraturan / standar MenPAN-RB..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer bg-light border-top-0 px-4 py-3">
+                        <button type="button" class="btn btn-white border border-secondary-subtle text-dark fw-semibold shadow-sm rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary fw-semibold shadow-sm rounded-pill px-4 d-flex align-items-center gap-2" id="btn-save-target">
+                            <i class="fas fa-save"></i> Simpan Target
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script type="module" defer>
