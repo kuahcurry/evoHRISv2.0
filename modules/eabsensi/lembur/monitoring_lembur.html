@@ -1,0 +1,681 @@
+<style>
+  .evo-lembur-card {
+    border-radius: 0.65rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    background: #fff;
+    border: 1px solid #edf2f9;
+  }
+  .table-monitoring-lembur {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    margin-bottom: 0;
+  }
+  .table-monitoring-lembur thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    font-size: 0.78rem;
+    font-weight: 700;
+    vertical-align: middle;
+    white-space: nowrap;
+    padding: 0.65rem 0.75rem;
+    background-color: #edf2f9;
+    color: #344050;
+    border-top: 1px solid #d8e2ef;
+    border-bottom: 2px solid #d8e2ef;
+  }
+  .table-monitoring-lembur td {
+    font-size: 0.82rem;
+    vertical-align: middle;
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid #e3ebf6;
+  }
+  .table-monitoring-lembur tbody tr:hover {
+    background-color: #f4f7fb !important;
+  }
+  .table-monitoring-lembur tbody tr.row-has-data {
+    background-color: #ffffff;
+  }
+  .table-monitoring-lembur tbody tr.row-empty {
+    background-color: #fafbfc;
+    color: #748194;
+  }
+  .table-monitoring-lembur tfoot th {
+    background-color: #edf2f9;
+    font-weight: 700;
+    font-size: 0.82rem;
+    border-top: 2px solid #d8e2ef;
+    padding: 0.65rem 0.75rem;
+  }
+  .metric-card-lembur {
+    border-radius: 0.5rem;
+    background: #fff;
+    border: 1px solid #edf2f9;
+    padding: 0.85rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+  }
+  .metric-icon-lembur {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+  }
+
+  @media print {
+    body * {
+      visibility: hidden !important;
+    }
+    #print-monitoring-lembur-area,
+    #print-monitoring-lembur-area * {
+      visibility: visible !important;
+    }
+    #print-monitoring-lembur-area {
+      position: absolute !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 10mm !important;
+      background: #fff !important;
+    }
+    .no-print {
+      display: none !important;
+    }
+  }
+</style>
+
+<template>
+  <div class="container-fluid py-3" id="page-monitoring-lembur-container">
+    <!-- Header & Breadcrumb -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <div>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-1 fs--2">
+            <li class="breadcrumb-item"><a href="#" class="text-decoration-none">E-Absensi</a></li>
+            <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Lembur</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Monitoring Lembur</li>
+          </ol>
+        </nav>
+        <h4 class="mb-0 text-primary fw-bold">
+          <i class="fas fa-chart-line text-primary me-2"></i>Monitoring Lembur
+        </h4>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-print-monitoring">
+          <i class="fas fa-print me-1"></i> Cetak
+        </button>
+        <button type="button" class="btn btn-sm btn-success fw-bold" id="btn-export-excel">
+          <i class="fas fa-file-excel me-1"></i> Export Excel
+        </button>
+      </div>
+    </div>
+
+    <!-- METRICS SUMMARY CARDS -->
+    <div class="row g-2 mb-3">
+      <div class="col-sm-6 col-lg-3">
+        <div class="metric-card-lembur">
+          <div class="metric-icon-lembur bg-soft-primary text-primary">
+            <i class="fas fa-hospital"></i>
+          </div>
+          <div>
+            <div class="text-muted fs--2 text-uppercase fw-bold">Total Unit</div>
+            <div class="fs-1 fw-bolder text-800" id="counter-total-unit">0 Unit</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="metric-card-lembur">
+          <div class="metric-icon-lembur bg-soft-info text-info">
+            <i class="fas fa-business-time"></i>
+          </div>
+          <div>
+            <div class="text-muted fs--2 text-uppercase fw-bold">Total Pengajuan</div>
+            <div class="fs-1 fw-bolder text-800" id="counter-total-lembur">0</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="metric-card-lembur">
+          <div class="metric-icon-lembur bg-soft-success text-success">
+            <i class="fas fa-check-double"></i>
+          </div>
+          <div>
+            <div class="text-muted fs--2 text-uppercase fw-bold">Disetujui HRD</div>
+            <div class="fs-1 fw-bolder text-800" id="counter-total-disetujui">0</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="metric-card-lembur">
+          <div class="metric-icon-lembur bg-soft-warning text-warning">
+            <i class="fas fa-hourglass-half"></i>
+          </div>
+          <div>
+            <div class="text-muted fs--2 text-uppercase fw-bold">Menunggu Approval</div>
+            <div class="fs-1 fw-bolder text-800" id="counter-total-menunggu">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILTER BAR (Tgl Awal, Tgl Akhir, Cari) -->
+    <div class="card evo-lembur-card mb-3">
+      <div class="card-body p-3">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-sm-6 col-md-3">
+            <label class="form-label fs--2 fw-bold text-700 mb-1" for="filter_tgl_awal">
+              Tgl Awal :
+            </label>
+            <input type="date" id="filter_tgl_awal" class="form-control form-control-sm" placeholder="YYYY-MM-DD" required>
+          </div>
+          <div class="col-12 col-sm-6 col-md-3">
+            <label class="form-label fs--2 fw-bold text-700 mb-1" for="filter_tgl_akhir">
+              Tgl Akhir :
+            </label>
+            <input type="date" id="filter_tgl_akhir" class="form-control form-control-sm" placeholder="YYYY-MM-DD" required>
+          </div>
+          <div class="col-12 col-sm-6 col-md-3">
+            <label class="form-label fs--2 fw-bold text-700 mb-1" for="filter_search_unit">
+              Cari Unit :
+            </label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-light"><i class="fas fa-search text-muted"></i></span>
+              <input type="text" id="filter_search_unit" class="form-control form-control-sm" placeholder="Ketik nama unit / bagian...">
+            </div>
+          </div>
+          <div class="col-12 col-sm-6 col-md-3 d-flex gap-2">
+            <button type="button" class="btn btn-primary btn-sm flex-fill" id="btn-apply-filter">
+              <i class="fas fa-filter me-1"></i> Filter
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-reset-filter" title="Reset Filter">
+              <i class="fas fa-undo"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLE MONITORING LEMBUR (No, Unit, Status Approval, Total, Keterangan) -->
+    <div class="card evo-lembur-card" id="print-monitoring-lembur-area">
+      <div class="card-header bg-light border-bottom py-2 px-3 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold text-800">
+          <i class="fas fa-table me-2 text-primary"></i>Data Monitoring Lembur Per Unit Kerja
+        </h6>
+        <span class="badge bg-soft-info text-info fs--2" id="filter-active-indicator">
+          Semua Periode
+        </span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
+          <table class="table table-hover table-monitoring-lembur" id="table-monitoring-lembur">
+            <thead>
+              <tr>
+                <th class="text-center" style="width: 50px;">No</th>
+                <th style="min-width: 260px;">Unit</th>
+                <th class="text-center" style="min-width: 180px;">Status Approval</th>
+                <th class="text-center" style="width: 140px;">Total</th>
+                <th style="min-width: 280px;">Keterangan</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-monitoring-lembur">
+              <tr>
+                <td colspan="5" class="text-center py-4 text-muted">
+                  <span class="spinner-border spinner-border-sm me-2"></span>Memuat data monitoring lembur...
+                </td>
+              </tr>
+            </tbody>
+            <tfoot id="tfoot-monitoring-lembur">
+              <tr>
+                <th colspan="3" class="text-end">Total Keseluruhan :</th>
+                <th class="text-center text-primary" id="footer-total-pengajuan">0</th>
+                <th id="footer-total-keterangan">-</th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- DETAIL MODAL FOR UNIT LEMBUR -->
+    <div class="modal fade" id="modal-unit-detail" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header bg-light py-2">
+            <h6 class="modal-title fw-bold text-800" id="modal-unit-title">
+              <i class="fas fa-list-alt text-primary me-2"></i>Rincian Pengajuan Lembur Unit
+            </h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body p-3">
+            <div class="table-responsive">
+              <table class="table table-sm table-striped table-bordered fs--1 mb-0">
+                <thead class="bg-200">
+                  <tr>
+                    <th class="text-center" style="width: 40px;">#</th>
+                    <th>NIP</th>
+                    <th>Nama</th>
+                    <th>Tgl Lembur</th>
+                    <th>Jam Mulai Pengajuan</th>
+                    <th>Jam Selesai Pengajuan</th>
+                    <th>Jam Mulai Realisasi</th>
+                    <th>Jam Selesai Realisasi</th>
+                    <th class="text-center">Durasi</th>
+                    <th class="text-center">Status</th>
+                    <th>Keterangan</th>
+                  </tr>
+                </thead>
+                <tbody id="modal-unit-tbody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="modal-footer py-2">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script type="module">
+  import { httpGet } from './assets/js/core/http.js';
+
+  let rawMonitoringData = null;
+  let detailModalInstance = null;
+
+  function escapeXml(unsafe) {
+    if (unsafe === null || unsafe === undefined) return '';
+    return String(unsafe)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
+  }
+
+  function getDetailModal() {
+    const el = document.getElementById('modal-unit-detail');
+    if (!el) return null;
+    if (window.bootstrap && window.bootstrap.Modal) {
+      if (!detailModalInstance) {
+        detailModalInstance = new window.bootstrap.Modal(el);
+      }
+      return detailModalInstance;
+    }
+    return {
+      show: () => { el.classList.add('show'); el.style.display = 'block'; },
+      hide: () => { el.classList.remove('show'); el.style.display = 'none'; }
+    };
+  }
+
+  // Validasi Input Filter: "isi terlebih dahulu"
+  function validateFilters() {
+    const tglAwal = document.getElementById('filter_tgl_awal')?.value.trim();
+    const tglAkhir = document.getElementById('filter_tgl_akhir')?.value.trim();
+
+    if (!tglAwal || !tglAkhir) {
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Peringatan',
+          text: 'isi terlebih dahulu'
+        });
+      } else {
+        alert('isi terlebih dahulu');
+      }
+      return false;
+    }
+
+    if (tglAwal > tglAkhir) {
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          icon: 'error',
+          title: 'Format Tanggal Salah',
+          text: 'Tgl Awal tidak boleh lebih besar dari Tgl Akhir!'
+        });
+      } else {
+        alert('Tgl Awal tidak boleh lebih besar dari Tgl Akhir!');
+      }
+      return false;
+    }
+
+    return true;
+  }
+
+  // Load Monitoring Lembur Data from API
+  async function loadMonitoringLembur(applyValidation = false) {
+    if (applyValidation) {
+      if (!validateFilters()) {
+        return;
+      }
+    }
+
+    const tbody = document.getElementById('tbody-monitoring-lembur');
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data monitoring lembur...</td></tr>`;
+    }
+
+    const tglAwal = document.getElementById('filter_tgl_awal')?.value.trim() || '';
+    const tglAkhir = document.getElementById('filter_tgl_akhir')?.value.trim() || '';
+    const searchUnit = document.getElementById('filter_search_unit')?.value.trim() || '';
+
+    let url = '/evoHRIS_v2.1/api/pegawai/lembur/monitoring';
+    const params = new URLSearchParams();
+    if (tglAwal) params.append('tgl_awal', tglAwal);
+    if (tglAkhir) params.append('tgl_akhir', tglAkhir);
+    if (searchUnit) params.append('search', searchUnit);
+
+    const queryString = params.toString();
+    if (queryString) {
+      url += '?' + queryString;
+    }
+
+    // Update active filter badge
+    const indicator = document.getElementById('filter-active-indicator');
+    if (indicator) {
+      if (tglAwal && tglAkhir) {
+        indicator.textContent = `Periode: ${tglAwal} s/d ${tglAkhir}`;
+      } else if (tglAwal) {
+        indicator.textContent = `Mulai: ${tglAwal}`;
+      } else {
+        indicator.textContent = 'Semua Periode';
+      }
+    }
+
+    try {
+      const res = await httpGet(url);
+      if (res && res.code === 200 && res.data) {
+        rawMonitoringData = res.data;
+        renderMonitoringTable(res.data.units || [], res.data.summary || {});
+      } else {
+        throw new Error(res?.message || 'Gagal mengambil data monitoring lembur');
+      }
+    } catch (err) {
+      console.error('Error loadMonitoringLembur:', err);
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Gagal memuat data: ${escapeXml(err.message)}</td></tr>`;
+      }
+    }
+  }
+
+  // Render Table: No | Unit | Status Approval | Total | Keterangan
+  function renderMonitoringTable(units, summary) {
+    const tbody = document.getElementById('tbody-monitoring-lembur');
+    if (!tbody) return;
+
+    // Update counters
+    document.getElementById('counter-total-unit').textContent = `${units.length} Unit`;
+    document.getElementById('counter-total-lembur').textContent = summary.total_lembur ?? 0;
+    document.getElementById('counter-total-disetujui').textContent = summary.total_disetujui ?? 0;
+    document.getElementById('counter-total-menunggu').textContent = summary.total_menunggu ?? 0;
+
+    // Update footer
+    const footerTotal = document.getElementById('footer-total-pengajuan');
+    const footerKet = document.getElementById('footer-total-keterangan');
+    if (footerTotal) footerTotal.textContent = `${summary.total_lembur ?? 0} Pengajuan`;
+    if (footerKet) footerKet.textContent = `${summary.total_disetujui ?? 0} Disetujui, ${summary.total_menunggu ?? 0} Menunggu, ${summary.total_ditolak ?? 0} Ditolak`;
+
+    if (!units || units.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted"><i class="fas fa-inbox me-2"></i>Tidak ada data unit yang sesuai filter</td></tr>`;
+      return;
+    }
+
+    let html = '';
+    units.forEach((item, index) => {
+      const no = item.no || (index + 1);
+      const isHasData = item.total > 0;
+      const rowClass = isHasData ? 'row-has-data' : 'row-empty';
+
+      let statusBadge = '';
+      if (item.status_badge === 'success') {
+        statusBadge = `<span class="badge bg-soft-success text-success px-2 py-1"><i class="fas fa-check-circle me-1"></i>${escapeXml(item.status_approval)}</span>`;
+      } else if (item.status_badge === 'warning') {
+        statusBadge = `<span class="badge bg-soft-warning text-warning px-2 py-1"><i class="fas fa-clock me-1"></i>${escapeXml(item.status_approval)}</span>`;
+      } else if (item.status_badge === 'info') {
+        statusBadge = `<span class="badge bg-soft-info text-info px-2 py-1"><i class="fas fa-info-circle me-1"></i>${escapeXml(item.status_approval)}</span>`;
+      } else if (item.status_badge === 'danger') {
+        statusBadge = `<span class="badge bg-soft-danger text-danger px-2 py-1"><i class="fas fa-times-circle me-1"></i>${escapeXml(item.status_approval)}</span>`;
+      } else {
+        statusBadge = `<span class="badge bg-soft-secondary text-secondary px-2 py-1">${escapeXml(item.status_approval || '-')}</span>`;
+      }
+
+      let totalDisplay = '';
+      if (item.total > 0) {
+        totalDisplay = `<span class="badge bg-primary rounded-pill px-3 py-1 fs--1">${item.total} Pengajuan</span>`;
+      } else {
+        totalDisplay = `<span class="text-muted fw-bold">0</span>`;
+      }
+
+      let keteranganHtml = `<span>${escapeXml(item.keterangan || '-')}</span>`;
+      if (isHasData) {
+        keteranganHtml += `
+          <button type="button" class="btn btn-link btn-sm text-primary p-0 ms-2 btn-view-unit-detail" data-unit-index="${index}" title="Lihat Rincian Pengajuan Unit">
+            <i class="fas fa-eye me-1"></i>Lihat Rincian
+          </button>
+        `;
+      }
+
+      html += `
+        <tr class="${rowClass}">
+          <td class="text-center fw-bold text-muted">${no}</td>
+          <td class="fw-bold text-800">
+            <i class="fas fa-building text-400 me-2"></i>${escapeXml(item.unit)}
+          </td>
+          <td class="text-center">${statusBadge}</td>
+          <td class="text-center">${totalDisplay}</td>
+          <td>${keteranganHtml}</td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+
+    // Attach click events for detail view
+    tbody.querySelectorAll('.btn-view-unit-detail').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const uIdx = parseInt(btn.getAttribute('data-unit-index'), 10);
+        if (units[uIdx]) {
+          showUnitDetailModal(units[uIdx]);
+        }
+      });
+    });
+  }
+
+  // Show Unit Detail Modal
+  function showUnitDetailModal(unitObj) {
+    const modalTitle = document.getElementById('modal-unit-title');
+    const modalTbody = document.getElementById('modal-unit-tbody');
+    if (!modalTitle || !modalTbody) return;
+
+    modalTitle.innerHTML = `<i class="fas fa-list-alt text-primary me-2"></i>Rincian Pengajuan Lembur Unit: <span class="text-primary">${escapeXml(unitObj.unit)}</span> (${unitObj.total} Pengajuan)`;
+
+    if (!unitObj.items || unitObj.items.length === 0) {
+      modalTbody.innerHTML = `<tr><td colspan="11" class="text-center py-3 text-muted">Tidak ada rincian data pengajuan lembur</td></tr>`;
+    } else {
+      let rowsHtml = '';
+      unitObj.items.forEach((r, i) => {
+        const durasi = r.durasi_jam || r.DURASI_JAM || r.durasi || '-';
+        const jamMulai = r.jam_mulai ? r.jam_mulai.substring(0, 5) : '-';
+        const jamSelesai = r.jam_selesai ? r.jam_selesai.substring(0, 5) : '-';
+        const tglRealisasiMulai = r.tgl_realisasi_mulai || '-';
+        const jamRealisasiMulai = r.jam_realisasi_mulai ? r.jam_realisasi_mulai.substring(0, 5) : '-';
+        const tglRealisasiSelesai = r.tgl_realisasi_selesai || '-';
+        const jamRealisasiSelesai = r.jam_realisasi_selesai ? r.jam_realisasi_selesai.substring(0, 5) : '-';
+
+        const st = parseInt(r.status || 0, 10);
+        const pr = parseInt(r.progress_approval || 0, 10);
+        let badgeStatus = '<span class="badge bg-soft-warning text-warning">Menunggu Atasan</span>';
+        if (st === 1 || pr >= 2) {
+          badgeStatus = '<span class="badge bg-soft-success text-success">Disetujui HRD</span>';
+        } else if (pr === 1) {
+          badgeStatus = '<span class="badge bg-soft-info text-info">Menunggu HRD</span>';
+        } else if (st === 2 || st === 3) {
+          badgeStatus = '<span class="badge bg-soft-danger text-danger">Ditolak</span>';
+        }
+
+        rowsHtml += `
+          <tr>
+            <td class="text-center text-muted">${i + 1}</td>
+            <td class="fw-bold">${escapeXml(r.NIP_PEGAWAI || r.id_pegawai || '-')}</td>
+            <td>${escapeXml(r.NAMA_PEGAWAI || r.nama || '-')}</td>
+            <td class="text-nowrap">${escapeXml(r.tanggal_lembur || '-')}</td>
+            <td class="text-center">${escapeXml(jamMulai)}</td>
+            <td class="text-center">${escapeXml(jamSelesai)}</td>
+            <td class="text-center">${escapeXml(jamRealisasiMulai !== '-' ? jamRealisasiMulai : '-')}</td>
+            <td class="text-center">${escapeXml(jamRealisasiSelesai !== '-' ? jamRealisasiSelesai : '-')}</td>
+            <td class="text-center">${escapeXml(durasi)} Jam</td>
+            <td class="text-center">${badgeStatus}</td>
+            <td>${escapeXml(r.keterangan || '-')}</td>
+          </tr>
+        `;
+      });
+      modalTbody.innerHTML = rowsHtml;
+    }
+
+    const modal = getDetailModal();
+    if (modal) modal.show();
+  }
+
+  // Export to Excel (CSV/XLS format)
+  function exportToExcel() {
+    if (!rawMonitoringData || !rawMonitoringData.units || rawMonitoringData.units.length === 0) {
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({ icon: 'warning', title: 'Perhatian', text: 'Tidak ada data untuk diekspor' });
+      } else {
+        alert('Tidak ada data untuk diekspor');
+      }
+      return;
+    }
+
+    const tglAwal = document.getElementById('filter_tgl_awal')?.value.trim() || 'Semua';
+    const tglAkhir = document.getElementById('filter_tgl_akhir')?.value.trim() || 'Semua';
+
+    let tableHtml = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Monitoring Lembur</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+        <meta http-equiv="content-type" content="text/plain; charset=UTF-8"/>
+      </head>
+      <body>
+        <h3>DATA MONITORING LEMBUR PEGAWAI PER UNIT KERJA</h3>
+        <p>Periode: Tgl Awal : ${tglAwal} | Tgl Akhir : ${tglAkhir}</p>
+        <table border="1">
+          <thead>
+            <tr style="background-color: #d8e2ef; font-weight: bold;">
+              <th>No</th>
+              <th>Unit</th>
+              <th>Status Approval</th>
+              <th>Total</th>
+              <th>Keterangan</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    rawMonitoringData.units.forEach(u => {
+      tableHtml += `
+        <tr>
+          <td>${u.no}</td>
+          <td>${u.unit}</td>
+          <td>${u.status_approval}</td>
+          <td>${u.total}</td>
+          <td>${u.keterangan}</td>
+        </tr>
+      `;
+    });
+
+    tableHtml += `
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob([tableHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Monitoring_Lembur_${tglAwal}_sd_${tglAkhir}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  // Print Monitoring Function
+  function printMonitoring() {
+    window.print();
+  }
+
+  // Initialize Page & Event Listeners
+  function initMonitoringLembur() {
+    const container = document.getElementById('page-monitoring-lembur-container');
+    if (!container) return;
+
+    if (container.dataset.initialized === 'true') return;
+    container.dataset.initialized = 'true';
+
+    // Button Apply Filter
+    const btnFilter = document.getElementById('btn-apply-filter');
+    if (btnFilter) {
+      btnFilter.addEventListener('click', () => {
+        loadMonitoringLembur(true);
+      });
+    }
+
+    // Button Reset Filter
+    const btnReset = document.getElementById('btn-reset-filter');
+    if (btnReset) {
+      btnReset.addEventListener('click', () => {
+        const inpAwal = document.getElementById('filter_tgl_awal');
+        const inpAkhir = document.getElementById('filter_tgl_akhir');
+        const inpSearch = document.getElementById('filter_search_unit');
+        if (inpAwal) inpAwal.value = '';
+        if (inpAkhir) inpAkhir.value = '';
+        if (inpSearch) inpSearch.value = '';
+        loadMonitoringLembur(false);
+      });
+    }
+
+    // Live search on enter
+    const inpSearch = document.getElementById('filter_search_unit');
+    if (inpSearch) {
+      inpSearch.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') {
+          loadMonitoringLembur(false);
+        }
+      });
+    }
+
+    // Export Excel Button
+    const btnExcel = document.getElementById('btn-export-excel');
+    if (btnExcel) {
+      btnExcel.addEventListener('click', exportToExcel);
+    }
+
+    // Print Button
+    const btnPrint = document.getElementById('btn-print-monitoring');
+    if (btnPrint) {
+      btnPrint.addEventListener('click', printMonitoring);
+    }
+
+    // Initial Load Data (without strict validation on first render so default list loads)
+    loadMonitoringLembur(false);
+  }
+
+  // SPA Lifecycle Bootstrap
+  if (document.readyState !== 'loading') {
+    initMonitoringLembur();
+  } else {
+    document.addEventListener('DOMContentLoaded', initMonitoringLembur);
+  }
+  setTimeout(initMonitoringLembur, 100);
+</script>

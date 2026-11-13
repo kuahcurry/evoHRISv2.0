@@ -2260,6 +2260,137 @@ class MPegawai extends Model
         ];
     }
 
+    public function getIjin($search = null, $nip = null, $kdBagian = null)
+    {
+        $sql = "SELECT c.*, 
+                       CASE 
+                           WHEN c.JAM_MULAI IS NOT NULL AND c.JAM_PULANG IS NOT NULL AND c.JAM_MULAI != '' AND c.JAM_PULANG != ''
+                           THEN CONCAT(
+                               GREATEST(1, TIMESTAMPDIFF(HOUR, CONCAT(COALESCE(NULLIF(c.TANGGAL_MULAI, '0000-00-00'), CURDATE()), ' ', c.JAM_MULAI), 
+                                                    CONCAT(COALESCE(NULLIF(c.TANGGAL_MULAI, '0000-00-00'), CURDATE()), ' ', c.JAM_PULANG))),
+                               ' Jam'
+                           )
+                           WHEN c.TANGGAL_SAMPAI IS NOT NULL AND c.TANGGAL_SAMPAI != '0000-00-00' 
+                                AND c.TANGGAL_MULAI IS NOT NULL AND c.TANGGAL_MULAI != '0000-00-00'
+                           THEN CONCAT(DATEDIFF(c.TANGGAL_SAMPAI, c.TANGGAL_MULAI) + 1, ' Hari')
+                           ELSE '1 Hari'
+                       END AS LAMA,
+                       COALESCE(p.NAMA, c.NAMA) AS NAMA_PEGAWAI,
+                       jc.JENIS_CUTI,
+                       b.BAGIAN,
+                       COALESCE(c.NAMA_ATASAN, at.NAMA, '-') AS NAMA_ATASAN_PEGAWAI,
+                       COALESCE(jat.JABATAN, 'Kepala Bagian / Atasan') AS JABATAN_ATASAN
+                FROM detail_cuti_pegawai c
+                LEFT JOIN pegawai p ON p.ID_PEGAWAI = c.ID_PEGAWAI
+                LEFT JOIN jenis_cuti jc ON jc.KD_JENIS_CUTI = c.KD_JENIS_CUTI
+                LEFT JOIN bagian b ON b.KD_BAGIAN = c.KD_BAGIAN
+                LEFT JOIN pegawai at ON (at.ID_PEGAWAI = c.ID_ATASAN OR at.NIP = c.NIP_ATASAN)
+                LEFT JOIN detail_penempatan_pegawai dpat ON dpat.ID_PEGAWAI = at.ID_PEGAWAI
+                LEFT JOIN jabatan jat ON jat.KD_JABATAN = dpat.KD_JABATAN
+                WHERE (c.STATUS_BATAL = 0 OR c.STATUS_BATAL IS NULL)
+                  AND (jc.JENIS_CUTI LIKE '%IJIN%' OR c.KD_JENIS_CUTI IN (11, 13, 14, 15, 27))";
+
+        $binds = [];
+        if (!empty($search)) {
+            $sql .= " AND (c.NIP LIKE ? OR c.NAMA LIKE ? OR p.NAMA LIKE ? OR c.KEPERLUAN LIKE ? OR jc.JENIS_CUTI LIKE ? OR b.BAGIAN LIKE ?)";
+            $binds[] = "%$search%";
+            $binds[] = "%$search%";
+            $binds[] = "%$search%";
+            $binds[] = "%$search%";
+            $binds[] = "%$search%";
+            $binds[] = "%$search%";
+        }
+        if (!empty($nip)) {
+            $sql .= " AND (c.NIP = ? OR p.NIP = ?)";
+            $binds[] = $nip;
+            $binds[] = $nip;
+        }
+        if (!empty($kdBagian)) {
+            $sql .= " AND c.KD_BAGIAN = ?";
+            $binds[] = $kdBagian;
+        }
+
+        $sql .= " ORDER BY c.KD_CUTI DESC";
+
+        if (!empty($binds)) {
+            return $this->db->query($sql, $binds)->getResultArray();
+        }
+        return $this->db->query($sql)->getResultArray();
+    }
+
+    public function getJenisIjin()
+    {
+        $sql = "SELECT KD_JENIS_CUTI, JENIS_CUTI 
+                FROM jenis_cuti 
+                WHERE JENIS_CUTI LIKE '%IJIN%' OR KD_JENIS_CUTI IN (11, 13, 14, 15, 27)
+                ORDER BY KD_JENIS_CUTI ASC";
+        return $this->db->query($sql)->getResultArray();
+    }
+
+    public function saveIjin($data)
+    {
+        try {
+            $kd = $data['KD_CUTI'] ?? '';
+            $nip = !empty($data['NIP']) ? trim($data['NIP']) : '';
+            $nama = !empty($data['NAMA']) ? trim($data['NAMA']) : '';
+            
+            $snapshot = $this->getPegawaiSnapshot($nip);
+            $idPegawai = $snapshot['ID_PEGAWAI'] ?? ($data['ID_PEGAWAI'] ?? 0);
+            $kdBagian = !empty($data['KD_BAGIAN']) ? (int)$data['KD_BAGIAN'] : ($snapshot['KD_BAGIAN'] ?? 1);
+            $kdJenis = !empty($data['KD_JENIS_CUTI']) ? (int)$data['KD_JENIS_CUTI'] : 13;
+            $tglIjin = $this->normalizeDate($data['TANGGAL_IJIN'] ?? $data['TANGGAL_MULAI'] ?? null, date('Y-m-d'));
+            $tglSampai = $this->normalizeDate($data['TANGGAL_SAMPAI'] ?? $tglIjin, $tglIjin);
+            $jamMulai = !empty($data['JAM_MULAI']) ? trim($data['JAM_MULAI']) : '08:00:00';
+            $jamSelesai = !empty($data['JAM_SELESAI']) ? trim($data['JAM_SELESAI']) : (!empty($data['JAM_PULANG']) ? trim($data['JAM_PULANG']) : '16:00:00');
+            $keperluan = !empty($data['KEPERLUAN']) ? trim($data['KEPERLUAN']) : '-';
+
+            if (strlen($jamMulai) === 5) $jamMulai .= ':00';
+            if (strlen($jamSelesai) === 5) $jamSelesai .= ':00';
+
+            $record = [
+                'ID_PEGAWAI'     => $idPegawai,
+                'NIP'            => $nip,
+                'NAMA'           => $nama,
+                'KD_BAGIAN'      => $kdBagian,
+                'KD_JENIS_CUTI'  => $kdJenis,
+                'TANGGAL_MULAI'  => $tglIjin,
+                'TANGGAL_SAMPAI' => $tglSampai,
+                'JAM_MULAI'      => $jamMulai,
+                'JAM_PULANG'     => $jamSelesai,
+                'KEPERLUAN'      => $keperluan,
+                'STATUS'         => isset($data['STATUS']) ? (int)$data['STATUS'] : 0,
+                'STATUS_BATAL'   => 0,
+                'APPROVAL_HRD'   => 0,
+                'TANGGAL_INPUT'  => date('Y-m-d H:i:s'),
+            ];
+
+            if (empty($kd)) {
+                $record['KD_CUTI'] = $this->getNextId('detail_cuti_pegawai', 'KD_CUTI');
+                $this->db->table('detail_cuti_pegawai')->insert($record);
+                return ['code' => 200, 'message' => 'Permohonan ijin berhasil disimpan', 'data' => ['KD_CUTI' => $record['KD_CUTI']]];
+            } else {
+                $this->db->table('detail_cuti_pegawai')->where('KD_CUTI', $kd)->update($record);
+                return ['code' => 200, 'message' => 'Data permohonan ijin berhasil diperbarui', 'data' => ['KD_CUTI' => $kd]];
+            }
+        } catch (\Exception $e) {
+            return ['code' => 500, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function deleteIjin($id)
+    {
+        try {
+            if (empty($id)) {
+                return ['code' => 422, 'message' => 'ID Ijin tidak valid'];
+            }
+            // Soft delete: tandai STATUS_BATAL = 1
+            $this->db->table('detail_cuti_pegawai')->where('KD_CUTI', $id)->update(['STATUS_BATAL' => 1]);
+            return ['code' => 200, 'message' => 'Data ijin berhasil dihapus (soft delete)'];
+        } catch (\Exception $e) {
+            return ['code' => 500, 'message' => $e->getMessage()];
+        }
+    }
+
     public function getDemosi($params = [])
     {
         $keyword = trim($params['search'] ?? $params['keyword'] ?? '');
@@ -2624,5 +2755,513 @@ class MPegawai extends Model
         } catch (\Exception $e) {
             return ['code' => 500, 'message' => $e->getMessage()];
         }
+    }
+
+    // ==========================================
+    // MODUL LEMBUR PEGAWAI (t_lembur & ket_hari)
+    // ==========================================
+    public function getKetHari()
+    {
+        try {
+            return $this->db->table('ket_hari')->orderBy('kd_kethari', 'ASC')->get()->getResultArray();
+        } catch (\Exception $e) {
+            return [
+                ['kd_kethari' => 1, 'kethari' => 'Hari Kerja'],
+                ['kd_kethari' => 2, 'kethari' => 'Hari Libur'],
+                ['kd_kethari' => 3, 'kethari' => 'Hari Raya']
+            ];
+        }
+    }
+
+    public function getLembur($search = null, $nip = null, $kdBagian = null, $status = null, $progress = null, $bulan = null, $tahun = null, $tglAwal = null, $tglAkhir = null)
+    {
+        $sql = "SELECT tl.*,
+                       COALESCE(NULLIF(tl.nama, ''), p.NAMA, '-') AS NAMA_PEGAWAI,
+                       COALESCE(NULLIF(p.NIP, ''), NULLIF(tl.id_pegawai, ''), '-') AS NIP_PEGAWAI,
+                       COALESCE(b_sub.BAGIAN, b.BAGIAN, '-') AS BAGIAN_PEGAWAI,
+                       COALESCE(kh.kethari, CASE WHEN tl.jenis_hari = 1 THEN 'Hari Kerja' WHEN tl.jenis_hari = 2 THEN 'Hari Libur' WHEN tl.jenis_hari = 3 THEN 'Hari Raya' ELSE '-' END) AS KET_HARI,
+                       COALESCE(at.NAMA, '-') AS NAMA_ATASAN_PEGAWAI
+                FROM t_lembur tl
+                LEFT JOIN pegawai p ON (tl.id_pegawai = p.ID_PEGAWAI OR tl.id_pegawai = p.NIP)
+                LEFT JOIN bagian b ON tl.kd_bagian = b.KD_BAGIAN
+                LEFT JOIN bagian b_sub ON tl.kd_subbagian = b_sub.KD_BAGIAN
+                LEFT JOIN ket_hari kh ON kh.kd_kethari = tl.jenis_hari
+                LEFT JOIN pegawai at ON (tl.id_atasan IS NOT NULL AND tl.id_atasan != '0' AND tl.id_atasan != '' AND (at.ID_PEGAWAI = tl.id_atasan OR at.NIP = tl.id_atasan))
+                WHERE 1=1";
+
+        $binds = [];
+
+        if (!empty($search)) {
+            $sql .= " AND (tl.id_pegawai LIKE ? OR p.NIP LIKE ? OR tl.nama LIKE ? OR p.NAMA LIKE ? OR tl.keterangan LIKE ? OR b.BAGIAN LIKE ? OR b_sub.BAGIAN LIKE ? OR kh.kethari LIKE ?)";
+            $binds[] = "%$search%";
+            $binds[] = "%$search%";
+            $binds[] = "%$search%";
+            $binds[] = "%$search%";
+            $binds[] = "%$search%";
+            $binds[] = "%$search%";
+            $binds[] = "%$search%";
+            $binds[] = "%$search%";
+        }
+
+        if (!empty($nip)) {
+            $sql .= " AND (tl.id_pegawai = ? OR p.NIP = ?)";
+            $binds[] = $nip;
+            $binds[] = $nip;
+        }
+
+        if (!empty($kdBagian) && $kdBagian !== 'all' && $kdBagian !== '-') {
+            $sql .= " AND (tl.kd_bagian = ? OR tl.kd_subbagian = ?)";
+            $binds[] = $kdBagian;
+            $binds[] = $kdBagian;
+        }
+
+        if ($status !== null && $status !== '' && $status !== 'all') {
+            $sql .= " AND tl.status = ?";
+            $binds[] = (int)$status;
+        }
+
+        if ($progress !== null && $progress !== '' && $progress !== 'all') {
+            $sql .= " AND tl.progress_approval = ?";
+            $binds[] = (int)$progress;
+        }
+
+        if (!empty($bulan) && $bulan !== 'all' && $bulan !== '-') {
+            $sql .= " AND MONTH(tl.tanggal_lembur) = ?";
+            $binds[] = (int)$bulan;
+        }
+
+        if (!empty($tahun) && $tahun !== 'all' && $tahun !== '-') {
+            $sql .= " AND YEAR(tl.tanggal_lembur) = ?";
+            $binds[] = (int)$tahun;
+        }
+
+        if (!empty($tglAwal)) {
+            $sql .= " AND tl.tanggal_lembur >= ?";
+            $binds[] = $tglAwal;
+        }
+
+        if (!empty($tglAkhir)) {
+            $sql .= " AND tl.tanggal_lembur <= ?";
+            $binds[] = $tglAkhir;
+        }
+
+        $sql .= " ORDER BY tl.id_lembur DESC";
+
+        $rows = !empty($binds) ? $this->db->query($sql, $binds)->getResultArray() : $this->db->query($sql)->getResultArray();
+
+        foreach ($rows as &$r) {
+            $mulai = $r['jam_mulai'] ?? '';
+            $selesai = $r['jam_selesai'] ?? '';
+            $durasiStr = '-';
+            $durasiJam = 0;
+            if (!empty($mulai) && !empty($selesai)) {
+                $t1 = strtotime($mulai);
+                $t2 = strtotime($selesai);
+                if ($t1 && $t2) {
+                    $diff = $t2 - $t1;
+                    if ($diff < 0) $diff += 86400;
+                    $h = floor($diff / 3600);
+                    $m = floor(($diff % 3600) / 60);
+                    $durasiStr = "{$h} Jam" . ($m > 0 ? " {$m} Mnt" : "");
+                    $durasiJam = round($diff / 3600, 2);
+                }
+            } elseif (!empty($r['durasi'])) {
+                $durasiStr = $r['durasi'] . (is_numeric($r['durasi']) ? ' Jam' : '');
+                $durasiJam = (float)$r['durasi'];
+            }
+            $r['DURASI'] = $durasiStr;
+            $r['DURASI_JAM'] = $durasiJam;
+
+            // Status label
+            $st = (int)($r['status'] ?? 0);
+            $pr = (int)($r['progress_approval'] ?? 0);
+
+            if ($st === 2) {
+                $r['STATUS_LABEL'] = 'Ditolak';
+                $r['STATUS_BADGE'] = 'danger';
+            } elseif ($st === 1 || $pr >= 2) {
+                $r['STATUS_LABEL'] = 'Disetujui HRD';
+                $r['STATUS_BADGE'] = 'success';
+            } elseif ($pr === 1) {
+                $r['STATUS_LABEL'] = 'Disetujui Atasan (Menunggu HRD)';
+                $r['STATUS_BADGE'] = 'info';
+            } else {
+                $r['STATUS_LABEL'] = 'Menunggu';
+                $r['STATUS_BADGE'] = 'warning';
+            }
+        }
+        unset($r);
+
+        return $rows;
+    }
+
+    public function saveLembur($data)
+    {
+        try {
+            $idLembur = $data['id_lembur'] ?? $data['ID_LEMBUR'] ?? null;
+            $idPegawai = $data['id_pegawai'] ?? $data['nip'] ?? $data['NIP'] ?? '';
+            $nama = $data['nama'] ?? $data['NAMA'] ?? '';
+            $tglLembur = $data['tanggal_lembur'] ?? $data['tanggal'] ?? date('Y-m-d');
+            $jenisHari = $data['jenis_hari'] ?? $data['ket_hari'] ?? 1;
+            $keterangan = $data['keterangan'] ?? $data['KETERANGAN'] ?? '';
+            $durasiInput = $data['durasi'] ?? $data['DURASI'] ?? null;
+            $jamMulai = $data['jam_mulai'] ?? null;
+            $jamSelesai = $data['jam_selesai'] ?? null;
+
+            // Jika durasi diberikan tapi jam tidak lengkap, tentukan default jam mulai & selesai
+            if ((empty($jamMulai) || empty($jamSelesai)) && !empty($durasiInput)) {
+                $durVal = floatval(preg_replace('/[^0-9.]/', '', (string)$durasiInput));
+                if ($durVal <= 0) $durVal = 1;
+                $jamMulai = !empty($jamMulai) ? $jamMulai : '17:00:00';
+                $tStart = strtotime($jamMulai);
+                $jamSelesai = date('H:i:s', $tStart + ($durVal * 3600));
+            } elseif (empty($jamMulai)) {
+                $jamMulai = '17:00:00';
+                $jamSelesai = '19:00:00';
+            }
+
+            // Cari ID_PEGAWAI & Bagian jika hanya ada NIP
+            $kdBagian = $data['kd_bagian'] ?? 0;
+            $kdSubBagian = $data['kd_subbagian'] ?? 0;
+            if (!empty($idPegawai)) {
+                $peg = $this->db->table('pegawai p')
+                    ->select('p.ID_PEGAWAI, p.NAMA, dp.KD_BAGIAN')
+                    ->join('detail_penempatan_pegawai dp', 'dp.ID_PEGAWAI = p.ID_PEGAWAI', 'left')
+                    ->where('p.NIP', $idPegawai)
+                    ->orWhere('p.ID_PEGAWAI', $idPegawai)
+                    ->get()->getRowArray();
+                if ($peg) {
+                    if (empty($nama)) $nama = $peg['NAMA'];
+                    if (empty($kdBagian) && !empty($peg['KD_BAGIAN'])) $kdBagian = $peg['KD_BAGIAN'];
+                }
+            }
+
+            $record = [
+                'id_pegawai'        => $idPegawai,
+                'nama'              => $nama,
+                'kd_bagian'         => $kdBagian,
+                'kd_subbagian'      => $kdSubBagian,
+                'tanggal_lembur'    => $tglLembur,
+                'jenis_hari'        => $jenisHari,
+                'jam_mulai'         => $jamMulai,
+                'jam_selesai'       => $jamSelesai,
+                'keterangan'        => $keterangan,
+                'tanggal_pengajuan' => date('Y-m-d')
+            ];
+
+            if (empty($idLembur)) {
+                $record['status'] = 0;
+                $record['progress_approval'] = 0;
+                $record['max_approval'] = 2;
+                $record['id_atasan'] = $data['id_atasan'] ?? 0;
+                $record['file_berkas'] = $data['file_berkas'] ?? '';
+
+                $this->db->table('t_lembur')->insert($record);
+                $newId = $this->db->insertID();
+                return ['code' => 200, 'message' => 'Pengajuan lembur berhasil disimpan', 'id_lembur' => $newId];
+            } else {
+                $this->db->table('t_lembur')->where('id_lembur', $idLembur)->update($record);
+                return ['code' => 200, 'message' => 'Pengajuan lembur berhasil diperbarui', 'id_lembur' => $idLembur];
+            }
+        } catch (\Exception $e) {
+            return ['code' => 500, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function updateApprovalLembur($idLembur, $level, $status, $idAtasan = null, $catatan = '', $extra = [])
+    {
+        try {
+            if (empty($idLembur)) {
+                return ['code' => 400, 'message' => 'ID lembur diperlukan'];
+            }
+
+            $level = strtolower($level); // 'atasan' atau 'hrd'
+            $status = (int)$status;       // 1 = Approve, 2 = Reject, 0 = Reset
+
+            $update = [];
+            if ($level === 'atasan') {
+                if ($status === 1) {
+                    $update['progress_approval'] = 1; // Disetujui Atasan, naik ke HRD
+                    $update['status'] = 0;
+                } elseif ($status === 2) {
+                    $update['progress_approval'] = 0;
+                    $update['status'] = 2; // Ditolak
+                } else {
+                    $update['progress_approval'] = 0;
+                    $update['status'] = 0;
+                }
+                if (!empty($idAtasan)) {
+                    $update['id_atasan'] = $idAtasan;
+                }
+            } elseif ($level === 'hrd') {
+                if ($status === 1) {
+                    $update['progress_approval'] = 2; // Selesai
+                    $update['status'] = 1;            // Disetujui
+                } elseif ($status === 2) {
+                    $update['status'] = 2;            // Ditolak HRD
+                } else {
+                    $update['progress_approval'] = 1;
+                    $update['status'] = 0;
+                }
+
+                // Simpan jam realisasi jika disertakan
+                if (!empty($extra['jam_mulai_realisasi'])) {
+                    $update['jam_mulai'] = $extra['jam_mulai_realisasi'];
+                }
+                if (!empty($extra['jam_selesai_realisasi'])) {
+                    $update['jam_pulang'] = $extra['jam_selesai_realisasi'];
+                    $update['jam_selesai'] = $extra['jam_selesai_realisasi'];
+                }
+            } else {
+                // Default generic approval
+                $update['status'] = $status;
+                if ($status === 1) {
+                    $update['progress_approval'] = 2;
+                }
+            }
+
+            if (!empty($catatan)) {
+                $existing = $this->db->table('t_lembur')->where('id_lembur', $idLembur)->get()->getRowArray();
+                if ($existing && !empty($existing['keterangan'])) {
+                    $update['keterangan'] = $existing['keterangan'] . " [{$level}: {$catatan}]";
+                } else {
+                    $update['keterangan'] = "[{$level}: {$catatan}]";
+                }
+            }
+
+            $this->db->table('t_lembur')->where('id_lembur', $idLembur)->update($update);
+            return [
+                'code' => 200,
+                'message' => $status === 1 ? 'Pengajuan lembur berhasil disetujui' : ($status === 2 ? 'Pengajuan lembur berhasil ditolak' : 'Status lembur berhasil diperbarui')
+            ];
+        } catch (\Exception $e) {
+            return ['code' => 500, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function deleteLembur($idLembur)
+    {
+        try {
+            if (empty($idLembur)) {
+                return ['code' => 400, 'message' => 'ID lembur diperlukan'];
+            }
+            $this->db->table('t_lembur')->where('id_lembur', $idLembur)->delete();
+            return ['code' => 200, 'message' => 'Data lembur berhasil dihapus'];
+        } catch (\Exception $e) {
+            return ['code' => 500, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function getMonitoringLembur($params = [])
+    {
+        $tglAwal = $params['tgl_awal'] ?? '';
+        $tglAkhir = $params['tgl_akhir'] ?? '';
+        $search = trim($params['search'] ?? '');
+
+        // 48 Standar Unit RS
+        $standardUnits = [
+            ['no' => 1,  'nama' => 'Kepegawaian', 'aliases' => ['kepegawaian', 'admin dan kepegawaian', 'sdm']],
+            ['no' => 2,  'nama' => 'case manager', 'aliases' => ['case manager', 'casemanager']],
+            ['no' => 3,  'nama' => 'ICU', 'aliases' => ['icu', 'hcu', 'iccu', 'intensif']],
+            ['no' => 4,  'nama' => 'UGD umum', 'aliases' => ['ugd umum', 'igd umum', 'ugd', 'igd']],
+            ['no' => 5,  'nama' => 'UGD PONEK', 'aliases' => ['ugd ponek', 'igd ponek', 'ponek']],
+            ['no' => 6,  'nama' => 'POLIKLINIK BEDAH', 'aliases' => ['poliklinik bedah', 'poli bedah', 'bedah']],
+            ['no' => 7,  'nama' => 'POLIKLINIK PENYAKIT DALAM', 'aliases' => ['poliklinik penyakit dalam', 'poli dalam', 'penyakit dalam']],
+            ['no' => 8,  'nama' => 'POLIKLINIK ANAK', 'aliases' => ['poliklinik anak', 'poli anak']],
+            ['no' => 9,  'nama' => 'POLIKLINIK OBGYN', 'aliases' => ['poliklinik obgyn', 'poli obgyn', 'obgyn', 'kandungan']],
+            ['no' => 10, 'nama' => 'POLIKLINIK GIGI', 'aliases' => ['poliklinik gigi', 'poli gigi', 'gigi dasar', 'poli gigi dasar']],
+            ['no' => 11, 'nama' => 'POLIKLINIK THT', 'aliases' => ['poliklinik tht', 'poli tht', 'tht']],
+            ['no' => 12, 'nama' => 'POLIKLINIK JANTUNG DAN PEMBULUH DARAH', 'aliases' => ['poliklinik jantung', 'poli jantung', 'jantung']],
+            ['no' => 13, 'nama' => 'LABORATORIUM', 'aliases' => ['laboratorium', 'lab', 'instalasi laboratorium']],
+            ['no' => 14, 'nama' => 'GIZI', 'aliases' => ['gizi', 'konsultasi gizi', 'instalasi gizi']],
+            ['no' => 15, 'nama' => 'PERENCANAAN dan PENGEMBANGAN', 'aliases' => ['perencanaan dan pengembangan', 'perencanaan']],
+            ['no' => 16, 'nama' => 'KEUANGAN dan UMUM', 'aliases' => ['keuangan dan umum', 'keuangan']],
+            ['no' => 17, 'nama' => 'OK', 'aliases' => ['ok', 'kamar operasi', 'bedah sentral', 'ibs']],
+            ['no' => 18, 'nama' => 'POLIKLINIK SYARAF', 'aliases' => ['poliklinik syaraf', 'poli syaraf', 'syaraf', 'saraf']],
+            ['no' => 19, 'nama' => 'RUANGAN BERSALIN', 'aliases' => ['ruangan bersalin', 'kebidanan', 'bersalin', 'vk']],
+            ['no' => 20, 'nama' => 'RUANG NIFAS', 'aliases' => ['ruang nifas', 'nifas']],
+            ['no' => 21, 'nama' => 'RUANG NICU', 'aliases' => ['ruang nicu', 'perinatologi', 'nicu', 'picu']],
+            ['no' => 22, 'nama' => 'POLIKLINIK MATA', 'aliases' => ['poliklinik mata', 'poli mata', 'mata']],
+            ['no' => 23, 'nama' => 'RUANG ANAK', 'aliases' => ['ruang anak', 'anak', 'bangsal anak']],
+            ['no' => 24, 'nama' => 'REKAM MEDIS', 'aliases' => ['rekam medis', 'ruang rekam medis', 'rekam medik']],
+            ['no' => 25, 'nama' => 'BPJS', 'aliases' => ['bpjs', 'casemix']],
+            ['no' => 26, 'nama' => 'RADIOLOGI', 'aliases' => ['radiologi', 'instalasi radiologi', 'roentgen']],
+            ['no' => 27, 'nama' => 'POLIKLINIK TB DOTS RO', 'aliases' => ['poliklinik tb dots', 'poli tb dots', 'tb dots', 'tb dots ro']],
+            ['no' => 28, 'nama' => 'LONDRY', 'aliases' => ['londry', 'laundry', 'loundry']],
+            ['no' => 29, 'nama' => 'CSSD', 'aliases' => ['cssd', 'sterilisasi']],
+            ['no' => 30, 'nama' => 'KESEHATAN LINGKUNGAN', 'aliases' => ['kesehatan lingkungan', 'kesling', 'sanitasi']],
+            ['no' => 31, 'nama' => 'PKRS_promosi kesehatan RS', 'aliases' => ['pkrs_promosi kesehatan rs', 'pkrs', 'promosi kesehatan']],
+            ['no' => 32, 'nama' => 'PENGELOLA BARANG / ASET', 'aliases' => ['pengelola barang / aset', 'pengelola barang', 'aset']],
+            ['no' => 33, 'nama' => 'LOGISTIK DAN UMUM', 'aliases' => ['logistik dan umum', 'logistik', 'rumah tangga']],
+            ['no' => 34, 'nama' => 'IPSRS', 'aliases' => ['ipsrs', 'ips rs', 'pemeliharaan sarana']],
+            ['no' => 35, 'nama' => 'BDRS', 'aliases' => ['bdrs', 'unit transfusi darah', 'bank darah', 'utd']],
+            ['no' => 36, 'nama' => 'BIDANG KEPERAWATAN', 'aliases' => ['bidang keperawatan', 'keperawatan', 'komite keperawatan']],
+            ['no' => 37, 'nama' => 'GUDANG FARMASI', 'aliases' => ['gudang farmasi']],
+            ['no' => 38, 'nama' => 'RUANG APOTIK', 'aliases' => ['ruang apotik', 'apotik', 'apotek']],
+            ['no' => 39, 'nama' => 'INSTALASI FARMASI', 'aliases' => ['instalasi farmasi', 'farmasi']],
+            ['no' => 40, 'nama' => 'KEAMANAN', 'aliases' => ['keamanan', 'satpam', 'security']],
+            ['no' => 41, 'nama' => 'CLEANING SERVICE', 'aliases' => ['cleaning service', 'cs', 'kebersihan']],
+            ['no' => 42, 'nama' => 'PPI', 'aliases' => ['ppi', 'pencegahan infeksi']],
+            ['no' => 43, 'nama' => 'DIREKTUR', 'aliases' => ['direktur', 'direksi', 'pimpinan']],
+            ['no' => 44, 'nama' => 'BAGIAN UMUM', 'aliases' => ['bagian umum', 'umum']],
+            ['no' => 45, 'nama' => 'KOMITE MEDIK', 'aliases' => ['komite medik']],
+            ['no' => 46, 'nama' => 'RUANG BEDAH', 'aliases' => ['ruang bedah', 'bedah']],
+            ['no' => 47, 'nama' => 'RUANG ISOLASI', 'aliases' => ['ruang isolasi', 'isolasi']],
+            ['no' => 48, 'nama' => 'FARMASI RAWAT JALAN', 'aliases' => ['farmasi rawat jalan', 'depo farmasi']]
+        ];
+
+        // Fetch lembur records in date range
+        $lemburRows = $this->getLembur(null, null, null, null, null, null, null, $tglAwal, $tglAkhir);
+
+        // Group by unit
+        $unitData = [];
+        foreach ($standardUnits as $su) {
+            $unitData[$su['nama']] = [
+                'nama' => $su['nama'],
+                'aliases' => $su['aliases'],
+                'total_lembur' => 0,
+                'total_jam' => 0,
+                'disetujui' => 0,
+                'menunggu_hrd' => 0,
+                'menunggu_atasan' => 0,
+                'ditolak' => 0,
+                'items' => []
+            ];
+        }
+
+        // Map lembur to units
+        foreach ($lemburRows as $r) {
+            $bg = trim($r['BAGIAN_PEGAWAI'] ?? '');
+            if (empty($bg) || $bg === '-') {
+                $bg = 'Lainnya';
+            }
+            $bgLower = strtolower($bg);
+
+            $matchedUnitName = null;
+            foreach ($unitData as $uName => $uInfo) {
+                if (strtolower($uName) === $bgLower) {
+                    $matchedUnitName = $uName;
+                    break;
+                }
+                foreach ($uInfo['aliases'] as $alias) {
+                    if (strpos($bgLower, $alias) !== false || strpos($alias, $bgLower) !== false) {
+                        $matchedUnitName = $uName;
+                        break 2;
+                    }
+                }
+            }
+
+            if (!$matchedUnitName) {
+                if (!isset($unitData[$bg])) {
+                    $unitData[$bg] = [
+                        'nama' => $bg,
+                        'aliases' => [$bgLower],
+                        'total_lembur' => 0,
+                        'total_jam' => 0,
+                        'disetujui' => 0,
+                        'menunggu_hrd' => 0,
+                        'menunggu_atasan' => 0,
+                        'ditolak' => 0,
+                        'items' => []
+                    ];
+                }
+                $matchedUnitName = $bg;
+            }
+
+            $st = (int)($r['status'] ?? 0);
+            $pr = (int)($r['progress_approval'] ?? 0);
+            $unitData[$matchedUnitName]['total_lembur']++;
+            $unitData[$matchedUnitName]['total_jam'] += (float)($r['DURASI_JAM'] ?? 0);
+
+            if ($st === 2 || $st === 3) {
+                $unitData[$matchedUnitName]['ditolak']++;
+            } elseif ($st === 1 || $pr >= 2) {
+                $unitData[$matchedUnitName]['disetujui']++;
+            } elseif ($pr === 1) {
+                $unitData[$matchedUnitName]['menunggu_hrd']++;
+            } else {
+                $unitData[$matchedUnitName]['menunggu_atasan']++;
+            }
+            $unitData[$matchedUnitName]['items'][] = $r;
+        }
+
+        // Format result rows
+        $resultRows = [];
+        $no = 1;
+        $totalSemuaLembur = 0;
+        $totalSemuaDisetujui = 0;
+        $totalSemuaMenunggu = 0;
+        $totalSemuaDitolak = 0;
+
+        foreach ($unitData as $uName => $info) {
+            if (!empty($search) && stripos($uName, $search) === false) {
+                continue;
+            }
+
+            $tot = $info['total_lembur'];
+            $dis = $info['disetujui'];
+            $men = $info['menunggu_hrd'] + $info['menunggu_atasan'];
+            $tol = $info['ditolak'];
+
+            $totalSemuaLembur += $tot;
+            $totalSemuaDisetujui += $dis;
+            $totalSemuaMenunggu += $men;
+            $totalSemuaDitolak += $tol;
+
+            // Status Approval label
+            if ($tot === 0) {
+                $statusApproval = 'Belum Ada';
+                $statusBadge = 'secondary';
+                $keterangan = 'Tidak ada lembur';
+            } elseif ($dis === $tot) {
+                $statusApproval = 'Disetujui HRD';
+                $statusBadge = 'success';
+                $keterangan = 'Semua pengajuan disetujui';
+            } elseif ($men > 0 && $dis > 0) {
+                $statusApproval = "Sebagian Disetujui ($dis/$tot)";
+                $statusBadge = 'info';
+                $keterangan = "$men pengajuan menunggu approval";
+            } elseif ($men === $tot) {
+                $statusApproval = 'Menunggu Approval';
+                $statusBadge = 'warning';
+                $keterangan = "$tot pengajuan belum diverifikasi";
+            } elseif ($tol === $tot) {
+                $statusApproval = 'Ditolak';
+                $statusBadge = 'danger';
+                $keterangan = 'Semua pengajuan ditolak';
+            } else {
+                $statusApproval = "Proses ($dis Disetujui, $men Menunggu)";
+                $statusBadge = 'primary';
+                $keterangan = 'Dalam proses verifikasi';
+            }
+
+            $resultRows[] = [
+                'no' => $no++,
+                'unit' => $uName,
+                'status_approval' => $statusApproval,
+                'status_badge' => $statusBadge,
+                'total' => $tot,
+                'total_formatted' => $tot > 0 ? "{$tot} Pengajuan" : "0",
+                'total_jam' => round($info['total_jam'], 1),
+                'disetujui' => $dis,
+                'menunggu' => $men,
+                'ditolak' => $tol,
+                'keterangan' => $keterangan,
+                'items' => $info['items']
+            ];
+        }
+
+        return [
+            'tgl_awal' => $tglAwal,
+            'tgl_akhir' => $tglAkhir,
+            'summary' => [
+                'total_lembur' => $totalSemuaLembur,
+                'total_disetujui' => $totalSemuaDisetujui,
+                'total_menunggu' => $totalSemuaMenunggu,
+                'total_ditolak' => $totalSemuaDitolak,
+                'total_unit' => count($resultRows)
+            ],
+            'units' => $resultRows
+        ];
     }
 }

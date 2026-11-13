@@ -1,0 +1,642 @@
+<style>
+  .evo-ijin-card {
+    border-radius: 0.65rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    background: #fff;
+    border: 1px solid #edf2f9;
+  }
+  .table-rekap-ijin th {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #495057;
+    background-color: #f8f9fa;
+    vertical-align: middle;
+    white-space: nowrap;
+    border-bottom: 2px solid #dee2e6;
+    padding: 0.65rem 0.6rem;
+  }
+  .table-rekap-ijin td {
+    font-size: 0.82rem;
+    vertical-align: middle;
+    padding: 0.6rem 0.6rem;
+  }
+  .badge-jenis-ijin {
+    background-color: #e7f1ff;
+    color: #0d6efd;
+    font-weight: 600;
+    font-size: 0.75rem;
+    border: 1px solid #cfe2ff;
+  }
+  .btn-lihat-dokumen {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.65rem;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  /* Gaya Cetak Dokumen / Surat Ijin */
+  @media print {
+    body * {
+      visibility: hidden !important;
+    }
+    #modal-preview-dokumen-ijin,
+    #modal-preview-dokumen-ijin * {
+      visibility: visible !important;
+    }
+    #modal-preview-dokumen-ijin {
+      position: absolute !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #fff !important;
+    }
+    .modal-dialog {
+      max-width: 100% !important;
+      margin: 0 !important;
+    }
+    .modal-content {
+      border: none !important;
+      box-shadow: none !important;
+    }
+    .modal-header,
+    .modal-footer,
+    .no-print {
+      display: none !important;
+    }
+    .print-area {
+      padding: 15mm 20mm !important;
+    }
+  }
+
+  .surat-header-kop {
+    border-bottom: 3px double #000;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+  }
+  .surat-title {
+    font-family: Arial, sans-serif;
+    font-size: 15pt;
+    font-weight: bold;
+    text-decoration: underline;
+    text-align: center;
+    letter-spacing: 0.5px;
+    margin-bottom: 18px;
+  }
+  .surat-body {
+    font-family: Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #000;
+  }
+</style>
+
+<template>
+  <div class="container-fluid py-3" id="page-rekap-ijin-container">
+    <!-- Header Title -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <div>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-1 fs--2">
+            <li class="breadcrumb-item"><a href="#" class="text-decoration-none">E-Absensi</a></li>
+            <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Ijin</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Rekap Ijin</li>
+          </ol>
+        </nav>
+        <h4 class="mb-0 text-dark fw-bold">Daftar Ijin Pegawai</h4>
+      </div>
+      <div>
+        <button type="button" id="btn-export-excel-ijin" class="btn btn-falcon-success btn-sm">
+          <i class="fas fa-file-excel me-1"></i> Export Excel
+        </button>
+      </div>
+    </div>
+
+    <!-- MAIN CARD: CARI & TABEL DAFTAR IJIN PEGAWAI -->
+    <div class="card evo-ijin-card mb-4">
+      <div class="card-header bg-white py-3 px-3 border-bottom">
+        <div class="row g-2 align-items-center justify-content-between">
+          <!-- Input Cari -->
+          <div class="col-md-5 col-lg-4">
+            <label class="form-label fs--2 fw-bold text-700 mb-1" for="input_cari_rekap">Cari</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-light border-end-0">
+                <i class="fas fa-search text-400"></i>
+              </span>
+              <input type="text" id="input_cari_rekap" class="form-control border-start-0" placeholder="Ketik NIP, Nama, Jenis, Bagian, atau Keperluan...">
+              <button type="button" id="btn_clear_cari" class="btn btn-outline-secondary btn-sm" title="Hapus Pencarian">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Total Info -->
+          <div class="col-auto">
+            <div class="text-end">
+              <span class="badge bg-soft-primary text-primary px-3 py-2 fs--1 rounded-pill" id="badge-total-ijin">
+                Total: 0 Ijin
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover table-striped table-rekap-ijin mb-0" id="table-daftar-ijin">
+            <thead>
+              <tr>
+                <th class="text-center" style="width: 40px;">#</th>
+                <th style="min-width: 140px;">NIP</th>
+                <th style="min-width: 170px;">Nama</th>
+                <th style="min-width: 160px;">Jenis</th>
+                <th style="min-width: 105px;">Tgl Mulai</th>
+                <th style="min-width: 105px;">Tgl Sampai</th>
+                <th style="min-width: 90px;">Jam Mulai</th>
+                <th style="min-width: 90px;">Jam Sampai</th>
+                <th style="min-width: 130px;">Bagian/Unit</th>
+                <th style="min-width: 220px;">Keperluan</th>
+                <th class="text-center" style="min-width: 80px;">Dokumen</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-daftar-ijin">
+              <tr>
+                <td colspan="11" class="text-center py-4 text-muted">
+                  <span class="spinner-border spinner-border-sm me-2"></span>Memuat Daftar Ijin Pegawai...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card-footer bg-light py-2 px-3 border-top d-flex justify-content-between align-items-center">
+        <span class="fs--2 text-muted" id="footer-rekap-count">Menampilkan 0 data</span>
+        <span class="fs--2 text-muted">RSUD Bobong Kab. Pulau Taliabu</span>
+      </div>
+    </div>
+
+    <!-- MODAL PRATINJAU DOKUMEN SURAT IJIN -->
+    <div class="modal fade" id="modal-preview-dokumen-ijin" tabindex="-1" aria-labelledby="modalDokumenLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header py-2 px-3 bg-light border-bottom no-print">
+            <h6 class="modal-title fw-bold text-dark" id="modalDokumenLabel">
+              <i class="fas fa-file-alt text-primary me-2"></i>Dokumen Surat Ijin Pegawai
+            </h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body p-4 print-area surat-body bg-white" id="print-area-surat">
+            <!-- KOP SURAT RESMI -->
+            <div class="surat-header-kop text-center">
+              <h6 class="fw-bold mb-1" style="font-size: 11pt; letter-spacing: 0.5px;">PEMERINTAH KABUPATEN PULAU TALIABU</h6>
+              <h5 class="fw-bold mb-1" style="font-size: 13pt; letter-spacing: 0.5px;">RUMAH SAKIT UMUM DAERAH BOBONG</h5>
+              <p class="mb-0 fs--2" style="font-size: 8.5pt;">Alamat : Jalan Lintas Bobong - Wayo, Desa Bobong, Kec. Taliabu Barat, Kab. Pulau Taliabu, Maluku Utara</p>
+            </div>
+
+            <!-- JUDUL SURAT -->
+            <div class="surat-title" id="dokumen-judul-surat">SURAT IJIN PULANG AWAL</div>
+
+            <!-- ISI PERMOHONAN -->
+            <p class="mb-2">Yang bertanda tangan dibawah ini:</p>
+            <table class="table table-borderless table-sm mb-3" style="max-width: 600px; font-size: 10.5pt;">
+              <tbody>
+                <tr>
+                  <td style="width: 140px; padding: 2px 0;">Nama</td>
+                  <td style="width: 15px; padding: 2px 0;">:</td>
+                  <td class="fw-bold" style="padding: 2px 0;" id="dokumen-nama">-</td>
+                </tr>
+                <tr>
+                  <td style="padding: 2px 0;">NIP</td>
+                  <td style="padding: 2px 0;">:</td>
+                  <td style="padding: 2px 0;" id="dokumen-nip">-</td>
+                </tr>
+                <tr>
+                  <td style="padding: 2px 0;">Unit Kerja</td>
+                  <td style="padding: 2px 0;">:</td>
+                  <td style="padding: 2px 0;" id="dokumen-unit">-</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <p class="mb-2">Dengan ini mengajukan permohonan ijin untuk meninggalkan tempat kerja sebelum jam pulang pada:</p>
+            <table class="table table-borderless table-sm mb-3" style="max-width: 600px; font-size: 10.5pt;">
+              <tbody>
+                <tr>
+                  <td style="width: 140px; padding: 2px 0;">Hari/Tanggal</td>
+                  <td style="width: 15px; padding: 2px 0;">:</td>
+                  <td class="fw-bold" style="padding: 2px 0;" id="dokumen-hari-tanggal">-</td>
+                </tr>
+                <tr>
+                  <td style="padding: 2px 0;">Jam Ijin</td>
+                  <td style="padding: 2px 0;">:</td>
+                  <td class="fw-bold" style="padding: 2px 0;" id="dokumen-jam">-</td>
+                </tr>
+                <tr>
+                  <td style="padding: 2px 0;">Keperluan</td>
+                  <td style="padding: 2px 0;">:</td>
+                  <td style="padding: 2px 0;" id="dokumen-keperluan">-</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- TITIMANGSA -->
+            <div class="text-end mb-4 me-4" style="font-size: 10.5pt;">
+              <span id="dokumen-titimangsa">Pulau Taliabu , -</span>
+            </div>
+
+            <!-- TANDA TANGAN 3 KOLOM -->
+            <div class="row text-center mt-3" style="font-size: 10pt;">
+              <div class="col-4">
+                <p class="mb-1">Yang mengajukan,</p>
+                <div style="height: 65px;" class="d-flex align-items-center justify-content-center">
+                  <span class="text-muted fs--2">-</span>
+                </div>
+                <p class="fw-bold mb-0 text-decoration-underline" id="dokumen-ttd-pemohon">-</p>
+              </div>
+
+              <div class="col-4">
+                <p class="mb-1">Menyetujui,</p>
+                <p class="mb-0 fs--2 text-muted" id="dokumen-ttd-jabatan-atasan">Kepala Bagian / Atasan</p>
+                <div style="height: 48px;" class="d-flex align-items-center justify-content-center">
+                  <span class="text-muted fs--2">-</span>
+                </div>
+                <p class="fw-bold mb-0 text-decoration-underline" id="dokumen-ttd-nama-atasan">( __________________ )</p>
+              </div>
+
+              <div class="col-4">
+                <p class="mb-1">Mengetahui,</p>
+                <p class="mb-0 fs--2 text-muted">Kasie Personalia</p>
+                <div style="height: 48px;" class="d-flex align-items-center justify-content-center">
+                  <span class="text-muted fs--2">-</span>
+                </div>
+                <p class="fw-bold mb-0">( __________________ )</p>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer py-2 px-3 bg-light border-top no-print d-flex justify-content-between">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+              <i class="fas fa-times me-1"></i> Tutup
+            </button>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-print-dokumen">
+              <i class="fas fa-print me-1"></i> Cetak Dokumen
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script type="module" defer>
+  import { httpGet } from './assets/js/core/http.js';
+
+  const apiUrl = (typeof config !== 'undefined' && config.api_url)
+    ? config.api_url
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  let fullIjinList = [];
+  let modalDokumen = null;
+
+  const MONTH_NAMES_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const HARI_INDO = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const BULAN_INDO = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+
+  function debounce(func, delay = 300) {
+    let timer;
+    return function (...args) {
+      clearTimeout(timer);
+      timer = setTimeout(() => func.apply(this, args), delay);
+    };
+  }
+
+  // Format tanggal ke: 06-Oct-2026
+  function formatTglShort(dateStr) {
+    if (!dateStr || dateStr === '0000-00-00' || dateStr.trim() === '') return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const yyyy = parts[0];
+      const mIdx = parseInt(parts[1], 10) - 1;
+      const dd = parts[2].padStart(2, '0');
+      const mName = MONTH_NAMES_SHORT[mIdx] || parts[1];
+      return `${dd}-${mName}-${yyyy}`;
+    }
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mName = MONTH_NAMES_SHORT[d.getMonth()];
+    const yyyy = d.getFullYear();
+    return `${dd}-${mName}-${yyyy}`;
+  }
+
+  // Format jam: e.g. 08:15:00
+  function formatJam(jamStr) {
+    if (!jamStr || jamStr.trim() === '') return '';
+    const clean = jamStr.trim();
+    if (clean === '00:00:00') return '';
+    if (clean.length === 5) return `${clean}:00`;
+    return clean;
+  }
+
+  function formatHariTanggal(dateStr) {
+    if (!dateStr || dateStr === '0000-00-00') return '-';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      const hari = HARI_INDO[d.getDay()] || 'Hari';
+      return `${hari} / ${dateStr}`;
+    }
+    return dateStr;
+  }
+
+  function formatTanggalIndo(dateObj) {
+    const d = dateObj || new Date();
+    const tgl = d.getDate();
+    const bln = BULAN_INDO[d.getMonth()];
+    const thn = d.getFullYear();
+    return `${tgl} ${bln} ${thn}`;
+  }
+
+  async function loadDaftarIjin(keyword = '') {
+    const tbody = document.getElementById('tbody-daftar-ijin');
+    if (!tbody) return;
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="11" class="text-center py-4 text-muted">
+          <span class="spinner-border spinner-border-sm me-2"></span>Memuat Daftar Ijin Pegawai...
+        </td>
+      </tr>
+    `;
+
+    try {
+      let url = `${apiUrl}/pegawai/ijin`;
+      if (keyword && keyword.trim() !== '') {
+        url += `?search=${encodeURIComponent(keyword.trim())}`;
+      }
+
+      const res = await httpGet(url);
+      let list = [];
+      if (res && res.code === 200 && Array.isArray(res.data)) {
+        list = res.data;
+      }
+
+      fullIjinList = list;
+      renderDaftarIjinTable(list);
+    } catch (err) {
+      console.error('Error saat load daftar ijin:', err);
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="11" class="text-center py-4 text-danger">
+            <i class="fas fa-exclamation-triangle me-1"></i> Terjadi kesalahan saat memuat data ijin pegawai.
+          </td>
+        </tr>
+      `;
+    }
+  }
+
+  function renderDaftarIjinTable(list) {
+    const tbody = document.getElementById('tbody-daftar-ijin');
+    const badgeTotal = document.getElementById('badge-total-ijin');
+    const footerCount = document.getElementById('footer-rekap-count');
+
+    if (badgeTotal) badgeTotal.textContent = `Total: ${list.length} Ijin`;
+    if (footerCount) footerCount.textContent = `Menampilkan ${list.length} data`;
+
+    if (list.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="11" class="text-center py-4 text-muted">
+            <i class="fas fa-inbox fa-2x mb-2 d-block text-300"></i>
+            Tidak ada data ijin pegawai yang ditemukan.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    let html = '';
+    list.forEach((item, index) => {
+      const nip = item.NIP || '-';
+      const nama = item.NAMA_PEGAWAI || item.NAMA || '-';
+      const jenis = item.JENIS_CUTI || '-';
+
+      // Format Tgl Mulai: e.g. 06-Oct-2026
+      const tglMulaiFormatted = formatTglShort(item.TANGGAL_MULAI);
+
+      // Tgl Sampai: jika kosong, 0000-00-00, atau sama dengan tgl mulai, kosongkan
+      let tglSampaiFormatted = '';
+      if (item.TANGGAL_SAMPAI && item.TANGGAL_SAMPAI !== '0000-00-00' && item.TANGGAL_SAMPAI !== item.TANGGAL_MULAI) {
+        tglSampaiFormatted = formatTglShort(item.TANGGAL_SAMPAI);
+      }
+
+      // Jam Mulai & Jam Sampai (e.g. 08:15:00 dan 00:30:00)
+      const jamMulai = formatJam(item.JAM_MULAI);
+      const jamSampai = formatJam(item.JAM_PULANG || item.JAM_SELESAI);
+
+      const bagian = item.BAGIAN || '-';
+      const keperluan = item.KEPERLUAN || '-';
+
+      html += `
+        <tr data-id="${item.KD_CUTI}">
+          <td class="text-center text-muted fw-bold">${index + 1}.</td>
+          <td class="fw-semi-bold">${nip}</td>
+          <td class="fw-bold text-dark">${nama}</td>
+          <td><span class="badge badge-jenis-ijin">${jenis}</span></td>
+          <td class="text-nowrap">${tglMulaiFormatted}</td>
+          <td class="text-nowrap">${tglSampaiFormatted}</td>
+          <td class="text-nowrap">${jamMulai}</td>
+          <td class="text-nowrap">${jamSampai}</td>
+          <td>${bagian}</td>
+          <td><span title="${keperluan}">${keperluan}</span></td>
+          <td class="text-center">
+            <button type="button" class="btn btn-falcon-info btn-xs btn-lihat-dokumen" data-id="${item.KD_CUTI}">
+              <i class="fas fa-file-alt me-1"></i>Lihat
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    bindLihatDokumenButtons();
+  }
+
+  function bindLihatDokumenButtons() {
+    document.querySelectorAll('.btn-lihat-dokumen').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const id = this.getAttribute('data-id');
+        bukaDokumenIjin(id);
+      });
+    });
+  }
+
+  function bukaDokumenIjin(id) {
+    const item = fullIjinList.find(x => String(x.KD_CUTI) === String(id));
+    if (!item) {
+      alert('Data permohonan ijin tidak ditemukan');
+      return;
+    }
+
+    // Nama, NIP, & Unit
+    document.getElementById('dokumen-nama').textContent = item.NAMA_PEGAWAI || item.NAMA || '-';
+    document.getElementById('dokumen-nip').textContent = item.NIP || '-';
+    document.getElementById('dokumen-unit').textContent = item.BAGIAN || '-';
+
+    // Judul Surat Dinamis
+    const judulEl = document.getElementById('dokumen-judul-surat');
+    if (judulEl) {
+      if (item.JENIS_CUTI && item.JENIS_CUTI.toUpperCase().includes('PULANG AWAL')) {
+        judulEl.textContent = 'SURAT IJIN PULANG AWAL';
+      } else if (item.JENIS_CUTI) {
+        judulEl.textContent = `SURAT ${item.JENIS_CUTI.toUpperCase()}`;
+      } else {
+        judulEl.textContent = 'SURAT IJIN PULANG AWAL';
+      }
+    }
+
+    // Hari / Tanggal
+    const tglMulai = item.TANGGAL_MULAI || '';
+    document.getElementById('dokumen-hari-tanggal').textContent = formatHariTanggal(tglMulai);
+
+    // Jam
+    const jamMulai = formatJam(item.JAM_MULAI);
+    const jamSampai = formatJam(item.JAM_PULANG || item.JAM_SELESAI);
+    let jamText = jamSampai || jamMulai || '-';
+    if (jamMulai && jamSampai && jamMulai !== jamSampai) {
+      jamText = `${jamMulai} s/d ${jamSampai}`;
+    }
+    document.getElementById('dokumen-jam').textContent = jamText;
+
+    // Keperluan
+    document.getElementById('dokumen-keperluan').textContent = item.KEPERLUAN || '-';
+
+    // Titimangsa
+    const today = new Date();
+    document.getElementById('dokumen-titimangsa').textContent = `Pulau Taliabu , ${formatTanggalIndo(today)}`;
+
+    // TTD Pemohon
+    document.getElementById('dokumen-ttd-pemohon').textContent = item.NAMA_PEGAWAI || item.NAMA || '( __________________ )';
+
+    // TTD Atasan
+    const elJabatanAtasan = document.getElementById('dokumen-ttd-jabatan-atasan');
+    const elNamaAtasan = document.getElementById('dokumen-ttd-nama-atasan');
+
+    const jabatanAtasan = item.JABATAN_ATASAN || 'Kepala Bagian / Atasan';
+    const namaAtasan = (item.NAMA_ATASAN_PEGAWAI && item.NAMA_ATASAN_PEGAWAI !== '-')
+      ? item.NAMA_ATASAN_PEGAWAI
+      : (item.NAMA_ATASAN && item.NAMA_ATASAN !== '-')
+        ? item.NAMA_ATASAN
+        : '( __________________ )';
+
+    if (elJabatanAtasan) elJabatanAtasan.textContent = jabatanAtasan;
+    if (elNamaAtasan) elNamaAtasan.textContent = namaAtasan;
+
+    // Tampilkan Modal
+    const modalEl = document.getElementById('modal-preview-dokumen-ijin');
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+      modalDokumen = new bootstrap.Modal(modalEl);
+      modalDokumen.show();
+    } else {
+      modalEl.classList.add('show');
+      modalEl.style.display = 'block';
+    }
+  }
+
+  // Export Excel CSV UTF-8
+  function exportToExcel() {
+    if (fullIjinList.length === 0) {
+      alert('Tidak ada data ijin yang dapat diekspor.');
+      return;
+    }
+
+    let csvContent = '\uFEFF'; // BOM UTF-8
+    csvContent += '#,NIP,Nama,Jenis,Tgl Mulai,Tgl Sampai,Jam Mulai,Jam Sampai,Bagian/Unit,Keperluan,Dokumen\n';
+
+    fullIjinList.forEach((item, index) => {
+      const no = `${index + 1}.`;
+      const nip = `"${(item.NIP || '').replace(/"/g, '""')}"`;
+      const nama = `"${(item.NAMA_PEGAWAI || item.NAMA || '').replace(/"/g, '""')}"`;
+      const jenis = `"${(item.JENIS_CUTI || '').replace(/"/g, '""')}"`;
+      const tglM = `"${formatTglShort(item.TANGGAL_MULAI)}"`;
+
+      let tglSVal = '';
+      if (item.TANGGAL_SAMPAI && item.TANGGAL_SAMPAI !== '0000-00-00' && item.TANGGAL_SAMPAI !== item.TANGGAL_MULAI) {
+        tglSVal = formatTglShort(item.TANGGAL_SAMPAI);
+      }
+      const tglS = `"${tglSVal}"`;
+
+      const jamM = `"${formatJam(item.JAM_MULAI)}"`;
+      const jamS = `"${formatJam(item.JAM_PULANG || item.JAM_SELESAI)}"`;
+      const unit = `"${(item.BAGIAN || '').replace(/"/g, '""')}"`;
+      const kep = `"${(item.KEPERLUAN || '').replace(/"/g, '""')}"`;
+      const dok = '"Lihat"';
+
+      csvContent += `${no},${nip},${nama},${jenis},${tglM},${tglS},${jamM},${jamS},${unit},${kep},${dok}\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Daftar_Ijin_Pegawai_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  function initModule() {
+    loadDaftarIjin();
+
+    // Input Cari dengan Debounce (300ms)
+    const inputCari = document.getElementById('input_cari_rekap');
+    if (inputCari) {
+      const debouncedSearch = debounce((keyword) => {
+        loadDaftarIjin(keyword);
+      }, 300);
+
+      inputCari.addEventListener('input', function () {
+        debouncedSearch(this.value);
+      });
+
+      inputCari.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          loadDaftarIjin(this.value);
+        }
+      });
+    }
+
+    // Tombol Clear Cari
+    const btnClear = document.getElementById('btn_clear_cari');
+    if (btnClear) {
+      btnClear.addEventListener('click', () => {
+        if (inputCari) {
+          inputCari.value = '';
+          loadDaftarIjin('');
+        }
+      });
+    }
+
+    // Tombol Export Excel
+    const btnExport = document.getElementById('btn-export-excel-ijin');
+    if (btnExport) {
+      btnExport.addEventListener('click', exportToExcel);
+    }
+
+    // Tombol Cetak Dokumen di Modal
+    const btnPrint = document.getElementById('btn-print-dokumen');
+    if (btnPrint) {
+      btnPrint.addEventListener('click', () => {
+        window.print();
+      });
+    }
+  }
+
+  initModule();
+</script>

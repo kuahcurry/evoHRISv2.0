@@ -1,0 +1,862 @@
+<style>
+  .evo-lembur-card {
+    border-radius: 0.65rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    background: #fff;
+    border: 1px solid #edf2f9;
+  }
+  .table-lembur th {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 700;
+    color: #5e6e82;
+    background-color: #f9fafd;
+    vertical-align: middle;
+    white-space: nowrap;
+    border-bottom: 2px solid #edf2f9;
+    padding: 0.65rem 0.6rem;
+  }
+  .table-lembur td {
+    font-size: 0.82rem;
+    vertical-align: middle;
+    padding: 0.6rem 0.6rem;
+  }
+  .badge-status-menunggu {
+    background-color: #fff3cd;
+    color: #997404;
+    border: 1px solid #ffe69c;
+  }
+  .badge-status-atasan {
+    background-color: #cff4fc;
+    color: #055160;
+    border: 1px solid #b6effb;
+  }
+  .badge-status-disetujui {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    border: 1px solid #badbcc;
+  }
+  .badge-status-ditolak {
+    background-color: #f8d7da;
+    color: #842029;
+    border: 1px solid #f5c2c7;
+  }
+  .form-label-bold {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #4d5969;
+    margin-bottom: 0.3rem;
+  }
+
+  /* Styling Cetak Surat Lembur (SPL) */
+  @media print {
+    body * {
+      visibility: hidden !important;
+    }
+    #modal-preview-spl,
+    #modal-preview-spl * {
+      visibility: visible !important;
+    }
+    #modal-preview-spl {
+      position: absolute !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #fff !important;
+    }
+    .modal-dialog {
+      max-width: 100% !important;
+      margin: 0 !important;
+    }
+    .modal-content {
+      border: none !important;
+      box-shadow: none !important;
+    }
+    .modal-header,
+    .modal-footer,
+    .no-print {
+      display: none !important;
+    }
+    .print-area {
+      padding: 15mm 20mm !important;
+    }
+  }
+
+  .surat-header-kop {
+    border-bottom: 3px double #000;
+    padding-bottom: 10px;
+    margin-bottom: 18px;
+  }
+  .surat-header-kop h5 {
+    margin: 0;
+    font-size: 15pt;
+    font-weight: bold;
+    color: #000;
+    letter-spacing: 0.5px;
+  }
+  .surat-header-kop p {
+    margin: 0;
+    font-size: 9pt;
+    color: #333;
+  }
+  .surat-title {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .surat-title h6 {
+    text-decoration: underline;
+    font-weight: bold;
+    font-size: 13pt;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+  }
+  .table-surat td {
+    padding: 4px 6px;
+    font-size: 10pt;
+    vertical-align: top;
+  }
+</style>
+
+<template>
+  <div class="container-fluid py-3" id="page-lembur-container">
+    <!-- Breadcrumb & Header Title -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <div>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-1 fs--2">
+            <li class="breadcrumb-item"><a href="#" class="text-decoration-none">E-Absensi</a></li>
+            <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Lembur</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Pengajuan Lembur</li>
+          </ol>
+        </nav>
+        <h4 class="mb-0 text-primary fw-bold">
+          <i class="fas fa-business-time me-2"></i>Pengajuan & Riwayat Lembur
+        </h4>
+      </div>
+      <div>
+        <span class="badge bg-soft-primary text-primary px-3 py-2 fs--1 rounded-pill">
+          <i class="fas fa-id-badge me-1"></i> Mode Pegawai
+        </span>
+      </div>
+    </div>
+
+    <!-- FORM PENGAJUAN LEMBUR -->
+    <div class="card evo-lembur-card mb-4">
+      <div class="card-header bg-light py-2 px-3 border-bottom d-flex align-items-center justify-content-between">
+        <h6 class="mb-0 fw-bold text-700">
+          <i class="fas fa-edit text-primary me-2"></i>Form Pengajuan Lembur
+        </h6>
+        <span class="text-muted fs--2">Lengkapi data surat perintah tugas lembur</span>
+      </div>
+      <div class="card-body p-3">
+        <form id="form-pengajuan-lembur" autocomplete="off">
+          <input type="hidden" id="lembur_id" value="">
+
+          <!-- Row 1: Bagian/Unit & Nama -->
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label form-label-bold" for="lembur_bagian">Bagian/Unit</label>
+              <input type="text" id="lembur_bagian" class="form-control form-control-sm bg-light" readonly placeholder="Memuat Bagian/Unit...">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label form-label-bold" for="lembur_nama">Nama</label>
+              <input type="text" id="lembur_nama" class="form-control form-control-sm bg-light" readonly placeholder="administrator">
+              <input type="hidden" id="lembur_nip" value="">
+            </div>
+          </div>
+
+          <!-- Row 2: Tanggal, Ket. Hari, Durasi -->
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <label class="form-label form-label-bold" for="lembur_tanggal">Tanggal</label>
+              <input type="date" id="lembur_tanggal" class="form-control form-control-sm" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label form-label-bold" for="lembur_ket_hari">Ket. Hari</label>
+              <select id="lembur_ket_hari" class="form-select form-select-sm" required>
+                <option value="" selected disabled>Pilih Jenis Hari</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label form-label-bold" for="lembur_durasi">Durasi</label>
+              <div class="input-group input-group-sm">
+                <input type="number" id="lembur_durasi" class="form-control form-control-sm" min="1" max="24" step="0.5" placeholder="Contoh: 2" value="2" required>
+                <span class="input-group-text bg-light text-muted">Jam</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Waktu Pelaksanaan Tambahan (Opsi Fleksibel Jam Mulai & Jam Selesai) -->
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label form-label-bold" for="lembur_jam_mulai">Jam Mulai</label>
+              <input type="time" id="lembur_jam_mulai" class="form-control form-control-sm" value="17:00">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label form-label-bold" for="lembur_jam_selesai">Jam Selesai</label>
+              <input type="time" id="lembur_jam_selesai" class="form-control form-control-sm" value="19:00">
+            </div>
+          </div>
+
+          <!-- Row 3: Keterangan -->
+          <div class="row g-3 mb-3">
+            <div class="col-12">
+              <label class="form-label form-label-bold" for="lembur_keterangan">Keterangan</label>
+              <textarea id="lembur_keterangan" class="form-control form-control-sm" rows="3" placeholder="*Masukkan Keterangan" required></textarea>
+            </div>
+          </div>
+
+          <!-- Tombol Aksi Form -->
+          <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary px-3" id="btn-reset-lembur">
+              <i class="fas fa-undo me-1"></i> Batal
+            </button>
+            <button type="submit" class="btn btn-sm btn-primary px-4 fw-bold" id="btn-submit-lembur">
+              <i class="fas fa-paper-plane me-1"></i> Kirim Pengajuan
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TABEL DAFTAR APPROVAL LEMBUR -->
+    <div class="card evo-lembur-card">
+      <div class="card-header bg-light py-2 px-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <h6 class="mb-0 fw-bold text-700">
+          <i class="fas fa-list-check text-primary me-2"></i>Daftar Approval Lembur
+        </h6>
+        <!-- Input Search Cari -->
+        <div class="d-flex align-items-center" style="max-width: 280px; width: 100%;">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-400"></i></span>
+            <input type="text" id="lembur_cari" class="form-control border-start-0" placeholder="Cari" autocomplete="off">
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-striped table-hover table-lembur mb-0" id="table-riwayat-lembur">
+            <thead>
+              <tr>
+                <th class="text-center" style="width: 45px;">#</th>
+                <th style="width: 120px;">NIP</th>
+                <th style="min-width: 160px;">Nama</th>
+                <th style="min-width: 140px;">Bagian/Unit</th>
+                <th style="width: 110px;">Tgl Lembur</th>
+                <th style="width: 110px;" class="text-center">Jam Mulai Pengajuan</th>
+                <th style="width: 110px;" class="text-center">Jam Selesai Pengajuan</th>
+                <th style="width: 110px;" class="text-center">Jam Mulai Realisasi</th>
+                <th style="width: 110px;" class="text-center">Jam Selesai Realisasi</th>
+                <th style="width: 90px;" class="text-center">Waktu</th>
+                <th style="min-width: 180px;">Keterangan</th>
+                <th class="text-center" style="width: 130px;">Status</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-riwayat-lembur">
+              <tr>
+                <td colspan="12" class="text-center py-4 text-muted">
+                  <div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div> Memuat data approval lembur...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card-footer bg-light py-2 px-3 border-top d-flex justify-content-between align-items-center">
+        <span class="fs--2 text-muted" id="footer-summary-lembur">Menampilkan 0 data lembur</span>
+        <span class="fs--2 text-muted">Data tersinkronisasi otomatis dengan HRIS</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL PREVIEW & CETAK SURAT PERINTAH LEMBUR (SPL) -->
+  <div class="modal fade" id="modal-preview-spl" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content shadow border-0">
+        <div class="modal-header bg-light py-2 px-3 border-bottom d-flex justify-content-between align-items-center">
+          <h6 class="modal-title fw-bold text-700">
+            <i class="fas fa-file-contract text-primary me-2"></i>Surat Perintah Lembur (SPL)
+          </h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4" id="spl-modal-body">
+          <div class="print-area">
+            <!-- Kop Surat -->
+            <div class="surat-header-kop text-center">
+              <h5 class="fw-bold">RUMAH SAKIT UMUM DAERAH</h5>
+              <p class="mb-0">Jl. Kesehatan No. 10 | Telp. (021) 1234567 | Email: hrd@rsud.go.id</p>
+            </div>
+
+            <!-- Judul Surat -->
+            <div class="surat-title">
+              <h6 class="fw-bold text-uppercase">SURAT PERINTAH KERJA LEMBUR</h6>
+              <div class="fs--1 text-muted" id="spl_no_surat">Nomor: SPL/HRD/2026/0000</div>
+            </div>
+
+            <p class="fs--1 mb-3">Yang bertanda tangan di bawah ini memberikan perintah kerja lembur kepada:</p>
+
+            <table class="table table-borderless table-sm table-surat mb-3">
+              <tbody>
+                <tr>
+                  <td style="width: 160px;"><strong>NIP</strong></td>
+                  <td style="width: 15px;">:</td>
+                  <td id="spl_nip">-</td>
+                </tr>
+                <tr>
+                  <td><strong>Nama Pegawai</strong></td>
+                  <td>:</td>
+                  <td id="spl_nama" class="fw-bold">-</td>
+                </tr>
+                <tr>
+                  <td><strong>Bagian / Unit</strong></td>
+                  <td>:</td>
+                  <td id="spl_bagian">-</td>
+                </tr>
+                <tr>
+                  <td><strong>Tanggal Lembur</strong></td>
+                  <td>:</td>
+                  <td id="spl_tanggal">-</td>
+                </tr>
+                <tr>
+                  <td><strong>Jenis Hari</strong></td>
+                  <td>:</td>
+                  <td id="spl_ket_hari">-</td>
+                </tr>
+                <tr>
+                  <td><strong>Jam Pelaksanaan</strong></td>
+                  <td>:</td>
+                  <td id="spl_jam">-</td>
+                </tr>
+                <tr>
+                  <td><strong>Durasi</strong></td>
+                  <td>:</td>
+                  <td id="spl_durasi" class="fw-bold text-primary">-</td>
+                </tr>
+                <tr>
+                  <td><strong>Uraian Pekerjaan / Keterangan</strong></td>
+                  <td>:</td>
+                  <td id="spl_keterangan" class="fst-italic">-</td>
+                </tr>
+                <tr>
+                  <td><strong>Status Approval</strong></td>
+                  <td>:</td>
+                  <td id="spl_status"><span class="badge bg-secondary">-</span></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- Area Tanda Tangan -->
+            <div class="row text-center mt-4 pt-3" style="color: #000;">
+              <div class="col-4">
+                <p class="mb-5 fs--1">Pegawai Yang Melaksanakan,</p>
+                <p class="fw-bold text-decoration-underline mb-0" id="spl_ttd_pegawai">-</p>
+                <small class="text-muted" id="spl_ttd_nip_pegawai">NIP. -</small>
+              </div>
+              <div class="col-4">
+                <p class="mb-5 fs--1">Mengetahui Atasan Langsung,</p>
+                <p class="fw-bold text-decoration-underline mb-0" id="spl_ttd_atasan">-</p>
+                <small class="text-muted">Kepala Unit / Ruangan</small>
+              </div>
+              <div class="col-4">
+                <p class="mb-5 fs--1">Menyetujui,</p>
+                <p class="fw-bold text-decoration-underline mb-0">Bagian HRD / SDM</p>
+                <small class="text-muted">RSUD</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer bg-light py-2 px-3 border-top no-print d-flex justify-content-between">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">
+            <i class="fas fa-times me-1"></i> Tutup
+          </button>
+          <button type="button" class="btn btn-sm btn-primary" id="btn-print-spl">
+            <i class="fas fa-print me-1"></i> Cetak Dokumen SPL
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+  import { loadSession, getCurrentUser } from './assets/js/core/helpers.js';
+
+  const apiUrl = (typeof config !== 'undefined' && config.api_url)
+    ? config.api_url
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  let currentUserData = {};
+  let listLemburPegawai = [];
+  let modalSplInstance = null;
+
+  // Utility Debounce
+  function debounce(func, delay = 300) {
+    let timer;
+    return function (...args) {
+      clearTimeout(timer);
+      timer = setTimeout(() => func.apply(this, args), delay);
+    };
+  }
+
+  // Format Tanggal Indonesia
+  function formatTanggalIndo(dateStr) {
+    if (!dateStr || dateStr === '0000-00-00') return '-';
+    try {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        const bln = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        return `${parseInt(parts[2], 10)} ${bln[parseInt(parts[1], 10) - 1]} ${parts[0]}`;
+      }
+      return dateStr;
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  // Helper Badge Status
+  function getBadgeStatus(row) {
+    const st = parseInt(row.status ?? 0, 10);
+    const pr = parseInt(row.progress_approval ?? 0, 10);
+
+    if (st === 2) {
+      return '<span class="badge badge-status-ditolak px-2 py-1"><i class="fas fa-times-circle me-1"></i>Ditolak</span>';
+    } else if (st === 1 || pr >= 2) {
+      return '<span class="badge badge-status-disetujui px-2 py-1"><i class="fas fa-check-double me-1"></i>Disetujui HRD</span>';
+    } else if (pr === 1) {
+      return '<span class="badge badge-status-atasan px-2 py-1"><i class="fas fa-user-check me-1"></i>Disetujui Atasan</span>';
+    } else {
+      return '<span class="badge badge-status-menunggu px-2 py-1"><i class="fas fa-clock me-1"></i>Menunggu</span>';
+    }
+  }
+
+  // Auto-hitung durasi dari jam mulai & jam selesai
+  function autoCalculateDuration() {
+    const startVal = document.getElementById('lembur_jam_mulai').value;
+    const endVal = document.getElementById('lembur_jam_selesai').value;
+    if (!startVal || !endVal) return;
+
+    const [h1, m1] = startVal.split(':').map(Number);
+    const [h2, m2] = endVal.split(':').map(Number);
+    let diffMinutes = (h2 * 60 + m2) - (h1 * 60 + m1);
+    if (diffMinutes < 0) diffMinutes += 24 * 60; // Cross midnight
+    const durHours = (diffMinutes / 60).toFixed(1);
+    const elDur = document.getElementById('lembur_durasi');
+    if (elDur) {
+      elDur.value = parseFloat(durHours) > 0 ? parseFloat(durHours) : 1;
+    }
+  }
+
+  // Auto-hitung jam selesai jika durasi diubah
+  function autoAdjustEndTime() {
+    const dur = parseFloat(document.getElementById('lembur_durasi').value) || 0;
+    const startVal = document.getElementById('lembur_jam_mulai').value || '17:00';
+    if (dur <= 0) return;
+
+    const [h1, m1] = startVal.split(':').map(Number);
+    const totalMinutes = Math.round(h1 * 60 + m1 + dur * 60);
+    const endH = Math.floor((totalMinutes / 60) % 24);
+    const endM = Math.floor(totalMinutes % 60);
+    const formattedEnd = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+    const elEnd = document.getElementById('lembur_jam_selesai');
+    if (elEnd) {
+      elEnd.value = formattedEnd;
+    }
+  }
+
+  // Inisialisasi Data Pengguna Dinamis dari Sesi (Tanpa Hardcode)
+  async function initUserData() {
+    let sessionApp = {};
+    try {
+      if (typeof loadSession === 'function') {
+        sessionApp = loadSession({ id: 'app' }) || {};
+      }
+    } catch (e) {
+      sessionApp = {};
+    }
+
+    const curr = (typeof getCurrentUser === 'function') ? (getCurrentUser() || {}) : {};
+
+    // Dapatkan data login aktif pengguna murni dari sesi runtime
+    currentUserData = {
+      nama: curr.nama_user || curr.username || curr.nama || sessionApp.nama_user || sessionApp.username || sessionApp.nama || 'administrator',
+      nip: curr.nip || curr.kd_paramedis || curr.kd_user || sessionApp.nip || sessionApp.kd_paramedis || sessionApp.kd_user || '',
+      bagian: curr.nama_unit || curr.tag_unit || curr.bagian || sessionApp.nama_unit || sessionApp.tag_unit || sessionApp.bagian || ''
+    };
+
+    const elNama = document.getElementById('lembur_nama');
+    const elNip = document.getElementById('lembur_nip');
+    const elBagian = document.getElementById('lembur_bagian');
+
+    if (elNama) elNama.value = currentUserData.nama;
+    if (elNip) elNip.value = currentUserData.nip;
+    if (elBagian) elBagian.value = currentUserData.bagian || 'Unit Operasional';
+
+    // Set default tanggal hari ini
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const elTgl = document.getElementById('lembur_tanggal');
+    if (elTgl && !elTgl.value) {
+      elTgl.value = `${yyyy}-${mm}-${dd}`;
+    }
+
+    // Jika ada NIP, sinkronkan detail bagian dari server jika belum lengkap
+    if (currentUserData.nip) {
+      try {
+        const res = await httpGet(`${apiUrl}/pegawai/cuti/sisa?nip=${encodeURIComponent(currentUserData.nip)}`);
+        if (res && res.code === 200 && res.data) {
+          if (res.data.bagian) {
+            currentUserData.bagian = res.data.bagian;
+            if (elBagian) elBagian.value = res.data.bagian;
+          }
+          if (res.data.nama && currentUserData.nama === 'administrator') {
+            currentUserData.nama = res.data.nama;
+            if (elNama) elNama.value = res.data.nama;
+          }
+        }
+      } catch (e) {
+        // Abaikan jika tidak ada koneksi profil
+      }
+    }
+  }
+
+  // Load Jenis Hari dari Endpoint API ket-hari
+  async function loadKetHariDropdown() {
+    const sel = document.getElementById('lembur_ket_hari');
+    if (!sel) return;
+
+    try {
+      const res = await httpGet(`${apiUrl}/pegawai/lembur/ket-hari`);
+      if (res && res.code === 200 && Array.isArray(res.data)) {
+        sel.innerHTML = '<option value="" selected disabled>Pilih Jenis Hari</option>';
+        res.data.forEach(item => {
+          const opt = document.createElement('option');
+          opt.value = item.kd_kethari;
+          opt.textContent = item.kethari;
+          sel.appendChild(opt);
+        });
+      } else {
+        // Fallback default
+        sel.innerHTML = `
+          <option value="" selected disabled>Pilih Jenis Hari</option>
+          <option value="1">Hari Kerja</option>
+          <option value="2">Hari Libur</option>
+          <option value="3">Hari Raya</option>
+        `;
+      }
+    } catch (e) {
+      sel.innerHTML = `
+        <option value="" selected disabled>Pilih Jenis Hari</option>
+        <option value="1">Hari Kerja</option>
+        <option value="2">Hari Libur</option>
+        <option value="3">Hari Raya</option>
+      `;
+    }
+  }
+
+  // Render Tabel Riwayat Lembur (Daftar Approval Lembur)
+  function renderTableLembur(dataList) {
+    const tbody = document.getElementById('tbody-riwayat-lembur');
+    const footerSummary = document.getElementById('footer-summary-lembur');
+    if (!tbody) return;
+
+    if (!Array.isArray(dataList) || dataList.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="12" class="text-center py-4 text-muted">
+            <i class="fas fa-inbox fa-2x mb-2 d-block text-300"></i>
+            Belum ada riwayat pengajuan lembur yang ditemukan.
+          </td>
+        </tr>
+      `;
+      if (footerSummary) footerSummary.textContent = 'Menampilkan 0 data lembur';
+      return;
+    }
+
+    let html = '';
+    dataList.forEach((row, index) => {
+      const nip = row.NIP_PEGAWAI || row.id_pegawai || '-';
+      const nama = row.NAMA_PEGAWAI || row.nama || '-';
+      const bagian = row.BAGIAN_PEGAWAI || '-';
+      const tgl = row.tanggal_lembur || '-';
+      const jamMulaiPengajuan = row.JAM_MULAI_PENGAJUAN || row.jam_mulai || '-';
+      const jamSelesaiPengajuan = row.JAM_SELESAI_PENGAJUAN || row.jam_selesai || '-';
+      const jamMulaiRealisasi = row.JAM_MULAI_REALISASI || row.jam_mulai || '-';
+      const jamSelesaiRealisasi = row.JAM_SELESAI_REALISASI || row.jam_pulang || row.jam_selesai || '-';
+      const waktu = row.DURASI || (row.DURASI_JAM ? row.DURASI_JAM + ' Jam' : '-');
+      const ket = row.keterangan || '-';
+      const statusBadge = getBadgeStatus(row);
+
+      html += `
+        <tr>
+          <td class="text-center fw-semi-bold text-muted">${index + 1}</td>
+          <td class="fw-bold text-primary">${nip}</td>
+          <td class="fw-bold text-dark">${nama}</td>
+          <td>${bagian}</td>
+          <td class="text-nowrap">${tgl}</td>
+          <td class="text-center text-nowrap">${jamMulaiPengajuan}</td>
+          <td class="text-center text-nowrap">${jamSelesaiPengajuan}</td>
+          <td class="text-center text-nowrap">${jamMulaiRealisasi}</td>
+          <td class="text-center text-nowrap">${jamSelesaiRealisasi}</td>
+          <td class="text-center text-nowrap fw-bold">${waktu}</td>
+          <td class="text-break">${ket}</td>
+          <td class="text-center">${statusBadge}</td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    if (footerSummary) footerSummary.textContent = `Menampilkan ${dataList.length} data lembur`;
+  }
+
+  // Load Data Riwayat Lembur dari API
+  async function loadDataLembur(searchVal = '') {
+    const tbody = document.getElementById('tbody-riwayat-lembur');
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="12" class="text-center py-4 text-muted">
+            <div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div> Memuat data...
+          </td>
+        </tr>
+      `;
+    }
+
+    try {
+      let queryParams = [];
+      if (searchVal && searchVal.trim() !== '') {
+        queryParams.push(`search=${encodeURIComponent(searchVal.trim())}`);
+      } else if (currentUserData.nip) {
+        // Jika tidak mencari global, tampilkan riwayat user sendiri
+        queryParams.push(`nip=${encodeURIComponent(currentUserData.nip)}`);
+      }
+
+      const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
+      const res = await httpGet(`${apiUrl}/pegawai/lembur${queryString}`);
+
+      if (res && res.code === 200 && Array.isArray(res.data)) {
+        listLemburPegawai = res.data;
+      } else {
+        listLemburPegawai = [];
+      }
+      renderTableLembur(listLemburPegawai);
+    } catch (err) {
+      console.error('Error loadDataLembur:', err);
+      if (tbody) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="12" class="text-center py-4 text-danger">
+              <i class="fas fa-exclamation-triangle fa-2x mb-2 d-block text-danger"></i>
+              Gagal memuat data lembur: ${escapeHtml(err.message || 'Terjadi kesalahan sistem')}
+            </td>
+          </tr>
+        `;
+      }
+    }
+  }
+
+  // Tampilkan Modal SPL
+  function showSplModal(item) {
+    document.getElementById('spl_no_surat').textContent = `Nomor: SPL/HRD/${(item.tanggal_lembur || '2026-01-01').substring(0, 4)}/${String(item.id_lembur).padStart(4, '0')}`;
+    document.getElementById('spl_nip').textContent = item.NIP_PEGAWAI || item.id_pegawai || '-';
+    document.getElementById('spl_nama').textContent = item.NAMA_PEGAWAI || item.nama || '-';
+    document.getElementById('spl_bagian').textContent = item.BAGIAN_PEGAWAI || '-';
+    document.getElementById('spl_tanggal').textContent = formatTanggalIndo(item.tanggal_lembur);
+    document.getElementById('spl_ket_hari').textContent = item.KET_HARI || '-';
+    document.getElementById('spl_jam').textContent = `${item.jam_mulai || '-'} s/d ${item.jam_selesai || '-'}`;
+    document.getElementById('spl_durasi').textContent = item.DURASI || `${item.durasi || 2} Jam`;
+    document.getElementById('spl_keterangan').textContent = item.keterangan || '-';
+    document.getElementById('spl_status').innerHTML = getBadgeStatus(item);
+
+    document.getElementById('spl_ttd_pegawai').textContent = item.NAMA_PEGAWAI || item.nama || '-';
+    document.getElementById('spl_ttd_nip_pegawai').textContent = `NIP. ${item.NIP_PEGAWAI || item.id_pegawai || '-'}`;
+    document.getElementById('spl_ttd_atasan').textContent = (item.NAMA_ATASAN_PEGAWAI && item.NAMA_ATASAN_PEGAWAI !== '-') ? item.NAMA_ATASAN_PEGAWAI : 'Atasan Langsung';
+
+    const modalEl = document.getElementById('modal-preview-spl');
+    if (!modalSplInstance) {
+      modalSplInstance = new bootstrap.Modal(modalEl);
+    }
+    modalSplInstance.show();
+  }
+
+  // Handle Delete Lembur
+  async function handleDeleteLembur(idLembur) {
+    if (typeof Swal !== 'undefined') {
+      const confirm = await Swal.fire({
+        title: 'Batalkan Pengajuan Lembur?',
+        text: 'Data lembur yang dibatalkan tidak dapat dikembalikan.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Ya, Batalkan',
+        cancelButtonText: 'Batal'
+      });
+      if (!confirm.isConfirmed) return;
+    } else {
+      if (!window.confirm('Yakin ingin membatalkan pengajuan lembur ini?')) return;
+    }
+
+    try {
+      const res = await httpPost(`${apiUrl}/pegawai/lembur/delete`, { id_lembur: idLembur });
+      if (res && res.code === 200) {
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            title: 'Berhasil',
+            text: res.message || 'Pengajuan lembur berhasil dibatalkan',
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false
+          });
+        }
+        loadDataLembur(document.getElementById('lembur_cari').value);
+      } else {
+        alert(res.message || 'Gagal menghapus lembur');
+      }
+    } catch (e) {
+      alert('Terjadi kesalahan saat menghubungi server');
+    }
+  }
+
+  // Submit Pengajuan Lembur
+  async function handleFormSubmit(e) {
+    e.preventDefault();
+
+    const nip = document.getElementById('lembur_nip').value || currentUserData.nip;
+    const nama = document.getElementById('lembur_nama').value || currentUserData.nama;
+    const bagian = document.getElementById('lembur_bagian').value || currentUserData.bagian;
+    const tanggal = document.getElementById('lembur_tanggal').value;
+    const ketHari = document.getElementById('lembur_ket_hari').value;
+    const durasi = document.getElementById('lembur_durasi').value;
+    const jamMulai = document.getElementById('lembur_jam_mulai').value;
+    const jamSelesai = document.getElementById('lembur_jam_selesai').value;
+    const keterangan = document.getElementById('lembur_keterangan').value;
+
+    if (!tanggal) {
+      alert('Silakan pilih Tanggal Lembur');
+      return;
+    }
+    if (!ketHari) {
+      alert('Silakan pilih Ket. Hari (Jenis Hari)');
+      return;
+    }
+    if (!durasi || parseFloat(durasi) <= 0) {
+      alert('Silakan masukkan Durasi lembur yang valid');
+      return;
+    }
+    if (!keterangan || keterangan.trim() === '') {
+      alert('Silakan masukkan Keterangan lembur');
+      return;
+    }
+
+    const payload = {
+      id_lembur: document.getElementById('lembur_id').value || null,
+      nip: nip,
+      nama: nama,
+      kd_bagian: currentUserData.kd_bagian || 0,
+      tanggal: tanggal,
+      ket_hari: ketHari,
+      durasi: durasi,
+      jam_mulai: jamMulai ? `${jamMulai}:00` : '17:00:00',
+      jam_selesai: jamSelesai ? `${jamSelesai}:00` : '19:00:00',
+      keterangan: keterangan
+    };
+
+    const btnSubmit = document.getElementById('btn-submit-lembur');
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
+
+    try {
+      const res = await httpPost(`${apiUrl}/pegawai/lembur/save`, payload);
+      if (res && res.code === 200) {
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            title: 'Berhasil Diajukan!',
+            text: res.message || 'Pengajuan lembur berhasil dikirim ke atasan',
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false
+          });
+        } else {
+          alert('Pengajuan lembur berhasil disimpan');
+        }
+
+        // Reset form input
+        document.getElementById('lembur_id').value = '';
+        document.getElementById('lembur_keterangan').value = '';
+        document.getElementById('lembur_durasi').value = '2';
+        document.getElementById('lembur_jam_mulai').value = '17:00';
+        document.getElementById('lembur_jam_selesai').value = '19:00';
+        document.getElementById('lembur_ket_hari').selectedIndex = 0;
+
+        // Reload data tabel
+        loadDataLembur(document.getElementById('lembur_cari').value);
+      } else {
+        alert(res.message || 'Gagal menyimpan pengajuan lembur');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Terjadi kesalahan koneksi saat menyimpan pengajuan');
+    } finally {
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Kirim Pengajuan';
+    }
+  }
+
+  // Lifecycle Boot
+  async function initLemburModule() {
+    await initUserData();
+    await loadKetHariDropdown();
+    await loadDataLembur();
+
+    // Event Listener Form
+    const formEl = document.getElementById('form-pengajuan-lembur');
+    if (formEl) formEl.addEventListener('submit', handleFormSubmit);
+
+    // Event Reset Form
+    const btnReset = document.getElementById('btn-reset-lembur');
+    if (btnReset) {
+      btnReset.addEventListener('click', () => {
+        document.getElementById('lembur_id').value = '';
+        document.getElementById('lembur_keterangan').value = '';
+        document.getElementById('lembur_durasi').value = '2';
+        document.getElementById('lembur_jam_mulai').value = '17:00';
+        document.getElementById('lembur_jam_selesai').value = '19:00';
+        document.getElementById('lembur_ket_hari').selectedIndex = 0;
+      });
+    }
+
+    // Auto update jam selesai & durasi
+    const durasiEl = document.getElementById('lembur_durasi');
+    if (durasiEl) durasiEl.addEventListener('input', autoAdjustEndTime);
+    const jamMulaiEl = document.getElementById('lembur_jam_mulai');
+    if (jamMulaiEl) jamMulaiEl.addEventListener('change', autoCalculateDuration);
+    const jamSelesaiEl = document.getElementById('lembur_jam_selesai');
+    if (jamSelesaiEl) jamSelesaiEl.addEventListener('change', autoCalculateDuration);
+
+    // Event Debounce Search Cari
+    const searchInput = document.getElementById('lembur_cari');
+    if (searchInput) {
+      searchInput.addEventListener('input', debounce((e) => {
+        loadDataLembur(e.target.value);
+      }, 350));
+    }
+
+    // Tombol Cetak Dokumen SPL
+    const btnPrint = document.getElementById('btn-print-spl');
+    if (btnPrint) {
+      btnPrint.addEventListener('click', () => {
+        window.print();
+      });
+    }
+  }
+
+  initLemburModule();
+</script>

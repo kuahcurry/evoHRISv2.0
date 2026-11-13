@@ -1,0 +1,423 @@
+<style>
+  .evo-ijin-card {
+    border-radius: 0.65rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    background: #fff;
+    border: 1px solid #edf2f9;
+  }
+  .badge-status-menunggu {
+    background-color: #fff3cd;
+    color: #997404;
+    border: 1px solid #ffe69c;
+  }
+  .badge-status-disetujui {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    border: 1px solid #badbcc;
+  }
+  .badge-status-hrd {
+    background-color: #cfe2ff;
+    color: #084298;
+    border: 1px solid #b6d4fe;
+  }
+  .badge-status-ditolak {
+    background-color: #f8d7da;
+    color: #842029;
+    border: 1px solid #f5c2c7;
+  }
+  .table-approval-ijin th {
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 700;
+    color: #5e6e82;
+    background-color: #f9fafd;
+    vertical-align: middle;
+    white-space: nowrap;
+    border-bottom: 2px solid #edf2f9;
+    padding: 0.6rem 0.5rem;
+  }
+  .table-approval-ijin td {
+    font-size: 0.82rem;
+    vertical-align: middle;
+    padding: 0.55rem 0.5rem;
+  }
+</style>
+
+<template>
+  <div class="container-fluid py-3" id="page-approval-ijin-container">
+    <!-- Breadcrumb & Header Title -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <div>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-1 fs--2">
+            <li class="breadcrumb-item"><a href="#" class="text-decoration-none">E-Absensi</a></li>
+            <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Ijin</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Approval Ijin</li>
+          </ol>
+        </nav>
+        <h4 class="mb-0 text-primary fw-bold">
+          <i class="fas fa-clipboard-check me-2"></i>Approval Permohonan Ijin
+        </h4>
+      </div>
+      <div>
+        <span class="badge bg-soft-info text-info px-3 py-2 fs--1 rounded-pill">
+          <i class="fas fa-user-shield me-1"></i> Verifikasi & Persetujuan
+        </span>
+      </div>
+    </div>
+
+    <!-- TAB FILTER & PENCARIAN -->
+    <div class="card evo-ijin-card mb-4">
+      <div class="card-header bg-white py-3 px-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <ul class="nav nav-pills" id="pills-approval-ijin-tab" role="tablist">
+          <li class="nav-item">
+            <button class="nav-link active btn-sm py-1 px-3" data-status="all" type="button">
+              Semua <span class="badge bg-secondary ms-1" id="count-all">0</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link btn-sm py-1 px-3" data-status="0" type="button">
+              Menunggu <span class="badge bg-warning text-dark ms-1" id="count-pending">0</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link btn-sm py-1 px-3" data-status="1" type="button">
+              Disetujui <span class="badge bg-success ms-1" id="count-approved">0</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link btn-sm py-1 px-3" data-status="2" type="button">
+              Ditolak <span class="badge bg-danger ms-1" id="count-rejected">0</span>
+            </button>
+          </li>
+        </ul>
+
+        <!-- Search Bar dengan Debounce NIP dan Nama -->
+        <div class="d-flex align-items-center gap-2">
+          <div class="input-group input-group-sm" style="min-width: 280px; max-width: 360px;">
+            <span class="input-group-text bg-light border-end-0">
+              <i class="fas fa-search text-400"></i>
+            </span>
+            <input type="text" id="input_search_approval_ijin" class="form-control border-start-0" placeholder="Cari NIP / Nama...">
+            <button type="button" id="btn_search_approval_ijin" class="btn btn-falcon-primary btn-sm">
+              Cari
+            </button>
+          </div>
+          <button type="button" id="btn-refresh-approval-ijin" class="btn btn-falcon-default btn-sm" title="Segarkan Data">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover table-striped table-approval-ijin mb-0">
+            <thead>
+              <tr>
+                <th class="text-center" style="width: 35px;">#</th>
+                <th style="min-width: 90px;">NIP</th>
+                <th style="min-width: 140px;">Nama</th>
+                <th style="min-width: 130px;">Jenis Ijin</th>
+                <th style="min-width: 90px;">Tgl Mulai</th>
+                <th style="min-width: 90px;">Tgl Sampai</th>
+                <th class="text-center" style="min-width: 70px;">Lama</th>
+                <th style="min-width: 110px;">Bagian/Unit</th>
+                <th style="min-width: 150px;">Keperluan</th>
+                <th class="text-center" style="min-width: 90px;">Status</th>
+                <th class="text-center" style="min-width: 140px;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-approval-ijin">
+              <tr>
+                <td colspan="11" class="text-center py-4 text-muted">
+                  <span class="spinner-border spinner-border-sm me-2"></span>Memuat data permohonan ijin...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card-footer bg-light py-2 px-3 border-top d-flex justify-content-between align-items-center">
+        <span class="fs--2 text-muted" id="footer-summary-approval">Menampilkan daftar approval ijin</span>
+        <span class="fs--2 text-muted">Verifikasi kehadiran dan surat permohonan dinas</span>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+
+  const apiUrl = (typeof config !== 'undefined' && config.api_url)
+    ? config.api_url
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  let currentTabStatus = 'all';
+  let rawIjinList = [];
+
+  function debounce(func, delay = 350) {
+    let timer;
+    return function (...args) {
+      clearTimeout(timer);
+      timer = setTimeout(() => func.apply(this, args), delay);
+    };
+  }
+
+  function renderStatusBadge(status, statusBatal) {
+    if (statusBatal == 1 || status == 3 || String(status).toLowerCase() === 'ditolak') {
+      return `<span class="badge badge-status-ditolak"><i class="fas fa-times-circle me-1"></i>Ditolak</span>`;
+    }
+    const s = parseInt(status);
+    switch (s) {
+      case 1:
+        return `<span class="badge badge-status-disetujui"><i class="fas fa-check-circle me-1"></i>Disetujui</span>`;
+      case 2:
+        return `<span class="badge badge-status-hrd"><i class="fas fa-check-double me-1"></i>Disetujui HRD</span>`;
+      case 0:
+      default:
+        return `<span class="badge badge-status-menunggu"><i class="fas fa-clock me-1"></i>Menunggu</span>`;
+    }
+  }
+
+  async function loadApprovalIjinData(searchKeyword = '') {
+    const tbody = document.getElementById('tbody-approval-ijin');
+    if (!tbody) return;
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="11" class="text-center py-4 text-muted">
+          <span class="spinner-border spinner-border-sm me-2"></span>Memuat data permohonan ijin...
+        </td>
+      </tr>
+    `;
+
+    try {
+      let url = `${apiUrl}/pegawai/ijin`;
+      if (searchKeyword && searchKeyword.trim() !== '') {
+        url += `?search=${encodeURIComponent(searchKeyword.trim())}`;
+      }
+
+      const res = await httpGet(url);
+      let list = [];
+      if (res && res.code === 200 && Array.isArray(res.data)) {
+        list = res.data;
+      }
+      rawIjinList = list;
+
+      // Hitung counter status
+      let cAll = list.length;
+      let cPending = 0;
+      let cApproved = 0;
+      let cRejected = 0;
+
+      list.forEach(item => {
+        const st = parseInt(item.STATUS || 0);
+        if (item.STATUS_BATAL == 1 || st === 3) {
+          cRejected++;
+        } else if (st === 1 || st === 2) {
+          cApproved++;
+        } else {
+          cPending++;
+        }
+      });
+
+      const elAll = document.getElementById('count-all');
+      const elPen = document.getElementById('count-pending');
+      const elApp = document.getElementById('count-approved');
+      const elRej = document.getElementById('count-rejected');
+      if (elAll) elAll.textContent = cAll;
+      if (elPen) elPen.textContent = cPending;
+      if (elApp) elApp.textContent = cApproved;
+      if (elRej) elRej.textContent = cRejected;
+
+      // Filter berdasarkan current tab
+      let filtered = list;
+      if (currentTabStatus === '0') {
+        filtered = list.filter(x => parseInt(x.STATUS || 0) === 0 && x.STATUS_BATAL != 1);
+      } else if (currentTabStatus === '1') {
+        filtered = list.filter(x => (parseInt(x.STATUS || 0) === 1 || parseInt(x.STATUS || 0) === 2) && x.STATUS_BATAL != 1);
+      } else if (currentTabStatus === '2') {
+        filtered = list.filter(x => x.STATUS_BATAL == 1 || parseInt(x.STATUS || 0) === 3);
+      }
+
+      const footerSummary = document.getElementById('footer-summary-approval');
+      if (footerSummary) footerSummary.textContent = `Menampilkan ${filtered.length} dari total ${list.length} permohonan ijin`;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="11" class="text-center py-4 text-muted">
+              <i class="fas fa-check-circle fa-2x mb-2 d-block text-success"></i>
+              Tidak ada data permohonan ijin pada kategori ini.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      let html = '';
+      filtered.forEach((item, index) => {
+        const nip = item.NIP || '-';
+        const nama = item.NAMA_PEGAWAI || item.NAMA || '-';
+        const jenis = item.JENIS_CUTI || '-';
+        const tglMulai = item.TANGGAL_MULAI || '-';
+        const tglSampai = (item.TANGGAL_SAMPAI && item.TANGGAL_SAMPAI !== '0000-00-00') ? item.TANGGAL_SAMPAI : tglMulai;
+        const lama = item.LAMA || '1 Hari';
+        const unit = item.BAGIAN || '-';
+        const keperluan = item.KEPERLUAN || '-';
+        const statusBadge = renderStatusBadge(item.STATUS, item.STATUS_BATAL);
+        const st = parseInt(item.STATUS || 0);
+
+        let aksiBtn = '';
+        if (st === 0 && item.STATUS_BATAL != 1) {
+          aksiBtn = `
+            <button type="button" class="btn btn-falcon-success btn-xs btn-setujui-ijin me-1" data-id="${item.KD_CUTI}" title="Setujui Ijin">
+              <i class="fas fa-check me-1"></i>Setujui
+            </button>
+            <button type="button" class="btn btn-falcon-danger btn-xs btn-tolak-ijin" data-id="${item.KD_CUTI}" title="Tolak Ijin">
+              <i class="fas fa-times me-1"></i>Tolak
+            </button>
+          `;
+        } else {
+          aksiBtn = `
+            <button type="button" class="btn btn-falcon-secondary btn-xs btn-reset-status-ijin" data-id="${item.KD_CUTI}" title="Reset Status">
+              <i class="fas fa-undo me-1"></i>Reset
+            </button>
+          `;
+        }
+
+        html += `
+          <tr data-id="${item.KD_CUTI}">
+            <td class="text-center text-muted fw-bold">${index + 1}</td>
+            <td class="fw-semi-bold">${nip}</td>
+            <td class="fw-bold text-dark">${nama}</td>
+            <td><span class="badge bg-soft-primary text-primary fs--2">${jenis}</span></td>
+            <td>${tglMulai}</td>
+            <td>${tglSampai}</td>
+            <td class="text-center"><span class="badge bg-soft-info text-info fs--2">${lama}</span></td>
+            <td>${unit}</td>
+            <td><span class="text-truncate d-inline-block" style="max-width: 180px;" title="${keperluan}">${keperluan}</span></td>
+            <td class="text-center">${statusBadge}</td>
+            <td class="text-center">${aksiBtn}</td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = html;
+      bindApprovalActions();
+    } catch (err) {
+      console.error('Error load approval ijin:', err);
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="11" class="text-center py-4 text-danger">
+            <i class="fas fa-exclamation-triangle me-1"></i> Terjadi kesalahan saat memuat data approval ijin.
+          </td>
+        </tr>
+      `;
+    }
+  }
+
+  async function updateApprovalStatus(kdCuti, newStatus) {
+    let actionLabel = newStatus === 1 ? 'menyetujui' : (newStatus === 2 ? 'menolak' : 'mereset');
+    if (!confirm(`Apakah Anda yakin ingin ${actionLabel} permohonan ijin #${kdCuti}?`)) {
+      return;
+    }
+
+    try {
+      const res = await httpPost(`${apiUrl}/pegawai/cuti/action_hrd`, {
+        kd_cuti: kdCuti,
+        status: newStatus,
+        catatan_hrd: `Diproses melalui modul Approval Ijin pada ${new Date().toLocaleString()}`
+      });
+
+      if (res && (res.code === 200 || res.status === 200 || res.status === true)) {
+        alert(res.message || 'Status permohonan ijin berhasil diperbarui.');
+        loadApprovalIjinData(document.getElementById('input_search_approval_ijin').value);
+      } else {
+        alert(res.message || 'Gagal memperbarui status permohonan ijin.');
+      }
+    } catch (err) {
+      console.error('Error saat update approval ijin:', err);
+      alert('Terjadi kesalahan saat memproses status approval.');
+    }
+  }
+
+  function bindApprovalActions() {
+    document.querySelectorAll('.btn-setujui-ijin').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const id = this.getAttribute('data-id');
+        updateApprovalStatus(id, 1);
+      });
+    });
+
+    document.querySelectorAll('.btn-tolak-ijin').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const id = this.getAttribute('data-id');
+        updateApprovalStatus(id, 2);
+      });
+    });
+
+    document.querySelectorAll('.btn-reset-status-ijin').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const id = this.getAttribute('data-id');
+        updateApprovalStatus(id, 0);
+      });
+    });
+  }
+
+  function initTabsAndSearch() {
+    // Tabs Event
+    document.querySelectorAll('#pills-approval-ijin-tab button').forEach(tabBtn => {
+      tabBtn.addEventListener('click', function () {
+        document.querySelectorAll('#pills-approval-ijin-tab button').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        currentTabStatus = this.getAttribute('data-status');
+        loadApprovalIjinData(document.getElementById('input_search_approval_ijin').value);
+      });
+    });
+
+    // Refresh Button
+    const btnRefresh = document.getElementById('btn-refresh-approval-ijin');
+    if (btnRefresh) {
+      btnRefresh.addEventListener('click', () => {
+        loadApprovalIjinData(document.getElementById('input_search_approval_ijin').value);
+      });
+    }
+
+    // Debounce Search NIP & Nama
+    const inputSearch = document.getElementById('input_search_approval_ijin');
+    if (inputSearch) {
+      const debouncedSearch = debounce((val) => {
+        loadApprovalIjinData(val);
+      }, 350);
+
+      inputSearch.addEventListener('input', function () {
+        debouncedSearch(this.value);
+      });
+
+      inputSearch.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          loadApprovalIjinData(this.value);
+        }
+      });
+    }
+
+    // Tombol Cari
+    const btnSearch = document.getElementById('btn_search_approval_ijin');
+    if (btnSearch) {
+      btnSearch.addEventListener('click', () => {
+        loadApprovalIjinData(document.getElementById('input_search_approval_ijin').value);
+      });
+    }
+  }
+
+  function initModule() {
+    initTabsAndSearch();
+    loadApprovalIjinData();
+  }
+
+  initModule();
+</script>

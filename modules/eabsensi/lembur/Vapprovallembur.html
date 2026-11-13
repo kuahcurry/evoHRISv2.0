@@ -1,0 +1,618 @@
+<style>
+  .evo-lembur-card {
+    border-radius: 0.65rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    background: #fff;
+    border: 1px solid #edf2f9;
+  }
+  .table-approval th {
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 700;
+    color: #5e6e82;
+    background-color: #f9fafd;
+    vertical-align: middle;
+    white-space: nowrap;
+    border-bottom: 2px solid #edf2f9;
+    padding: 0.65rem 0.6rem;
+  }
+  .table-approval td {
+    font-size: 0.82rem;
+    vertical-align: middle;
+    padding: 0.6rem 0.6rem;
+  }
+  .stat-card-lembur {
+    border-radius: 0.5rem;
+    border: 1px solid #edf2f9;
+    padding: 0.75rem 1rem;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .stat-card-lembur:hover, .stat-card-lembur.active {
+    transform: translateY(-2px);
+    box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.08);
+    border-color: #2c7be5;
+  }
+  .stat-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+  }
+</style>
+
+<template>
+  <div class="container-fluid py-3" id="page-approval-lembur-container">
+    <!-- Breadcrumb & Title -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <div>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-1 fs--2">
+            <li class="breadcrumb-item"><a href="#" class="text-decoration-none">E-Absensi</a></li>
+            <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Lembur</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Approval Lembur</li>
+          </ol>
+        </nav>
+        <h4 class="mb-0 text-primary fw-bold">
+          <i class="fas fa-user-check me-2"></i>Approval Lembur (Atasan Langsung)
+        </h4>
+      </div>
+      <div>
+        <span class="badge bg-soft-info text-info px-3 py-2 fs--1 rounded-pill">
+          <i class="fas fa-user-tie me-1"></i> Mode Kepala Unit / Atasan
+        </span>
+      </div>
+    </div>
+
+    <!-- STAT SUMMARY CARDS -->
+    <div class="row g-2 mb-3">
+      <div class="col-sm-6 col-lg-3">
+        <div class="stat-card-lembur active" data-filter-status="0">
+          <div class="stat-icon bg-soft-warning text-warning">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div>
+            <div class="text-muted fs--2 text-uppercase fw-bold">Menunggu Atasan</div>
+            <div class="fs-1 fw-bolder text-800" id="stat-menunggu">0</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="stat-card-lembur" data-filter-status="1">
+          <div class="stat-icon bg-soft-info text-info">
+            <i class="fas fa-check"></i>
+          </div>
+          <div>
+            <div class="text-muted fs--2 text-uppercase fw-bold">Disetujui Atasan</div>
+            <div class="fs-1 fw-bolder text-800" id="stat-disetujui-atasan">0</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="stat-card-lembur" data-filter-status="3">
+          <div class="stat-icon bg-soft-danger text-danger">
+            <i class="fas fa-times-circle"></i>
+          </div>
+          <div>
+            <div class="text-muted fs--2 text-uppercase fw-bold">Ditolak Atasan</div>
+            <div class="fs-1 fw-bolder text-800" id="stat-ditolak-atasan">0</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="stat-card-lembur" data-filter-status="all">
+          <div class="stat-icon bg-soft-primary text-primary">
+            <i class="fas fa-list-alt"></i>
+          </div>
+          <div>
+            <div class="text-muted fs--2 text-uppercase fw-bold">Semua Pengajuan</div>
+            <div class="fs-1 fw-bolder text-800" id="stat-total">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILTER & DAFTAR TABEL APPROVAL -->
+    <div class="card evo-lembur-card">
+      <div class="card-header bg-light py-2 px-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <label class="form-label fs--1 mb-0 fw-bold text-muted">Status:</label>
+          <select id="filter-status-select" class="form-select form-select-sm" style="width: 190px;">
+            <option value="0" selected>Menunggu Atasan</option>
+            <option value="1">Disetujui Atasan</option>
+            <option value="3">Ditolak Atasan</option>
+            <option value="all">Semua Status</option>
+          </select>
+        </div>
+        <div class="d-flex align-items-center" style="max-width: 280px; width: 100%;">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-400"></i></span>
+            <input type="text" id="approval-lembur-cari" class="form-control border-start-0" placeholder="Cari..." autocomplete="off">
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-striped table-hover table-approval mb-0" id="table-approval-lembur">
+            <thead>
+              <tr>
+                <th class="text-center" style="width: 45px;">#</th>
+                <th style="width: 120px;">NIP</th>
+                <th style="min-width: 160px;">Nama</th>
+                <th style="min-width: 140px;">Bagian/Unit</th>
+                <th style="width: 120px;">Tgl. Lembur</th>
+                <th style="width: 110px;">Ket. Hari</th>
+                <th style="width: 80px;">Durasi</th>
+                <th style="min-width: 200px;">Keterangan</th>
+                <th class="text-center" style="width: 130px;">Status</th>
+                <th class="text-center" style="width: 110px;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-approval-lembur">
+              <tr>
+                <td colspan="10" class="text-center py-4 text-muted">
+                  <div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div> Memuat data approval lembur...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card-footer bg-light py-2 px-3 border-top d-flex justify-content-between align-items-center">
+        <span class="fs--2 text-muted" id="footer-approval-lembur">Menampilkan 0 data pengajuan</span>
+        <button type="button" class="btn btn-xs btn-outline-secondary" id="btn-refresh-approval">
+          <i class="fas fa-sync-alt me-1"></i> Segarkan Data
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL REVIEW & APPROVAL ATASAN -->
+  <div class="modal fade" id="modal-review-lembur" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+      <div class="modal-content shadow border-0">
+        <div class="modal-header bg-light py-2 px-3 border-bottom d-flex justify-content-between align-items-center">
+          <h6 class="modal-title fw-bold text-700">
+            <i class="fas fa-tasks text-primary me-2"></i>Verifikasi Lembur Pegawai
+          </h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-3">
+          <input type="hidden" id="modal-lembur-id">
+          <table class="table table-sm table-borderless fs--1 mb-3">
+            <tbody>
+              <tr>
+                <td class="text-muted" style="width: 130px;">NIP / Nama</td>
+                <td style="width: 10px;">:</td>
+                <td class="fw-bold" id="modal-lembur-nama">-</td>
+              </tr>
+              <tr>
+                <td class="text-muted">Bagian / Unit</td>
+                <td>:</td>
+                <td id="modal-lembur-bagian">-</td>
+              </tr>
+              <tr>
+                <td class="text-muted">Tanggal Lembur</td>
+                <td>:</td>
+                <td class="fw-bold text-primary" id="modal-lembur-tanggal">-</td>
+              </tr>
+              <tr>
+                <td class="text-muted">Jenis Hari</td>
+                <td>:</td>
+                <td id="modal-lembur-kethari">-</td>
+              </tr>
+              <tr>
+                <td class="text-muted">Jam & Durasi</td>
+                <td>:</td>
+                <td id="modal-lembur-durasi">-</td>
+              </tr>
+              <tr>
+                <td class="text-muted">Uraian / Ket</td>
+                <td>:</td>
+                <td class="fst-italic" id="modal-lembur-keterangan">-</td>
+              </tr>
+              <tr>
+                <td class="text-muted">Status Saat Ini</td>
+                <td>:</td>
+                <td id="modal-lembur-status">-</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="mb-2">
+            <label class="form-label fs--1 fw-bold text-700" for="modal-lembur-catatan">Catatan Atasan (Opsional)</label>
+            <textarea id="modal-lembur-catatan" class="form-control form-control-sm" rows="2" placeholder="Tuliskan catatan atau alasan verifikasi..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer bg-light py-2 px-3 border-top d-flex justify-content-between">
+          <button type="button" class="btn btn-sm btn-outline-danger" id="btn-modal-tolak">
+            <i class="fas fa-times me-1"></i> Tolak Lembur
+          </button>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="button" class="btn btn-sm btn-success fw-bold" id="btn-modal-setujui">
+              <i class="fas fa-check me-1"></i> Setujui Lembur
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+  import { loadSession, getCurrentUser } from './assets/js/core/helpers.js';
+
+  const apiUrl = (typeof config !== 'undefined' && config.api_url)
+    ? config.api_url
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  let currentAtasan = {};
+  let rawLemburList = [];
+  let modalReviewInstance = null;
+
+  function debounce(func, delay = 300) {
+    let timer;
+    return function (...args) {
+      clearTimeout(timer);
+      timer = setTimeout(() => func.apply(this, args), delay);
+    };
+  }
+
+  function initAtasanSession() {
+    let sessionApp = {};
+    try {
+      if (typeof loadSession === 'function') {
+        sessionApp = loadSession({ id: 'app' }) || {};
+      }
+    } catch (e) {
+      sessionApp = {};
+    }
+
+    const curr = (typeof getCurrentUser === 'function') ? (getCurrentUser() || {}) : {};
+    currentAtasan = {
+      nip: curr.nip || curr.kd_paramedis || curr.kd_user || sessionApp.nip || sessionApp.kd_paramedis || sessionApp.kd_user || '',
+      nama: curr.nama_user || curr.username || curr.nama || sessionApp.nama_user || sessionApp.username || sessionApp.nama || 'Atasan Langsung'
+    };
+  }
+
+  function getBadgeApproval(row) {
+    const st = parseInt(row.status ?? 0, 10);
+    const pr = parseInt(row.progress_approval ?? 0, 10);
+
+    if (st === 2 || st === 3) {
+      return '<span class="badge bg-soft-danger text-danger px-2 py-1"><i class="fas fa-times-circle me-1"></i>Ditolak</span>';
+    } else if (pr >= 1 || st === 1) {
+      return '<span class="badge bg-soft-info text-info px-2 py-1"><i class="fas fa-check me-1"></i>Disetujui Atasan</span>';
+    } else {
+      return '<span class="badge bg-soft-warning text-warning px-2 py-1"><i class="fas fa-clock me-1"></i>Menunggu Atasan</span>';
+    }
+  }
+
+  function updateStatCards(dataList) {
+    let countMenunggu = 0;
+    let countDisetujui = 0;
+    let countDitolak = 0;
+
+    dataList.forEach(item => {
+      const st = parseInt(item.status ?? 0, 10);
+      const pr = parseInt(item.progress_approval ?? 0, 10);
+      if (st === 2 || st === 3) {
+        countDitolak++;
+      } else if (pr >= 1 || st === 1) {
+        countDisetujui++;
+      } else {
+        countMenunggu++;
+      }
+    });
+
+    document.getElementById('stat-menunggu').textContent = countMenunggu;
+    document.getElementById('stat-disetujui-atasan').textContent = countDisetujui;
+    document.getElementById('stat-ditolak-atasan').textContent = countDitolak;
+    document.getElementById('stat-total').textContent = dataList.length;
+  }
+
+  function renderTable(dataList) {
+    const tbody = document.getElementById('tbody-approval-lembur');
+    const footer = document.getElementById('footer-approval-lembur');
+    if (!tbody) return;
+
+    if (!Array.isArray(dataList) || dataList.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="10" class="text-center py-4 text-muted">
+            <i class="fas fa-folder-open fa-2x mb-2 d-block text-300"></i>
+            Tidak ada pengajuan lembur yang sesuai filter.
+          </td>
+        </tr>
+      `;
+      if (footer) footer.textContent = 'Menampilkan 0 data pengajuan';
+      return;
+    }
+
+    let html = '';
+    dataList.forEach((row, idx) => {
+      const nip = row.NIP_PEGAWAI || row.id_pegawai || '-';
+      const nama = row.NAMA_PEGAWAI || row.nama || '-';
+      const bagian = row.BAGIAN_PEGAWAI || '-';
+      const tgl = row.tanggal_lembur || '-';
+      const ketHari = row.KET_HARI || '-';
+      const durasi = row.DURASI || `${row.durasi || 2} Jam`;
+      const ket = row.keterangan || '-';
+      const badge = getBadgeApproval(row);
+      const pr = parseInt(row.progress_approval ?? 0, 10);
+      const st = parseInt(row.status ?? 0, 10);
+      const isPending = pr === 0 && st === 0;
+
+      html += `
+        <tr>
+          <td class="text-center fw-semi-bold">${idx + 1}</td>
+          <td class="fw-bold text-primary">${nip}</td>
+          <td>${nama}</td>
+          <td>${bagian}</td>
+          <td class="text-nowrap">${tgl}</td>
+          <td><span class="badge bg-soft-secondary text-secondary">${ketHari}</span></td>
+          <td class="fw-bold">${durasi}</td>
+          <td>${ket}</td>
+          <td class="text-center">${badge}</td>
+          <td class="text-center">
+            ${isPending ? `
+              <button type="button" class="btn btn-primary btn-xs btn-proses-approval" data-id="${row.id_lembur}">
+                <i class="fas fa-edit me-1"></i> Proses
+              </button>
+            ` : `
+              <button type="button" class="btn btn-falcon-default btn-xs btn-detail-approval" data-id="${row.id_lembur}">
+                <i class="fas fa-eye me-1"></i> Detail
+              </button>
+            `}
+          </td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    if (footer) footer.textContent = `Menampilkan ${dataList.length} data pengajuan`;
+
+    // Pasang listener aksi
+    tbody.querySelectorAll('.btn-proses-approval, .btn-detail-approval').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const item = rawLemburList.find(r => String(r.id_lembur) === String(id));
+        if (item) openReviewModal(item);
+      });
+    });
+  }
+
+  function applyFilter() {
+    const filterStatus = document.getElementById('filter-status-select').value;
+    const searchVal = (document.getElementById('approval-lembur-cari').value || '').toLowerCase().trim();
+
+    let filtered = rawLemburList.filter(row => {
+      const st = parseInt(row.status ?? 0, 10);
+      const pr = parseInt(row.progress_approval ?? 0, 10);
+
+      // Filter status
+      if (filterStatus === '0' && (pr !== 0 || st !== 0)) return false;
+      if (filterStatus === '1' && (pr < 1 || st === 2 || st === 3)) return false;
+      if (filterStatus === '3' && (st !== 2 && st !== 3)) return false;
+
+      // Filter search
+      if (searchVal) {
+        const nip = (row.NIP_PEGAWAI || row.id_pegawai || '').toLowerCase();
+        const nama = (row.NAMA_PEGAWAI || row.nama || '').toLowerCase();
+        const bagian = (row.BAGIAN_PEGAWAI || '').toLowerCase();
+        const ket = (row.keterangan || '').toLowerCase();
+        return nip.includes(searchVal) || nama.includes(searchVal) || bagian.includes(searchVal) || ket.includes(searchVal);
+      }
+
+      return true;
+    });
+
+    renderTable(filtered);
+  }
+
+  async function loadData() {
+    const tbody = document.getElementById('tbody-approval-lembur');
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="10" class="text-center py-4 text-muted">
+            <div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div> Memuat data...
+          </td>
+        </tr>
+      `;
+    }
+
+    try {
+      const res = await httpGet(`${apiUrl}/pegawai/lembur`);
+      if (res && res.code === 200 && Array.isArray(res.data)) {
+        rawLemburList = res.data;
+      } else {
+        rawLemburList = [];
+      }
+      updateStatCards(rawLemburList);
+      applyFilter();
+    } catch (err) {
+      console.error(err);
+      if (tbody) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="10" class="text-center py-4 text-danger">
+              <i class="fas fa-exclamation-triangle me-1"></i> Gagal terhubung ke API Lembur.
+            </td>
+          </tr>
+        `;
+      }
+    }
+  }
+
+  function openReviewModal(item) {
+    document.getElementById('modal-lembur-id').value = item.id_lembur;
+    document.getElementById('modal-lembur-nama').textContent = `${item.NIP_PEGAWAI || item.id_pegawai || '-'} - ${item.NAMA_PEGAWAI || item.nama || '-'}`;
+    document.getElementById('modal-lembur-bagian').textContent = item.BAGIAN_PEGAWAI || '-';
+    document.getElementById('modal-lembur-tanggal').textContent = item.tanggal_lembur || '-';
+    document.getElementById('modal-lembur-kethari').textContent = item.KET_HARI || '-';
+    document.getElementById('modal-lembur-durasi').textContent = `${item.jam_mulai || '-'} s/d ${item.jam_selesai || '-'} (${item.DURASI || item.durasi + ' Jam'})`;
+    document.getElementById('modal-lembur-keterangan').textContent = item.keterangan || '-';
+    document.getElementById('modal-lembur-status').innerHTML = getBadgeApproval(item);
+    document.getElementById('modal-lembur-catatan').value = '';
+
+    const pr = parseInt(item.progress_approval ?? 0, 10);
+    const st = parseInt(item.status ?? 0, 10);
+    const isPending = pr === 0 && st === 0;
+
+    const btnSetujui = document.getElementById('btn-modal-setujui');
+    const btnTolak = document.getElementById('btn-modal-tolak');
+    if (btnSetujui && btnTolak) {
+      btnSetujui.style.display = isPending ? 'inline-block' : 'none';
+      btnTolak.style.display = isPending ? 'inline-block' : 'none';
+    }
+
+    const modalEl = document.getElementById('modal-review-lembur');
+    if (!modalReviewInstance) {
+      modalReviewInstance = new bootstrap.Modal(modalEl);
+    }
+    modalReviewInstance.show();
+  }
+
+  async function handleApproveAtasan() {
+    const idLembur = document.getElementById('modal-lembur-id').value;
+    const catatan = document.getElementById('modal-lembur-catatan').value;
+
+    const btn = document.getElementById('btn-modal-setujui');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Memproses...';
+
+    try {
+      const res = await httpPost(`${apiUrl}/pegawai/lembur/approve-atasan`, {
+        id_lembur: idLembur,
+        id_atasan: currentAtasan.nip || '1',
+        catatan: catatan
+      });
+
+      if (res && res.code === 200) {
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            title: 'Disetujui!',
+            text: 'Pengajuan lembur telah disetujui atasan dan diteruskan ke HRD.',
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false
+          });
+        }
+        if (modalReviewInstance) modalReviewInstance.hide();
+        loadData();
+      } else {
+        alert(res.message || 'Gagal menyetujui pengajuan');
+      }
+    } catch (e) {
+      alert('Terjadi kesalahan jaringan');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-check me-1"></i> Setujui Lembur';
+    }
+  }
+
+  async function handleRejectAtasan() {
+    const idLembur = document.getElementById('modal-lembur-id').value;
+    const catatan = document.getElementById('modal-lembur-catatan').value;
+
+    if (!catatan || catatan.trim() === '') {
+      alert('Silakan tuliskan alasan penolakan pada kolom catatan!');
+      return;
+    }
+
+    const btn = document.getElementById('btn-modal-tolak');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Memproses...';
+
+    try {
+      const res = await httpPost(`${apiUrl}/pegawai/lembur/reject-atasan`, {
+        id_lembur: idLembur,
+        id_atasan: currentAtasan.nip || '1',
+        catatan: catatan
+      });
+
+      if (res && res.code === 200) {
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            title: 'Ditolak',
+            text: 'Pengajuan lembur telah ditolak.',
+            icon: 'warning',
+            timer: 1500,
+            showConfirmButton: false
+          });
+        }
+        if (modalReviewInstance) modalReviewInstance.hide();
+        loadData();
+      } else {
+        alert(res.message || 'Gagal menolak pengajuan');
+      }
+    } catch (e) {
+      alert('Terjadi kesalahan jaringan');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-times me-1"></i> Tolak Lembur';
+    }
+  }
+
+  async function initApprovalLemburModule() {
+    initAtasanSession();
+    await loadData();
+
+    const statusSel = document.getElementById('filter-status-select');
+    if (statusSel) {
+      statusSel.addEventListener('change', (e) => {
+        // Sync status active card
+        document.querySelectorAll('.stat-card-lembur').forEach(card => {
+          if (card.getAttribute('data-filter-status') === e.target.value) {
+            card.classList.add('active');
+          } else {
+            card.classList.remove('active');
+          }
+        });
+        applyFilter();
+      });
+    }
+
+    document.querySelectorAll('.stat-card-lembur').forEach(card => {
+      card.addEventListener('click', () => {
+        const val = card.getAttribute('data-filter-status');
+        const s = document.getElementById('filter-status-select');
+        if (s) s.value = val;
+        document.querySelectorAll('.stat-card-lembur').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        applyFilter();
+      });
+    });
+
+    const cariInput = document.getElementById('approval-lembur-cari');
+    if (cariInput) {
+      cariInput.addEventListener('input', debounce(() => {
+        applyFilter();
+      }, 300));
+    }
+
+    const btnRefresh = document.getElementById('btn-refresh-approval');
+    if (btnRefresh) btnRefresh.addEventListener('click', loadData);
+
+    const btnSetujui = document.getElementById('btn-modal-setujui');
+    if (btnSetujui) btnSetujui.addEventListener('click', handleApproveAtasan);
+
+    const btnTolak = document.getElementById('btn-modal-tolak');
+    if (btnTolak) btnTolak.addEventListener('click', handleRejectAtasan);
+  }
+
+  initApprovalLemburModule();
+</script>

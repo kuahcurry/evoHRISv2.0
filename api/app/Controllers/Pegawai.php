@@ -704,6 +704,42 @@ class Pegawai extends BaseController
     }
 
     // ==========================================
+    // IJIN KEHADIRAN / PULANG AWAL
+    // ==========================================
+    public function ijin()
+    {
+        $search = $this->request->getGet('search') ?? $this->request->getGet('q');
+        $nip = $this->request->getGet('nip');
+        $bagian = $this->request->getGet('bagian');
+        $data = $this->mPegawai->getIjin($search, $nip, $bagian);
+        return sendResponse(200, $data, count($data));
+    }
+
+    public function jenis_ijin()
+    {
+        $data = $this->mPegawai->getJenisIjin();
+        return sendResponse(200, $data, count($data));
+    }
+
+    public function save_ijin()
+    {
+        $data = $this->getPayload();
+        $res = $this->mPegawai->saveIjin($data);
+        return sendResponse($res['code'], $res, $res['message']);
+    }
+
+    public function delete_ijin($id = null)
+    {
+        if (empty($id)) {
+            $data = $this->getPayload();
+            $id = $data['KD_CUTI'] ?? $data['id'] ?? null;
+        }
+        if (empty($id)) return sendResponse(400, null, 'ID ijin diperlukan');
+        $res = $this->mPegawai->deleteIjin($id);
+        return sendResponse($res['code'], $res, $res['message']);
+    }
+
+    // ==========================================
     // 12. DEMOSI
     // ==========================================
     public function demosi()
@@ -770,6 +806,115 @@ class Pegawai extends BaseController
         }
         if (empty($id)) return sendResponse(400, null, 'ID catatan diperlukan');
         $res = $this->mPegawai->deleteCatatan($id);
+        return sendResponse($res['code'], $res, $res['message']);
+    }
+
+    // ==========================================
+    // MODUL LEMBUR PEGAWAI
+    // ==========================================
+    public function lembur()
+    {
+        $search = $this->request->getGet('search') ?? $this->request->getGet('q');
+        $nip = $this->request->getGet('nip');
+        $bagian = $this->request->getGet('bagian') ?? $this->request->getGet('kd_bagian');
+        $status = $this->request->getGet('status');
+        $progress = $this->request->getGet('progress');
+        $bulan = $this->request->getGet('bulan');
+        $tahun = $this->request->getGet('tahun');
+        $tglAwal = $this->request->getGet('tgl_awal') ?? $this->request->getGet('start_date') ?? $this->request->getGet('tgl_mulai');
+        $tglAkhir = $this->request->getGet('tgl_akhir') ?? $this->request->getGet('end_date') ?? $this->request->getGet('tgl_selesai');
+        $data = $this->mPegawai->getLembur($search, $nip, $bagian, $status, $progress, $bulan, $tahun, $tglAwal, $tglAkhir);
+        return sendResponse(200, $data, count($data));
+    }
+
+    public function monitoring_lembur()
+    {
+        $params = [
+            'tgl_awal'  => $this->request->getGet('tgl_awal') ?? $this->request->getGet('start_date') ?? $this->request->getGet('tgl_mulai'),
+            'tgl_akhir' => $this->request->getGet('tgl_akhir') ?? $this->request->getGet('end_date') ?? $this->request->getGet('tgl_selesai'),
+            'search'    => $this->request->getGet('search') ?? $this->request->getGet('unit') ?? $this->request->getGet('q')
+        ];
+        $res = $this->mPegawai->getMonitoringLembur($params);
+        return sendResponse(200, $res, count($res['units'] ?? []));
+    }
+
+    public function ket_hari_lembur()
+    {
+        $data = $this->mPegawai->getKetHari();
+        return sendResponse(200, $data, count($data));
+    }
+
+    public function save_lembur()
+    {
+        $data = $this->getPayload();
+        $res = $this->mPegawai->saveLembur($data);
+        return sendResponse($res['code'], $res, $res['message']);
+    }
+
+    public function approve_lembur_atasan()
+    {
+        $data = $this->getPayload();
+        $id = $data['id_lembur'] ?? $data['id'] ?? null;
+        $idAtasan = $data['id_atasan'] ?? $data['nip_atasan'] ?? null;
+        $catatan = $data['catatan'] ?? '';
+        $res = $this->mPegawai->updateApprovalLembur($id, 'atasan', 1, $idAtasan, $catatan);
+        return sendResponse($res['code'], $res, $res['message']);
+    }
+
+    public function reject_lembur_atasan()
+    {
+        $data = $this->getPayload();
+        $id = $data['id_lembur'] ?? $data['id'] ?? null;
+        $idAtasan = $data['id_atasan'] ?? $data['nip_atasan'] ?? null;
+        $catatan = $data['catatan'] ?? '';
+        $res = $this->mPegawai->updateApprovalLembur($id, 'atasan', 2, $idAtasan, $catatan);
+        return sendResponse($res['code'], $res, $res['message']);
+    }
+
+    public function approve_lembur_hrd()
+    {
+        $data = $this->getPayload();
+        $id = $data['id_lembur'] ?? $data['id'] ?? null;
+        $catatan = $data['catatan'] ?? '';
+        $extra = [
+            'jam_mulai_realisasi' => $data['jam_mulai_realisasi'] ?? null,
+            'jam_selesai_realisasi' => $data['jam_selesai_realisasi'] ?? null,
+            'tgl_mulai_realisasi' => $data['tgl_mulai_realisasi'] ?? null,
+            'tgl_selesai_realisasi' => $data['tgl_selesai_realisasi'] ?? null,
+        ];
+        $res = $this->mPegawai->updateApprovalLembur($id, 'hrd', 1, null, $catatan, $extra);
+        return sendResponse($res['code'], $res, $res['message']);
+    }
+
+    public function reject_lembur_hrd()
+    {
+        $data = $this->getPayload();
+        $id = $data['id_lembur'] ?? $data['id'] ?? null;
+        $catatan = $data['catatan'] ?? '';
+        $res = $this->mPegawai->updateApprovalLembur($id, 'hrd', 2, null, $catatan);
+        return sendResponse($res['code'], $res, $res['message']);
+    }
+
+    public function action_lembur()
+    {
+        $data = $this->getPayload();
+        $id = $data['id_lembur'] ?? $data['id'] ?? null;
+        $level = $data['level'] ?? 'atasan';
+        $status = isset($data['status']) ? (int)$data['status'] : 1;
+        $idAtasan = $data['id_atasan'] ?? null;
+        $catatan = $data['catatan'] ?? '';
+        $res = $this->mPegawai->updateApprovalLembur($id, $level, $status, $idAtasan, $catatan);
+        return sendResponse($res['code'], $res, $res['message']);
+    }
+
+    public function delete_lembur($id = null)
+    {
+        if (empty($id)) {
+            $data = $this->getPayload();
+            $id = $data['id_lembur'] ?? $data['id'] ?? null;
+        }
+        if (empty($id)) return sendResponse(400, null, 'ID lembur diperlukan');
+        $res = $this->mPegawai->deleteLembur($id);
         return sendResponse($res['code'], $res, $res['message']);
     }
 }

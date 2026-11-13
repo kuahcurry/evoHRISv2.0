@@ -1,0 +1,702 @@
+<style>
+  .evo-lembur-card {
+    border-radius: 0.65rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    background: #fff;
+    border: 1px solid #edf2f9;
+  }
+  .table-approval-hrd th {
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 700;
+    color: #5e6e82;
+    background-color: #f9fafd;
+    vertical-align: middle;
+    white-space: nowrap;
+    border-bottom: 2px solid #edf2f9;
+    padding: 0.65rem 0.6rem;
+  }
+  .table-approval-hrd td {
+    font-size: 0.82rem;
+    vertical-align: middle;
+    padding: 0.6rem 0.6rem;
+  }
+  .table-approval-hrd tbody tr {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+  .table-approval-hrd tbody tr:hover {
+    background-color: #f2f7ff !important;
+  }
+  .table-approval-hrd tbody tr.table-selected {
+    background-color: #dce7f9 !important;
+    border-left: 3px solid #2c7be5;
+  }
+  .stat-card-hrd {
+    border-radius: 0.5rem;
+    border: 1px solid #edf2f9;
+    padding: 0.75rem 1rem;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .stat-card-hrd:hover, .stat-card-hrd.active {
+    transform: translateY(-2px);
+    box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.08);
+    border-color: #2c7be5;
+  }
+  .stat-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+  }
+</style>
+
+<template>
+  <div class="container-fluid py-3" id="page-approval-lembur-hrd-container">
+    <!-- Breadcrumb & Title -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <div>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-1 fs--2">
+            <li class="breadcrumb-item"><a href="#" class="text-decoration-none">E-Absensi</a></li>
+            <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Lembur</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Approval Lembur HRD</li>
+          </ol>
+        </nav>
+        <h4 class="mb-0 text-primary fw-bold">
+          <i class="fas fa-user-shield me-2"></i>Approval Lembur HRD
+        </h4>
+      </div>
+      <div>
+        <span class="badge bg-soft-primary text-primary px-3 py-2 fs--1 rounded-pill">
+          <i class="fas fa-shield-alt me-1"></i> Mode Verifikator HRD
+        </span>
+      </div>
+    </div>
+
+    <!-- STAT SUMMARY CARDS -->
+    <div class="row g-2 mb-3">
+      <div class="col-sm-6 col-lg-3">
+        <div class="stat-card-hrd active" data-filter-status="pending-hrd">
+          <div class="stat-icon bg-soft-warning text-warning">
+            <i class="fas fa-hourglass-half"></i>
+          </div>
+          <div>
+            <div class="text-muted fs--2 text-uppercase fw-bold">Menunggu HRD</div>
+            <div class="fs-1 fw-bolder text-800" id="hrd-stat-menunggu">0</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="stat-card-hrd" data-filter-status="approved">
+          <div class="stat-icon bg-soft-success text-success">
+            <i class="fas fa-check-double"></i>
+          </div>
+          <div>
+            <div class="text-muted fs--2 text-uppercase fw-bold">Disetujui HRD</div>
+            <div class="fs-1 fw-bolder text-800" id="hrd-stat-disetujui">0</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="stat-card-hrd" data-filter-status="rejected">
+          <div class="stat-icon bg-soft-danger text-danger">
+            <i class="fas fa-ban"></i>
+          </div>
+          <div>
+            <div class="text-muted fs--2 text-uppercase fw-bold">Ditolak HRD</div>
+            <div class="fs-1 fw-bolder text-800" id="hrd-stat-ditolak">0</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="stat-card-hrd" data-filter-status="all">
+          <div class="stat-icon bg-soft-primary text-primary">
+            <i class="fas fa-layer-group"></i>
+          </div>
+          <div>
+            <div class="text-muted fs--2 text-uppercase fw-bold">Total Lembur</div>
+            <div class="fs-1 fw-bolder text-800" id="hrd-stat-total">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FORM APPROVAL LEMBUR HRD (9 Fields: Bagian, Nama, Tanggal, Durasi, Keterangan, Tanggal Mulai Realisasi, Jam Mulai Realisasi, Tanggal Selesai Realisasi, Jam Selesai Realisasi) -->
+    <div class="card evo-lembur-card mb-3">
+      <div class="card-header bg-light py-2 px-3 border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold text-700">
+          <i class="fas fa-edit text-primary me-2"></i>Form Verifikasi & Realisasi Lembur HRD
+        </h6>
+        <span class="badge bg-soft-info text-info fs--2" id="hrd-status-hint">
+          Pilih data pada tabel di bawah untuk diverifikasi
+        </span>
+      </div>
+      <div class="card-body p-3">
+        <form id="form-approval-hrd">
+          <input type="hidden" id="hrd_id_lembur">
+
+          <!-- Row 1: Bagian & Nama -->
+          <div class="row g-2 mb-2">
+            <div class="col-md-6">
+              <label class="form-label fs--2 fw-bold text-muted mb-1" for="hrd_bagian">Bagian</label>
+              <input type="text" class="form-control form-control-sm bg-light" id="hrd_bagian" placeholder="Bagian / Unit" readonly>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fs--2 fw-bold text-muted mb-1" for="hrd_nama">Nama</label>
+              <input type="text" class="form-control form-control-sm bg-light" id="hrd_nama" placeholder="Nama Pegawai" readonly>
+            </div>
+          </div>
+
+          <!-- Row 2: Tanggal & Durasi -->
+          <div class="row g-2 mb-2">
+            <div class="col-md-6">
+              <label class="form-label fs--2 fw-bold text-muted mb-1" for="hrd_tanggal">Tanggal</label>
+              <input type="date" class="form-control form-control-sm bg-light" id="hrd_tanggal" readonly>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fs--2 fw-bold text-muted mb-1" for="hrd_durasi">Durasi</label>
+              <input type="text" class="form-control form-control-sm bg-light" id="hrd_durasi" placeholder="Durasi Lembur (e.g. 2 Jam)" readonly>
+            </div>
+          </div>
+
+          <!-- Row 3: Keterangan -->
+          <div class="mb-3">
+            <label class="form-label fs--2 fw-bold text-muted mb-1" for="hrd_keterangan">Keterangan</label>
+            <textarea class="form-control form-control-sm bg-light" id="hrd_keterangan" rows="2" placeholder="Keterangan pengajuan lembur" readonly></textarea>
+          </div>
+
+          <!-- Row 4: Realisasi (Tanggal Mulai Realisasi, Jam Mulai Realisasi, Tanggal Selesai Realisasi, Jam Selesai Realisasi) -->
+          <div class="bg-soft-primary p-2 rounded-2 mb-3 border border-200">
+            <div class="fs--2 fw-bold text-primary mb-2">
+              <i class="fas fa-business-time me-1"></i>Realisasi Waktu Lembur Pegawai
+            </div>
+            <div class="row g-2">
+              <div class="col-sm-6 col-md-3">
+                <label class="form-label fs--2 fw-bold text-700 mb-1" for="hrd_tgl_mulai_realisasi">Tanggal Mulai Realisasi</label>
+                <input type="date" class="form-control form-control-sm" id="hrd_tgl_mulai_realisasi">
+              </div>
+              <div class="col-sm-6 col-md-3">
+                <label class="form-label fs--2 fw-bold text-700 mb-1" for="hrd_jam_mulai_realisasi">Jam Mulai Realisasi</label>
+                <input type="time" class="form-control form-control-sm" id="hrd_jam_mulai_realisasi" step="60">
+              </div>
+              <div class="col-sm-6 col-md-3">
+                <label class="form-label fs--2 fw-bold text-700 mb-1" for="hrd_tgl_selesai_realisasi">Tanggal Selesai Realisasi</label>
+                <input type="date" class="form-control form-control-sm" id="hrd_tgl_selesai_realisasi">
+              </div>
+              <div class="col-sm-6 col-md-3">
+                <label class="form-label fs--2 fw-bold text-700 mb-1" for="hrd_jam_selesai_realisasi">Jam Selesai Realisasi</label>
+                <input type="time" class="form-control form-control-sm" id="hrd_jam_selesai_realisasi" step="60">
+              </div>
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pt-2 border-top">
+            <button type="button" class="btn btn-falcon-default btn-sm" id="btn-hrd-reset">
+              <i class="fas fa-undo me-1"></i>Reset
+            </button>
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-outline-danger btn-sm" id="btn-hrd-reject" disabled>
+                <i class="fas fa-times me-1"></i>Tolak HRD
+              </button>
+              <button type="button" class="btn btn-success btn-sm" id="btn-hrd-approve" disabled>
+                <i class="fas fa-check-double me-1"></i>Setujui HRD
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TABEL DAFTAR APPROVAL LEMBUR HRD (Cari & 12 Kolom) -->
+    <div class="card evo-lembur-card">
+      <div class="card-header bg-light py-2 px-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <label class="form-label fs--1 mb-0 fw-bold text-muted">Status:</label>
+          <select id="hrd-filter-status" class="form-select form-select-sm" style="width: 170px;">
+            <option value="all">Semua Status</option>
+            <option value="pending-hrd" selected>Menunggu HRD</option>
+            <option value="approved">Disetujui HRD</option>
+            <option value="rejected">Ditolak HRD</option>
+          </select>
+        </div>
+        <!-- Input Search Cari -->
+        <div class="d-flex align-items-center" style="max-width: 280px; width: 100%;">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-400"></i></span>
+            <input type="text" id="hrd-lembur-cari" class="form-control border-start-0" placeholder="Cari" autocomplete="off">
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-striped table-hover table-approval-hrd mb-0" id="table-lembur-hrd">
+            <thead>
+              <tr>
+                <th class="text-center" style="width: 45px;">#</th>
+                <th style="width: 120px;">NIP</th>
+                <th style="min-width: 160px;">Nama</th>
+                <th style="min-width: 140px;">Bagian/Unit</th>
+                <th style="width: 110px;">Tgl. lembur</th>
+                <th style="width: 100px;" class="text-center">Jam Mulai</th>
+                <th style="width: 100px;" class="text-center">Jam Selesai</th>
+                <th style="min-width: 180px;">Keterangan</th>
+                <th style="width: 120px;" class="text-center">Jam Mulai Realisasi</th>
+                <th style="width: 120px;" class="text-center">Jam Selesai Realisasi</th>
+                <th style="width: 90px;" class="text-center">Durasi</th>
+                <th class="text-center" style="width: 130px;">Status</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-lembur-hrd">
+              <tr>
+                <td colspan="12" class="text-center py-4 text-muted">
+                  <div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div> Memuat data approval HRD...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card-footer bg-light py-2 px-3 border-top d-flex justify-content-between align-items-center">
+        <span class="fs--2 text-muted" id="footer-lembur-hrd">Menampilkan 0 data pengajuan</span>
+        <button type="button" class="btn btn-xs btn-outline-secondary" id="btn-refresh-hrd">
+          <i class="fas fa-sync-alt me-1"></i> Segarkan Data
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script type="module" defer>
+  import { httpGet, httpPost } from './assets/js/core/http.js';
+  import { loadSession, getCurrentUser } from './assets/js/core/helpers.js';
+
+  const apiUrl = (typeof config !== 'undefined' && config.api_url)
+    ? config.api_url
+    : `${window.location.origin}/evoHRIS_v2.1/api`;
+
+  let rawHrdList = [];
+  let selectedLemburItem = null;
+
+  function debounce(func, delay = 300) {
+    let timer;
+    return function (...args) {
+      clearTimeout(timer);
+      timer = setTimeout(() => func.apply(this, args), delay);
+    };
+  }
+
+  function getBadgeHrd(row) {
+    const st = parseInt(row.status ?? 0, 10);
+    const pr = parseInt(row.progress_approval ?? 0, 10);
+
+    if (st === 2 || st === 3) {
+      return '<span class="badge bg-soft-danger text-danger px-2 py-1"><i class="fas fa-times-circle me-1"></i>Ditolak</span>';
+    } else if (st === 1 || pr >= 2) {
+      return '<span class="badge bg-soft-success text-success px-2 py-1"><i class="fas fa-check-double me-1"></i>Disetujui HRD</span>';
+    } else if (pr === 1) {
+      return '<span class="badge bg-soft-warning text-warning px-2 py-1"><i class="fas fa-hourglass-half me-1"></i>Menunggu HRD</span>';
+    } else {
+      return '<span class="badge bg-soft-secondary text-secondary px-2 py-1"><i class="fas fa-clock me-1"></i>Menunggu Atasan</span>';
+    }
+  }
+
+  function updateHrdStatCards(dataList) {
+    let countMenungguHrd = 0;
+    let countDisetujui = 0;
+    let countDitolak = 0;
+
+    dataList.forEach(item => {
+      const st = parseInt(item.status ?? 0, 10);
+      const pr = parseInt(item.progress_approval ?? 0, 10);
+      if (st === 2 || st === 3) {
+        countDitolak++;
+      } else if (st === 1 || pr >= 2) {
+        countDisetujui++;
+      } else if (pr === 1) {
+        countMenungguHrd++;
+      }
+    });
+
+    const elMenunggu = document.getElementById('hrd-stat-menunggu');
+    const elDisetujui = document.getElementById('hrd-stat-disetujui');
+    const elDitolak = document.getElementById('hrd-stat-ditolak');
+    const elTotal = document.getElementById('hrd-stat-total');
+
+    if (elMenunggu) elMenunggu.textContent = countMenungguHrd;
+    if (elDisetujui) elDisetujui.textContent = countDisetujui;
+    if (elDitolak) elDitolak.textContent = countDitolak;
+    if (elTotal) elTotal.textContent = dataList.length;
+  }
+
+  function selectRowForHrd(item, rowEl) {
+    selectedLemburItem = item;
+
+    // Highlight row
+    const tbody = document.getElementById('tbody-lembur-hrd');
+    if (tbody) {
+      tbody.querySelectorAll('tr').forEach(tr => tr.classList.remove('table-selected'));
+    }
+    if (rowEl) rowEl.classList.add('table-selected');
+
+    // Populate top form
+    const fId = document.getElementById('hrd_id_lembur');
+    const fBagian = document.getElementById('hrd_bagian');
+    const fNama = document.getElementById('hrd_nama');
+    const fTanggal = document.getElementById('hrd_tanggal');
+    const fDurasi = document.getElementById('hrd_durasi');
+    const fKeterangan = document.getElementById('hrd_keterangan');
+
+    const fTglMulaiRealisasi = document.getElementById('hrd_tgl_mulai_realisasi');
+    const fJamMulaiRealisasi = document.getElementById('hrd_jam_mulai_realisasi');
+    const fTglSelesaiRealisasi = document.getElementById('hrd_tgl_selesai_realisasi');
+    const fJamSelesaiRealisasi = document.getElementById('hrd_jam_selesai_realisasi');
+
+    const btnApprove = document.getElementById('btn-hrd-approve');
+    const btnReject = document.getElementById('btn-hrd-reject');
+    const statusHint = document.getElementById('hrd-status-hint');
+
+    if (fId) fId.value = item.id_lembur || '';
+    if (fBagian) fBagian.value = item.BAGIAN_PEGAWAI || '-';
+    if (fNama) fNama.value = `${item.NAMA_PEGAWAI || item.nama || '-'} (${item.NIP_PEGAWAI || item.id_pegawai || '-'})`;
+    if (fTanggal) fTanggal.value = item.tanggal_lembur || '';
+    if (fDurasi) fDurasi.value = item.DURASI || (item.durasi ? item.durasi + ' Jam' : '-');
+    if (fKeterangan) fKeterangan.value = item.keterangan || '-';
+
+    // Set realisasi fields with fallback
+    const tglDefault = item.tanggal_lembur || new Date().toISOString().substring(0, 10);
+    if (fTglMulaiRealisasi) fTglMulaiRealisasi.value = item.TGL_MULAI_REALISASI || tglDefault;
+    if (fJamMulaiRealisasi) fJamMulaiRealisasi.value = item.JAM_MULAI_REALISASI || item.jam_mulai || '17:00';
+    if (fTglSelesaiRealisasi) fTglSelesaiRealisasi.value = item.TGL_SELESAI_REALISASI || tglDefault;
+    if (fJamSelesaiRealisasi) fJamSelesaiRealisasi.value = item.JAM_SELESAI_REALISASI || item.jam_pulang || item.jam_selesai || '20:00';
+
+    if (btnApprove) btnApprove.disabled = false;
+    if (btnReject) btnReject.disabled = false;
+    if (statusHint) {
+      statusHint.className = 'badge bg-soft-success text-success fs--2';
+      statusHint.innerHTML = `<i class="fas fa-check-circle me-1"></i>Data ${item.NAMA_PEGAWAI || item.nama} siap diverifikasi`;
+    }
+
+    // Scroll smoothly to form if needed
+    const formCard = document.getElementById('form-approval-hrd');
+    if (formCard) {
+      formCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  function resetHrdForm() {
+    selectedLemburItem = null;
+    const form = document.getElementById('form-approval-hrd');
+    if (form) form.reset();
+
+    const tbody = document.getElementById('tbody-lembur-hrd');
+    if (tbody) {
+      tbody.querySelectorAll('tr').forEach(tr => tr.classList.remove('table-selected'));
+    }
+
+    const btnApprove = document.getElementById('btn-hrd-approve');
+    const btnReject = document.getElementById('btn-hrd-reject');
+    const statusHint = document.getElementById('hrd-status-hint');
+
+    if (btnApprove) btnApprove.disabled = true;
+    if (btnReject) btnReject.disabled = true;
+    if (statusHint) {
+      statusHint.className = 'badge bg-soft-info text-info fs--2';
+      statusHint.textContent = 'Pilih data pada tabel di bawah untuk diverifikasi';
+    }
+  }
+
+  function renderTableHrd(dataList) {
+    const tbody = document.getElementById('tbody-lembur-hrd');
+    const footer = document.getElementById('footer-lembur-hrd');
+    if (!tbody) return;
+
+    if (!Array.isArray(dataList) || dataList.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="12" class="text-center py-4 text-muted">
+            <i class="fas fa-clipboard-list fa-2x mb-2 d-block text-300"></i>
+            Tidak ada pengajuan lembur yang sesuai kriteria.
+          </td>
+        </tr>
+      `;
+      if (footer) footer.textContent = 'Menampilkan 0 data pengajuan';
+      return;
+    }
+
+    let html = '';
+    dataList.forEach((row, idx) => {
+      const nip = row.NIP_PEGAWAI || row.id_pegawai || '-';
+      const nama = row.NAMA_PEGAWAI || row.nama || '-';
+      const bagian = row.BAGIAN_PEGAWAI || '-';
+      const tgl = row.tanggal_lembur || '-';
+      const jamMulai = row.JAM_MULAI_PENGAJUAN || row.jam_mulai || '-';
+      const jamSelesai = row.JAM_SELESAI_PENGAJUAN || row.jam_selesai || '-';
+      const ket = row.keterangan || '-';
+      const jamMulaiRealisasi = row.JAM_MULAI_REALISASI || row.jam_mulai || '-';
+      const jamSelesaiRealisasi = row.JAM_SELESAI_REALISASI || row.jam_pulang || row.jam_selesai || '-';
+      const durasi = row.DURASI || (row.durasi ? row.durasi + ' Jam' : '-');
+      const badge = getBadgeHrd(row);
+
+      const isSelected = selectedLemburItem && String(selectedLemburItem.id_lembur) === String(row.id_lembur);
+
+      html += `
+        <tr data-id="${row.id_lembur}" class="${isSelected ? 'table-selected' : ''}">
+          <td class="text-center fw-semi-bold text-muted">${idx + 1}</td>
+          <td class="fw-bold text-primary">${nip}</td>
+          <td class="fw-bold text-dark">${nama}</td>
+          <td>${bagian}</td>
+          <td class="text-nowrap">${tgl}</td>
+          <td class="text-center text-nowrap">${jamMulai}</td>
+          <td class="text-center text-nowrap">${jamSelesai}</td>
+          <td class="text-break">${ket}</td>
+          <td class="text-center text-nowrap">${jamMulaiRealisasi}</td>
+          <td class="text-center text-nowrap">${jamSelesaiRealisasi}</td>
+          <td class="text-center text-nowrap fw-bold">${durasi}</td>
+          <td class="text-center">${badge}</td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = html;
+    if (footer) footer.textContent = `Menampilkan ${dataList.length} data pengajuan lembur`;
+
+    // Row click to select & populate form
+    tbody.querySelectorAll('tr').forEach(tr => {
+      tr.addEventListener('click', () => {
+        const id = tr.getAttribute('data-id');
+        const item = dataList.find(r => String(r.id_lembur) === String(id));
+        if (item) {
+          selectRowForHrd(item, tr);
+        }
+      });
+    });
+  }
+
+  function applyFilterHrd() {
+    const filterStatus = document.getElementById('hrd-filter-status')?.value || 'all';
+    const cariVal = (document.getElementById('hrd-lembur-cari')?.value || '').toLowerCase().trim();
+
+    let filtered = rawHrdList.filter(item => {
+      const st = parseInt(item.status ?? 0, 10);
+      const pr = parseInt(item.progress_approval ?? 0, 10);
+
+      if (filterStatus === 'pending-hrd' && !(pr === 1 && st === 0)) return false;
+      if (filterStatus === 'approved' && !(st === 1 || pr >= 2)) return false;
+      if (filterStatus === 'rejected' && !(st === 2 || st === 3)) return false;
+
+      if (cariVal) {
+        const nip = (item.NIP_PEGAWAI || item.id_pegawai || '').toLowerCase();
+        const nama = (item.NAMA_PEGAWAI || item.nama || '').toLowerCase();
+        const bagian = (item.BAGIAN_PEGAWAI || '').toLowerCase();
+        const ket = (item.keterangan || '').toLowerCase();
+        const tgl = (item.tanggal_lembur || '').toLowerCase();
+
+        return nip.includes(cariVal) || nama.includes(cariVal) || bagian.includes(cariVal) || ket.includes(cariVal) || tgl.includes(cariVal);
+      }
+      return true;
+    });
+
+    renderTableHrd(filtered);
+  }
+
+  async function loadApprovalLemburHrd() {
+    const tbody = document.getElementById('tbody-lembur-hrd');
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="12" class="text-center py-4 text-muted">
+            <div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div> Memuat data approval HRD...
+          </td>
+        </tr>
+      `;
+    }
+
+    try {
+      const res = await httpGet(`${apiUrl}/pegawai/lembur`);
+      if (res && res.code === 200 && Array.isArray(res.data)) {
+        rawHrdList = res.data;
+      } else {
+        rawHrdList = [];
+      }
+
+      updateHrdStatCards(rawHrdList);
+      applyFilterHrd();
+    } catch (err) {
+      console.error('Error loadApprovalLemburHrd:', err);
+      if (tbody) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="12" class="text-center py-4 text-danger">
+              <i class="fas fa-exclamation-triangle fa-2x mb-2 d-block text-danger"></i>
+              Gagal memuat data lembur dari server: ${err.message || 'Terjadi kesalahan'}
+            </td>
+          </tr>
+        `;
+      }
+    }
+  }
+
+  async function handleApproveHrd() {
+    if (!selectedLemburItem) {
+      alert('Pilih data pengajuan lembur pada tabel terlebih dahulu.');
+      return;
+    }
+
+    const tglMulaiReal = document.getElementById('hrd_tgl_mulai_realisasi')?.value;
+    const jamMulaiReal = document.getElementById('hrd_jam_mulai_realisasi')?.value;
+    const tglSelesaiReal = document.getElementById('hrd_tgl_selesai_realisasi')?.value;
+    const jamSelesaiReal = document.getElementById('hrd_jam_selesai_realisasi')?.value;
+
+    const confirmMsg = `Setujui pengajuan lembur untuk ${selectedLemburItem.NAMA_PEGAWAI || selectedLemburItem.nama}?\n` +
+      `Realisasi: ${jamMulaiReal || '-'} s/d ${jamSelesaiReal || '-'}`;
+
+    if (!confirm(confirmMsg)) return;
+
+    const btnApprove = document.getElementById('btn-hrd-approve');
+    if (btnApprove) {
+      btnApprove.disabled = true;
+      btnApprove.innerHTML = '<div class="spinner-border spinner-border-sm me-1"></div> Menyimpan...';
+    }
+
+    try {
+      const payload = {
+        id_lembur: selectedLemburItem.id_lembur,
+        catatan: `Realisasi: ${tglMulaiReal} ${jamMulaiReal} s/d ${tglSelesaiReal} ${jamSelesaiReal}`,
+        tgl_mulai_realisasi: tglMulaiReal,
+        jam_mulai_realisasi: jamMulaiReal,
+        tgl_selesai_realisasi: tglSelesaiReal,
+        jam_selesai_realisasi: jamSelesaiReal
+      };
+
+      const res = await httpPost(`${apiUrl}/pegawai/lembur/approve-hrd`, payload);
+      if (res && (res.code === 200 || res.status === 200 || res.status === true)) {
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Pengajuan lembur berhasil disetujui HRD.', timer: 1500, showConfirmButton: false });
+        } else {
+          alert('Pengajuan lembur berhasil disetujui HRD.');
+        }
+        resetHrdForm();
+        await loadApprovalLemburHrd();
+      } else {
+        alert(res?.message || 'Gagal menyetujui pengajuan lembur.');
+      }
+    } catch (err) {
+      console.error('Error approve HRD:', err);
+      alert('Terjadi kesalahan jaringan atau server saat menyetujui lembur.');
+    } finally {
+      if (btnApprove) {
+        btnApprove.disabled = false;
+        btnApprove.innerHTML = '<i class="fas fa-check-double me-1"></i>Setujui HRD';
+      }
+    }
+  }
+
+  async function handleRejectHrd() {
+    if (!selectedLemburItem) {
+      alert('Pilih data pengajuan lembur pada tabel terlebih dahulu.');
+      return;
+    }
+
+    const alasan = prompt(`Masukkan alasan penolakan lembur untuk ${selectedLemburItem.NAMA_PEGAWAI || selectedLemburItem.nama}:`, 'Tidak memenuhi kualifikasi lembur');
+    if (alasan === null) return; // user cancelled
+
+    const btnReject = document.getElementById('btn-hrd-reject');
+    if (btnReject) {
+      btnReject.disabled = true;
+      btnReject.innerHTML = '<div class="spinner-border spinner-border-sm me-1"></div> Menolak...';
+    }
+
+    try {
+      const payload = {
+        id_lembur: selectedLemburItem.id_lembur,
+        catatan: alasan.trim() || 'Ditolak oleh HRD'
+      };
+
+      const res = await httpPost(`${apiUrl}/pegawai/lembur/reject-hrd`, payload);
+      if (res && (res.code === 200 || res.status === 200 || res.status === true)) {
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Pengajuan lembur berhasil ditolak.', timer: 1500, showConfirmButton: false });
+        } else {
+          alert('Pengajuan lembur telah ditolak.');
+        }
+        resetHrdForm();
+        await loadApprovalLemburHrd();
+      } else {
+        alert(res?.message || 'Gagal menolak pengajuan lembur.');
+      }
+    } catch (err) {
+      console.error('Error reject HRD:', err);
+      alert('Terjadi kesalahan jaringan atau server saat menolak lembur.');
+    } finally {
+      if (btnReject) {
+        btnReject.disabled = false;
+        btnReject.innerHTML = '<i class="fas fa-times me-1"></i>Tolak HRD';
+      }
+    }
+  }
+
+  function initApprovalLemburHrdModule() {
+    // Stat cards click filter
+    document.querySelectorAll('.stat-card-hrd').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.stat-card-hrd').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        const filterStatus = card.getAttribute('data-filter-status');
+        const select = document.getElementById('hrd-filter-status');
+        if (select) select.value = filterStatus;
+        applyFilterHrd();
+      });
+    });
+
+    // Select filter change
+    const selectFilter = document.getElementById('hrd-filter-status');
+    if (selectFilter) {
+      selectFilter.addEventListener('change', () => {
+        document.querySelectorAll('.stat-card-hrd').forEach(c => c.classList.remove('active'));
+        const matchedCard = document.querySelector(`.stat-card-hrd[data-filter-status="${selectFilter.value}"]`);
+        if (matchedCard) matchedCard.classList.add('active');
+        applyFilterHrd();
+      });
+    }
+
+    // Debounced search Cari
+    const searchInput = document.getElementById('hrd-lembur-cari');
+    if (searchInput) {
+      searchInput.addEventListener('input', debounce(() => {
+        applyFilterHrd();
+      }, 300));
+    }
+
+    // Buttons
+    document.getElementById('btn-refresh-hrd')?.addEventListener('click', () => {
+      loadApprovalLemburHrd();
+    });
+
+    document.getElementById('btn-hrd-approve')?.addEventListener('click', handleApproveHrd);
+    document.getElementById('btn-hrd-reject')?.addEventListener('click', handleRejectHrd);
+    document.getElementById('btn-hrd-reset')?.addEventListener('click', resetHrdForm);
+
+    loadApprovalLemburHrd();
+  }
+
+  // SPA Lifecycle Bootstrap
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApprovalLemburHrdModule);
+  } else {
+    initApprovalLemburHrdModule();
+  }
+  setTimeout(initApprovalLemburHrdModule, 50);
+</script>

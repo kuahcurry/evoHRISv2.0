@@ -170,6 +170,29 @@ $routes->post('/pegawai/cuti/action-hrd', 'Pegawai::action_cuti_hrd');
 $routes->match(['post', 'delete'], '/pegawai/cuti/delete', 'Pegawai::delete_cuti');
 $routes->match(['post', 'delete'], '/pegawai/cuti/delete/(:segment)', 'Pegawai::delete_cuti/$1');
 
+// Modul Ijin Kehadiran
+$routes->get('/pegawai/ijin', 'Pegawai::ijin');
+$routes->get('/pegawai/ijin/jenis', 'Pegawai::jenis_ijin');
+$routes->post('/pegawai/ijin', 'Pegawai::save_ijin');
+$routes->post('/pegawai/ijin/save', 'Pegawai::save_ijin');
+$routes->match(['post', 'delete', 'get'], '/pegawai/ijin/delete', 'Pegawai::delete_ijin');
+$routes->match(['post', 'delete', 'get'], '/pegawai/ijin/delete/(:segment)', 'Pegawai::delete_ijin/$1');
+
+// Modul Lembur Pegawai
+$routes->get('/pegawai/lembur/monitoring', 'Pegawai::monitoring_lembur');
+$routes->get('/pegawai/lembur', 'Pegawai::lembur');
+$routes->get('/pegawai/lembur/ket-hari', 'Pegawai::ket_hari_lembur');
+$routes->get('/pegawai/lembur/ket_hari', 'Pegawai::ket_hari_lembur');
+$routes->post('/pegawai/lembur', 'Pegawai::save_lembur');
+$routes->post('/pegawai/lembur/save', 'Pegawai::save_lembur');
+$routes->post('/pegawai/lembur/approve-atasan', 'Pegawai::approve_lembur_atasan');
+$routes->post('/pegawai/lembur/reject-atasan', 'Pegawai::reject_lembur_atasan');
+$routes->post('/pegawai/lembur/approve-hrd', 'Pegawai::approve_lembur_hrd');
+$routes->post('/pegawai/lembur/reject-hrd', 'Pegawai::reject_lembur_hrd');
+$routes->post('/pegawai/lembur/action', 'Pegawai::action_lembur');
+$routes->match(['post', 'delete', 'get'], '/pegawai/lembur/delete', 'Pegawai::delete_lembur');
+$routes->match(['post', 'delete', 'get'], '/pegawai/lembur/delete/(:segment)', 'Pegawai::delete_lembur/$1');
+
 // Modul Kepegawaian Modern (cTambahPegawai & cPegawai)
 $routes->get('/cTambahPegawai', 'cTambahPegawai::index');
 $routes->get('/cTambahPegawai/index', 'cTambahPegawai::index');

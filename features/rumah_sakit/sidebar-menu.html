@@ -657,12 +657,84 @@
             </div>
           </li>
           <li class="nav-item">
-            <a class="nav-link submenu-item" href="#menu" data-tag="absensi_lembur" data-target="/absensi/lembur" data-title="Rekap Lembur Pegawai" data-icon="fas fa-business-time" data-group="Kehadiran">
-              <div class="d-flex align-items-center">
-                <span class="nav-link-icon"><span class="fas fa-business-time"></span></span>
-                <span class="nav-link-text ps-1">Lembur Pegawai</span>
+            <a class="nav-link dropdown-indicator" href="#collapse_absensi_ijin" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="collapse_absensi_ijin">
+              <div class="d-flex align-items-center mb-1">
+                <span class="nav-link-icon"><span class="fas fa-clock"></span></span>
+                <span class="nav-link-text ps-1">Ijin</span>
               </div>
             </a>
+            <div class="parent-wrapper">
+              <ul class="nav collapse parent" id="collapse_absensi_ijin">
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="absensi_ijin" data-target="/eabsensi/ijin/Vijin" data-title="Ijin" data-icon="fas fa-user-clock" data-group="Ijin">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-user-clock"></span></span>
+                      <span class="nav-link-text ps-1">Ijin</span>
+                    </div>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="absensi_approval_ijin" data-target="/eabsensi/ijin/Vapprovalijin" data-title="Approval Ijin" data-icon="fas fa-calendar-check" data-group="Ijin">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-calendar-check"></span></span>
+                      <span class="nav-link-text ps-1">Approval Ijin</span>
+                    </div>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="absensi_rekap_ijin" data-target="/eabsensi/ijin/Vrekapijin" data-title="Rekap Ijin" data-icon="fas fa-file-alt" data-group="Ijin">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-file-alt"></span></span>
+                      <span class="nav-link-text ps-1">Rekap Ijin</span>
+                    </div>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link dropdown-indicator" href="#collapse_absensi_lembur" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="collapse_absensi_lembur">
+              <div class="d-flex align-items-center mb-1">
+                <span class="nav-link-icon"><span class="fas fa-business-time"></span></span>
+                <span class="nav-link-text ps-1">Lembur</span>
+              </div>
+            </a>
+            <div class="parent-wrapper">
+              <ul class="nav collapse parent" id="collapse_absensi_lembur">
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="absensi_lembur" data-target="/eabsensi/lembur/Vlembur" data-title="Lembur" data-icon="fas fa-calendar-plus" data-group="Lembur">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-calendar-plus"></span></span>
+                      <span class="nav-link-text ps-1">Lembur</span>
+                    </div>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="absensi_approval_lembur" data-target="/eabsensi/lembur/Vapprovallembur" data-title="Approval Lembur" data-icon="fas fa-user-check" data-group="Lembur">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-user-check"></span></span>
+                      <span class="nav-link-text ps-1">Approval Lembur</span>
+                    </div>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="absensi_approval_lembur_hrd" data-target="/eabsensi/lembur/Vapprovallembur_hrd" data-title="Approval Lembur HRD" data-icon="fas fa-user-shield" data-group="Lembur">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-user-shield"></span></span>
+                      <span class="nav-link-text ps-1">Approval Lembur HRD</span>
+                    </div>
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link submenu-item" href="#menu" data-tag="absensi_monitoring_lembur" data-target="/eabsensi/lembur/monitoring_lembur" data-title="Monitoring Lembur" data-icon="fas fa-chart-line" data-group="Lembur">
+                    <div class="d-flex align-items-center">
+                      <span class="nav-link-icon"><span class="fas fa-chart-line"></span></span>
+                      <span class="nav-link-text ps-1">Monitoring Lembur</span>
+                    </div>
+                  </a>
+                </li>
+              </ul>
+            </div>
           </li>
           <li class="nav-item">
             <a class="nav-link submenu-item" href="#menu" data-tag="absensi_monitoring" data-target="/absensi/monitoring" data-title="Monitoring Jadwal Unit" data-icon="fas fa-tasks" data-group="Kehadiran">
